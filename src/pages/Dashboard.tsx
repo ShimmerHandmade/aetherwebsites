@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +24,7 @@ export type Profile = {
   plan_id: string | null;
   is_subscribed: boolean;
   subscription_type: string | null;
+  subscription_end: string | null; // Added this property
 };
 
 const Dashboard = () => {

@@ -42,7 +42,11 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
         // Parse the features JSONB to array
         const parsedPlans = data.map(plan => ({
           ...plan,
-          features: Array.isArray(plan.features) ? plan.features : JSON.parse(plan.features)
+          features: Array.isArray(plan.features) 
+            ? plan.features.map(feature => String(feature))
+            : typeof plan.features === 'string' 
+              ? [plan.features] 
+              : []
         }));
         
         setPlans(parsedPlans);

@@ -57,7 +57,16 @@ const Auth = () => {
   const handleLogin = async (values: z.infer<typeof loginSchema>) => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword(values);
+      // Ensure email and password are not undefined or empty
+      if (!values.email || !values.password) {
+        toast.error("Email and password are required");
+        return;
+      }
+      
+      const { error } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password
+      });
       
       if (error) {
         toast.error(error.message);
