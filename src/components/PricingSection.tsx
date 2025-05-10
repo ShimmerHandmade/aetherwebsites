@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CircleCheck } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const pricingPlans = [
   {
@@ -55,9 +57,26 @@ const pricingPlans = [
 
 const PricingSection = () => {
   const [isAnnual, setIsAnnual] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const navigate = useNavigate();
 
   const toggleBilling = () => {
     setIsAnnual(!isAnnual);
+  };
+  
+  const handlePlanSelect = async (plan: any) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      // Save selected plan to sessionStorage for later use after authentication
+      sessionStorage.setItem('selectedPlan', JSON.stringify({
+        planName: plan.name,
+        isAnnual: isAnnual
+      }));
+      navigate('/auth');
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   return (
@@ -101,8 +120,16 @@ const PricingSection = () => {
           {pricingPlans.map((plan, index) => (
             <div
               key={index}
-              className={`pricing-card bg-white ${plan.isPopular ? 'popular' : ''}`}
+              className={`pricing-card bg-white rounded-lg shadow-lg p-6 border ${
+                plan.isPopular ? 'border-indigo-500 ring-2 ring-indigo-500 ring-opacity-50' : 'border-gray-200'
+              } relative`}
             >
+              {plan.isPopular && (
+                <div className="absolute top-0 right-0 bg-indigo-500 text-white px-4 py-1 rounded-bl-lg rounded-tr-lg text-sm font-medium">
+                  Popular
+                </div>
+              )}
+              
               <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
               <div className="mb-6">
                 <div className="flex items-baseline">
@@ -114,6 +141,7 @@ const PricingSection = () => {
 
               <Button 
                 className={`w-full ${plan.isPopular ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
+                onClick={() => handlePlanSelect(plan)}
               >
                 Choose {plan.name}
               </Button>

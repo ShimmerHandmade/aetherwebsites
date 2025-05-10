@@ -9,7 +9,136 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      plans: {
+        Row: {
+          annual_price: number
+          created_at: string
+          description: string
+          features: Json
+          id: string
+          monthly_price: number
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          annual_price: number
+          created_at?: string
+          description: string
+          features: Json
+          id?: string
+          monthly_price: number
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          annual_price?: number
+          created_at?: string
+          description?: string
+          features?: Json
+          id?: string
+          monthly_price?: number
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          is_subscribed: boolean | null
+          plan_id: string | null
+          subscription_end: string | null
+          subscription_start: string | null
+          subscription_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          is_subscribed?: boolean | null
+          plan_id?: string | null
+          subscription_end?: string | null
+          subscription_start?: string | null
+          subscription_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          is_subscribed?: boolean | null
+          plan_id?: string | null
+          subscription_end?: string | null
+          subscription_start?: string | null
+          subscription_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      websites: {
+        Row: {
+          content: Json
+          created_at: string
+          domain: string | null
+          id: string
+          name: string
+          owner_id: string
+          published: boolean | null
+          settings: Json
+          template: string | null
+          updated_at: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          domain?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          published?: boolean | null
+          settings?: Json
+          template?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          domain?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          published?: boolean | null
+          settings?: Json
+          template?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "websites_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

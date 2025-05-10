@@ -1,10 +1,29 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <nav className="bg-white shadow-sm py-4 sticky top-0 z-50">
@@ -32,12 +51,30 @@ const Navbar = () => {
         </div>
 
         <div className="hidden md:flex items-center space-x-4">
-          <Button variant="outline" className="border-gray-300">
-            Login
-          </Button>
-          <Button className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white">
-            Get Started
-          </Button>
+          {isAuthenticated ? (
+            <Button 
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+              onClick={() => navigate("/dashboard")}
+            >
+              Dashboard
+            </Button>
+          ) : (
+            <>
+              <Button 
+                variant="outline" 
+                className="border-gray-300"
+                onClick={() => navigate("/auth")}
+              >
+                Login
+              </Button>
+              <Button 
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                onClick={() => navigate("/auth")}
+              >
+                Get Started
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -84,12 +121,39 @@ const Navbar = () => {
               FAQ
             </a>
             <div className="flex flex-col space-y-2 pt-4 border-t border-gray-100">
-              <Button variant="outline" className="w-full justify-center">
-                Login
-              </Button>
-              <Button className="w-full justify-center bg-gradient-to-r from-indigo-600 to-purple-600">
-                Get Started
-              </Button>
+              {isAuthenticated ? (
+                <Button 
+                  className="w-full justify-center bg-gradient-to-r from-indigo-600 to-purple-600"
+                  onClick={() => {
+                    navigate("/dashboard");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  Dashboard
+                </Button>
+              ) : (
+                <>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-center"
+                    onClick={() => {
+                      navigate("/auth");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    Login
+                  </Button>
+                  <Button 
+                    className="w-full justify-center bg-gradient-to-r from-indigo-600 to-purple-600"
+                    onClick={() => {
+                      navigate("/auth");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    Get Started
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
