@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CircleCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -59,6 +59,15 @@ const PricingSection = () => {
   const [isAnnual, setIsAnnual] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+    
+    checkAuth();
+  }, []);
 
   const toggleBilling = () => {
     setIsAnnual(!isAnnual);

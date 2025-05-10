@@ -1,7 +1,20 @@
 
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+  
+  const handleStartFreeTrial = () => {
+    navigate('/auth');
+  };
+  
+  const handleWatchDemo = () => {
+    // This could open a modal or navigate to a demo page
+    // For now, let's just log it
+    console.log('Watch demo clicked');
+  };
+  
   return (
     <section className="py-16 lg:py-24 relative overflow-hidden">
       {/* Background elements */}
@@ -20,10 +33,17 @@ const HeroSection = () => {
               Build a beautiful online store without any coding skills. ModernBuilder gives you everything you need to launch and grow your business online.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-              <Button className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-lg py-6 px-8">
+              <Button 
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-lg py-6 px-8"
+                onClick={handleStartFreeTrial}
+              >
                 Start Free Trial
               </Button>
-              <Button variant="outline" className="border-gray-300 text-lg py-6 px-8">
+              <Button 
+                variant="outline" 
+                className="border-gray-300 text-lg py-6 px-8"
+                onClick={handleWatchDemo}
+              >
                 Watch Demo
               </Button>
             </div>
