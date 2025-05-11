@@ -4,6 +4,7 @@ import { useBuilder } from "@/contexts/BuilderContext";
 import CanvasDragDropHandler from "./CanvasDragDropHandler";
 import PageCanvas from "./PageCanvas";
 import EmptyCanvasPlaceholder from "./EmptyCanvasPlaceholder";
+import BuilderElement from "../BuilderElement";
 
 interface BuilderCanvasProps {
   isPreviewMode?: boolean;
@@ -28,19 +29,7 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({ isPreviewMode = false }) 
       onCanvasClick={handleCanvasClick}
       className={canvasClassName}
     >
-      {elements.length > 0 ? (
-        elements.map((element, index) => (
-          <BuilderElement
-            key={element.id}
-            element={element}
-            index={index}
-            selected={!isPreviewMode && selectedElementId === element.id}
-            isPreviewMode={isPreviewMode}
-          />
-        ))
-      ) : (
-        <EmptyCanvasPlaceholder isPreviewMode={isPreviewMode} />
-      )}
+      <PageCanvas isPreviewMode={isPreviewMode} />
     </CanvasDragDropHandler>
   );
 };

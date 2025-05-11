@@ -61,13 +61,14 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
         name: data.name,
         content: Array.isArray(data.content) ? data.content as unknown as BuilderElement[] : [],
         settings: data.settings,
-        pageSettings: data.pageSettings as unknown as PageSettings || null,
+        // Store page settings from the settings object if it exists
+        pageSettings: data.settings?.pageSettings as unknown as PageSettings || null,
         published: !!data.published
       };
 
       setWebsite(websiteData);
       setWebsiteName(data.name);
-      setPageSettings(data.pageSettings || { title: data.name });
+      setPageSettings(data.settings?.pageSettings || { title: data.name });
       
       // Load elements from content if available
       if (data.content && Array.isArray(data.content) && data.content.length > 0) {
@@ -90,12 +91,18 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
       const contentToSave = updatedElements || elements;
       const settingsToSave = updatedPageSettings || pageSettings;
       
+      // Store page settings within the settings object
+      const updatedSettings = {
+        ...website.settings,
+        pageSettings: settingsToSave
+      };
+      
       const { error } = await supabase
         .from("websites")
         .update({ 
           name: websiteName,
           content: contentToSave as unknown as Json,
-          pageSettings: settingsToSave as unknown as Json
+          settings: updatedSettings as unknown as Json
         })
         .eq("id", id);
       
@@ -109,7 +116,8 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
         ...website,
         name: websiteName,
         content: contentToSave,
-        pageSettings: settingsToSave
+        pageSettings: settingsToSave,
+        settings: updatedSettings
       });
       setElements(contentToSave);
       setPageSettings(settingsToSave);
