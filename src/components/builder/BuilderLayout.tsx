@@ -1,5 +1,5 @@
 
-import React, { ReactNode, useState } from "react";
+import React, { ReactNode, useState, isValidElement, cloneElement } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface BuilderLayoutProps {
@@ -20,7 +20,7 @@ const BuilderLayout: React.FC<BuilderLayoutProps> = ({ children }) => {
     // Check if the child is a valid React element
     if (React.isValidElement(child)) {
       // Pass the preview mode props
-      return React.cloneElement(child, {
+      return React.cloneElement(child as React.ReactElement<any>, {
         isPreviewMode,
         setIsPreviewMode
       });
