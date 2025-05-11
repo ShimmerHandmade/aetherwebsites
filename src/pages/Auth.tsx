@@ -22,7 +22,8 @@ const loginSchema = z.object({
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
 });
 
-const signupSchema = loginSchema.extend({
+const signupSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(8, { message: "Password must be at least 8 characters" }),
   confirmPassword: z.string().min(8, { message: "Password must be at least 8 characters" }),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -86,6 +87,7 @@ const Auth = () => {
   const handleSignup = async (values: z.infer<typeof signupSchema>) => {
     try {
       setLoading(true);
+      console.log("Signup values:", values);
       
       // Ensure email and password are not undefined or empty
       if (!values.email || !values.password) {
@@ -93,13 +95,19 @@ const Auth = () => {
         return;
       }
       
-      // Fixed: Correctly pass the required parameters for signup
+      // Sign up with Supabase
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
+        options: {
+          emailRedirectTo: window.location.origin
+        }
       });
       
+      console.log("Signup response:", { data, error });
+      
       if (error) {
+        console.error("Signup detailed error:", error);
         toast.error(error.message);
         return;
       }
@@ -111,10 +119,12 @@ const Auth = () => {
         
         // Reset the signup form after successful registration
         signupForm.reset();
+      } else {
+        toast.error("Something went wrong during signup");
       }
     } catch (error) {
       console.error("Signup error:", error);
-      toast.error("An unexpected error occurred");
+      toast.error("An unexpected error occurred during signup");
     } finally {
       setLoading(false);
     }
