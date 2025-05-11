@@ -7,16 +7,19 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBuilder } from "@/contexts/BuilderContext";
+import { toast } from "sonner";
 
-const PageSettings = () => {
+const PageSettings: React.FC = () => {
   const { pageSettings, updatePageSettings } = useBuilder();
   
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     updatePageSettings({ title: e.target.value });
+    toast.success("Page title updated");
   };
   
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     updatePageSettings({ description: e.target.value });
+    toast.success("Page description updated");
   };
   
   const handleMetadataChange = (key: string, value: string | boolean) => {
@@ -26,6 +29,7 @@ const PageSettings = () => {
         [key]: value
       }
     });
+    toast.success(`SEO ${key} updated`);
   };
 
   return (
