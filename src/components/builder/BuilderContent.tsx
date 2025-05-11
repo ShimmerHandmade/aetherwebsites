@@ -1,7 +1,7 @@
 
 import React from "react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import BuilderCanvas from "@/components/builder/BuilderCanvas";
+import BuilderCanvas from "@/components/builder/canvas";
 import ElementPalette from "@/components/builder/ElementPalette";
 import ElementProperties from "@/components/builder/ElementProperties";
 import { PreviewModeProps } from "./BuilderLayout";
