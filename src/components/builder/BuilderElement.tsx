@@ -6,12 +6,19 @@ interface BuilderElementProps {
   element: ElementType;
   index: number;
   selected: boolean;
+  isPreviewMode?: boolean;
 }
 
-const BuilderElement: React.FC<BuilderElementProps> = ({ element, index, selected }) => {
+const BuilderElement: React.FC<BuilderElementProps> = ({ 
+  element, 
+  index, 
+  selected,
+  isPreviewMode = false
+}) => {
   const { selectElement, removeElement } = useBuilder();
 
   const handleClick = (e: React.MouseEvent) => {
+    if (isPreviewMode) return;
     e.stopPropagation();
     selectElement(element.id);
   };
@@ -64,12 +71,12 @@ const BuilderElement: React.FC<BuilderElementProps> = ({ element, index, selecte
 
   return (
     <div
-      className={`mb-4 border-2 rounded ${
+      className={`mb-4 ${isPreviewMode ? '' : 'border-2 rounded'} ${
         selected ? "border-indigo-500" : "border-transparent"
       } relative`}
       onClick={handleClick}
     >
-      {selected && (
+      {selected && !isPreviewMode && (
         <div className="absolute top-2 right-2 flex space-x-2 bg-white p-1 rounded shadow-sm">
           <button onClick={handleDelete} className="text-red-500 hover:text-red-700">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
