@@ -6,10 +6,11 @@ import { PreviewModeProps } from "./BuilderLayout";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
-import { Edit, PanelLeft } from "lucide-react";
+import { ChevronRight, Edit, PanelLeft } from "lucide-react";
 
 const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   if (isPreviewMode) {
     return (
@@ -20,46 +21,54 @@ const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) =
   }
 
   return (
-    <div className="flex-1 bg-white overflow-auto relative">
-      <BuilderCanvas isPreviewMode={false} />
-      
-      {/* Desktop view: Side Sheet for editor */}
-      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetTrigger asChild>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="fixed bottom-4 right-4 z-10 bg-white shadow-md hidden md:flex"
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            Edit Page
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="right" className="w-[350px] sm:w-[400px] p-0">
-          <div className="h-full">
-            <PageEditorSidebar isPreviewMode={isPreviewMode} />
-          </div>
-        </SheetContent>
-      </Sheet>
-      
-      {/* Mobile view: Bottom Drawer */}
-      <Drawer>
-        <DrawerTrigger asChild>
-          <Button 
+    <div className="flex-1 flex">
+      {/* Left sidebar - visible on desktop */}
+      <div className="hidden md:block w-[60px] bg-gray-900">
+        {/* This space is for the vertical sidebar managed by PageEditorSidebar */}
+      </div>
+
+      {/* Main content area */}
+      <div className="flex-1 bg-white overflow-auto relative">
+        <BuilderCanvas isPreviewMode={false} />
+        
+        {/* Desktop view: Side panel for editor */}
+        <div 
+          className={`hidden md:block fixed top-[60px] bottom-0 right-0 w-[400px] transform transition-transform duration-300 ease-in-out ${
+            sidebarOpen ? 'translate-x-0' : 'translate-x-full'
+          } shadow-lg z-10`}
+        >
+          <Button
             variant="outline"
-            size="sm" 
-            className="fixed bottom-4 right-4 z-10 bg-white shadow-md md:hidden"
+            size="sm"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className={`absolute top-4 -left-8 bg-white border border-gray-200 rounded-l-md rounded-r-none h-16 px-1 ${
+              sidebarOpen ? 'rotate-180' : ''
+            }`}
           >
-            <Edit className="mr-2 h-4 w-4" />
-            Edit Page
+            <ChevronRight className="h-4 w-4" />
           </Button>
-        </DrawerTrigger>
-        <DrawerContent className="h-[80vh]">
-          <div className="px-4 pt-4 pb-8">
-            <PageEditorSidebar isPreviewMode={isPreviewMode} />
-          </div>
-        </DrawerContent>
-      </Drawer>
+          <PageEditorSidebar isPreviewMode={isPreviewMode} />
+        </div>
+        
+        {/* Mobile view: Bottom Drawer trigger */}
+        <Drawer open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+          <DrawerTrigger asChild>
+            <Button 
+              variant="outline"
+              size="sm" 
+              className="fixed bottom-4 right-4 z-10 bg-white shadow-md md:hidden"
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Edit Page
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent className="h-[80vh]">
+            <div className="px-4 pt-4 pb-8">
+              <PageEditorSidebar isPreviewMode={isPreviewMode} />
+            </div>
+          </DrawerContent>
+        </Drawer>
+      </div>
     </div>
   );
 };
