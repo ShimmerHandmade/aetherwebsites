@@ -61,7 +61,7 @@ const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) =
         {/* Add Section buttons (Squarespace-style) */}
         <div className="w-full flex justify-center">
           <Button 
-            variant="primary" 
+            variant="default" 
             className="fixed top-60 z-10 bg-blue-500 hover:bg-blue-600 text-white shadow-md"
           >
             ADD SECTION
@@ -70,7 +70,7 @@ const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) =
         
         <div className="w-full flex justify-center">
           <Button 
-            variant="primary" 
+            variant="default" 
             className="fixed bottom-8 z-10 bg-blue-500 hover:bg-blue-600 text-white shadow-md"
           >
             ADD SECTION

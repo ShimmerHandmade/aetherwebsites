@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Save, ArrowLeft, ArrowRight, Eye, EyeOff, Desktop, Menu, Mobile } from "lucide-react";
+import { Save, ArrowLeft, ArrowRight, Eye, EyeOff, Monitor, Menu, Smartphone } from "lucide-react";
 import { Toggle } from "@/components/ui/toggle";
 import { PreviewModeProps } from "./BuilderLayout";
 import { useBuilder } from "@/contexts/BuilderContext";
@@ -94,10 +94,10 @@ const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
 
         <div className="flex items-center space-x-4">
           <Button variant="ghost" size="sm" className="p-1">
-            <Desktop className="h-5 w-5" />
+            <Monitor className="h-5 w-5" />
           </Button>
           <Button variant="ghost" size="sm" className="p-1">
-            <Mobile className="h-5 w-5" />
+            <Smartphone className="h-5 w-5" />
           </Button>
           <Button 
             variant={isPreviewMode ? "default" : "outline"} 
