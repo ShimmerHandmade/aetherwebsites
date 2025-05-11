@@ -18,7 +18,7 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({ isPreviewMode = false }) 
     }
   };
 
-  const canvasClassName = `${isPreviewMode ? '' : 'bg-white rounded-lg shadow-sm border border-gray-200 p-4'} relative ${
+  const canvasClassName = `${isPreviewMode ? '' : 'bg-white rounded-lg shadow-sm border border-gray-200'} relative ${
     isPreviewMode ? 'min-h-screen' : 'min-h-[800px]'
   }`;
 
@@ -28,7 +28,11 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({ isPreviewMode = false }) 
       onCanvasClick={handleCanvasClick}
       className={canvasClassName}
     >
-      <PageCanvas isPreviewMode={isPreviewMode} />
+      {elements.length > 0 ? (
+        <PageCanvas isPreviewMode={isPreviewMode} />
+      ) : (
+        <EmptyCanvasPlaceholder />
+      )}
     </CanvasDragDropHandler>
   );
 };
