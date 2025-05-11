@@ -3,11 +3,12 @@ import { useState, useEffect } from "react";
 import { NavigateFunction } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { BuilderElement } from "@/contexts/BuilderContext";
 
 export interface WebsiteData {
   id: string;
   name: string;
-  content: any;
+  content: BuilderElement[];
   settings: any;
   published: boolean;
 }
@@ -17,6 +18,7 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [websiteName, setWebsiteName] = useState("");
+  const [elements, setElements] = useState<BuilderElement[]>([]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -52,6 +54,11 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
       
       setWebsite(data);
       setWebsiteName(data.name);
+      
+      // Load elements from content if available
+      if (data.content && Array.isArray(data.content) && data.content.length > 0) {
+        setElements(data.content);
+      }
     } catch (error) {
       console.error("Error in fetchWebsite:", error);
     } finally {
@@ -59,16 +66,20 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
     }
   };
 
-  const saveWebsite = async () => {
+  const saveWebsite = async (updatedElements?: BuilderElement[]) => {
     try {
       if (!id || !website) return;
       
       setIsSaving(true);
       
-      // In a real builder, you'd save the entire website structure
+      const contentToSave = updatedElements || elements;
+      
       const { error } = await supabase
         .from("websites")
-        .update({ name: websiteName })
+        .update({ 
+          name: websiteName,
+          content: contentToSave
+        })
         .eq("id", id);
       
       if (error) {
@@ -77,7 +88,8 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
         return;
       }
       
-      setWebsite({ ...website, name: websiteName });
+      setWebsite({ ...website, name: websiteName, content: contentToSave });
+      setElements(contentToSave);
       toast.success("Website saved successfully");
     } catch (error) {
       console.error("Error in saveWebsite:", error);
@@ -110,13 +122,19 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
     }
   };
 
+  const updateElements = (newElements: BuilderElement[]) => {
+    setElements(newElements);
+  };
+
   return {
     website,
     isLoading,
     isSaving,
     websiteName,
+    elements,
     setWebsiteName,
     saveWebsite,
-    publishWebsite
+    publishWebsite,
+    updateElements
   };
 };

@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { v4 as uuidv4 } from "@/lib/uuid";
 
 export interface BuilderElement {
@@ -19,13 +19,27 @@ interface BuilderContextType {
   selectElement: (id: string | null) => void;
   moveElement: (sourceIndex: number, destinationIndex: number) => void;
   duplicateElement: (id: string) => void;
+  loadElements: (elements: BuilderElement[]) => void;
+  saveElements: () => BuilderElement[];
 }
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
 
-export const BuilderProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [elements, setElements] = useState<BuilderElement[]>([]);
+export const BuilderProvider: React.FC<{ 
+  children: ReactNode;
+  websiteId?: string;
+  initialElements?: BuilderElement[];
+  onSave?: (elements: BuilderElement[]) => void;
+}> = ({ children, websiteId, initialElements = [], onSave }) => {
+  const [elements, setElements] = useState<BuilderElement[]>(initialElements);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+
+  // Load initial elements when provided
+  useEffect(() => {
+    if (initialElements && initialElements.length > 0) {
+      setElements(initialElements);
+    }
+  }, [initialElements]);
 
   const addElement = (element: BuilderElement) => {
     setElements((prev) => [...prev, element]);
@@ -79,6 +93,18 @@ export const BuilderProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
+  const loadElements = (newElements: BuilderElement[]) => {
+    setElements(newElements);
+    setSelectedElementId(null);
+  };
+
+  const saveElements = () => {
+    if (onSave) {
+      onSave(elements);
+    }
+    return elements;
+  };
+
   return (
     <BuilderContext.Provider
       value={{
@@ -90,6 +116,8 @@ export const BuilderProvider: React.FC<{ children: ReactNode }> = ({ children })
         selectElement,
         moveElement,
         duplicateElement,
+        loadElements,
+        saveElements,
       }}
     >
       {children}

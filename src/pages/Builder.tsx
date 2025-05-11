@@ -7,6 +7,7 @@ import BuilderLayout from "@/components/builder/BuilderLayout";
 import BuilderNavbar from "@/components/builder/BuilderNavbar";
 import BuilderContent from "@/components/builder/BuilderContent";
 import { useWebsite } from "@/hooks/useWebsite";
+import { BuilderElement } from "@/contexts/BuilderContext";
 
 const Builder = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,10 +16,16 @@ const Builder = () => {
     website, 
     isLoading, 
     websiteName, 
+    elements,
     setWebsiteName, 
     saveWebsite, 
-    publishWebsite 
+    publishWebsite,
+    updateElements
   } = useWebsite(id, navigate);
+
+  const handleSave = async (updatedElements: BuilderElement[]) => {
+    await saveWebsite(updatedElements);
+  };
 
   if (isLoading) {
     return (
@@ -46,12 +53,14 @@ const Builder = () => {
   }
 
   return (
-    <BuilderProvider>
+    <BuilderProvider initialElements={elements} onSave={handleSave}>
       <BuilderLayout>
         <BuilderNavbar 
           websiteName={websiteName} 
           setWebsiteName={setWebsiteName} 
-          onSave={saveWebsite} 
+          onSave={async () => {
+            const savedElements = document.dispatchEvent(new CustomEvent('save-website'));
+          }} 
           onPublish={publishWebsite}
           isPublished={website.published}
         />

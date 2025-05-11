@@ -61,6 +61,7 @@ const BuilderElement: React.FC<BuilderElementProps> = ({
   };
 
   const renderElement = () => {
+    // Layout Elements
     switch (element.type) {
       case "header":
         return (
@@ -99,6 +100,42 @@ const BuilderElement: React.FC<BuilderElementProps> = ({
             </div>
           </div>
         );
+      case "grid":
+        const columns = element.props?.columns || 2;
+        const gap = element.props?.gap === 'large' ? '4' : element.props?.gap === 'small' ? '2' : '3';
+        return (
+          <div className={`grid grid-cols-1 md:grid-cols-${columns} gap-${gap} p-4`}>
+            {Array(columns).fill(0).map((_, i) => (
+              <div key={i} className="border border-dashed border-gray-300 p-4 text-center">
+                Grid item {i + 1}
+              </div>
+            ))}
+          </div>
+        );
+      case "flex":
+        const direction = element.props?.direction === 'column' ? 'flex-col' : 'flex-row';
+        const justify = element.props?.justify === 'between' ? 'justify-between' : 
+                       element.props?.justify === 'around' ? 'justify-around' :
+                       element.props?.justify === 'end' ? 'justify-end' : 'justify-center';
+        const align = element.props?.align === 'start' ? 'items-start' :
+                    element.props?.align === 'end' ? 'items-end' :
+                    element.props?.align === 'stretch' ? 'items-stretch' : 'items-center';
+        return (
+          <div className={`flex ${direction} ${justify} ${align} p-4 border border-dashed border-gray-300`}>
+            <div className="bg-gray-100 p-4 m-2">Flex Item 1</div>
+            <div className="bg-gray-100 p-4 m-2">Flex Item 2</div>
+          </div>
+        );
+      case "spacer":
+        const height = element.props?.height === 'small' ? '4' : 
+                      element.props?.height === 'large' ? '16' : '8';
+        return <div className={`h-${height} w-full`}></div>;
+      case "divider":
+        const color = element.props?.color === 'dark' ? 'border-gray-700' : 
+                     element.props?.color === 'light' ? 'border-gray-100' : 'border-gray-300';
+        return <div className={`border-t ${color} my-4 w-full`}></div>;
+      
+      // Content Elements
       case "text":
         return (
           <div className="p-4">
@@ -146,6 +183,99 @@ const BuilderElement: React.FC<BuilderElementProps> = ({
             </button>
           </div>
         );
+      case "list":
+        const listType = element.props?.type === 'numbered' ? 'ol' : 'ul';
+        const ListTag = listType as keyof JSX.IntrinsicElements;
+        return (
+          <div className="p-4">
+            <ListTag className={listType === 'ol' ? 'list-decimal list-inside' : 'list-disc list-inside'}>
+              {(element.props?.items || ["Item 1", "Item 2"]).map((item: string, i: number) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ListTag>
+          </div>
+        );
+      case "icon":
+        const iconSize = element.props?.size === 'small' ? 'h-4 w-4' : 
+                       element.props?.size === 'large' ? 'h-8 w-8' : 'h-6 w-6';
+        const iconColor = element.props?.color === 'indigo' ? 'text-indigo-600' :
+                        element.props?.color === 'gray' ? 'text-gray-600' : 'text-current';
+        return (
+          <div className="p-4 flex justify-center">
+            <div className={`${iconSize} ${iconColor}`}>★</div>
+          </div>
+        );
+        
+      // Interactive Elements
+      case "form":
+        return (
+          <div className="p-4 border rounded">
+            <h3 className="text-lg font-medium mb-4">{element.content || "Form"}</h3>
+            <div className="space-y-4">
+              {(element.props?.fields || ['name', 'email']).includes('name') && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Name</label>
+                  <input type="text" className="w-full px-3 py-2 border rounded" placeholder="Your name" disabled={isPreviewMode} />
+                </div>
+              )}
+              {(element.props?.fields || ['name', 'email']).includes('email') && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Email</label>
+                  <input type="email" className="w-full px-3 py-2 border rounded" placeholder="Your email" disabled={isPreviewMode} />
+                </div>
+              )}
+              {(element.props?.fields || ['name', 'email']).includes('message') && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Message</label>
+                  <textarea className="w-full px-3 py-2 border rounded" rows={3} placeholder="Your message" disabled={isPreviewMode}></textarea>
+                </div>
+              )}
+              <button className="px-4 py-2 bg-indigo-600 text-white rounded">Submit</button>
+            </div>
+          </div>
+        );
+      case "input":
+        return (
+          <div className="p-4">
+            <input 
+              type={element.props?.type || "text"} 
+              placeholder={element.props?.placeholder || "Enter text..."} 
+              className="w-full px-3 py-2 border rounded"
+              disabled={isPreviewMode}
+            />
+          </div>
+        );
+      case "textarea":
+        return (
+          <div className="p-4">
+            <textarea 
+              placeholder={element.props?.placeholder || "Enter text..."} 
+              rows={element.props?.rows || 3}
+              className="w-full px-3 py-2 border rounded"
+              disabled={isPreviewMode}
+            ></textarea>
+          </div>
+        );
+      case "checkbox":
+        return (
+          <div className="p-4 flex items-center">
+            <input type="checkbox" className="mr-2" disabled={isPreviewMode} />
+            <span>{element.content || "Checkbox label"}</span>
+          </div>
+        );
+      case "select":
+        return (
+          <div className="p-4">
+            <select className="w-full px-3 py-2 border rounded" disabled={isPreviewMode}>
+              <option value="">Select an option</option>
+              {(element.props?.options || ["Option 1", "Option 2"]).map((option: string, i: number) => (
+                <option key={i} value={option.toLowerCase().replace(/\s+/g, '-')}>{option}</option>
+              ))}
+            </select>
+          </div>
+        );
+      
+      // Complex Elements
       case "feature":
         return (
           <div className="p-4 border rounded-lg shadow-sm">
@@ -208,6 +338,154 @@ const BuilderElement: React.FC<BuilderElementProps> = ({
               </ul>
               <button className="w-full px-4 py-2 bg-indigo-600 text-white rounded">Select Plan</button>
             </div>
+          </div>
+        );
+      case "cta":
+        return (
+          <div className="p-8 bg-indigo-50 text-center rounded-lg">
+            <h3 className="text-2xl font-bold mb-4">{element.content || "Call to Action"}</h3>
+            <p className="text-gray-600 mb-6 max-w-lg mx-auto">Take the next step and join thousands of satisfied customers today.</p>
+            <button className={`px-6 py-3 rounded-lg text-white ${
+              element.props?.buttonVariant === 'secondary' ? 'bg-gray-600' : 'bg-indigo-600'
+            }`}>
+              {element.props?.buttonText || "Get Started"}
+            </button>
+          </div>
+        );
+      case "card":
+        return (
+          <div className="p-6 border rounded-lg shadow-sm">
+            <h3 className="font-medium text-lg mb-3">{element.content || "Card Title"}</h3>
+            <p className="text-gray-600">{element.props?.description || "Card description goes here."}</p>
+            {element.props?.showButton && (
+              <button className="mt-4 px-4 py-2 bg-indigo-100 text-indigo-700 rounded">Learn More</button>
+            )}
+          </div>
+        );
+      case "faq":
+        return (
+          <div className="p-4 border rounded mb-2">
+            <h3 className="font-medium mb-2">{element.content || "Frequently Asked Question"}</h3>
+            <p className="text-gray-600">{element.props?.answer || "Answer to the question goes here."}</p>
+          </div>
+        );
+      
+      // Media Elements
+      case "video":
+        return (
+          <div className="p-4">
+            {element.props?.src ? (
+              <video 
+                src={element.props.src} 
+                poster={element.props.poster}
+                controls
+                autoPlay={element.props.autoplay}
+                className="w-full max-h-96"
+              ></video>
+            ) : (
+              <div className="bg-gray-200 aspect-video flex items-center justify-center">
+                <span className="text-gray-500">Video placeholder</span>
+              </div>
+            )}
+          </div>
+        );
+      case "audio":
+        return (
+          <div className="p-4">
+            {element.props?.src ? (
+              <audio 
+                src={element.props.src} 
+                controls={element.props.controls !== false}
+                className="w-full"
+              ></audio>
+            ) : (
+              <div className="bg-gray-200 p-4 flex items-center justify-center">
+                <span className="text-gray-500">Audio player placeholder</span>
+              </div>
+            )}
+          </div>
+        );
+      case "carousel":
+        return (
+          <div className="p-4">
+            <div className="bg-gray-200 aspect-video flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-gray-500 mb-2">Image Carousel placeholder</div>
+                <div className="flex justify-center space-x-2">
+                  <div className="w-2 h-2 bg-indigo-600 rounded-full"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case "gallery":
+        return (
+          <div className="p-4">
+            <div className="grid grid-cols-2 gap-2">
+              {Array(4).fill(0).map((_, i) => (
+                <div key={i} className="bg-gray-200 aspect-square flex items-center justify-center">
+                  <span className="text-gray-500">Image {i+1}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      
+      // Navigation Elements
+      case "navbar":
+        return (
+          <div className="p-4 bg-white border-b flex justify-between items-center">
+            <div className="font-bold">Logo</div>
+            <nav>
+              <ul className="flex space-x-4">
+                {(element.props?.links || [{ text: "Home", url: "#" }, { text: "About", url: "#" }])
+                  .map((link: { text: string, url: string }, i: number) => (
+                  <li key={i}>
+                    <a href={link.url} className="hover:text-indigo-600">{link.text}</a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
+        );
+      case "menu":
+        return (
+          <div className="p-4">
+            <ul className="space-y-2">
+              {(element.props?.items || [{ text: "Item 1", url: "#" }, { text: "Item 2", url: "#" }])
+                .map((item: { text: string, url: string }, i: number) => (
+                <li key={i}>
+                  <a href={item.url} className="block p-2 hover:bg-gray-100 rounded">{item.text}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      case "footer":
+        return (
+          <div className="p-6 bg-gray-800 text-gray-200">
+            <div className="text-center">
+              <h3 className="mb-4">{element.content || "Website Footer"}</h3>
+              <p className="text-sm">© 2025 Your Company. All rights reserved.</p>
+            </div>
+          </div>
+        );
+      case "breadcrumbs":
+        return (
+          <div className="p-4">
+            <nav className="text-sm">
+              <ol className="flex">
+                {(element.props?.items || [{ text: "Home", url: "#" }, { text: "Section", url: "#" }])
+                  .map((item: { text: string, url: string }, i: number, arr: any[]) => (
+                  <li key={i} className="flex items-center">
+                    <a href={item.url} className="hover:text-indigo-600">{item.text}</a>
+                    {i < arr.length - 1 && <span className="mx-2 text-gray-400">/</span>}
+                  </li>
+                ))}
+              </ol>
+            </nav>
           </div>
         );
       default:

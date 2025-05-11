@@ -1,11 +1,12 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Menu, Save, Eye, EyeOff } from "lucide-react";
+import { Menu, Save, Eye, EyeOff, Settings, LayoutGrid } from "lucide-react";
 import { Toggle } from "@/components/ui/toggle";
 import { PreviewModeProps } from "./BuilderLayout";
+import { useBuilder } from "@/contexts/BuilderContext";
 import {
   Sheet,
   SheetContent,
@@ -34,11 +35,22 @@ const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
 }) => {
   const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
+  const { saveElements } = useBuilder();
 
   const handleSave = async () => {
-    setIsSaving(true);
-    await onSave();
-    setIsSaving(false);
+    try {
+      setIsSaving(true);
+      // Get the current elements from the builder context
+      const elements = saveElements();
+      console.log("Saving elements:", elements);
+      
+      // Call the onSave prop which will save to the database
+      await onSave();
+    } catch (error) {
+      console.error("Error saving:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const togglePreviewMode = () => {
@@ -60,14 +72,16 @@ const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
                 <SheetContent side="left">
                   <SheetHeader>
                     <SheetTitle>Builder Menu</SheetTitle>
-                    <SheetDescription>Configure your e-commerce website.</SheetDescription>
+                    <SheetDescription>Configure your website builder.</SheetDescription>
                   </SheetHeader>
                   <div className="py-4">
                     <nav className="space-y-1">
-                      <a href="#pages" className="block px-2 py-2 rounded hover:bg-gray-100">Pages</a>
-                      <a href="#templates" className="block px-2 py-2 rounded hover:bg-gray-100">Templates</a>
-                      <a href="#products" className="block px-2 py-2 rounded hover:bg-gray-100">Products</a>
-                      <a href="#settings" className="block px-2 py-2 rounded hover:bg-gray-100">Settings</a>
+                      <button className="w-full flex items-center px-2 py-2 rounded hover:bg-gray-100 text-left">
+                        <LayoutGrid className="h-4 w-4 mr-2" /> Pages
+                      </button>
+                      <button className="w-full flex items-center px-2 py-2 rounded hover:bg-gray-100 text-left">
+                        <Settings className="h-4 w-4 mr-2" /> Settings
+                      </button>
                     </nav>
                   </div>
                   <div className="mt-auto pt-4">

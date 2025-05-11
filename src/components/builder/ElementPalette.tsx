@@ -69,7 +69,7 @@ const ElementTemplate: React.FC<ElementTemplateProps> = ({ type, label, content,
 
 const ElementPalette = () => {
   return (
-    <div>
+    <div className="overflow-y-auto h-full">
       <h2 className="font-medium mb-4">Elements</h2>
       
       <ElementCategory title="Layout Elements">
@@ -77,6 +77,10 @@ const ElementPalette = () => {
         <ElementTemplate type="hero" label="Hero Section" content="Welcome to My Website" />
         <ElementTemplate type="container" label="Container" content="" props={{ padding: "medium", background: "white" }} />
         <ElementTemplate type="section" label="Page Section" content="Section" props={{ padding: "large", background: "gray" }} />
+        <ElementTemplate type="grid" label="Grid Layout" props={{ columns: 2, gap: "medium" }} />
+        <ElementTemplate type="flex" label="Flex Container" props={{ direction: "row", justify: "center", align: "center" }} />
+        <ElementTemplate type="spacer" label="Spacer" props={{ height: "medium" }} />
+        <ElementTemplate type="divider" label="Divider" props={{ color: "gray" }} />
       </ElementCategory>
       
       <ElementCategory title="Content Elements">
@@ -97,6 +101,45 @@ const ElementPalette = () => {
           label="Button" 
           content="Click Me"
           props={{ variant: "primary" }} 
+        />
+        <ElementTemplate
+          type="list"
+          label="List"
+          props={{ items: ["Item 1", "Item 2", "Item 3"], type: "bullet" }}
+        />
+        <ElementTemplate
+          type="icon"
+          label="Icon"
+          props={{ name: "star", size: "medium", color: "indigo" }}
+        />
+      </ElementCategory>
+      
+      <ElementCategory title="Interactive Elements">
+        <ElementTemplate 
+          type="form" 
+          label="Form" 
+          content="Contact Form"
+          props={{ fields: ["name", "email", "message"] }}
+        />
+        <ElementTemplate 
+          type="input" 
+          label="Input Field" 
+          props={{ type: "text", placeholder: "Enter text..." }} 
+        />
+        <ElementTemplate 
+          type="textarea" 
+          label="Text Area" 
+          props={{ placeholder: "Enter your message...", rows: 4 }} 
+        />
+        <ElementTemplate 
+          type="checkbox" 
+          label="Checkbox" 
+          content="I agree to terms"
+        />
+        <ElementTemplate 
+          type="select" 
+          label="Select Dropdown" 
+          props={{ options: ["Option 1", "Option 2", "Option 3"] }} 
         />
       </ElementCategory>
       
@@ -123,6 +166,70 @@ const ElementPalette = () => {
           label="Pricing Card" 
           content="Basic Plan"
           props={{ price: "$9.99", period: "monthly", features: ["Feature 1", "Feature 2"] }}
+        />
+        <ElementTemplate 
+          type="cta" 
+          label="Call to Action" 
+          content="Get Started Today"
+          props={{ buttonText: "Sign Up", buttonVariant: "primary" }}
+        />
+        <ElementTemplate 
+          type="card" 
+          label="Card" 
+          content="Card Title"
+          props={{ description: "Card content goes here" }}
+        />
+        <ElementTemplate 
+          type="faq" 
+          label="FAQ Item" 
+          content="Frequently Asked Question"
+          props={{ answer: "The answer to the question goes here." }}
+        />
+      </ElementCategory>
+      
+      <ElementCategory title="Media Elements">
+        <ElementTemplate 
+          type="video" 
+          label="Video" 
+          props={{ src: "", poster: "", autoplay: false }}
+        />
+        <ElementTemplate 
+          type="audio" 
+          label="Audio Player" 
+          props={{ src: "", controls: true }}
+        />
+        <ElementTemplate 
+          type="carousel" 
+          label="Image Carousel" 
+          props={{ images: [{ src: "", alt: "Slide 1" }, { src: "", alt: "Slide 2" }] }}
+        />
+        <ElementTemplate 
+          type="gallery" 
+          label="Image Gallery" 
+          props={{ images: [{ src: "", alt: "Image 1" }, { src: "", alt: "Image 2" }] }}
+        />
+      </ElementCategory>
+      
+      <ElementCategory title="Navigation Elements">
+        <ElementTemplate 
+          type="navbar" 
+          label="Navigation Bar" 
+          props={{ links: [{ text: "Home", url: "#" }, { text: "About", url: "#" }] }}
+        />
+        <ElementTemplate 
+          type="menu" 
+          label="Menu" 
+          props={{ items: [{ text: "Item 1", url: "#" }, { text: "Item 2", url: "#" }] }}
+        />
+        <ElementTemplate 
+          type="footer" 
+          label="Footer" 
+          content="Website Footer"
+        />
+        <ElementTemplate 
+          type="breadcrumbs" 
+          label="Breadcrumbs" 
+          props={{ items: [{ text: "Home", url: "#" }, { text: "Section", url: "#" }] }}
         />
       </ElementCategory>
     </div>
