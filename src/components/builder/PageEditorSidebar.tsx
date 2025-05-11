@@ -25,10 +25,10 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
         onValueChange={(value) => setActiveTab(value)}
       >
         <TabsList className="grid grid-cols-4 mx-4 mt-2">
-          <TabsTrigger value="elements">Elements</TabsTrigger>
-          <TabsTrigger value="properties">Properties</TabsTrigger>
-          <TabsTrigger value="settings">Page</TabsTrigger>
-          <TabsTrigger value="products">Products</TabsTrigger>
+          <TabsTrigger value="elements" onClick={() => setActiveTab("elements")}>Elements</TabsTrigger>
+          <TabsTrigger value="properties" onClick={() => setActiveTab("properties")}>Properties</TabsTrigger>
+          <TabsTrigger value="settings" onClick={() => setActiveTab("settings")}>Page</TabsTrigger>
+          <TabsTrigger value="products" onClick={() => setActiveTab("products")}>Products</TabsTrigger>
         </TabsList>
         
         <ScrollArea className="flex-1 overflow-auto">

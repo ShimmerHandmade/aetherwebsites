@@ -4,7 +4,6 @@ import { useBuilder } from "@/contexts/BuilderContext";
 import CanvasDragDropHandler from "./CanvasDragDropHandler";
 import PageCanvas from "./PageCanvas";
 import EmptyCanvasPlaceholder from "./EmptyCanvasPlaceholder";
-import { BuilderElement } from "@/contexts/BuilderContext";
 
 interface BuilderCanvasProps {
   isPreviewMode?: boolean;
