@@ -4,6 +4,7 @@ import { NavigateFunction } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BuilderElement } from "@/contexts/BuilderContext";
+import { Json } from "@/integrations/supabase/types";
 
 export interface WebsiteData {
   id: string;
@@ -52,12 +53,21 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
         return;
       }
       
-      setWebsite(data);
+      // Convert the database response to the correct type
+      const websiteData: WebsiteData = {
+        id: data.id,
+        name: data.name,
+        content: Array.isArray(data.content) ? data.content as BuilderElement[] : [],
+        settings: data.settings,
+        published: !!data.published
+      };
+
+      setWebsite(websiteData);
       setWebsiteName(data.name);
       
       // Load elements from content if available
       if (data.content && Array.isArray(data.content) && data.content.length > 0) {
-        setElements(data.content);
+        setElements(data.content as BuilderElement[]);
       }
     } catch (error) {
       console.error("Error in fetchWebsite:", error);
@@ -78,7 +88,7 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
         .from("websites")
         .update({ 
           name: websiteName,
-          content: contentToSave
+          content: contentToSave as unknown as Json
         })
         .eq("id", id);
       
@@ -88,7 +98,11 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
         return;
       }
       
-      setWebsite({ ...website, name: websiteName, content: contentToSave });
+      setWebsite({
+        ...website,
+        name: websiteName,
+        content: contentToSave
+      });
       setElements(contentToSave);
       toast.success("Website saved successfully");
     } catch (error) {

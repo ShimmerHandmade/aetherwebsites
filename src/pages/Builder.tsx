@@ -1,7 +1,5 @@
 
-import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import { BuilderProvider } from "@/contexts/BuilderContext";
 import BuilderLayout from "@/components/builder/BuilderLayout";
 import BuilderNavbar from "@/components/builder/BuilderNavbar";
@@ -59,7 +57,7 @@ const Builder = () => {
           websiteName={websiteName} 
           setWebsiteName={setWebsiteName} 
           onSave={async () => {
-            const savedElements = document.dispatchEvent(new CustomEvent('save-website'));
+            document.dispatchEvent(new CustomEvent('save-website'));
           }} 
           onPublish={publishWebsite}
           isPublished={website.published}
