@@ -57,7 +57,7 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
       const websiteData: WebsiteData = {
         id: data.id,
         name: data.name,
-        content: Array.isArray(data.content) ? data.content as BuilderElement[] : [],
+        content: Array.isArray(data.content) ? data.content as unknown as BuilderElement[] : [],
         settings: data.settings,
         published: !!data.published
       };
@@ -67,7 +67,8 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
       
       // Load elements from content if available
       if (data.content && Array.isArray(data.content) && data.content.length > 0) {
-        setElements(data.content as BuilderElement[]);
+        // Use a proper type assertion with unknown as intermediate step
+        setElements(data.content as unknown as BuilderElement[]);
       }
     } catch (error) {
       console.error("Error in fetchWebsite:", error);
