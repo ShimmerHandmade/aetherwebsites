@@ -65,32 +65,27 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
     <div
       className={`mb-4 ${isPreviewMode ? '' : 'border-2 rounded'} ${
         selected ? "border-indigo-500" : "border-transparent"
-      } relative group`}
+      } relative`}
       onClick={handleClick}
       draggable={!isPreviewMode}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      {/* Make controls visible on hover for better editing experience */}
-      {!isPreviewMode && (
-        <div 
-          className={`absolute top-2 right-2 flex space-x-2 bg-white p-1 rounded shadow-sm z-10 
-            ${selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} 
-            transition-opacity duration-200`}
-        >
-          <button className="text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-gray-100" title="Drag to move">
+      {selected && !isPreviewMode && (
+        <div className="absolute top-2 right-2 flex space-x-2 bg-white p-1 rounded shadow-sm z-10">
+          <button className="text-gray-500 hover:text-gray-700" title="Drag to move">
             <Grip className="h-4 w-4" />
           </button>
           <button 
             onClick={handleDuplicate} 
-            className="text-blue-500 hover:text-blue-700 p-1 rounded hover:bg-blue-50" 
+            className="text-blue-500 hover:text-blue-700" 
             title="Duplicate"
           >
             <Copy className="h-4 w-4" />
           </button>
           <button 
             onClick={handleDelete} 
-            className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50" 
+            className="text-red-500 hover:text-red-700" 
             title="Delete"
           >
             <Trash className="h-4 w-4" />

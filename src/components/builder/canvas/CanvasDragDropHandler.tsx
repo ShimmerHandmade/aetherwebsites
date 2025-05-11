@@ -47,7 +47,6 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
         
         // Add new element from palette
         if (!elementData.id) {
-          console.log("Adding new element:", elementData);
           addElement({
             id: uuidv4(),
             type: elementData.type,
@@ -59,8 +58,8 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
         
         // Handle element reordering
         if (elementData.id && elementData.sourceIndex !== undefined) {
-          console.log("Moving element:", elementData.sourceIndex, "to", elements.length);
-          moveElement(elementData.sourceIndex, elements.length);
+          const dropIndex = elements.length;
+          moveElement(elementData.sourceIndex, dropIndex);
         }
       }
     } catch (error) {
@@ -68,12 +67,7 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
     }
   };
 
-  // Enhanced visual feedback for drag states
-  const canvasClassName = `${className} transition-all duration-200 ${
-    isDraggingOver && !isPreviewMode 
-      ? 'bg-blue-50 border-blue-300 border-2 border-dashed' 
-      : ''
-  }`;
+  const canvasClassName = `${className} ${isDraggingOver && !isPreviewMode ? 'bg-blue-50 border-blue-200 border-2' : ''}`;
 
   return (
     <div 

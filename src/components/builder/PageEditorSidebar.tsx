@@ -15,14 +15,10 @@ import {
   Image,
   Package,
   Users,
-  CreditCard,
-  Palette,
-  Layers,
-  BarChart
+  CreditCard
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 
 interface PageEditorSidebarProps {
   isPreviewMode: boolean;
@@ -34,7 +30,7 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
   if (isPreviewMode) return null;
 
   return (
-    <div className="h-full flex flex-col bg-white border-l border-gray-200">
+    <div className="h-full flex flex-col bg-gray-50 border-l border-gray-200">
       <div className="py-4 px-4 border-b border-gray-200">
         <h2 className="text-lg font-medium">Editor</h2>
       </div>
@@ -50,8 +46,8 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
             <TabsTrigger 
               value="elements" 
               className={cn(
-                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-blue-600 data-[state=active]:bg-transparent",
-                activeTab === "elements" ? "border-blue-600 text-blue-600" : "text-gray-600"
+                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent",
+                activeTab === "elements" ? "border-indigo-600 text-indigo-600" : "text-gray-600"
               )}
             >
               <LayoutGrid className="h-4 w-4" />
@@ -61,19 +57,19 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
             <TabsTrigger 
               value="properties" 
               className={cn(
-                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-blue-600 data-[state=active]:bg-transparent",
-                activeTab === "properties" ? "border-blue-600 text-blue-600" : "text-gray-600"
+                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent",
+                activeTab === "properties" ? "border-indigo-600 text-indigo-600" : "text-gray-600"
               )}
             >
               <Pencil className="h-4 w-4" />
-              <span>Design</span>
+              <span>Properties</span>
             </TabsTrigger>
             
             <TabsTrigger 
               value="settings" 
               className={cn(
-                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-blue-600 data-[state=active]:bg-transparent",
-                activeTab === "settings" ? "border-blue-600 text-blue-600" : "text-gray-600"
+                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent",
+                activeTab === "settings" ? "border-indigo-600 text-indigo-600" : "text-gray-600"
               )}
             >
               <Settings className="h-4 w-4" />
@@ -83,8 +79,8 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
             <TabsTrigger 
               value="products" 
               className={cn(
-                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-blue-600 data-[state=active]:bg-transparent",
-                activeTab === "products" ? "border-blue-600 text-blue-600" : "text-gray-600"
+                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent",
+                activeTab === "products" ? "border-indigo-600 text-indigo-600" : "text-gray-600"
               )}
             >
               <ShoppingBag className="h-4 w-4" />
@@ -115,33 +111,24 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
       {/* Squarespace-like navigation sidebar */}
       <div className="fixed left-0 top-0 bottom-0 w-[60px] hidden md:flex flex-col items-center pt-16 bg-gray-900 text-white">
         <div className="flex flex-col items-center space-y-6">
-          <Button variant="ghost" className="w-full p-3 rounded-none hover:bg-gray-800">
+          <button className="p-2 rounded-lg hover:bg-gray-800">
             <FileText className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" className="w-full p-3 rounded-none bg-gray-800">
+          </button>
+          <button className="p-2 rounded-lg hover:bg-gray-800">
             <LayoutGrid className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" className="w-full p-3 rounded-none hover:bg-gray-800">
+          </button>
+          <button className="p-2 rounded-lg hover:bg-gray-800">
             <Image className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" className="w-full p-3 rounded-none hover:bg-gray-800">
+          </button>
+          <button className="p-2 rounded-lg bg-gray-800">
             <Package className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" className="w-full p-3 rounded-none hover:bg-gray-800">
-            <Palette className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" className="w-full p-3 rounded-none hover:bg-gray-800">
-            <Layers className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" className="w-full p-3 rounded-none hover:bg-gray-800">
+          </button>
+          <button className="p-2 rounded-lg hover:bg-gray-800">
             <Users className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" className="w-full p-3 rounded-none hover:bg-gray-800">
+          </button>
+          <button className="p-2 rounded-lg hover:bg-gray-800">
             <CreditCard className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" className="w-full p-3 rounded-none hover:bg-gray-800">
-            <BarChart className="h-5 w-5" />
-          </Button>
+          </button>
         </div>
       </div>
     </div>
