@@ -63,6 +63,7 @@ const Auth = () => {
         return;
       }
       
+      // Fix: Pass the correct structure to signInWithPassword
       const { error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password
