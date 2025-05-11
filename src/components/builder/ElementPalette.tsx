@@ -1,8 +1,9 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useBuilder } from "@/contexts/BuilderContext";
 import { v4 as uuidv4 } from "@/lib/uuid"; 
-import { GripVertical } from "lucide-react";
+import { GripVertical, ChevronDown, ChevronRight } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface ElementTemplateProps {
   type: string;
@@ -10,6 +11,30 @@ interface ElementTemplateProps {
   content?: string;
   props?: Record<string, any>;
 }
+
+const ElementCategory: React.FC<{
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}> = ({ title, children, defaultOpen = true }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mb-4">
+      <CollapsibleTrigger className="flex items-center justify-between w-full p-2 bg-gray-50 hover:bg-gray-100 rounded text-left">
+        <span className="font-medium">{title}</span>
+        {isOpen ? (
+          <ChevronDown className="h-4 w-4 text-gray-500" />
+        ) : (
+          <ChevronRight className="h-4 w-4 text-gray-500" />
+        )}
+      </CollapsibleTrigger>
+      <CollapsibleContent className="pt-2 space-y-2">
+        {children}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
 
 const ElementTemplate: React.FC<ElementTemplateProps> = ({ type, label, content, props }) => {
   const { addElement } = useBuilder();
@@ -46,10 +71,22 @@ const ElementPalette = () => {
   return (
     <div>
       <h2 className="font-medium mb-4">Elements</h2>
-      <div className="space-y-2">
+      
+      <ElementCategory title="Layout Elements">
         <ElementTemplate type="header" label="Header" content="Website Header" />
         <ElementTemplate type="hero" label="Hero Section" content="Welcome to My Website" />
+        <ElementTemplate type="container" label="Container" content="" props={{ padding: "medium", background: "white" }} />
+        <ElementTemplate type="section" label="Page Section" content="Section" props={{ padding: "large", background: "gray" }} />
+      </ElementCategory>
+      
+      <ElementCategory title="Content Elements">
         <ElementTemplate type="text" label="Text Block" content="Add your content here" />
+        <ElementTemplate
+          type="heading"
+          label="Heading"
+          content="Heading"
+          props={{ level: "h2" }}
+        />
         <ElementTemplate
           type="image"
           label="Image"
@@ -61,6 +98,9 @@ const ElementPalette = () => {
           content="Click Me"
           props={{ variant: "primary" }} 
         />
+      </ElementCategory>
+      
+      <ElementCategory title="Complex Elements">
         <ElementTemplate 
           type="feature" 
           label="Feature Card" 
@@ -78,7 +118,13 @@ const ElementPalette = () => {
           label="Contact Form" 
           content="Contact Us"
         />
-      </div>
+        <ElementTemplate 
+          type="pricing" 
+          label="Pricing Card" 
+          content="Basic Plan"
+          props={{ price: "$9.99", period: "monthly", features: ["Feature 1", "Feature 2"] }}
+        />
+      </ElementCategory>
     </div>
   );
 };

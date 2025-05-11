@@ -1,5 +1,6 @@
 
 import React, { ReactNode, useState } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface BuilderLayoutProps {
   children: ReactNode;
@@ -14,18 +15,22 @@ export interface PreviewModeProps {
 const BuilderLayout: React.FC<BuilderLayoutProps> = ({ children }) => {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
 
+  // Clone each child and pass the preview mode props
+  const childrenWithProps = React.Children.map(children, child => {
+    // Check if the child is a valid React element
+    if (React.isValidElement(child)) {
+      // Pass the preview mode props
+      return React.cloneElement(child, {
+        isPreviewMode,
+        setIsPreviewMode
+      });
+    }
+    return child;
+  });
+
   return (
     <div className={`flex flex-col h-screen ${isPreviewMode ? 'preview-mode' : ''}`}>
-      {React.Children.map(children, child => {
-        if (React.isValidElement(child)) {
-          return React.cloneElement(child, {
-            ...child.props,
-            isPreviewMode, 
-            setIsPreviewMode
-          });
-        }
-        return child;
-      })}
+      {childrenWithProps}
     </div>
   );
 };

@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
+import { v4 as uuidv4 } from "@/lib/uuid";
 
 export interface BuilderElement {
   id: string;
@@ -17,6 +18,7 @@ interface BuilderContextType {
   removeElement: (id: string) => void;
   selectElement: (id: string | null) => void;
   moveElement: (sourceIndex: number, destinationIndex: number) => void;
+  duplicateElement: (id: string) => void;
 }
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
@@ -27,6 +29,7 @@ export const BuilderProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const addElement = (element: BuilderElement) => {
     setElements((prev) => [...prev, element]);
+    setSelectedElementId(element.id);
   };
 
   const updateElement = (id: string, updates: Partial<BuilderElement>) => {
@@ -56,6 +59,25 @@ export const BuilderProvider: React.FC<{ children: ReactNode }> = ({ children })
       return result;
     });
   };
+  
+  const duplicateElement = (id: string) => {
+    const elementToDuplicate = elements.find((element) => element.id === id);
+    if (elementToDuplicate) {
+      const newElement = {
+        ...elementToDuplicate,
+        id: uuidv4(),
+      };
+      setElements((prev) => {
+        // Find the index of the element to duplicate
+        const index = prev.findIndex((element) => element.id === id);
+        // Insert the new element after the original
+        const result = [...prev];
+        result.splice(index + 1, 0, newElement);
+        return result;
+      });
+      setSelectedElementId(newElement.id);
+    }
+  };
 
   return (
     <BuilderContext.Provider
@@ -67,6 +89,7 @@ export const BuilderProvider: React.FC<{ children: ReactNode }> = ({ children })
         removeElement,
         selectElement,
         moveElement,
+        duplicateElement,
       }}
     >
       {children}

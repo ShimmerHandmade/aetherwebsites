@@ -11,7 +11,14 @@ import { useWebsite } from "@/hooks/useWebsite";
 const Builder = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { website, isLoading, websiteName, setWebsiteName, saveWebsite, publishWebsite } = useWebsite(id, navigate);
+  const { 
+    website, 
+    isLoading, 
+    websiteName, 
+    setWebsiteName, 
+    saveWebsite, 
+    publishWebsite 
+  } = useWebsite(id, navigate);
 
   if (isLoading) {
     return (

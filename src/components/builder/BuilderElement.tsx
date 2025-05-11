@@ -1,7 +1,7 @@
 
 import React from "react";
 import { useBuilder, BuilderElement as ElementType } from "@/contexts/BuilderContext";
-import { Move, Grip } from "lucide-react";
+import { Move, Grip, Trash, Copy } from "lucide-react";
 
 interface BuilderElementProps {
   element: ElementType;
@@ -16,7 +16,7 @@ const BuilderElement: React.FC<BuilderElementProps> = ({
   selected,
   isPreviewMode = false
 }) => {
-  const { selectElement, removeElement } = useBuilder();
+  const { selectElement, removeElement, duplicateElement } = useBuilder();
 
   const handleClick = (e: React.MouseEvent) => {
     if (isPreviewMode) return;
@@ -27,6 +27,13 @@ const BuilderElement: React.FC<BuilderElementProps> = ({
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     removeElement(element.id);
+  };
+  
+  const handleDuplicate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (duplicateElement) {
+      duplicateElement(element.id);
+    }
   };
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -71,10 +78,46 @@ const BuilderElement: React.FC<BuilderElementProps> = ({
             </button>
           </div>
         );
+      case "container":
+        return (
+          <div className={`p-${element.props?.padding === 'large' ? '8' : element.props?.padding === 'medium' ? '4' : '2'} ${
+            element.props?.background === 'gray' ? 'bg-gray-50' : 
+            element.props?.background === 'dark' ? 'bg-gray-800 text-white' : 'bg-white'
+          } border border-dashed border-gray-300`}>
+            {element.content || "Container - Add elements inside"}
+          </div>
+        );
+      case "section":
+        return (
+          <div className={`py-12 px-4 ${
+            element.props?.background === 'gray' ? 'bg-gray-50' : 
+            element.props?.background === 'dark' ? 'bg-gray-800 text-white' : 'bg-white'
+          }`}>
+            <h2 className="text-2xl font-bold mb-6 text-center">{element.content || "Section Title"}</h2>
+            <div className="border border-dashed border-gray-300 p-4 text-center">
+              Section content area
+            </div>
+          </div>
+        );
       case "text":
         return (
           <div className="p-4">
             <p>{element.content || "Text block. Click to edit."}</p>
+          </div>
+        );
+      case "heading":
+        const HeadingTag = (element.props?.level || 'h2') as keyof JSX.IntrinsicElements;
+        return (
+          <div className="p-4">
+            <HeadingTag className={
+              HeadingTag === 'h1' ? 'text-3xl font-bold' :
+              HeadingTag === 'h2' ? 'text-2xl font-bold' :
+              HeadingTag === 'h3' ? 'text-xl font-bold' :
+              HeadingTag === 'h4' ? 'text-lg font-bold' :
+              'text-base font-bold'
+            }>
+              {element.content || `${HeadingTag.toUpperCase()} Heading`}
+            </HeadingTag>
           </div>
         );
       case "image":
@@ -90,9 +133,15 @@ const BuilderElement: React.FC<BuilderElementProps> = ({
           </div>
         );
       case "button":
+        const buttonVariant = element.props?.variant || 'primary';
         return (
           <div className="p-4">
-            <button className={`px-4 py-2 ${element.props?.variant === 'primary' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800'} rounded hover:opacity-90`}>
+            <button className={`px-4 py-2 rounded hover:opacity-90 ${
+              buttonVariant === 'primary' ? 'bg-indigo-600 text-white' : 
+              buttonVariant === 'secondary' ? 'bg-gray-200 text-gray-800' :
+              buttonVariant === 'outline' ? 'border border-indigo-600 text-indigo-600' :
+              'bg-indigo-600 text-white'
+            }`}>
               {element.content || "Button"}
             </button>
           </div>
@@ -143,6 +192,24 @@ const BuilderElement: React.FC<BuilderElementProps> = ({
             </div>
           </div>
         );
+      case "pricing":
+        return (
+          <div className="p-6 border rounded-lg shadow-sm">
+            <div className="text-center">
+              <h3 className="text-xl font-medium mb-2">{element.content || "Basic Plan"}</h3>
+              <div className="text-3xl font-bold mb-2">{element.props?.price || "$9.99"}</div>
+              <p className="text-sm text-gray-500 mb-4">{element.props?.period === 'yearly' ? 'per year' : 'per month'}</p>
+              <ul className="mb-6 text-left space-y-2">
+                {(element.props?.features || ["Feature 1", "Feature 2"]).map((feature: string, i: number) => (
+                  <li key={i} className="flex items-center">
+                    <span className="text-green-500 mr-2">✓</span> {feature}
+                  </li>
+                ))}
+              </ul>
+              <button className="w-full px-4 py-2 bg-indigo-600 text-white rounded">Select Plan</button>
+            </div>
+          </div>
+        );
       default:
         return <div className="p-4">Unknown element type: {element.type}</div>;
     }
@@ -163,12 +230,19 @@ const BuilderElement: React.FC<BuilderElementProps> = ({
           <button className="text-gray-500 hover:text-gray-700" title="Drag to move">
             <Grip className="h-4 w-4" />
           </button>
-          <button onClick={handleDelete} className="text-red-500 hover:text-red-700" title="Delete">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 6h18"></path>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
-              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
+          <button 
+            onClick={handleDuplicate} 
+            className="text-blue-500 hover:text-blue-700" 
+            title="Duplicate"
+          >
+            <Copy className="h-4 w-4" />
+          </button>
+          <button 
+            onClick={handleDelete} 
+            className="text-red-500 hover:text-red-700" 
+            title="Delete"
+          >
+            <Trash className="h-4 w-4" />
           </button>
         </div>
       )}
