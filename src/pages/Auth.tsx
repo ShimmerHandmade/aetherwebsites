@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,7 +62,7 @@ const Auth = () => {
         return;
       }
       
-      // Fix: Pass the correct structure to signInWithPassword
+      // Pass the correct structure to signInWithPassword
       const { error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password
@@ -87,13 +86,15 @@ const Auth = () => {
   const handleSignup = async (values: z.infer<typeof signupSchema>) => {
     try {
       setLoading(true);
+      
       // Ensure email and password are not undefined or empty
       if (!values.email || !values.password) {
         toast.error("Email and password are required");
         return;
       }
       
-      const { error } = await supabase.auth.signUp({
+      // Fixed: Correctly pass the required parameters for signup
+      const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
       });
@@ -103,8 +104,14 @@ const Auth = () => {
         return;
       }
       
-      toast.success("Registration successful! Check your email for verification.");
-      setMode("login");
+      if (data?.user) {
+        toast.success("Registration successful! Check your email for verification.");
+        // Switch to login mode after successful signup
+        setMode("login");
+        
+        // Reset the signup form after successful registration
+        signupForm.reset();
+      }
     } catch (error) {
       console.error("Signup error:", error);
       toast.error("An unexpected error occurred");
