@@ -2,10 +2,8 @@
 import React from "react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import BuilderCanvas from "@/components/builder/canvas";
-import ElementPalette from "@/components/builder/ElementPalette";
-import ElementProperties from "@/components/builder/ElementProperties";
+import PageEditorSidebar from "./PageEditorSidebar";
 import { PreviewModeProps } from "./BuilderLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) => {
   if (isPreviewMode) {
@@ -21,18 +19,7 @@ const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) =
       <ResizablePanelGroup direction="horizontal">
         {/* Left sidebar */}
         <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="bg-white border-r border-gray-200">
-          <Tabs defaultValue="elements" className="h-full flex flex-col">
-            <TabsList className="grid grid-cols-2 mx-4 mt-2">
-              <TabsTrigger value="elements">Elements</TabsTrigger>
-              <TabsTrigger value="properties">Properties</TabsTrigger>
-            </TabsList>
-            <TabsContent value="elements" className="flex-1 overflow-auto p-4">
-              <ElementPalette />
-            </TabsContent>
-            <TabsContent value="properties" className="flex-1 overflow-auto p-4">
-              <ElementProperties />
-            </TabsContent>
-          </Tabs>
+          <PageEditorSidebar isPreviewMode={isPreviewMode} />
         </ResizablePanel>
         
         <ResizableHandle withHandle />

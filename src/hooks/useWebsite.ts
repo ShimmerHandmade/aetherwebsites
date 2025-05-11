@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { NavigateFunction } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { BuilderElement } from "@/contexts/BuilderContext";
+import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
 import { Json } from "@/integrations/supabase/types";
 
 export interface WebsiteData {
@@ -11,6 +11,7 @@ export interface WebsiteData {
   name: string;
   content: BuilderElement[];
   settings: any;
+  pageSettings?: PageSettings;
   published: boolean;
 }
 
@@ -20,6 +21,7 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
   const [isSaving, setIsSaving] = useState(false);
   const [websiteName, setWebsiteName] = useState("");
   const [elements, setElements] = useState<BuilderElement[]>([]);
+  const [pageSettings, setPageSettings] = useState<PageSettings | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -59,11 +61,13 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
         name: data.name,
         content: Array.isArray(data.content) ? data.content as unknown as BuilderElement[] : [],
         settings: data.settings,
+        pageSettings: data.pageSettings as unknown as PageSettings || null,
         published: !!data.published
       };
 
       setWebsite(websiteData);
       setWebsiteName(data.name);
+      setPageSettings(data.pageSettings || { title: data.name });
       
       // Load elements from content if available
       if (data.content && Array.isArray(data.content) && data.content.length > 0) {
@@ -77,19 +81,21 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
     }
   };
 
-  const saveWebsite = async (updatedElements?: BuilderElement[]) => {
+  const saveWebsite = async (updatedElements?: BuilderElement[], updatedPageSettings?: PageSettings) => {
     try {
       if (!id || !website) return;
       
       setIsSaving(true);
       
       const contentToSave = updatedElements || elements;
+      const settingsToSave = updatedPageSettings || pageSettings;
       
       const { error } = await supabase
         .from("websites")
         .update({ 
           name: websiteName,
-          content: contentToSave as unknown as Json
+          content: contentToSave as unknown as Json,
+          pageSettings: settingsToSave as unknown as Json
         })
         .eq("id", id);
       
@@ -102,9 +108,11 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
       setWebsite({
         ...website,
         name: websiteName,
-        content: contentToSave
+        content: contentToSave,
+        pageSettings: settingsToSave
       });
       setElements(contentToSave);
+      setPageSettings(settingsToSave);
       toast.success("Website saved successfully");
     } catch (error) {
       console.error("Error in saveWebsite:", error);
@@ -147,6 +155,7 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
     isSaving,
     websiteName,
     elements,
+    pageSettings,
     setWebsiteName,
     saveWebsite,
     publishWebsite,

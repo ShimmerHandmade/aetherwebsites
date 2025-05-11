@@ -10,9 +10,24 @@ export interface BuilderElement {
   children?: BuilderElement[];
 }
 
+export interface PageSettings {
+  title?: string;
+  description?: string;
+  meta?: {
+    title?: string;
+    description?: string;
+    indexable?: boolean;
+    canonical?: string;
+    ogImage?: string;
+    [key: string]: any;
+  };
+  [key: string]: any;
+}
+
 interface BuilderContextType {
   elements: BuilderElement[];
   selectedElementId: string | null;
+  pageSettings: PageSettings | null;
   addElement: (element: BuilderElement) => void;
   updateElement: (id: string, updates: Partial<BuilderElement>) => void;
   removeElement: (id: string) => void;
@@ -21,6 +36,7 @@ interface BuilderContextType {
   duplicateElement: (id: string) => void;
   loadElements: (elements: BuilderElement[]) => void;
   saveElements: () => BuilderElement[];
+  updatePageSettings: (settings: Partial<PageSettings>) => void;
 }
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
@@ -29,10 +45,12 @@ export const BuilderProvider: React.FC<{
   children: ReactNode;
   websiteId?: string;
   initialElements?: BuilderElement[];
-  onSave?: (elements: BuilderElement[]) => void;
-}> = ({ children, websiteId, initialElements = [], onSave }) => {
+  initialPageSettings?: PageSettings;
+  onSave?: (elements: BuilderElement[], pageSettings: PageSettings) => void;
+}> = ({ children, websiteId, initialElements = [], initialPageSettings = { title: "" }, onSave }) => {
   const [elements, setElements] = useState<BuilderElement[]>(initialElements);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+  const [pageSettings, setPageSettings] = useState<PageSettings>(initialPageSettings);
 
   // Load initial elements when provided
   useEffect(() => {
@@ -100,9 +118,13 @@ export const BuilderProvider: React.FC<{
 
   const saveElements = () => {
     if (onSave) {
-      onSave(elements);
+      onSave(elements, pageSettings);
     }
     return elements;
+  };
+  
+  const updatePageSettings = (settings: Partial<PageSettings>) => {
+    setPageSettings(prev => ({ ...prev, ...settings }));
   };
 
   return (
@@ -110,6 +132,7 @@ export const BuilderProvider: React.FC<{
       value={{
         elements,
         selectedElementId,
+        pageSettings,
         addElement,
         updateElement,
         removeElement,
@@ -118,6 +141,7 @@ export const BuilderProvider: React.FC<{
         duplicateElement,
         loadElements,
         saveElements,
+        updatePageSettings,
       }}
     >
       {children}

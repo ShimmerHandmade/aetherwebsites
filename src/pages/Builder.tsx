@@ -5,7 +5,7 @@ import BuilderLayout from "@/components/builder/BuilderLayout";
 import BuilderNavbar from "@/components/builder/BuilderNavbar";
 import BuilderContent from "@/components/builder/BuilderContent";
 import { useWebsite } from "@/hooks/useWebsite";
-import { BuilderElement } from "@/contexts/BuilderContext";
+import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
 
 const Builder = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,14 +15,15 @@ const Builder = () => {
     isLoading, 
     websiteName, 
     elements,
+    pageSettings,
     setWebsiteName, 
     saveWebsite, 
     publishWebsite,
     updateElements
   } = useWebsite(id, navigate);
 
-  const handleSave = async (updatedElements: BuilderElement[]) => {
-    await saveWebsite(updatedElements);
+  const handleSave = async (updatedElements: BuilderElement[], updatedPageSettings: PageSettings) => {
+    await saveWebsite(updatedElements, updatedPageSettings);
   };
 
   if (isLoading) {
@@ -51,7 +52,11 @@ const Builder = () => {
   }
 
   return (
-    <BuilderProvider initialElements={elements} onSave={handleSave}>
+    <BuilderProvider 
+      initialElements={elements} 
+      initialPageSettings={pageSettings || { title: websiteName }}
+      onSave={handleSave}
+    >
       <BuilderLayout>
         <BuilderNavbar 
           websiteName={websiteName} 
