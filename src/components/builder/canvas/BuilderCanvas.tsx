@@ -31,7 +31,7 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({ isPreviewMode = false }) 
       {elements.length > 0 ? (
         <PageCanvas isPreviewMode={isPreviewMode} />
       ) : (
-        <EmptyCanvasPlaceholder />
+        <EmptyCanvasPlaceholder isPreviewMode={isPreviewMode} />
       )}
     </CanvasDragDropHandler>
   );
