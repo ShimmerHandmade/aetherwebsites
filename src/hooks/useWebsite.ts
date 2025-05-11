@@ -15,6 +15,11 @@ export interface WebsiteData {
   published: boolean;
 }
 
+interface WebsiteSettings {
+  pageSettings?: PageSettings;
+  [key: string]: any;
+}
+
 export const useWebsite = (id: string | undefined, navigate: NavigateFunction) => {
   const [website, setWebsite] = useState<WebsiteData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,6 +60,9 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
         return;
       }
       
+      // Cast settings to WebsiteSettings to work with pageSettings
+      const settings = data.settings as WebsiteSettings;
+      
       // Convert the database response to the correct type
       const websiteData: WebsiteData = {
         id: data.id,
@@ -62,13 +70,13 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
         content: Array.isArray(data.content) ? data.content as unknown as BuilderElement[] : [],
         settings: data.settings,
         // Store page settings from the settings object if it exists
-        pageSettings: data.settings?.pageSettings as unknown as PageSettings || null,
+        pageSettings: settings?.pageSettings || null,
         published: !!data.published
       };
 
       setWebsite(websiteData);
       setWebsiteName(data.name);
-      setPageSettings(data.settings?.pageSettings || { title: data.name });
+      setPageSettings(settings?.pageSettings || { title: data.name });
       
       // Load elements from content if available
       if (data.content && Array.isArray(data.content) && data.content.length > 0) {
