@@ -53,16 +53,16 @@ const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) =
         <Button 
           variant="outline" 
           size="sm" 
-          className="fixed left-24 top-40 z-10 bg-white shadow-md rounded-full h-12 w-12 p-0"
+          className="fixed left-24 top-40 z-10 bg-white shadow-md rounded-full h-12 w-12 p-0 hover:bg-gray-50"
         >
           <Plus className="h-6 w-6" />
         </Button>
 
-        {/* Add Section buttons (Squarespace-style) */}
+        {/* Add Section buttons (Squarespace-style) - more subtle design */}
         <div className="w-full flex justify-center">
           <Button 
             variant="default" 
-            className="fixed top-60 z-10 bg-blue-500 hover:bg-blue-600 text-white shadow-md"
+            className="fixed top-60 z-10 bg-blue-500 hover:bg-blue-600 text-white shadow-md opacity-80 hover:opacity-100 transition-opacity"
           >
             ADD SECTION
           </Button>
@@ -71,7 +71,7 @@ const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) =
         <div className="w-full flex justify-center">
           <Button 
             variant="default" 
-            className="fixed bottom-8 z-10 bg-blue-500 hover:bg-blue-600 text-white shadow-md"
+            className="fixed bottom-8 z-10 bg-blue-500 hover:bg-blue-600 text-white shadow-md opacity-80 hover:opacity-100 transition-opacity"
           >
             ADD SECTION
           </Button>
@@ -96,8 +96,8 @@ const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) =
           </DrawerContent>
         </Drawer>
 
-        {/* Floating contextual edit menu (Squarespace-style) */}
-        <div className="hidden group-hover:flex fixed right-4 top-1/3 z-10 bg-white shadow-lg rounded-md overflow-hidden">
+        {/* Floating contextual edit menu (Squarespace-style) - improved visibility */}
+        <div className="hidden group-hover:flex fixed right-4 top-1/3 z-10 bg-white shadow-lg rounded-md overflow-hidden border border-gray-100">
           <div className="flex flex-col">
             <Button variant="ghost" className="justify-start px-4 py-2 text-sm font-normal">
               <Edit className="h-4 w-4 mr-2" /> EDIT SECTION
