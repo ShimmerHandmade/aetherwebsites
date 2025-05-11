@@ -3,7 +3,7 @@ import React from "react";
 import { PropertyEditorProps } from "./PropertyEditor";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { TextArea } from "@/components/ui/textarea";
 import ContentPropertyEditor from "./ContentPropertyEditor";
 
 const FeaturePropertyEditor: React.FC<PropertyEditorProps> = ({
@@ -24,7 +24,7 @@ const FeaturePropertyEditor: React.FC<PropertyEditorProps> = ({
         <Label htmlFor="featureDescription" className="text-sm text-gray-600 block mb-1">
           Description
         </Label>
-        <Textarea
+        <TextArea
           id="featureDescription"
           value={properties.description || ""}
           onChange={(e) => onPropertyChange("description", e.target.value)}
