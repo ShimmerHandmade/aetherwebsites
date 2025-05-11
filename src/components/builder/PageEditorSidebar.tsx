@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import ElementPalette from "./ElementPalette";
 import ElementProperties from "./ElementProperties";
 import PageSettings from "./PageSettings";
+import ProductManager from "./ProductManager";
 
 interface PageEditorSidebarProps {
   isPreviewMode: boolean;
@@ -20,12 +21,14 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
       <Tabs 
         defaultValue="elements" 
         className="h-full flex flex-col"
+        value={activeTab}
         onValueChange={(value) => setActiveTab(value)}
       >
-        <TabsList className="grid grid-cols-3 mx-4 mt-2">
+        <TabsList className="grid grid-cols-4 mx-4 mt-2">
           <TabsTrigger value="elements">Elements</TabsTrigger>
           <TabsTrigger value="properties">Properties</TabsTrigger>
           <TabsTrigger value="settings">Page</TabsTrigger>
+          <TabsTrigger value="products">Products</TabsTrigger>
         </TabsList>
         
         <ScrollArea className="flex-1 overflow-auto">
@@ -39,6 +42,10 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
           
           <TabsContent value="settings" className="p-4 h-full">
             <PageSettings />
+          </TabsContent>
+          
+          <TabsContent value="products" className="p-4 h-full">
+            <ProductManager />
           </TabsContent>
         </ScrollArea>
       </Tabs>

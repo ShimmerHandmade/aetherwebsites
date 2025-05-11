@@ -9,7 +9,7 @@ interface PageCanvasProps {
 }
 
 const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
-  const { elements } = useBuilder();
+  const { elements, selectedElementId } = useBuilder();
 
   return (
     <div className="w-full h-full">
@@ -20,7 +20,7 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
               key={element.id}
               element={element}
               index={index}
-              selected={false}
+              selected={element.id === selectedElementId}
               isPreviewMode={isPreviewMode}
             />
           ))}
