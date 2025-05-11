@@ -30,9 +30,9 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
   if (isPreviewMode) return null;
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 border-l border-gray-200">
-      <div className="py-4 px-4 border-b border-gray-200">
-        <h2 className="text-lg font-medium">Editor</h2>
+    <div className="h-full flex flex-col bg-slate-50 border-l border-slate-200">
+      <div className="py-5 px-5 border-b border-slate-200">
+        <h2 className="text-xl font-medium text-slate-800">Editor</h2>
       </div>
 
       <Tabs 
@@ -41,13 +41,13 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
         value={activeTab}
         onValueChange={setActiveTab}
       >
-        <div className="border-b border-gray-200 bg-white">
-          <TabsList className="flex w-full justify-start space-x-2 bg-transparent p-0">
+        <div className="border-b border-slate-200 bg-white px-2">
+          <TabsList className="flex w-full justify-start gap-2 bg-transparent p-0">
             <TabsTrigger 
               value="elements" 
               className={cn(
-                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent",
-                activeTab === "elements" ? "border-indigo-600 text-indigo-600" : "text-gray-600"
+                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent",
+                activeTab === "elements" ? "border-indigo-600 text-indigo-600 font-medium" : "text-slate-600"
               )}
             >
               <LayoutGrid className="h-4 w-4" />
@@ -57,8 +57,8 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
             <TabsTrigger 
               value="properties" 
               className={cn(
-                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent",
-                activeTab === "properties" ? "border-indigo-600 text-indigo-600" : "text-gray-600"
+                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent",
+                activeTab === "properties" ? "border-indigo-600 text-indigo-600 font-medium" : "text-slate-600"
               )}
             >
               <Pencil className="h-4 w-4" />
@@ -68,8 +68,8 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
             <TabsTrigger 
               value="settings" 
               className={cn(
-                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent",
-                activeTab === "settings" ? "border-indigo-600 text-indigo-600" : "text-gray-600"
+                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent",
+                activeTab === "settings" ? "border-indigo-600 text-indigo-600 font-medium" : "text-slate-600"
               )}
             >
               <Settings className="h-4 w-4" />
@@ -79,8 +79,8 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
             <TabsTrigger 
               value="products" 
               className={cn(
-                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent",
-                activeTab === "products" ? "border-indigo-600 text-indigo-600" : "text-gray-600"
+                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent",
+                activeTab === "products" ? "border-indigo-600 text-indigo-600 font-medium" : "text-slate-600"
               )}
             >
               <ShoppingBag className="h-4 w-4" />
@@ -90,44 +90,50 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
         </div>
         
         <ScrollArea className="flex-1 overflow-auto">
-          <TabsContent value="elements" className="p-4 h-full m-0">
+          <TabsContent value="elements" className="p-6 h-full m-0">
             <ElementPalette />
           </TabsContent>
           
-          <TabsContent value="properties" className="p-4 h-full m-0">
+          <TabsContent value="properties" className="p-6 h-full m-0">
             <ElementProperties />
           </TabsContent>
           
-          <TabsContent value="settings" className="p-4 h-full m-0">
+          <TabsContent value="settings" className="p-6 h-full m-0">
             <PageSettings />
           </TabsContent>
           
-          <TabsContent value="products" className="p-4 h-full m-0">
+          <TabsContent value="products" className="p-6 h-full m-0">
             <ProductManager />
           </TabsContent>
         </ScrollArea>
       </Tabs>
 
       {/* Squarespace-like navigation sidebar */}
-      <div className="fixed left-0 top-0 bottom-0 w-[60px] hidden md:flex flex-col items-center pt-16 bg-gray-900 text-white">
-        <div className="flex flex-col items-center space-y-6">
-          <button className="p-2 rounded-lg hover:bg-gray-800">
+      <div className="fixed left-0 top-0 bottom-0 w-[60px] hidden md:flex flex-col items-center pt-20 bg-slate-900 text-white">
+        <div className="flex flex-col items-center gap-8">
+          <button className="p-2.5 rounded-lg hover:bg-slate-800 transition-colors group relative">
             <FileText className="h-5 w-5" />
+            <span className="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Pages</span>
           </button>
-          <button className="p-2 rounded-lg hover:bg-gray-800">
+          <button className="p-2.5 rounded-lg hover:bg-slate-800 transition-colors group relative bg-slate-800">
             <LayoutGrid className="h-5 w-5" />
+            <span className="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Page Editor</span>
           </button>
-          <button className="p-2 rounded-lg hover:bg-gray-800">
+          <button className="p-2.5 rounded-lg hover:bg-slate-800 transition-colors group relative">
             <Image className="h-5 w-5" />
+            <span className="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Media</span>
           </button>
-          <button className="p-2 rounded-lg bg-gray-800">
+          <button className="p-2.5 rounded-lg hover:bg-slate-800 transition-colors group relative">
             <Package className="h-5 w-5" />
+            <span className="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Products</span>
           </button>
-          <button className="p-2 rounded-lg hover:bg-gray-800">
+          <button className="p-2.5 rounded-lg hover:bg-slate-800 transition-colors group relative">
             <Users className="h-5 w-5" />
+            <span className="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Customers</span>
           </button>
-          <button className="p-2 rounded-lg hover:bg-gray-800">
+          <button className="p-2.5 rounded-lg hover:bg-slate-800 transition-colors group relative">
             <CreditCard className="h-5 w-5" />
+            <span className="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Payments</span>
           </button>
         </div>
       </div>

@@ -3,10 +3,9 @@ import React, { useState } from "react";
 import BuilderCanvas from "@/components/builder/canvas";
 import PageEditorSidebar from "./PageEditorSidebar";
 import { PreviewModeProps } from "./BuilderLayout";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
-import { ChevronRight, Edit, PanelLeft } from "lucide-react";
+import { ChevronRight, Edit } from "lucide-react";
 
 const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -14,7 +13,7 @@ const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) =
 
   if (isPreviewMode) {
     return (
-      <div className="flex-1 bg-white overflow-auto">
+      <div className="flex-1 bg-slate-100 overflow-auto">
         <BuilderCanvas isPreviewMode={true} />
       </div>
     );
@@ -23,12 +22,12 @@ const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) =
   return (
     <div className="flex-1 flex">
       {/* Left sidebar - visible on desktop */}
-      <div className="hidden md:block w-[60px] bg-gray-900">
+      <div className="hidden md:block w-[60px] bg-slate-900">
         {/* This space is for the vertical sidebar managed by PageEditorSidebar */}
       </div>
 
       {/* Main content area */}
-      <div className="flex-1 bg-white overflow-auto relative">
+      <div className="flex-1 bg-slate-100 overflow-auto relative">
         <BuilderCanvas isPreviewMode={false} />
         
         {/* Desktop view: Side panel for editor */}
@@ -39,9 +38,9 @@ const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) =
         >
           <Button
             variant="outline"
-            size="sm"
+            size="icon"
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className={`absolute top-4 -left-8 bg-white border border-gray-200 rounded-l-md rounded-r-none h-16 px-1 ${
+            className={`absolute top-4 -left-10 bg-white border border-slate-200 rounded-l-md rounded-r-none h-16 w-10 ${
               sidebarOpen ? 'rotate-180' : ''
             }`}
           >
@@ -54,9 +53,9 @@ const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) =
         <Drawer open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
           <DrawerTrigger asChild>
             <Button 
-              variant="outline"
+              variant="default"
               size="sm" 
-              className="fixed bottom-4 right-4 z-10 bg-white shadow-md md:hidden"
+              className="fixed bottom-4 right-4 z-10 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md md:hidden"
             >
               <Edit className="mr-2 h-4 w-4" />
               Edit Page

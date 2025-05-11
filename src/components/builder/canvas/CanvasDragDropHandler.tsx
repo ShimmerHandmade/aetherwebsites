@@ -67,7 +67,11 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
     }
   };
 
-  const canvasClassName = `${className} ${isDraggingOver && !isPreviewMode ? 'bg-blue-50 border-blue-200 border-2' : ''}`;
+  const canvasClassName = `${className} transition-colors duration-150 ${
+    isDraggingOver && !isPreviewMode 
+      ? 'bg-indigo-50 border-indigo-300 border-2 border-dashed shadow-inner' 
+      : ''
+  }`;
 
   return (
     <div 

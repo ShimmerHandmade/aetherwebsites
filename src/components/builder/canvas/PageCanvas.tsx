@@ -12,9 +12,9 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
   const { elements, selectedElementId } = useBuilder();
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full bg-white">
       {elements.length > 0 ? (
-        <div className="page-content">
+        <div className="page-content px-4 py-6">
           {elements.map((element, index) => (
             <BuilderElement
               key={element.id}
