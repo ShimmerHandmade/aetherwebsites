@@ -21,8 +21,8 @@ const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) =
 
   return (
     <div className="flex-1 flex">
-      {/* Left sidebar - visible on desktop */}
-      <div className="hidden md:block w-[60px] bg-slate-900">
+      {/* Left sidebar - visible on desktop - width increased from 60px to 80px */}
+      <div className="hidden md:block w-[80px] bg-slate-900">
         {/* This space is for the vertical sidebar managed by PageEditorSidebar */}
       </div>
 

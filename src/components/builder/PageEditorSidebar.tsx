@@ -108,32 +108,32 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
         </ScrollArea>
       </Tabs>
 
-      {/* Squarespace-like navigation sidebar */}
-      <div className="fixed left-0 top-0 bottom-0 w-[60px] hidden md:flex flex-col items-center pt-20 bg-slate-900 text-white">
-        <div className="flex flex-col items-center gap-8">
-          <button className="p-2.5 rounded-lg hover:bg-slate-800 transition-colors group relative">
-            <FileText className="h-5 w-5" />
-            <span className="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Pages</span>
+      {/* Squarespace-like navigation sidebar - now wider with more spacing */}
+      <div className="fixed left-0 top-0 bottom-0 w-[80px] hidden md:flex flex-col items-center pt-20 bg-slate-900 text-white">
+        <div className="flex flex-col items-center gap-9">
+          <button className="p-3 rounded-lg hover:bg-slate-800 transition-colors group relative">
+            <FileText className="h-6 w-6" />
+            <span className="absolute left-20 bg-slate-800 text-white text-sm px-3 py-1.5 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Pages</span>
           </button>
-          <button className="p-2.5 rounded-lg hover:bg-slate-800 transition-colors group relative bg-slate-800">
-            <LayoutGrid className="h-5 w-5" />
-            <span className="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Page Editor</span>
+          <button className="p-3 rounded-lg hover:bg-slate-800 transition-colors group relative bg-slate-800">
+            <LayoutGrid className="h-6 w-6" />
+            <span className="absolute left-20 bg-slate-800 text-white text-sm px-3 py-1.5 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Page Editor</span>
           </button>
-          <button className="p-2.5 rounded-lg hover:bg-slate-800 transition-colors group relative">
-            <Image className="h-5 w-5" />
-            <span className="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Media</span>
+          <button className="p-3 rounded-lg hover:bg-slate-800 transition-colors group relative">
+            <Image className="h-6 w-6" />
+            <span className="absolute left-20 bg-slate-800 text-white text-sm px-3 py-1.5 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Media</span>
           </button>
-          <button className="p-2.5 rounded-lg hover:bg-slate-800 transition-colors group relative">
-            <Package className="h-5 w-5" />
-            <span className="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Products</span>
+          <button className="p-3 rounded-lg hover:bg-slate-800 transition-colors group relative">
+            <Package className="h-6 w-6" />
+            <span className="absolute left-20 bg-slate-800 text-white text-sm px-3 py-1.5 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Products</span>
           </button>
-          <button className="p-2.5 rounded-lg hover:bg-slate-800 transition-colors group relative">
-            <Users className="h-5 w-5" />
-            <span className="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Customers</span>
+          <button className="p-3 rounded-lg hover:bg-slate-800 transition-colors group relative">
+            <Users className="h-6 w-6" />
+            <span className="absolute left-20 bg-slate-800 text-white text-sm px-3 py-1.5 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Customers</span>
           </button>
-          <button className="p-2.5 rounded-lg hover:bg-slate-800 transition-colors group relative">
-            <CreditCard className="h-5 w-5" />
-            <span className="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Payments</span>
+          <button className="p-3 rounded-lg hover:bg-slate-800 transition-colors group relative">
+            <CreditCard className="h-6 w-6" />
+            <span className="absolute left-20 bg-slate-800 text-white text-sm px-3 py-1.5 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Payments</span>
           </button>
         </div>
       </div>
