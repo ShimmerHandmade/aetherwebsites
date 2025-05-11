@@ -3,12 +3,9 @@ import React from "react";
 import BuilderCanvas from "@/components/builder/BuilderCanvas";
 import ElementPalette from "@/components/builder/ElementPalette";
 import ElementProperties from "@/components/builder/ElementProperties";
+import { PreviewModeProps } from "./BuilderLayout";
 
-interface BuilderContentProps {
-  isPreviewMode?: boolean;
-}
-
-const BuilderContent: React.FC<BuilderContentProps> = ({ isPreviewMode = false }) => {
+const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) => {
   return (
     <div className={`flex-1 ${isPreviewMode ? 'bg-white' : 'bg-gray-100'} overflow-auto flex`}>
       {/* Builder sidebar - hidden in preview mode */}

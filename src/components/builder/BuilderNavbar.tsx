@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Menu, Save, Eye, EyeOff } from "lucide-react";
 import { Toggle } from "@/components/ui/toggle";
+import { PreviewModeProps } from "./BuilderLayout";
 import {
   Sheet,
   SheetContent,
@@ -14,14 +15,12 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-interface BuilderNavbarProps {
+interface BuilderNavbarProps extends PreviewModeProps {
   websiteName: string;
   setWebsiteName: (name: string) => void;
   onSave: () => Promise<void>;
   onPublish: () => Promise<void>;
   isPublished: boolean;
-  isPreviewMode?: boolean;
-  setIsPreviewMode?: (value: boolean) => void;
 }
 
 const BuilderNavbar: React.FC<BuilderNavbarProps> = ({ 
