@@ -1,52 +1,78 @@
 
 import React from "react";
 import { BuilderElement } from "@/contexts/BuilderContext";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ElementProps {
   element: BuilderElement;
-  isPreviewMode?: boolean;
 }
 
-const FormElement: React.FC<ElementProps> = ({ element, isPreviewMode = false }) => {
+const FormElement: React.FC<ElementProps> = ({ element }) => {
+  const fields = element.props?.fields || [
+    { name: "name", label: "Your Name", type: "text", required: true },
+    { name: "email", label: "Your Email", type: "email", required: true },
+    { name: "message", label: "Your Message", type: "textarea", required: true }
+  ];
+  
+  const submitText = element.props?.submitText || "Submit";
+  const layout = element.props?.layout || "vertical";
+  const className = element.props?.className || "";
+  
   return (
-    <div className="p-4 border rounded">
-      <h3 className="text-lg font-medium mb-4">{element.content || "Form"}</h3>
-      <div className="space-y-4">
-        {(element.props?.fields || ['name', 'email']).includes('name') && (
-          <div>
-            <label className="block text-sm font-medium mb-1">Name</label>
-            <input type="text" className="w-full px-3 py-2 border rounded" placeholder="Your name" disabled={isPreviewMode} />
-          </div>
-        )}
-        {(element.props?.fields || ['name', 'email']).includes('email') && (
-          <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input type="email" className="w-full px-3 py-2 border rounded" placeholder="Your email" disabled={isPreviewMode} />
-          </div>
-        )}
-        {(element.props?.fields || []).includes('phone') && (
-          <div>
-            <label className="block text-sm font-medium mb-1">Phone</label>
-            <input type="tel" className="w-full px-3 py-2 border rounded" placeholder="Your phone number" disabled={isPreviewMode} />
-          </div>
-        )}
-        {(element.props?.fields || []).includes('subject') && (
-          <div>
-            <label className="block text-sm font-medium mb-1">Subject</label>
-            <input type="text" className="w-full px-3 py-2 border rounded" placeholder="Subject" disabled={isPreviewMode} />
-          </div>
-        )}
-        {(element.props?.fields || ['name', 'email']).includes('message') && (
-          <div>
-            <label className="block text-sm font-medium mb-1">Message</label>
-            <textarea className="w-full px-3 py-2 border rounded" rows={3} placeholder="Your message" disabled={isPreviewMode}></textarea>
-          </div>
-        )}
-        <button className="px-4 py-2 bg-indigo-600 text-white rounded">
-          {element.props?.submitButtonText || "Submit"}
-        </button>
-      </div>
-    </div>
+    <form className={`space-y-6 ${className}`} onSubmit={(e) => e.preventDefault()}>
+      {layout === "inline" ? (
+        <div className="flex gap-2 items-end">
+          {fields.map((field, index) => (
+            <div key={index} className="flex-1">
+              <Label htmlFor={field.name}>{field.label}</Label>
+              <Input 
+                id={field.name} 
+                name={field.name} 
+                type={field.type} 
+                placeholder={field.label}
+                required={field.required}
+              />
+            </div>
+          ))}
+          <Button type="submit">{submitText}</Button>
+        </div>
+      ) : (
+        <>
+          {fields.map((field, index) => (
+            <div key={index}>
+              <Label htmlFor={field.name} className="mb-2 block">{field.label}</Label>
+              {field.type === "textarea" ? (
+                <Textarea 
+                  id={field.name} 
+                  name={field.name} 
+                  placeholder={field.label}
+                  required={field.required}
+                  rows={4}
+                />
+              ) : field.type === "checkbox" ? (
+                <div className="flex items-center gap-2">
+                  <Checkbox id={field.name} name={field.name} />
+                  <Label htmlFor={field.name} className="text-sm font-normal">{field.label}</Label>
+                </div>
+              ) : (
+                <Input 
+                  id={field.name} 
+                  name={field.name} 
+                  type={field.type} 
+                  placeholder={field.label}
+                  required={field.required}
+                />
+              )}
+            </div>
+          ))}
+          <Button type="submit">{submitText}</Button>
+        </>
+      )}
+    </form>
   );
 };
 
