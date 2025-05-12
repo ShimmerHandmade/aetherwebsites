@@ -39,69 +39,6 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
 
   if (isPreviewMode) return null;
 
-  const basicElements = [
-    { 
-      label: "Text", 
-      icon: Type,
-      onClick: () => addElement({
-        id: uuidv4(),
-        type: "text",
-        content: "Double-click to edit this text",
-        props: {}
-      })
-    },
-    { 
-      label: "Image", 
-      icon: Image,
-      onClick: () => addElement({
-        id: uuidv4(),
-        type: "image",
-        content: "",
-        props: {}
-      })
-    },
-    { 
-      label: "Button", 
-      icon: Square,
-      onClick: () => addElement({
-        id: uuidv4(),
-        type: "button",
-        content: "Click Me",
-        props: {
-          variant: "primary"
-        }
-      })
-    },
-    { 
-      label: "Video", 
-      icon: Video,
-      onClick: () => addElement({
-        id: uuidv4(),
-        type: "video",
-        content: "",
-        props: {
-          controls: true
-        }
-      })
-    },
-    { 
-      label: "Form", 
-      icon: FormInput,
-      onClick: () => addElement({
-        id: uuidv4(),
-        type: "form",
-        content: "",
-        props: {}
-      })
-    }
-  ];
-
-  const handleAddElement = (elementInfo: typeof basicElements[0]) => {
-    if (elementInfo.onClick) {
-      elementInfo.onClick();
-    }
-  };
-
   return (
     <div className="h-full flex flex-col">
       {/* Search bar at top */}
@@ -161,27 +98,6 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
         <ScrollArea className="flex-1">
           {activeTab === "elements" && (
             <div className="p-4">
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-slate-600 mb-3">Basic</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  {basicElements.map((element) => (
-                    <div
-                      key={element.label}
-                      className="flex flex-col items-center justify-center p-3 hover:bg-slate-50 rounded-md cursor-pointer border border-slate-200 transition-colors duration-200"
-                      onClick={() => handleAddElement(element)}
-                    >
-                      <element.icon className="h-6 w-6 mb-2 text-slate-600" />
-                      <span className="text-xs text-slate-600">{element.label}</span>
-                    </div>
-                  ))}
-                  <div
-                    className="flex flex-col items-center justify-center p-3 hover:bg-slate-50 rounded-md cursor-pointer border border-slate-200 transition-colors duration-200"
-                  >
-                    <Plus className="h-6 w-6 mb-2 text-slate-600" />
-                    <span className="text-xs text-slate-600">More</span>
-                  </div>
-                </div>
-              </div>
               <ElementPalette />
             </div>
           )}
