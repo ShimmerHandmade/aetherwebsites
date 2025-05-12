@@ -81,6 +81,23 @@ const Builder = () => {
     }
   }, [website?.settings]);
 
+  // Load page content when currentPageId changes
+  useEffect(() => {
+    if (!website || !currentPageId) return;
+    
+    // Get content for current page
+    const pagesContent = website.settings.pagesContent || {};
+    const pageContent = pagesContent[currentPageId] || [];
+    const pageSettings = website.settings.pagesSettings?.[currentPageId] || { title: websiteName };
+    
+    // Set current page elements and settings
+    setCurrentPageElements(pageContent.length ? pageContent : elements || []);
+    setCurrentPageSettings(pageSettings);
+    
+    console.log("Loaded page content for:", currentPageId, pageContent);
+    
+  }, [currentPageId, website, elements, websiteName]);
+
   // Ensure Home, Shop and About pages exist
   const ensureRequiredPages = async () => {
     if (!website?.settings?.pages) return;
@@ -143,23 +160,6 @@ const Builder = () => {
       await saveWebsite(website.content, website.pageSettings, updatedSettings);
     }
   };
-
-  // Load page content when currentPageId changes
-  useEffect(() => {
-    if (!website || !currentPageId) return;
-    
-    // Get content for current page
-    const pagesContent = website.settings.pagesContent || {};
-    const pageContent = pagesContent[currentPageId] || [];
-    const pageSettings = website.settings.pagesSettings?.[currentPageId] || { title: websiteName };
-    
-    // Set current page elements and settings
-    setCurrentPageElements(pageContent.length ? pageContent : elements || []);
-    setCurrentPageSettings(pageSettings);
-    
-    console.log("Loaded page content for:", currentPageId, pageContent);
-    
-  }, [currentPageId, website, elements, websiteName]);
 
   const handleSave = async () => {
     if (!currentPageId || !website) return;
