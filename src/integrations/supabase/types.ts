@@ -12,33 +12,27 @@ export type Database = {
       plans: {
         Row: {
           annual_price: number
-          created_at: string
-          description: string
+          description: string | null
           features: Json
           id: string
           monthly_price: number
           name: string
-          updated_at: string
         }
         Insert: {
           annual_price: number
-          created_at?: string
-          description: string
-          features: Json
+          description?: string | null
+          features?: Json
           id?: string
           monthly_price: number
           name: string
-          updated_at?: string
         }
         Update: {
           annual_price?: number
-          created_at?: string
-          description?: string
+          description?: string | null
           features?: Json
           id?: string
           monthly_price?: number
           name?: string
-          updated_at?: string
         }
         Relationships: []
       }
@@ -144,15 +138,7 @@ export type Database = {
           subscription_type?: string | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_plan_id_fkey"
-            columns: ["plan_id"]
-            isOneToOne: false
-            referencedRelation: "plans"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       websites: {
         Row: {
