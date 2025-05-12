@@ -1,12 +1,15 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { BuilderElement } from "@/contexts/BuilderContext";
+import { Menu } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ElementProps {
   element: BuilderElement;
 }
 
 const NavbarElement: React.FC<ElementProps> = ({ element }) => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const siteName = element.props?.siteName || "Your Website";
   const logo = element.props?.logo || "";
   const links = element.props?.links || [
@@ -21,16 +24,25 @@ const NavbarElement: React.FC<ElementProps> = ({ element }) => {
   const navbarStyles = {
     default: "bg-white shadow-sm border-b border-gray-200",
     transparent: "bg-transparent",
-    dark: "bg-gray-900 text-white"
+    dark: "bg-gray-900 text-white",
+    primary: "bg-indigo-600 text-white",
+    accent: "bg-amber-500 text-white"
   };
   
   // Link styles based on variant
   const linkStyles = {
     default: "text-gray-600 hover:text-indigo-600 transition-colors font-medium",
     transparent: "text-gray-800 hover:text-indigo-600 transition-colors font-medium",
-    dark: "text-gray-300 hover:text-white transition-colors font-medium"
+    dark: "text-gray-300 hover:text-white transition-colors font-medium",
+    primary: "text-white/80 hover:text-white transition-colors font-medium",
+    accent: "text-white/90 hover:text-white transition-colors font-medium"
   };
   
+  // Handle mobile menu toggle
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
   return (
     <header className={navbarStyles[variant as keyof typeof navbarStyles]}>
       <div className="container mx-auto p-4">
@@ -39,11 +51,19 @@ const NavbarElement: React.FC<ElementProps> = ({ element }) => {
             {logo ? (
               <img src={logo} alt={`${siteName} logo`} className="h-8" />
             ) : (
-              <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white font-bold">
+              <div className={cn(
+                "w-8 h-8 rounded flex items-center justify-center text-white font-bold",
+                variant === 'default' || variant === 'transparent' ? 'bg-indigo-600' : 'bg-white/20'
+              )}>
                 {siteName.charAt(0)}
               </div>
             )}
-            <span className={`text-lg font-bold ${variant === 'dark' ? 'text-white' : 'text-gray-800'}`}>{siteName}</span>
+            <span className={cn(
+              "text-lg font-bold", 
+              variant === 'dark' || variant === 'primary' || variant === 'accent' ? 'text-white' : 'text-gray-800'
+            )}>
+              {siteName}
+            </span>
           </div>
           
           <nav className="hidden md:block">
@@ -63,15 +83,37 @@ const NavbarElement: React.FC<ElementProps> = ({ element }) => {
           
           <div className="md:hidden">
             <button 
-              className={`p-2 ${variant === 'dark' ? 'text-gray-300' : 'text-gray-600'} hover:bg-gray-100 hover:text-gray-900 rounded-md transition-colors`}
+              className={cn(
+                "p-2 rounded-md transition-colors",
+                variant === 'dark' || variant === 'primary' || variant === 'accent' ? 
+                  'text-white/80 hover:bg-white/10 hover:text-white' : 
+                  'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              )}
               aria-label="Menu"
+              onClick={toggleMobileMenu}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <Menu className="h-6 w-6" />
             </button>
           </div>
         </div>
+
+        {/* Mobile navigation */}
+        {mobileMenuOpen && (
+          <div className="md:hidden mt-4 pt-4 border-t border-gray-100">
+            <div className="flex flex-col space-y-3">
+              {links.map((link, index) => (
+                <a
+                  key={index}
+                  href={link.url}
+                  className={linkStyles[variant as keyof typeof linkStyles]}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {link.text}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );

@@ -6,6 +6,7 @@ import BuilderNavbar from "@/components/builder/BuilderNavbar";
 import BuilderContent from "@/components/builder/BuilderContent";
 import { useWebsite } from "@/hooks/useWebsite";
 import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
+import { useState } from "react";
 
 const Builder = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +22,9 @@ const Builder = () => {
     publishWebsite,
     updateElements
   } = useWebsite(id, navigate);
+  
+  // Track preview mode state at this level
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   const handleSave = async (updatedElements: BuilderElement[], updatedPageSettings: PageSettings) => {
     await saveWebsite(updatedElements, updatedPageSettings);
@@ -57,7 +61,7 @@ const Builder = () => {
       initialPageSettings={pageSettings || { title: websiteName }}
       onSave={handleSave}
     >
-      <BuilderLayout>
+      <BuilderLayout isPreviewMode={isPreviewMode} setIsPreviewMode={setIsPreviewMode}>
         <BuilderNavbar 
           websiteName={websiteName} 
           setWebsiteName={setWebsiteName} 
@@ -66,8 +70,10 @@ const Builder = () => {
           }} 
           onPublish={publishWebsite}
           isPublished={website.published}
+          isPreviewMode={isPreviewMode}
+          setIsPreviewMode={setIsPreviewMode}
         />
-        <BuilderContent />
+        <BuilderContent isPreviewMode={isPreviewMode} />
       </BuilderLayout>
     </BuilderProvider>
   );

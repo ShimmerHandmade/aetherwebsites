@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Menu, Save, Eye, EyeOff, Settings, Monitor, Smartphone, FileIcon } from "lucide-react";
+import { Menu, Save, Eye, EyeOff, Settings, Monitor, Smartphone, FileIcon, LayoutTemplate, ShoppingBag } from "lucide-react";
 import { Toggle } from "@/components/ui/toggle";
 import { PreviewModeProps } from "./BuilderLayout";
 import { useBuilder } from "@/contexts/BuilderContext";
@@ -78,7 +78,13 @@ const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
                       <FileIcon className="h-4 w-4 mr-2" /> Pages
                     </button>
                     <button className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left">
-                      <Settings className="h-4 w-4 mr-2" /> Settings
+                      <LayoutTemplate className="h-4 w-4 mr-2" /> Site Settings
+                    </button>
+                    <button className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left">
+                      <ShoppingBag className="h-4 w-4 mr-2" /> Products
+                    </button>
+                    <button className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left">
+                      <Settings className="h-4 w-4 mr-2" /> Page Settings
                     </button>
                   </nav>
                 </div>
