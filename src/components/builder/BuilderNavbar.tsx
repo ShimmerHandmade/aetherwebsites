@@ -62,6 +62,7 @@ const BuilderNavbar = ({
   onChangePage,
   onShopLinkClick
 }: BuilderNavbarProps) => {
+  const [activeTab, setActiveTab] = useState("edit");
   const [autoSave, setAutoSave] = useState(true);
 
   useEffect(() => {
@@ -81,68 +82,114 @@ const BuilderNavbar = ({
   }, [websiteName, autoSave, onSave]);
 
   return (
-    <div className="w-full h-14 flex items-center border-b border-slate-200 bg-white px-4 justify-between">
-      <div className="flex items-center space-x-4">
-        <Input
-          className="w-48 h-8 text-sm font-medium"
-          value={websiteName}
-          onChange={(e) => setWebsiteName(e.target.value)}
-        />
+    <div className="w-full flex flex-col bg-white border-b border-slate-200">
+      {/* Top bar */}
+      <div className="h-14 flex items-center px-4 justify-between">
+        <div className="flex items-center space-x-4">
+          <Input
+            className="w-48 h-8 text-sm font-medium"
+            value={websiteName}
+            onChange={(e) => setWebsiteName(e.target.value)}
+            placeholder="Website Name"
+          />
 
-        <Select
-          value={currentPage?.id || ""}
-          onValueChange={(value) => onChangePage(value)}
-        >
-          <SelectTrigger className="w-32 h-8">
-            <SelectValue placeholder="Select page" />
-          </SelectTrigger>
-          <SelectContent>
-            {pages.map((page) => (
-              <SelectItem key={page.id} value={page.id}>
-                {page.title} {page.isHomePage ? "(Home)" : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Shop link */}
-        {onShopLinkClick && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="flex items-center gap-1" 
-            onClick={onShopLinkClick}
+          <Select
+            value={currentPage?.id || ""}
+            onValueChange={(value) => onChangePage(value)}
           >
-            <Store className="h-4 w-4" />
-            Shop
+            <SelectTrigger className="w-40 h-8">
+              <SelectValue placeholder="Select page" />
+            </SelectTrigger>
+            <SelectContent>
+              {pages.map((page) => (
+                <SelectItem key={page.id} value={page.id}>
+                  {page.title} {page.isHomePage ? "(Home)" : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Shop link */}
+          {onShopLinkClick && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="flex items-center gap-1" 
+              onClick={onShopLinkClick}
+            >
+              <Store className="h-4 w-4" />
+              Shop
+            </Button>
+          )}
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm" onClick={() => setAutoSave(!autoSave)}>
+            {autoSave ? "Auto-save: On" : "Auto-save: Off"}
           </Button>
-        )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsPreviewMode(!isPreviewMode)}
+          >
+            {isPreviewMode ? (
+              <>
+                <EyeOff className="mr-2 h-4 w-4" />
+                Exit Preview
+              </>
+            ) : (
+              <>
+                <Eye className="mr-2 h-4 w-4" />
+                Preview
+              </>
+            )}
+          </Button>
+          <Button size="sm" onClick={onSave}>
+            Save
+          </Button>
+          <Button size="sm" onClick={onPublish} disabled={isPublished}>
+            Publish
+          </Button>
+        </div>
       </div>
 
-      <div className="flex items-center space-x-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setIsPreviewMode(!isPreviewMode)}
-        >
-          {isPreviewMode ? (
-            <>
-              <EyeOff className="mr-2 h-4 w-4" />
-              Exit Preview
-            </>
-          ) : (
-            <>
-              <Eye className="mr-2 h-4 w-4" />
-              Preview
-            </>
-          )}
-        </Button>
-        <Button size="sm" onClick={onSave}>
-          Save
-        </Button>
-        <Button size="sm" onClick={onPublish} disabled={isPublished}>
-          Publish
-        </Button>
+      {/* Tabs row */}
+      <div className="px-4 border-t border-slate-200">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="bg-transparent h-10 p-0 border-b border-transparent gap-4">
+            <TabsTrigger 
+              value="edit" 
+              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
+            >
+              <PanelsTopLeft className="h-4 w-4 mr-2" />
+              Edit
+            </TabsTrigger>
+            <TabsTrigger 
+              value="settings" 
+              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </TabsTrigger>
+            {onShopLinkClick && (
+              <TabsTrigger 
+                value="shop" 
+                className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
+                onClick={onShopLinkClick}
+              >
+                <Store className="h-4 w-4 mr-2" />
+                Shop
+              </TabsTrigger>
+            )}
+            <TabsTrigger 
+              value="publish" 
+              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
+            >
+              <Globe className="h-4 w-4 mr-2" />
+              Publish
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
     </div>
   );
