@@ -91,6 +91,7 @@ const Dashboard = () => {
         return;
       }
       
+      // Make sure all websites have the new /site/:id format for viewing
       setWebsites(data || []);
     } catch (error) {
       console.error("Error in fetchWebsites:", error);

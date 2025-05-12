@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
 import BuilderLayout from "@/components/builder/BuilderLayout";
@@ -229,6 +228,10 @@ const Builder = () => {
     navigate('/dashboard');
   };
 
+  const handleViewSite = () => {
+    window.open(`/site/${id}`, '_blank');
+  };
+
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -294,6 +297,7 @@ const Builder = () => {
           onChangePage={handleChangePage}
           onShopLinkClick={handleShopLinkClick}
           onReturnToDashboard={handleReturnToDashboard}
+          viewSiteUrl={`/site/${id}`} // Updated to use new URL format
         />
         <BuilderContent isPreviewMode={isPreviewMode} />
       </BuilderLayout>

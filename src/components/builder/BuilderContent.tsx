@@ -11,11 +11,12 @@ const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) =
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   
-  // Check if we're in full preview mode via URL parameter
-  const isFullPreview = isPreviewMode && new URLSearchParams(window.location.search).get('preview') === 'true';
+  // Always check if we're on the /site/:id route to ensure we're in full preview mode
+  const isSiteRoute = window.location.pathname.includes('/site/');
+  const isFullPreview = isPreviewMode && (isSiteRoute || new URLSearchParams(window.location.search).get('preview') === 'true');
 
   // For full preview mode, render just the canvas without any UI controls
-  if (isFullPreview) {
+  if (isFullPreview || isSiteRoute) {
     return (
       <div className="flex-1 min-h-screen">
         <BuilderCanvas isPreviewMode={true} />

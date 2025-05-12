@@ -26,7 +26,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/builder/:id" element={<Builder />} />
-          <Route path="/view/:id" element={<WebsiteViewer />} />
+          <Route path="/site/:id" element={<WebsiteViewer />} /> {/* Changed from /view/:id to /site/:id */}
           <Route path="/builder/:id/shop" element={<Shop />} />
           <Route path="/builder/:id/products" element={<Products />} />
           <Route path="/builder/:id/pages" element={<Pages />} />
