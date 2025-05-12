@@ -107,8 +107,11 @@ export type Database = {
           id: string
           is_subscribed: boolean | null
           plan_id: string | null
+          stripe_customer_id: string | null
           subscription_end: string | null
+          subscription_id: string | null
           subscription_start: string | null
+          subscription_status: string | null
           subscription_type: string | null
           updated_at: string
         }
@@ -120,8 +123,11 @@ export type Database = {
           id: string
           is_subscribed?: boolean | null
           plan_id?: string | null
+          stripe_customer_id?: string | null
           subscription_end?: string | null
+          subscription_id?: string | null
           subscription_start?: string | null
+          subscription_status?: string | null
           subscription_type?: string | null
           updated_at?: string
         }
@@ -133,12 +139,62 @@ export type Database = {
           id?: string
           is_subscribed?: boolean | null
           plan_id?: string | null
+          stripe_customer_id?: string | null
           subscription_end?: string | null
+          subscription_id?: string | null
           subscription_start?: string | null
+          subscription_status?: string | null
           subscription_type?: string | null
           updated_at?: string
         }
         Relationships: []
+      }
+      subscription_history: {
+        Row: {
+          amount_paid: number
+          created_at: string
+          currency: string | null
+          end_date: string | null
+          id: string
+          plan_id: string
+          start_date: string
+          status: string
+          subscription_type: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid: number
+          created_at?: string
+          currency?: string | null
+          end_date?: string | null
+          id?: string
+          plan_id: string
+          start_date?: string
+          status: string
+          subscription_type: string
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number
+          created_at?: string
+          currency?: string | null
+          end_date?: string | null
+          id?: string
+          plan_id?: string
+          start_date?: string
+          status?: string
+          subscription_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_history_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       websites: {
         Row: {

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +18,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import DashboardNavbar from "@/components/DashboardNavbar";
 import { Profile as ProfileType } from "@/pages/Dashboard";
+import SubscriptionManager from "@/components/SubscriptionManager";
 
 const profileSchema = z.object({
   full_name: z.string().min(2, { message: "Name must be at least 2 characters" }).optional(),
@@ -27,6 +29,8 @@ const Profile = () => {
   const [profile, setProfile] = useState<ProfileType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [productCount, setProductCount] = useState(0);
+  const [pageCount, setPageCount] = useState(0);
   const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof profileSchema>>({
@@ -47,6 +51,7 @@ const Profile = () => {
       }
       
       fetchUserData();
+      fetchStatsData();
     };
 
     checkAuth();
@@ -61,7 +66,7 @@ const Profile = () => {
       
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("*, plans:plan_id(*)")
         .eq("id", user.id)
         .single();
       
@@ -79,6 +84,40 @@ const Profile = () => {
       console.error("Error in fetchUserData:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchStatsData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      // Count products
+      const { count: productsCount, error: productsError } = await supabase
+        .from("products")
+        .select("id", { count: 'exact', head: true })
+        .eq("user_id", user.id);
+      
+      if (productsError) {
+        console.error("Error counting products:", productsError);
+      } else {
+        setProductCount(productsCount || 0);
+      }
+      
+      // Count pages (simplified, in a real app you would count pages from websites)
+      const { data: websites, error: websitesError } = await supabase
+        .from("websites")
+        .select("id")
+        .eq("owner_id", user.id);
+      
+      if (websitesError) {
+        console.error("Error fetching websites:", websitesError);
+      } else {
+        // This is a simplified example, in a real app you would count actual pages
+        setPageCount(websites?.length || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching stats:", error);
     }
   };
 
@@ -112,82 +151,82 @@ const Profile = () => {
     }
   };
 
+  const handleSubscriptionUpdated = () => {
+    fetchUserData();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardNavbar profile={profile} />
       
       <main className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h1 className="text-2xl font-bold mb-6">Profile Settings</h1>
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-2xl font-bold mb-6">Account Management</h1>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Profile Settings */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-xl font-bold mb-6">Profile Settings</h2>
+              
+              {isLoading ? (
+                <div className="py-8 text-center">
+                  <div className="h-12 w-12 border-4 border-t-indigo-600 border-r-indigo-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading profile...</p>
+                </div>
+              ) : (
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="full_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Your name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="example@email.com" 
+                              disabled 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <Button 
+                      type="submit" 
+                      className="bg-gradient-to-r from-indigo-600 to-purple-600"
+                      disabled={isSaving}
+                    >
+                      {isSaving ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </form>
+                </Form>
+              )}
+            </div>
             
-            {isLoading ? (
-              <div className="py-8 text-center">
-                <div className="h-12 w-12 border-4 border-t-indigo-600 border-r-indigo-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading profile...</p>
-              </div>
-            ) : (
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="full_name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Your name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="example@email.com" 
-                            disabled 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {profile?.is_subscribed && (
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                      <h3 className="font-medium mb-2">Subscription Information</h3>
-                      <p className="text-sm text-gray-600 mb-2">
-                        Plan: <span className="font-medium">{profile?.plan_id}</span>
-                      </p>
-                      <p className="text-sm text-gray-600 mb-2">
-                        Type: <span className="font-medium capitalize">{profile?.subscription_type}</span>
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Renews: <span className="font-medium">
-                          {profile?.subscription_end ? new Date(profile.subscription_end).toLocaleDateString() : "N/A"}
-                        </span>
-                      </p>
-                    </div>
-                  )}
-                  
-                  <Button 
-                    type="submit" 
-                    className="bg-gradient-to-r from-indigo-600 to-purple-600"
-                    disabled={isSaving}
-                  >
-                    {isSaving ? "Saving..." : "Save Changes"}
-                  </Button>
-                </form>
-              </Form>
-            )}
+            {/* Subscription Management */}
+            <SubscriptionManager 
+              profile={profile} 
+              productCount={productCount}
+              pageCount={pageCount}
+              onSubscriptionUpdated={handleSubscriptionUpdated}
+            />
           </div>
         </div>
       </main>

@@ -13,6 +13,7 @@ import Pages from "@/pages/builder/Pages";
 import PageSettings from "@/pages/builder/PageSettings";
 import SiteSettings from "@/pages/builder/SiteSettings";
 import NotFound from "@/pages/NotFound";
+import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -26,12 +27,13 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/builder/:id" element={<Builder />} />
-          <Route path="/site/:id" element={<WebsiteViewer />} /> {/* Changed from /view/:id to /site/:id */}
+          <Route path="/site/:id" element={<WebsiteViewer />} />
           <Route path="/builder/:id/shop" element={<Shop />} />
           <Route path="/builder/:id/products" element={<Products />} />
           <Route path="/builder/:id/pages" element={<Pages />} />
           <Route path="/builder/:id/page-settings" element={<PageSettings />} />
           <Route path="/builder/:id/settings" element={<SiteSettings />} />
+          <Route path="/subscription-success" element={<SubscriptionSuccess />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
