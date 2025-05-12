@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { PropertyEditorProps } from "./PropertyEditor";
 import { Label } from "@/components/ui/label";
@@ -9,6 +8,7 @@ import ContentPropertyEditor from "./ContentPropertyEditor";
 import { Upload, Loader2 } from "lucide-react";
 import { uploadProductImage } from "@/api/products";
 import { useParams } from "react-router-dom";
+import { toast } from "sonner";
 
 const ImagePropertyEditor: React.FC<PropertyEditorProps> = ({
   element,
@@ -21,12 +21,27 @@ const ImagePropertyEditor: React.FC<PropertyEditorProps> = ({
   
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !websiteId) return;
+    if (!file || !websiteId) {
+      toast.error("No file selected or missing website ID");
+      return;
+    }
+    
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File too large", {
+        description: "Maximum file size is 5MB"
+      });
+      return;
+    }
     
     setIsUploading(true);
     
     try {
-      // First upload to Supabase storage
+      // Show immediate feedback with a local preview
+      const objectUrl = URL.createObjectURL(file);
+      onPropertyChange("src", objectUrl);
+      
+      // Upload to Supabase storage
       const imageUrl = await uploadProductImage(
         file, 
         websiteId, 
@@ -34,26 +49,16 @@ const ImagePropertyEditor: React.FC<PropertyEditorProps> = ({
       );
       
       if (imageUrl) {
-        // Set the actual image URL from Supabase
+        // Update with the actual Supabase URL
         onPropertyChange("src", imageUrl);
         console.log("Image uploaded and URL set:", imageUrl);
       } else {
-        // Fallback to base64 if Supabase upload fails
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          onPropertyChange("src", reader.result as string);
-        };
-        reader.readAsDataURL(file);
+        // If upload fails but we already set a preview, keep it
+        toast.error("Upload to storage failed, using local preview");
       }
     } catch (error) {
-      console.error("Error uploading image:", error);
-      
-      // Fallback to base64 if Supabase upload fails
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        onPropertyChange("src", reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      console.error("Error in image upload process:", error);
+      toast.error("Error uploading image");
     } finally {
       setIsUploading(false);
     }
@@ -99,7 +104,7 @@ const ImagePropertyEditor: React.FC<PropertyEditorProps> = ({
                   </>
                 )}
                 <span className="text-xs text-gray-400">
-                  PNG, JPG, GIF up to 10MB
+                  PNG, JPG, GIF up to 5MB
                 </span>
               </div>
             </label>
@@ -111,6 +116,12 @@ const ImagePropertyEditor: React.FC<PropertyEditorProps> = ({
                 src={properties.src} 
                 alt="Preview" 
                 className="max-h-40 mx-auto rounded-md"
+                onError={(e) => {
+                  console.error("Error loading preview image:", properties.src);
+                  e.currentTarget.classList.add("border", "border-red-500");
+                  e.currentTarget.style.display = "none";
+                  toast.error("Failed to load image preview");
+                }}
               />
             </div>
           )}
