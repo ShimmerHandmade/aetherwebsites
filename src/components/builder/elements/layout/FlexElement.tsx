@@ -15,9 +15,11 @@ const FlexElement: React.FC<ElementProps> = ({ element }) => {
               element.props?.align === 'end' ? 'items-end' :
               element.props?.align === 'stretch' ? 'items-stretch' : 'items-center';
   const wrap = element.props?.wrap ? 'flex-wrap' : 'flex-nowrap';
+  const gap = element.props?.gap === 'large' ? 'gap-6' : 
+              element.props?.gap === 'small' ? 'gap-2' : 'gap-4';
   
   return (
-    <div className={`flex ${direction} ${justify} ${align} ${wrap} p-4 gap-4 border border-dashed border-gray-300`}>
+    <div className={`flex ${direction} ${justify} ${align} ${wrap} ${gap} p-4 border border-dashed border-gray-300 hover:border-blue-300 transition-colors rounded-md`}>
       {element.children && element.children.length > 0 ? (
         element.children.map((child, index) => (
           <div key={index} className="flex-1 min-w-0">
@@ -27,8 +29,16 @@ const FlexElement: React.FC<ElementProps> = ({ element }) => {
         ))
       ) : (
         <>
-          <div className="bg-gray-100 p-4 flex-1">Flex Item 1</div>
-          <div className="bg-gray-100 p-4 flex-1">Flex Item 2</div>
+          <div className="bg-gray-100 p-4 flex-1 rounded-md shadow-sm">
+            <div className="aspect-video flex items-center justify-center">
+              Flex Item 1
+            </div>
+          </div>
+          <div className="bg-gray-100 p-4 flex-1 rounded-md shadow-sm">
+            <div className="aspect-video flex items-center justify-center">
+              Flex Item 2
+            </div>
+          </div>
         </>
       )}
     </div>
