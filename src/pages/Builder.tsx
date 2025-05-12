@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
 import BuilderLayout from "@/components/builder/BuilderLayout";
@@ -55,12 +54,12 @@ const Builder = () => {
         }
       }
 
-      // Ensure we have at least a home page and a shop page
+      // Ensure we have at least a home page, shop page, and about page
       ensureRequiredPages();
     }
   }, [website]);
 
-  // Ensure Home and Shop pages exist
+  // Ensure Home, Shop and About pages exist
   const ensureRequiredPages = async () => {
     if (!website?.settings?.pages) return;
     
@@ -96,6 +95,19 @@ const Builder = () => {
         isHomePage: false
       };
       updatedPages.push(newShopPage);
+      hasChanged = true;
+    }
+    
+    // Add About page if it doesn't exist
+    const aboutPage = updatedPages.find(page => page.title.toLowerCase() === 'about');
+    if (!aboutPage) {
+      const newAboutPage = {
+        id: uuidv4(),
+        title: 'About',
+        slug: '/about',
+        isHomePage: false
+      };
+      updatedPages.push(newAboutPage);
       hasChanged = true;
     }
     
@@ -167,6 +179,14 @@ const Builder = () => {
     setCurrentPageId(pageId);
   };
 
+  const handleShopLinkClick = () => {
+    // Save current page first
+    handleSave();
+    
+    // Navigate to the shop page
+    navigate(`/builder/${id}/shop`);
+  };
+
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -192,7 +212,7 @@ const Builder = () => {
     );
   }
 
-  const pages = website.settings.pages || [];
+  const pages = website?.settings?.pages || [];
   const currentPage = pages.find(page => page.id === currentPageId);
 
   return (
@@ -207,12 +227,13 @@ const Builder = () => {
           setWebsiteName={setWebsiteName} 
           onSave={handleSave} 
           onPublish={publishWebsite}
-          isPublished={website.published}
+          isPublished={website?.published}
           isPreviewMode={isPreviewMode}
           setIsPreviewMode={setIsPreviewMode}
           currentPage={currentPage}
           pages={pages}
           onChangePage={handleChangePage}
+          onShopLinkClick={handleShopLinkClick}
         />
         <BuilderContent isPreviewMode={isPreviewMode} />
       </BuilderLayout>
