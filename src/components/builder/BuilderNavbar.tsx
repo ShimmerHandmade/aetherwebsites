@@ -105,7 +105,7 @@ const BuilderNavbar = ({
           </SelectContent>
         </Select>
 
-        {/* Add the Shop link */}
+        {/* Shop link */}
         {onShopLinkClick && (
           <Button 
             variant="ghost" 
