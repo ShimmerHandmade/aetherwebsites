@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import ContentPropertyEditor from "./ContentPropertyEditor";
 
 const HeroPropertyEditor: React.FC<PropertyEditorProps> = ({
   element,
@@ -31,8 +30,12 @@ const HeroPropertyEditor: React.FC<PropertyEditorProps> = ({
               </Label>
               <Input
                 id="heroTitle"
-                value={element.content || ""}
-                onChange={(e) => onContentChange(e.target.value)}
+                value={properties.title || element.content || ""}
+                onChange={(e) => {
+                  onPropertyChange("title", e.target.value);
+                  // Also update content for backward compatibility
+                  onContentChange(e.target.value);
+                }}
                 className="w-full"
               />
             </div>

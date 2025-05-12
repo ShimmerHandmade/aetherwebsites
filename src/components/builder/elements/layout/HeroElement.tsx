@@ -8,7 +8,7 @@ interface ElementProps {
 
 const HeroElement: React.FC<ElementProps> = ({ element }) => {
   // Extract properties with defaults
-  const title = element.content || "Hero Title";
+  const title = element.props?.title || element.content || "Hero Title";
   const subtitle = element.props?.subtitle || "This is a hero section. Click to edit.";
   const buttonText = element.props?.buttonText || "Call to Action";
   const buttonLink = element.props?.buttonLink || "#";
