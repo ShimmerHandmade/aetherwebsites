@@ -12,6 +12,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper logging function for enhanced debugging
+const logStep = (step: string, details?: any) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[SUBSCRIPTION-WEBHOOK] ${step}${detailsStr}`);
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -19,6 +25,7 @@ serve(async (req) => {
 
   const signature = req.headers.get("stripe-signature");
   if (!signature) {
+    logStep("ERROR: No signature provided");
     return new Response(JSON.stringify({ error: "No signature provided" }), {
       status: 400,
       headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -30,7 +37,7 @@ serve(async (req) => {
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
     
     if (!webhookSecret) {
-      console.error("Missing STRIPE_WEBHOOK_SECRET");
+      logStep("ERROR: Missing STRIPE_WEBHOOK_SECRET");
       return new Response(JSON.stringify({ error: "Server configuration error" }), {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -40,9 +47,11 @@ serve(async (req) => {
     // Verify the event came from Stripe
     let event;
     try {
+      logStep("Verifying Stripe signature");
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      logStep("Signature verified successfully", { eventType: event.type });
     } catch (err) {
-      console.error(`Webhook signature verification failed: ${err.message}`);
+      logStep(`Webhook signature verification failed: ${err.message}`);
       return new Response(JSON.stringify({ error: `Webhook Error: ${err.message}` }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -68,13 +77,13 @@ serve(async (req) => {
         const planId = metadata.plan_id;
         
         if (!userId || !planId) {
-          console.error("Missing user_id or plan_id in subscription metadata", metadata);
+          logStep("ERROR: Missing user_id or plan_id in subscription metadata", metadata);
           break;
         }
 
         // Get customer's email for logging purposes
         const customer = await stripe.customers.retrieve(customerId);
-        console.log(`Processing subscription event for user: ${customer.email}, Plan: ${planId}`);
+        logStep(`Processing subscription event for user: ${customer.email}, Plan: ${planId}`);
 
         // Update profile with subscription status
         await supabaseAdmin
@@ -112,6 +121,12 @@ serve(async (req) => {
               start_date: new Date(subscription.current_period_start * 1000).toISOString(),
               end_date: new Date(subscription.current_period_end * 1000).toISOString(),
             });
+            
+            logStep("Recorded subscription in history", { 
+              userId, 
+              planId, 
+              status: subscription.status 
+            });
           }
         }
         break;
@@ -121,11 +136,11 @@ serve(async (req) => {
         const invoice = event.data.object;
         if (invoice.subscription) {
           const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
-          const userId = subscription.metadata.user_id;
-          const planId = subscription.metadata.plan_id;
+          const userId = subscription.metadata?.user_id;
+          const planId = subscription.metadata?.plan_id;
           
           if (userId && planId) {
-            console.log(`Payment succeeded for user: ${userId}, Plan: ${planId}`);
+            logStep(`Payment succeeded for user: ${userId}, Plan: ${planId}`);
             
             // Update subscription_end date
             await supabaseAdmin
@@ -144,10 +159,10 @@ serve(async (req) => {
         const invoice = event.data.object;
         if (invoice.subscription) {
           const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
-          const userId = subscription.metadata.user_id;
+          const userId = subscription.metadata?.user_id;
           
           if (userId) {
-            console.log(`Payment failed for user: ${userId}`);
+            logStep(`Payment failed for user: ${userId}`);
             // You could notify the user or take other actions here
           }
         }
@@ -155,16 +170,17 @@ serve(async (req) => {
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        logStep(`Unhandled event type: ${event.type}`);
     }
 
-    return new Response(JSON.stringify({ received: true }), {
+    return new Response(JSON.stringify({ received: true, event_type: event.type }), {
       headers: { "Content-Type": "application/json", ...corsHeaders },
       status: 200,
     });
   } catch (error) {
-    console.error(`Error handling webhook: ${error.message}`);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logStep(`ERROR handling webhook: ${errorMessage}`);
+    return new Response(JSON.stringify({ error: "Internal server error", details: errorMessage }), {
       status: 500,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });

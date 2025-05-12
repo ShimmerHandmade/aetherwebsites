@@ -9,6 +9,7 @@ import DashboardNavbar from "@/components/DashboardNavbar";
 import WebsiteCard from "@/components/WebsiteCard";
 import PlansSection from "@/components/PlansSection";
 import OnboardingFlow from "@/components/OnboardingFlow";
+import RefreshSubscriptionButton from "@/components/RefreshSubscriptionButton";
 
 export type Website = {
   id: string;
@@ -26,7 +27,7 @@ export type Profile = {
   plan_id: string | null;
   is_subscribed: boolean;
   subscription_type: string | null;
-  subscription_end: string | null; // Added this property
+  subscription_end: string | null;
 };
 
 const Dashboard = () => {
@@ -94,7 +95,6 @@ const Dashboard = () => {
         return;
       }
       
-      // Make sure all websites have the new /site/:id format for viewing
       setWebsites(data || []);
     } catch (error) {
       console.error("Error in fetchWebsites:", error);
@@ -157,9 +157,16 @@ const Dashboard = () => {
       <main className="container mx-auto px-4 py-8">
         {!hasSubscription ? (
           <div className="mb-8">
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-lg shadow-md">
-              <h2 className="text-xl font-bold mb-2">Choose a Plan to Get Started</h2>
-              <p className="mb-4">Select a subscription plan to start creating your e-commerce websites.</p>
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-lg shadow-md flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold mb-2">Choose a Plan to Get Started</h2>
+                <p className="mb-0">Select a subscription plan to start creating your e-commerce websites.</p>
+              </div>
+              <RefreshSubscriptionButton 
+                onRefresh={fetchUserData}
+                variant="outline" 
+                className="bg-white text-indigo-600 hover:bg-gray-100 border-none"
+              />
             </div>
             
             <PlansSection profile={profile} onPlanSelected={fetchUserData} />
@@ -168,12 +175,15 @@ const Dashboard = () => {
           <>
             <div className="flex justify-between items-center mb-8">
               <h1 className="text-2xl font-bold">My Websites</h1>
-              <Button 
-                onClick={createNewWebsite}
-                className="bg-gradient-to-r from-indigo-600 to-purple-600"
-              >
-                <Plus className="mr-2 h-4 w-4" /> New Website
-              </Button>
+              <div className="flex space-x-4">
+                <RefreshSubscriptionButton onRefresh={fetchUserData} />
+                <Button 
+                  onClick={createNewWebsite}
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600"
+                >
+                  <Plus className="mr-2 h-4 w-4" /> New Website
+                </Button>
+              </div>
             </div>
 
             {isLoading ? (
