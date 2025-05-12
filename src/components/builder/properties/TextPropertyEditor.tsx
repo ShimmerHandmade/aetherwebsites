@@ -35,7 +35,8 @@ const TextPropertyEditor: React.FC<TextPropertyEditorProps> = ({
         <TabsContent value="content" className="space-y-4 pt-4">
           <ContentPropertyEditor 
             content={element.content} 
-            onContentChange={onContentChange} 
+            onContentChange={onContentChange}
+            useRichEditor={true}
           />
         </TabsContent>
         

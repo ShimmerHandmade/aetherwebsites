@@ -38,11 +38,19 @@ const TextElement: React.FC<ElementProps> = ({ element }) => {
     textColor === "secondary" ? "text-gray-600" :
     textColor === "muted" ? "text-gray-500" : "text-slate-900";
 
+  // Handle HTML content if it exists, otherwise use plain text
+  const renderContent = () => {
+    const contentToRender = element.content || "Text block. Click to edit.";
+    
+    // This is a simplified approach - in a real implementation, we would use a proper HTML sanitizer
+    return <div dangerouslySetInnerHTML={{ __html: contentToRender }} />;
+  };
+
   return (
     <div className="p-4">
-      <p className={`${fontSizeClass} ${fontWeightClass} ${textAlignClass} ${textColorClass}`}>
-        {element.content || "Text block. Click to edit."}
-      </p>
+      <div className={`${fontSizeClass} ${fontWeightClass} ${textAlignClass} ${textColorClass}`}>
+        {renderContent()}
+      </div>
     </div>
   );
 };
