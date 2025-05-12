@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { Store, ChevronLeft, ChevronRight } from "lucide-react";
+import { Store, ChevronLeft, ChevronRight, Tag, Truck, AlertCircle, PercentCircle } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { BuilderElement } from "@/contexts/BuilderContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 interface Product {
@@ -15,6 +16,11 @@ interface Product {
   price: number;
   stock: number | null;
   sku: string | null;
+  category?: string;
+  is_featured?: boolean;
+  is_sale?: boolean;
+  is_new?: boolean;
+  image_url?: string;
 }
 
 interface ProductsListProps {
@@ -34,6 +40,9 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
   const columns = element.props?.columns || 4;
   const showPagination = element.props?.showPagination !== false;
   const cardStyle = element.props?.cardStyle || "default";
+  const sortBy = element.props?.sortBy || "created_at";
+  const sortOrder = element.props?.sortOrder || "desc";
+  const categoryFilter = element.props?.categoryFilter || "all";
 
   // Fetch products with pagination
   useEffect(() => {
@@ -42,11 +51,23 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
     const fetchProducts = async () => {
       setIsProductsLoading(true);
       try {
-        // Get count for pagination
-        const { count, error: countError } = await supabase
+        // Build the query based on filters and sorting
+        let query = supabase
           .from("products")
-          .select("*", { count: "exact", head: true })
+          .select("*")
           .eq("website_id", websiteId);
+        
+        // Apply category filters if specified
+        if (categoryFilter === "featured") {
+          query = query.eq("is_featured", true);
+        } else if (categoryFilter === "sale") {
+          query = query.eq("is_sale", true);
+        } else if (categoryFilter === "new") {
+          query = query.eq("is_new", true);
+        }
+        
+        // Get count for pagination
+        const { count, error: countError } = await query.count();
         
         if (countError) {
           console.error("Error counting products:", countError);
@@ -61,12 +82,11 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
         const from = (currentPage - 1) * productsPerPage;
         const to = from + productsPerPage - 1;
         
-        const { data, error } = await supabase
-          .from("products")
-          .select("*")
-          .eq("website_id", websiteId)
-          .order('created_at', { ascending: false })
+        // Apply sorting
+        query = query.order(sortBy, { ascending: sortOrder === 'asc' })
           .range(from, to);
+        
+        const { data, error } = await query;
 
         if (error) {
           console.error("Error fetching products:", error);
@@ -84,7 +104,7 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
     };
 
     fetchProducts();
-  }, [websiteId, currentPage, productsPerPage]);
+  }, [websiteId, currentPage, productsPerPage, sortBy, sortOrder, categoryFilter]);
 
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages) return;
@@ -132,19 +152,66 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
           <div className={`grid ${getColumnClasses()} gap-6 mb-6`}>
             {products.map((product) => (
               <Card key={product.id} className={`overflow-hidden flex flex-col ${getCardStyle()}`}>
-                <div className="bg-gray-100 h-48 flex items-center justify-center overflow-hidden">
-                  <Store className="h-12 w-12 text-gray-400" />
+                <div className="bg-gray-100 h-48 flex items-center justify-center overflow-hidden relative">
+                  {product.image_url ? (
+                    <img 
+                      src={product.image_url} 
+                      alt={product.name} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Store className="h-12 w-12 text-gray-400" />
+                  )}
+                  
+                  {/* Product badges */}
+                  <div className="absolute top-2 right-2 flex flex-col gap-1">
+                    {product.is_featured && (
+                      <Badge className="bg-purple-500">Featured</Badge>
+                    )}
+                    {product.is_sale && (
+                      <Badge className="bg-red-500">Sale</Badge>
+                    )}
+                    {product.is_new && (
+                      <Badge className="bg-green-500">New</Badge>
+                    )}
+                  </div>
                 </div>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">{product.name}</CardTitle>
+                  {product.category && (
+                    <div className="flex items-center text-xs text-gray-500">
+                      <Tag className="h-3 w-3 mr-1" />
+                      {product.category}
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent className="pb-2 flex-grow">
                   <p className="text-sm text-gray-500 line-clamp-3">{product.description || 'No description available'}</p>
                 </CardContent>
                 <CardFooter className="flex items-center justify-between pt-2">
-                  <span className="font-bold">${product.price.toFixed(2)}</span>
-                  <div className="text-sm text-gray-500">
-                    {product.stock !== null ? `${product.stock} in stock` : 'Stock not tracked'}
+                  <div className="flex flex-col">
+                    <span className="font-bold">${product.price.toFixed(2)}</span>
+                    {product.is_sale && (
+                      <span className="text-xs text-red-500 flex items-center">
+                        <PercentCircle className="h-3 w-3 mr-1" />
+                        On Sale
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-500 flex items-center">
+                    {product.stock === 0 ? (
+                      <span className="text-red-500 flex items-center">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        Out of Stock
+                      </span>
+                    ) : product.stock !== null ? (
+                      <span className="text-green-500 flex items-center">
+                        <Truck className="h-3 w-3 mr-1" />
+                        {product.stock} in stock
+                      </span>
+                    ) : (
+                      'Stock not tracked'
+                    )}
                   </div>
                 </CardFooter>
               </Card>
@@ -166,7 +233,17 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
                   </Button>
                 </PaginationItem>
                 
-                {Array.from({length: totalPages}, (_, i) => i + 1).map((page) => (
+                {Array.from({length: Math.min(5, totalPages)}, (_, i) => {
+                  // Always show current page and adjust the range accordingly
+                  let pageToShow = i + 1;
+                  if (totalPages > 5 && currentPage > 3) {
+                    pageToShow = currentPage - 3 + i;
+                    if (pageToShow > totalPages) {
+                      pageToShow = totalPages - (4 - i);
+                    }
+                  }
+                  return pageToShow;
+                }).map((page) => (
                   <PaginationItem key={page}>
                     <PaginationLink
                       isActive={currentPage === page}

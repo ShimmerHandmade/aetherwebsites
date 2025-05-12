@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { useBuilder } from "@/contexts/BuilderContext";
+import { useBuilder } from "@/contexts/builder";
 import { v4 as uuidv4 } from "@/lib/uuid";
 
 interface CanvasDragDropHandlerProps {
@@ -50,12 +50,27 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
       
       // Add new element from palette
       if (!elementData.id) {
-        const newElement = {
+        let newElement = {
           id: uuidv4(),
           type: elementData.type,
           content: elementData.content || "",
           props: elementData.props || {},
         };
+        
+        // Special handling for certain element types
+        if (elementData.type === 'productsList') {
+          // Ensure we have default properties for the products list
+          newElement.props = {
+            columns: 3,
+            productsPerPage: 6,
+            showPagination: true,
+            cardStyle: 'default',
+            sortBy: 'created_at',
+            sortOrder: 'desc',
+            categoryFilter: 'all',
+            ...newElement.props
+          };
+        }
         
         // Add to container or root
         addElement(newElement, undefined, containerId);
