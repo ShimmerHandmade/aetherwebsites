@@ -20,7 +20,7 @@ const BuilderSiteSettings = () => {
 
   const handleSave = async () => {
     // This will just save the current state
-    await saveWebsite(website?.elements || [], website?.page_settings || {});
+    await saveWebsite(website?.content || [], website?.pageSettings || {});
   };
 
   if (isLoading) {

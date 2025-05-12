@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { TextArea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useWebsite } from "@/hooks/useWebsite";
 
@@ -69,7 +68,7 @@ const BuilderPageSettings = () => {
             
             <div className="space-y-2">
               <Label htmlFor="page-description">Meta Description</Label>
-              <Textarea 
+              <TextArea 
                 id="page-description" 
                 placeholder="A brief description of this page for search engines"
                 rows={3}
