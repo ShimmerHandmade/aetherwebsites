@@ -2,7 +2,7 @@
 import React from "react";
 import { BuilderElement } from "@/contexts/BuilderContext";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { TextArea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -39,7 +39,7 @@ const CardPropertyEditor: React.FC<CardPropertyEditorProps> = ({
             
             <div className="space-y-2">
               <Label>Description</Label>
-              <Textarea
+              <TextArea
                 value={element.props?.description || ""}
                 onChange={(e) => onPropertyChange("description", e.target.value)}
                 className="min-h-[100px]"
