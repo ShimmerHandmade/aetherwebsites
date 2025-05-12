@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -63,6 +62,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
     loadProducts();
   }, [effectiveWebsiteId]);
 
+  // Filter products based on search term and active tab
   const filteredProducts = products.filter(product => {
     // Filter by search term
     const matchesSearch = 
@@ -107,8 +107,26 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation(); // Prevent event bubbling
+    
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // File size validation (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image too large", {
+        description: "Maximum file size is 5MB"
+      });
+      return;
+    }
+    
+    // Image type validation
+    if (!file.type.startsWith('image/')) {
+      toast.error("Invalid file type", {
+        description: "Please select an image file (PNG, JPG, GIF, etc.)"
+      });
+      return;
+    }
     
     // Preview the image
     const reader = new FileReader();
@@ -126,41 +144,60 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
     // Add the new category to our local state if it doesn't exist already
     if (!categories.some(c => c.name === newCategory)) {
       setCategories([...categories, { name: newCategory }]);
+      toast.success("Category added");
+    } else {
+      toast.info("Category already exists");
     }
     setNewCategory("");
-    toast.success("Category added");
   };
 
   const handleSave = async () => {
     if (!editingProduct || !effectiveWebsiteId) return;
-    setIsSaving(true);
-
-    const result = await saveProduct(
-      editingProduct, 
-      effectiveWebsiteId, 
-      isAddingNew, 
-      imageFile
-    );
-
-    if (result.success && result.product) {
-      if (isAddingNew) {
-        setProducts([...products, result.product]);
-      } else {
-        setProducts(products.map(p => p.id === result.product!.id ? result.product! : p));
-      }
-      
-      // If this product has a new category, add it to our categories list
-      if (result.product.category && !categories.some(c => c.name === result.product!.category)) {
-        setCategories([...categories, { name: result.product.category }]);
-      }
-      
-      toast.success(isAddingNew ? "Product added successfully" : "Product updated successfully");
-      setEditingProduct(null);
-    } else {
-      toast.error(result.error || "An error occurred");
+    
+    // Validate required fields
+    if (!editingProduct.name.trim()) {
+      toast.error("Product name is required");
+      return;
     }
     
-    setIsSaving(false);
+    if (editingProduct.price <= 0) {
+      toast.error("Price must be greater than zero");
+      return;
+    }
+    
+    setIsSaving(true);
+
+    try {
+      const result = await saveProduct(
+        editingProduct, 
+        effectiveWebsiteId, 
+        isAddingNew, 
+        imageFile
+      );
+
+      if (result.success && result.product) {
+        if (isAddingNew) {
+          setProducts([...products, result.product]);
+        } else {
+          setProducts(products.map(p => p.id === result.product!.id ? result.product! : p));
+        }
+        
+        // If this product has a new category, add it to our categories list
+        if (result.product.category && !categories.some(c => c.name === result.product!.category)) {
+          setCategories([...categories, { name: result.product.category }]);
+        }
+        
+        toast.success(isAddingNew ? "Product added successfully" : "Product updated successfully");
+        setEditingProduct(null);
+      } else {
+        toast.error(result.error || "An error occurred");
+      }
+    } catch (error) {
+      console.error("Error saving product:", error);
+      toast.error("Failed to save product");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -172,16 +209,25 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
   const handleDelete = async (id: string) => {
     if (!effectiveWebsiteId) return;
     
-    const result = await deleteProduct(id, effectiveWebsiteId);
+    if (!confirm("Are you sure you want to delete this product?")) {
+      return;
+    }
     
-    if (result.success) {
-      setProducts(products.filter(p => p.id !== id));
-      toast.success("Product deleted");
+    try {
+      const result = await deleteProduct(id, effectiveWebsiteId);
       
-      // Update categories list if needed
-      refreshCategoriesList();
-    } else {
-      toast.error(result.error || "Failed to delete product");
+      if (result.success) {
+        setProducts(products.filter(p => p.id !== id));
+        toast.success("Product deleted");
+        
+        // Update categories list if needed
+        refreshCategoriesList();
+      } else {
+        toast.error(result.error || "Failed to delete product");
+      }
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      toast.error("An unexpected error occurred");
     }
   };
   
@@ -210,6 +256,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
         setEditingProduct(null);
         setImagePreview(null);
         setImageFile(null);
+        if (onBackToBuilder) onBackToBuilder();
       } 
       return;
     }
@@ -320,12 +367,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
           onClearImage={handleClearImage}
           newCategory={newCategory}
           onNewCategoryChange={setNewCategory}
-          onAddCategory={() => {
-            if (newCategory.trim()) {
-              setEditingProduct({...editingProduct, category: newCategory});
-              setNewCategory('');
-            }
-          }}
+          onAddCategory={handleAddCategory}
         />
       ) : (
         <ScrollArea className="flex-1 h-[calc(100%-100px)]">

@@ -154,7 +154,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Product Image</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center">
+              <div className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center relative">
                 {imagePreview ? (
                   <div className="relative">
                     <img 
@@ -166,7 +166,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
                       variant="ghost"
                       size="sm"
                       className="absolute top-0 right-0 text-red-500"
-                      onClick={onClearImage}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering the parent's input click
+                        onClearImage();
+                      }}
+                      type="button"
                     >
                       <Trash className="h-4 w-4" />
                     </Button>
@@ -178,12 +182,22 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     <p className="text-xs text-gray-400">PNG, JPG, GIF up to 5MB</p>
                   </div>
                 )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  onChange={onImageChange}
-                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <label className="w-full h-full cursor-pointer opacity-0" htmlFor="product-image">
+                    <span className="sr-only">Choose product image</span>
+                  </label>
+                  <input
+                    id="product-image"
+                    type="file"
+                    accept="image/*"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    onChange={onImageChange}
+                    onClick={(e) => {
+                      // Stop propagation to prevent double triggers
+                      e.stopPropagation();
+                    }}
+                  />
+                </div>
               </div>
             </div>
             

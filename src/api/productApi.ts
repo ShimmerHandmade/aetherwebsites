@@ -85,6 +85,14 @@ export const saveProduct = async (
     
     // Handle new product
     if (isNew) {
+      // Upload image first if provided
+      let imageUrl: string | null = null;
+      if (imageFile) {
+        console.log("Uploading new product image...");
+        imageUrl = await uploadProductImage(imageFile, websiteId, 'temp-' + Date.now());
+        console.log("Image upload result:", imageUrl);
+      }
+      
       // Ensure we're passing all required product fields
       const newProductData = {
         name: product.name,
@@ -96,6 +104,7 @@ export const saveProduct = async (
         is_featured: product.is_featured || false,
         is_sale: product.is_sale || false,
         is_new: product.is_new || false,
+        image_url: imageUrl,
         user_id: userId,
         website_id: websiteId
       };
@@ -118,18 +127,28 @@ export const saveProduct = async (
       if (data && data.length > 0) {
         let newProduct = data[0];
         
-        // Upload image if provided
-        if (imageFile) {
-          const imageUrl = await uploadProductImage(imageFile, websiteId, newProduct.id);
+        // If we uploaded with a temporary ID, we need to move the image to the correct location
+        if (imageUrl && imageFile) {
+          const permanentImageUrl = await uploadProductImage(imageFile, websiteId, newProduct.id);
           
-          if (imageUrl) {
-            // Update the product with the image URL
+          if (permanentImageUrl) {
+            // Update the product with the permanent image URL
             await supabase
               .from("products")
-              .update({ image_url: imageUrl })
+              .update({ image_url: permanentImageUrl })
               .eq("id", newProduct.id);
               
-            newProduct.image_url = imageUrl;
+            newProduct.image_url = permanentImageUrl;
+            
+            // Try to delete the temporary image
+            const tempFilePath = imageUrl.split('/').slice(-3).join('/');
+            try {
+              await supabase.storage
+                .from('product-images')
+                .remove([tempFilePath]);
+            } catch (e) {
+              console.log("Failed to clean up temporary image, but this is not critical");
+            }
           }
         }
         
@@ -144,7 +163,9 @@ export const saveProduct = async (
       
       // Upload new image if changed
       if (imageFile) {
+        console.log("Uploading updated product image...");
         imageUrl = await uploadProductImage(imageFile, websiteId, product.id);
+        console.log("Image upload result:", imageUrl);
       }
       
       // Create a complete update object with all product fields
@@ -217,11 +238,20 @@ export const deleteProduct = async (productId: string, websiteId: string): Promi
 
     // Try to delete the product images
     try {
-      await supabase.storage
+      // List all files in the product's directory
+      const { data: files } = await supabase.storage
         .from('product-images')
-        .remove([`${websiteId}/${productId}`]);
+        .list(`${websiteId}/${productId}`);
+        
+      if (files && files.length > 0) {
+        // Delete each file in the directory
+        const filePaths = files.map(file => `${websiteId}/${productId}/${file.name}`);
+        await supabase.storage
+          .from('product-images')
+          .remove(filePaths);
+      }
     } catch (imageError) {
-      console.log("No images to delete or error removing images:", imageError);
+      console.log("Error removing images:", imageError);
       // Don't return error for image deletion issues
     }
 
@@ -242,7 +272,10 @@ export const uploadProductImage = async (
   websiteId: string, 
   productId: string
 ): Promise<string | null> => {
-  if (!imageFile || !websiteId) return null;
+  if (!imageFile || !websiteId) {
+    console.warn("Missing image file or website ID for upload");
+    return null;
+  }
   
   try {
     // Check if product-images bucket exists, if not create it
@@ -250,16 +283,26 @@ export const uploadProductImage = async (
     const bucketName = 'product-images';
     
     if (!buckets?.find(b => b.name === bucketName)) {
-      await supabase.storage.createBucket(bucketName, { public: true });
+      await supabase.storage.createBucket(bucketName, { 
+        public: true,
+        fileSizeLimit: 5 * 1024 * 1024, // 5MB limit
+      });
     }
     
+    // Create a unique filename to avoid conflicts
+    const uniqueFileName = `${Date.now()}-${imageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    
     // Upload the file
-    const filePath = `${websiteId}/${productId}/${Date.now()}-${imageFile.name}`;
-    const { error: uploadError } = await supabase.storage
+    const filePath = `${websiteId}/${productId}/${uniqueFileName}`;
+    const { error: uploadError, data: uploadData } = await supabase.storage
       .from(bucketName)
-      .upload(filePath, imageFile);
+      .upload(filePath, imageFile, {
+        cacheControl: '3600',
+        upsert: false
+      });
       
     if (uploadError) {
+      console.error("Error in uploadProductImage:", uploadError);
       throw uploadError;
     }
     
@@ -268,6 +311,7 @@ export const uploadProductImage = async (
       .from(bucketName)
       .getPublicUrl(filePath);
       
+    console.log("Image uploaded successfully:", data.publicUrl);
     return data.publicUrl;
   } catch (error) {
     console.error("Error uploading image:", error);
