@@ -42,17 +42,19 @@ export const uploadProductImage = async (
     const filePath = `${websiteId}/${productId}/${uniqueFileName}`;
     console.log(`Uploading to path: ${filePath}`);
     
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError, data: uploadData } = await supabase.storage
       .from(bucketName)
       .upload(filePath, imageFile, {
         cacheControl: '3600',
-        upsert: true // This is critical for handling existing files
+        upsert: true
       });
       
     if (uploadError) {
       console.error("Error in uploadProductImage:", uploadError);
       throw uploadError;
     }
+    
+    console.log("Upload successful, getting public URL");
     
     // Get the public URL
     const { data } = supabase.storage

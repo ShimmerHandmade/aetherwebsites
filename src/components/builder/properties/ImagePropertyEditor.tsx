@@ -6,29 +6,57 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ContentPropertyEditor from "./ContentPropertyEditor";
-import { Upload } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
+import { uploadProductImage } from "@/api/products";
+import { useParams } from "react-router-dom";
 
 const ImagePropertyEditor: React.FC<PropertyEditorProps> = ({
   element,
   onPropertyChange,
   onContentChange,
 }) => {
+  const { id: websiteId } = useParams<{ id: string }>();
   const properties = element.props || {};
   const [isUploading, setIsUploading] = useState(false);
   
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !websiteId) return;
     
     setIsUploading(true);
     
-    // Convert file to base64 for preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      onPropertyChange("src", reader.result as string);
+    try {
+      // First upload to Supabase storage
+      const imageUrl = await uploadProductImage(
+        file, 
+        websiteId, 
+        element.id || 'builder-image'
+      );
+      
+      if (imageUrl) {
+        // Set the actual image URL from Supabase
+        onPropertyChange("src", imageUrl);
+        console.log("Image uploaded and URL set:", imageUrl);
+      } else {
+        // Fallback to base64 if Supabase upload fails
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          onPropertyChange("src", reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      
+      // Fallback to base64 if Supabase upload fails
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onPropertyChange("src", reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } finally {
       setIsUploading(false);
-    };
-    reader.readAsDataURL(file);
+    }
   };
 
   // Stop propagation for click events on the input to prevent bubbling
@@ -52,14 +80,24 @@ const ImagePropertyEditor: React.FC<PropertyEditorProps> = ({
               accept="image/*"
               onChange={handleFileUpload} 
               onClick={handleInputClick}
+              disabled={isUploading}
               className="hidden"
             />
             <label htmlFor="imageUpload" className="cursor-pointer">
               <div className="flex flex-col items-center justify-center gap-2">
-                <Upload className="h-8 w-8 text-gray-400" />
-                <span className="text-sm font-medium text-gray-600">
-                  {isUploading ? 'Uploading...' : 'Click to upload image'}
-                </span>
+                {isUploading ? (
+                  <>
+                    <Loader2 className="h-8 w-8 text-gray-400 animate-spin" />
+                    <span className="text-sm font-medium text-gray-600">Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8 text-gray-400" />
+                    <span className="text-sm font-medium text-gray-600">
+                      Click to upload image
+                    </span>
+                  </>
+                )}
                 <span className="text-xs text-gray-400">
                   PNG, JPG, GIF up to 10MB
                 </span>
@@ -67,7 +105,7 @@ const ImagePropertyEditor: React.FC<PropertyEditorProps> = ({
             </label>
           </div>
           
-          {properties.src && properties.src.startsWith('data:image') && (
+          {properties.src && (
             <div className="mt-4">
               <img 
                 src={properties.src} 

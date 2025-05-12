@@ -7,14 +7,21 @@ interface ElementProps {
 }
 
 const ImageElement: React.FC<ElementProps> = ({ element }) => {
+  const src = element.props?.src || '';
+  const alt = element.props?.alt || '';
+  
   return (
     <div className="p-4">
       <div className="bg-gray-200 h-48 flex items-center justify-center overflow-hidden">
-        {element.props?.src ? (
+        {src ? (
           <img 
-            src={element.props.src} 
-            alt={element.props.alt || ""} 
-            className="w-full h-full object-cover" 
+            src={src} 
+            alt={alt} 
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              console.error('Image failed to load:', src);
+              e.currentTarget.src = '/placeholder.svg'; // Fallback image
+            }}
           />
         ) : (
           <span className="text-gray-500">Image placeholder</span>
