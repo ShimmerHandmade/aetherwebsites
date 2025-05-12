@@ -7,6 +7,7 @@ import BuilderContent from "@/components/builder/BuilderContent";
 import { useWebsite } from "@/hooks/useWebsite";
 import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
 import { useState, useEffect } from "react";
+import { v4 as uuidv4 } from "@/lib/uuid";
 
 const Builder = () => {
   const { id } = useParams<{ id: string }>();
@@ -53,8 +54,61 @@ const Builder = () => {
           setCurrentPageId(website.settings.pages[0].id);
         }
       }
+
+      // Ensure we have at least a home page and a shop page
+      ensureRequiredPages();
     }
   }, [website]);
+
+  // Ensure Home and Shop pages exist
+  const ensureRequiredPages = async () => {
+    if (!website?.settings?.pages) return;
+    
+    let updatedPages = [...(website.settings.pages || [])];
+    let hasChanged = false;
+    
+    // Check for Home page
+    const homePage = updatedPages.find(page => page.isHomePage || page.title.toLowerCase() === 'home');
+    if (!homePage) {
+      const newHomePage = {
+        id: uuidv4(),
+        title: 'Home',
+        slug: '/',
+        isHomePage: true
+      };
+      updatedPages.push(newHomePage);
+      hasChanged = true;
+    } else if (!homePage.isHomePage) {
+      // Ensure the home page has isHomePage set to true
+      updatedPages = updatedPages.map(p => 
+        p.id === homePage.id ? {...p, isHomePage: true} : p
+      );
+      hasChanged = true;
+    }
+    
+    // Check for Shop page
+    const shopPage = updatedPages.find(page => page.title.toLowerCase() === 'shop');
+    if (!shopPage) {
+      const newShopPage = {
+        id: uuidv4(),
+        title: 'Shop',
+        slug: '/shop',
+        isHomePage: false
+      };
+      updatedPages.push(newShopPage);
+      hasChanged = true;
+    }
+    
+    // If changes were made, update the website settings
+    if (hasChanged && website) {
+      const updatedSettings = {
+        ...website.settings,
+        pages: updatedPages
+      };
+      
+      await saveWebsite(website.content, website.pageSettings, updatedSettings);
+    }
+  };
 
   // Load page content when currentPageId changes
   useEffect(() => {

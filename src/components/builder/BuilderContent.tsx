@@ -5,7 +5,7 @@ import PageEditorSidebar from "./PageEditorSidebar";
 import { PreviewModeProps } from "./BuilderLayout";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
-import { ChevronRight, Edit, Plus } from "lucide-react";
+import { Edit } from "lucide-react";
 
 const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -30,17 +30,6 @@ const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) =
       {/* Main content area */}
       <div className="flex-1 bg-slate-100 overflow-auto relative">
         <BuilderCanvas isPreviewMode={false} />
-        
-        {/* Add Section/Block button - inspired by Squarespace */}
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2">
-          <Button 
-            className="bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg px-6"
-            size="sm"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            ADD SECTION
-          </Button>
-        </div>
         
         {/* Mobile view: Bottom Drawer trigger */}
         <Drawer open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
