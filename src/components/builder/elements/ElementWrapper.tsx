@@ -62,20 +62,6 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
     document.body.classList.remove("is-dragging");
   };
   
-  // Check if this is a container element
-  const isContainer = element.type === 'container' || element.type === 'grid' || element.type === 'flex' || element.type === 'section';
-  
-  // If this is a container and it's in edit mode, wrap the content with a CanvasDragDropHandler
-  const renderContent = () => {
-    if (isContainer && !isPreviewMode) {
-      // The container's own content is rendered by the ContainerElement component
-      // We just need to make sure it's draggable
-      return renderElement(element);
-    } else {
-      return renderElement(element);
-    }
-  };
-
   return (
     <div
       className={`relative mb-4 ${isPreviewMode ? '' : 'border-2 rounded'} ${
@@ -127,7 +113,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
       )}
       
       <div className={`${selected && !isPreviewMode ? 'opacity-90' : ''}`}>
-        {renderContent()}
+        {renderElement(element)}
       </div>
     </div>
   );

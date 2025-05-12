@@ -8,7 +8,7 @@ interface CanvasDragDropHandlerProps {
   isPreviewMode: boolean;
   onCanvasClick: (e: React.MouseEvent) => void;
   className: string;
-  containerId?: string; // Add support for container elements
+  containerId?: string; 
 }
 
 const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({ 
@@ -18,7 +18,7 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
   className,
   containerId
 }) => {
-  const { addElement, moveElement, elements } = useBuilder();
+  const { addElement, moveElement, elements, findElementById, removeElement } = useBuilder();
   const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -49,19 +49,40 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
         
         // Add new element from palette
         if (!elementData.id) {
-          addElement({
+          const newElement = {
             id: uuidv4(),
             type: elementData.type,
-            content: elementData.content,
+            content: elementData.content || "",
             props: elementData.props || {},
-          }, undefined, containerId);
+          };
+          
+          // Add to container or root
+          addElement(newElement, undefined, containerId);
+          console.log("Added new element to container:", containerId, newElement);
           return;
         }
         
-        // Handle element reordering
+        // Handle element reordering or moving between containers
         if (elementData.id && elementData.sourceIndex !== undefined) {
-          const dropIndex = elements.length;
-          moveElement(elementData.sourceIndex, dropIndex, containerId);
+          if (containerId) {
+            // Move an element to this container
+            const sourceElement = findElementById(elementData.id);
+            if (sourceElement) {
+              // Remove from original location and add to this container
+              console.log("Moving element to container:", containerId, sourceElement);
+              addElement({...sourceElement}, undefined, containerId);
+              // We need to delay the removal slightly to avoid React rendering issues
+              setTimeout(() => {
+                // Remove from the original location
+                console.log("Removing original element:", elementData.id);
+                removeElement(elementData.id);
+              }, 10);
+            }
+          } else {
+            // Move at root level
+            const dropIndex = elements.length;
+            moveElement(elementData.sourceIndex, dropIndex);
+          }
         }
       }
     } catch (error) {
