@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { 
   FileImage, 
   Loader2, 
-  Tag,
   Trash
 } from "lucide-react";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -107,8 +106,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
               <Label htmlFor="product-category">Category</Label>
               <div className="flex gap-2">
                 <Select
-                  value={product.category || 'none'}
-                  onValueChange={(value) => onProductChange({...product, category: value === 'none' ? '' : value})}
+                  value={product.category || ''}
+                  onValueChange={(value) => onProductChange({...product, category: value === 'none' ? null : value})}
                 >
                   <SelectTrigger id="product-category" className="flex-grow">
                     <SelectValue placeholder="Select category" />

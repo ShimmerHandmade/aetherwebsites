@@ -85,19 +85,22 @@ export const saveProduct = async (
     
     // Handle new product
     if (isNew) {
+      // Ensure we're passing all required product fields
       const newProductData = {
         name: product.name,
         description: product.description,
         price: product.price,
         sku: product.sku,
         stock: product.stock,
-        category: product.category,
+        category: product.category || null,
         is_featured: product.is_featured || false,
         is_sale: product.is_sale || false,
         is_new: product.is_new || false,
         user_id: userId,
         website_id: websiteId
       };
+      
+      console.log("Inserting new product with data:", newProductData);
       
       const { data, error } = await supabase
         .from("products")
@@ -108,7 +111,7 @@ export const saveProduct = async (
         console.error("Error adding product:", error);
         return {
           success: false,
-          error: "Failed to add product"
+          error: "Failed to add product: " + error.message
         };
       }
 
@@ -144,20 +147,25 @@ export const saveProduct = async (
         imageUrl = await uploadProductImage(imageFile, websiteId, product.id);
       }
       
+      // Create a complete update object with all product fields
+      const updateData = {
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        sku: product.sku,
+        stock: product.stock,
+        category: product.category || null,
+        is_featured: product.is_featured || false,
+        is_sale: product.is_sale || false,
+        is_new: product.is_new || false,
+        image_url: imageUrl
+      };
+      
+      console.log("Updating product with data:", updateData);
+      
       const { error } = await supabase
         .from("products")
-        .update({
-          name: product.name,
-          description: product.description,
-          price: product.price,
-          sku: product.sku,
-          stock: product.stock,
-          category: product.category,
-          is_featured: product.is_featured || false,
-          is_sale: product.is_sale || false,
-          is_new: product.is_new || false,
-          image_url: imageUrl
-        })
+        .update(updateData)
         .eq("id", product.id)
         .eq("website_id", websiteId);
 
@@ -165,7 +173,7 @@ export const saveProduct = async (
         console.error("Error updating product:", error);
         return {
           success: false,
-          error: "Failed to update product"
+          error: "Failed to update product: " + error.message
         };
       }
 
@@ -183,7 +191,7 @@ export const saveProduct = async (
     console.error("Error in saveProduct:", error);
     return {
       success: false,
-      error: "An unexpected error occurred"
+      error: "An unexpected error occurred: " + (error as Error).message
     };
   }
 };
