@@ -6,7 +6,7 @@ import BuilderNavbar from "@/components/builder/BuilderNavbar";
 import BuilderContent from "@/components/builder/BuilderContent";
 import { useWebsite } from "@/hooks/useWebsite";
 import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const Builder = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +25,19 @@ const Builder = () => {
   
   // Track preview mode state at this level
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [currentPageId, setCurrentPageId] = useState<string | null>(null);
+
+  // Set current page to home page by default
+  useEffect(() => {
+    if (website?.settings?.pages) {
+      const homePage = website.settings.pages.find(page => page.isHomePage);
+      if (homePage) {
+        setCurrentPageId(homePage.id);
+      } else if (website.settings.pages.length > 0) {
+        setCurrentPageId(website.settings.pages[0].id);
+      }
+    }
+  }, [website]);
 
   const handleSave = async (updatedElements: BuilderElement[], updatedPageSettings: PageSettings) => {
     await saveWebsite(updatedElements, updatedPageSettings);

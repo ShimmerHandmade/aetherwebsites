@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -44,6 +43,7 @@ const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const { saveElements } = useBuilder();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isCommandOpen, setIsCommandOpen] = useState(false);
 
   const handleSave = async () => {
     try {

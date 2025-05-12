@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plus, File, Trash, Edit, ChevronRight } from "lucide-react";
@@ -7,6 +7,7 @@ import { useWebsite } from "@/hooks/useWebsite";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { v4 as uuidv4 } from "@/lib/uuid";
 
 interface Page {
   id: string;
@@ -25,15 +26,24 @@ const BuilderPages = () => {
     saveWebsite
   } = useWebsite(id, navigate);
   
-  // For now, we'll simulate having just a homepage
-  const [pages, setPages] = useState<Page[]>([
-    { id: '1', title: 'Home', slug: '/', isHomePage: true }
-  ]);
-  
+  const [pages, setPages] = useState<Page[]>([]);
   const [newPageTitle, setNewPageTitle] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleAddPage = () => {
+  // Initialize pages from website settings if available
+  useEffect(() => {
+    if (website?.settings && website.settings.pages) {
+      setPages(website.settings.pages);
+    } else if (pages.length === 0) {
+      // Create a default home page if no pages exist
+      setPages([
+        { id: uuidv4(), title: 'Home', slug: '/', isHomePage: true }
+      ]);
+    }
+  }, [website]);
+
+  const handleAddPage = async () => {
     if (!newPageTitle.trim()) {
       toast.error("Page title cannot be empty");
       return;
@@ -43,19 +53,23 @@ const BuilderPages = () => {
     const slug = newPageTitle.toLowerCase().replace(/\s+/g, '-');
     
     const newPage: Page = {
-      id: Date.now().toString(),
+      id: uuidv4(),
       title: newPageTitle,
       slug: `/${slug}`
     };
     
-    setPages([...pages, newPage]);
+    const updatedPages = [...pages, newPage];
+    setPages(updatedPages);
     setNewPageTitle('');
     setIsCreating(false);
+    
+    // Save pages to website settings
+    await savePagesToDB(updatedPages);
     
     toast.success(`Page "${newPageTitle}" created`);
   };
 
-  const handleDeletePage = (pageId: string) => {
+  const handleDeletePage = async (pageId: string) => {
     // Don't allow deleting the homepage
     const pageToDelete = pages.find(p => p.id === pageId);
     if (pageToDelete?.isHomePage) {
@@ -63,8 +77,37 @@ const BuilderPages = () => {
       return;
     }
     
-    setPages(pages.filter(page => page.id !== pageId));
+    const updatedPages = pages.filter(page => page.id !== pageId);
+    setPages(updatedPages);
+    
+    // Save updated pages to database
+    await savePagesToDB(updatedPages);
+    
     toast.success("Page deleted");
+  };
+
+  const savePagesToDB = async (updatedPages: Page[]) => {
+    try {
+      setIsSaving(true);
+      
+      // Update website settings with pages
+      const updatedSettings = {
+        ...website?.settings,
+        pages: updatedPages
+      };
+      
+      // Save to database
+      await saveWebsite(website?.content || [], {
+        ...website?.pageSettings,
+        title: website?.pageSettings?.title || websiteName
+      }, updatedSettings);
+      
+    } catch (error) {
+      console.error("Error saving pages:", error);
+      toast.error("Failed to save pages");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const navigateToPage = (pageId: string) => {
@@ -111,7 +154,11 @@ const BuilderPages = () => {
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold">Pages - {websiteName}</h1>
-            <Button onClick={() => setIsCreating(true)} className="flex items-center gap-1">
+            <Button 
+              onClick={() => setIsCreating(true)} 
+              className="flex items-center gap-1"
+              disabled={isSaving}
+            >
               <Plus className="h-4 w-4" /> Add Page
             </Button>
           </div>
@@ -126,7 +173,11 @@ const BuilderPages = () => {
                   onChange={(e) => setNewPageTitle(e.target.value)}
                   className="flex-1"
                 />
-                <Button onClick={handleAddPage} className="bg-blue-600 hover:bg-blue-700">
+                <Button 
+                  onClick={handleAddPage} 
+                  className="bg-blue-600 hover:bg-blue-700"
+                  disabled={isSaving}
+                >
                   Create
                 </Button>
                 <Button variant="outline" onClick={() => setIsCreating(false)}>
@@ -157,7 +208,7 @@ const BuilderPages = () => {
                       variant="ghost" 
                       size="sm" 
                       onClick={() => handleDeletePage(page.id)}
-                      disabled={page.isHomePage}
+                      disabled={page.isHomePage || isSaving}
                     >
                       <Trash className="h-4 w-4 text-gray-500" />
                     </Button>

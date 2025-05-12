@@ -17,6 +17,12 @@ export interface WebsiteData {
 
 interface WebsiteSettings {
   pageSettings?: PageSettings;
+  pages?: Array<{
+    id: string;
+    title: string;
+    slug: string;
+    isHomePage?: boolean;
+  }>;
   [key: string]: any;
 }
 
@@ -60,7 +66,7 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
         return;
       }
       
-      // Cast settings to WebsiteSettings to work with pageSettings
+      // Cast settings to WebsiteSettings to work with pageSettings and pages
       const settings = data.settings as WebsiteSettings;
       
       // Convert the database response to the correct type
@@ -90,7 +96,11 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
     }
   };
 
-  const saveWebsite = async (updatedElements?: BuilderElement[], updatedPageSettings?: PageSettings) => {
+  const saveWebsite = async (
+    updatedElements?: BuilderElement[], 
+    updatedPageSettings?: PageSettings,
+    additionalSettings?: any
+  ) => {
     try {
       if (!id || !website) return;
       
@@ -99,10 +109,11 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
       const contentToSave = updatedElements || elements;
       const settingsToSave = updatedPageSettings || pageSettings;
       
-      // Store page settings within the settings object
+      // Store page settings and additional settings within the settings object
       const updatedSettings = {
         ...website.settings,
-        pageSettings: settingsToSave
+        pageSettings: settingsToSave,
+        ...(additionalSettings || {})
       };
       
       const { error } = await supabase
