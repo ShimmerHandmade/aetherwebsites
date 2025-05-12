@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
 import BuilderLayout from "@/components/builder/BuilderLayout";
@@ -68,6 +69,17 @@ const Builder = () => {
       ensureRequiredPages();
     }
   }, [website]);
+
+  // Set global site settings for components to access
+  useEffect(() => {
+    if (website?.settings) {
+      // Make site settings available globally for components
+      window.__SITE_SETTINGS__ = {
+        logoUrl: website.settings.logoUrl,
+        // Add other global settings here as needed
+      };
+    }
+  }, [website?.settings]);
 
   // Ensure Home, Shop and About pages exist
   const ensureRequiredPages = async () => {
@@ -224,17 +236,6 @@ const Builder = () => {
 
   const pages = website?.settings?.pages || [];
   const currentPage = pages.find(page => page.id === currentPageId);
-
-  // Set global site settings for components to access
-  useEffect(() => {
-    if (website?.settings) {
-      // Make site settings available globally for components
-      window.__SITE_SETTINGS__ = {
-        logoUrl: website.settings.logoUrl,
-        // Add other global settings here as needed
-      };
-    }
-  }, [website?.settings]);
 
   return (
     <BuilderProvider 
