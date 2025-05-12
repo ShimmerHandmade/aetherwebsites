@@ -64,12 +64,10 @@ const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
     setIsPreviewMode(!isPreviewMode);
   };
 
-  // Define menu items with their routes
+  // Define menu items with their routes - updated to routes that exist in App.tsx
   const menuItems = [
-    { title: "Pages", icon: FileIcon, route: "/dashboard/pages" },
-    { title: "Site Settings", icon: LayoutTemplate, route: "/dashboard/settings" },
-    { title: "Products", icon: ShoppingBag, route: "/dashboard/products" },
-    { title: "Page Settings", icon: Settings, route: "/dashboard/page-settings" }
+    { title: "Dashboard", icon: FileIcon, route: "/dashboard" },
+    { title: "Profile", icon: Settings, route: "/profile" }
   ];
 
   const handleMenuItemClick = (route: string) => {
