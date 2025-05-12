@@ -2,19 +2,19 @@
 import React, { ReactNode, useState, isValidElement, cloneElement } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-interface BuilderLayoutProps {
-  children: ReactNode;
-}
-
 // Define a common interface for components that can receive preview mode props
 export interface PreviewModeProps {
   isPreviewMode?: boolean;
   setIsPreviewMode?: (value: boolean) => void;
 }
 
-const BuilderLayout: React.FC<BuilderLayoutProps> = ({ children }) => {
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
+interface BuilderLayoutProps {
+  children: ReactNode;
+  isPreviewMode: boolean;
+  setIsPreviewMode: (value: boolean) => void;
+}
 
+const BuilderLayout: React.FC<BuilderLayoutProps> = ({ children, isPreviewMode, setIsPreviewMode }) => {
   // Clone each child and pass the preview mode props
   const childrenWithProps = React.Children.map(children, child => {
     // Check if the child is a valid React element
