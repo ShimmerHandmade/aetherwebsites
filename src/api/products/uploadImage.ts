@@ -21,10 +21,15 @@ export const uploadProductImage = async (
     const bucketName = 'product-images';
     
     if (!buckets?.find(b => b.name === bucketName)) {
-      await supabase.storage.createBucket(bucketName, { 
+      const { error: bucketError } = await supabase.storage.createBucket(bucketName, { 
         public: true,
         fileSizeLimit: 5 * 1024 * 1024, // 5MB limit
       });
+      
+      if (bucketError) {
+        console.error("Error creating bucket:", bucketError);
+        throw bucketError;
+      }
     }
     
     // Create a unique filename to avoid conflicts
@@ -32,11 +37,11 @@ export const uploadProductImage = async (
     
     // Upload the file
     const filePath = `${websiteId}/${productId}/${uniqueFileName}`;
-    const { error: uploadError, data: uploadData } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from(bucketName)
       .upload(filePath, imageFile, {
         cacheControl: '3600',
-        upsert: false
+        upsert: true // Updated from false to true to handle overwrites
       });
       
     if (uploadError) {

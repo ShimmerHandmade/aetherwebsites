@@ -38,10 +38,11 @@ export const saveProduct = async (
     // Handle new product
     if (isNew) {
       // Upload image first if provided
-      let imageUrl: string | null = null;
+      let imageUrl: string | null = product.image_url;
       if (imageFile) {
         console.log("Uploading new product image...");
-        imageUrl = await uploadProductImage(imageFile, websiteId, 'temp-' + Date.now());
+        const tempId = 'temp-' + Date.now();
+        imageUrl = await uploadProductImage(imageFile, websiteId, tempId);
         console.log("Image upload result:", imageUrl);
       }
       
@@ -79,7 +80,7 @@ export const saveProduct = async (
       if (data && data.length > 0) {
         let newProduct = data[0];
         
-        // If we uploaded with a temporary ID, we need to move the image to the correct location
+        // If we uploaded with a temporary ID and now have a permanent ID, we need to move the image
         if (imageUrl && imageFile) {
           const permanentImageUrl = await uploadProductImage(imageFile, websiteId, newProduct.id);
           
@@ -92,14 +93,16 @@ export const saveProduct = async (
               
             newProduct.image_url = permanentImageUrl;
             
-            // Try to delete the temporary image
-            const tempFilePath = imageUrl.split('/').slice(-3).join('/');
-            try {
-              await supabase.storage
-                .from('product-images')
-                .remove([tempFilePath]);
-            } catch (e) {
-              console.log("Failed to clean up temporary image, but this is not critical");
+            // Try to delete the temporary image if the URL structure allows us to parse it
+            if (imageUrl && imageUrl.includes('/product-images/')) {
+              try {
+                const tempFilePath = imageUrl.split('/product-images/')[1];
+                await supabase.storage
+                  .from('product-images')
+                  .remove([tempFilePath]);
+              } catch (e) {
+                console.log("Failed to clean up temporary image, but this is not critical", e);
+              }
             }
           }
         }

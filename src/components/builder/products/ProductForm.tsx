@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
   onNewCategoryChange,
   onAddCategory
 }) => {
+  // Function to handle the file input click without triggering parent click events
+  const handleFileInputClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+  
   return (
     <Card>
       <CardHeader>
@@ -130,7 +135,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && newCategory.trim() !== '') {
                       onProductChange({...product, category: newCategory});
-                      onNewCategoryChange('');
+                      onAddCategory();
                     }
                   }}
                 />
@@ -141,7 +146,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                   onClick={() => {
                     if (newCategory.trim()) {
                       onProductChange({...product, category: newCategory});
-                      onNewCategoryChange('');
+                      onAddCategory();
                     }
                   }}
                 >
@@ -154,7 +159,13 @@ const ProductForm: React.FC<ProductFormProps> = ({
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Product Image</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center relative">
+              <div 
+                className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center relative"
+                onClick={(e) => {
+                  // Prevent click bubbling but don't do anything here
+                  e.stopPropagation();
+                }}
+              >
                 {imagePreview ? (
                   <div className="relative">
                     <img 
@@ -167,7 +178,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                       size="sm"
                       className="absolute top-0 right-0 text-red-500"
                       onClick={(e) => {
-                        e.stopPropagation(); // Prevent triggering the parent's input click
+                        e.stopPropagation(); // Prevent triggering the parent's click
                         onClearImage();
                       }}
                       type="button"
@@ -182,22 +193,14 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     <p className="text-xs text-gray-400">PNG, JPG, GIF up to 5MB</p>
                   </div>
                 )}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <label className="w-full h-full cursor-pointer opacity-0" htmlFor="product-image">
-                    <span className="sr-only">Choose product image</span>
-                  </label>
-                  <input
-                    id="product-image"
-                    type="file"
-                    accept="image/*"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    onChange={onImageChange}
-                    onClick={(e) => {
-                      // Stop propagation to prevent double triggers
-                      e.stopPropagation();
-                    }}
-                  />
-                </div>
+                <input
+                  id="product-image"
+                  type="file"
+                  accept="image/*"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  onChange={onImageChange}
+                  onClick={handleFileInputClick}
+                />
               </div>
             </div>
             
