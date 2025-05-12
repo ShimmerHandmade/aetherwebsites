@@ -1,5 +1,5 @@
 
-import React, { ReactNode, useState, isValidElement, cloneElement } from "react";
+import React, { ReactNode } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 // Define a common interface for components that can receive preview mode props
