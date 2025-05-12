@@ -14,6 +14,13 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  CommandDialog,
+  CommandInput,
+  CommandList,
+  CommandItem,
+  CommandGroup,
+} from "@/components/ui/command";
 
 interface BuilderNavbarProps extends PreviewModeProps {
   websiteName: string;
@@ -57,10 +64,19 @@ const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
     setIsPreviewMode(!isPreviewMode);
   };
 
+  // Define menu items with their routes
+  const menuItems = [
+    { title: "Pages", icon: FileIcon, route: "/dashboard/pages" },
+    { title: "Site Settings", icon: LayoutTemplate, route: "/dashboard/settings" },
+    { title: "Products", icon: ShoppingBag, route: "/dashboard/products" },
+    { title: "Page Settings", icon: Settings, route: "/dashboard/page-settings" }
+  ];
+
   const handleMenuItemClick = (route: string) => {
     // Close the sheet after clicking a menu item
     setIsSheetOpen(false);
-    // Navigate to the route if provided, otherwise do nothing
+    
+    // Navigate to the route if provided, otherwise stay on the current page
     if (route) {
       navigate(route);
     }
@@ -84,30 +100,15 @@ const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
                 </SheetHeader>
                 <div className="py-4">
                   <nav className="space-y-1">
-                    <button 
-                      className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left"
-                      onClick={() => handleMenuItemClick("")}
-                    >
-                      <FileIcon className="h-4 w-4 mr-2" /> Pages
-                    </button>
-                    <button 
-                      className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left"
-                      onClick={() => handleMenuItemClick("")}
-                    >
-                      <LayoutTemplate className="h-4 w-4 mr-2" /> Site Settings
-                    </button>
-                    <button 
-                      className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left"
-                      onClick={() => handleMenuItemClick("")}
-                    >
-                      <ShoppingBag className="h-4 w-4 mr-2" /> Products
-                    </button>
-                    <button 
-                      className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left"
-                      onClick={() => handleMenuItemClick("")}
-                    >
-                      <Settings className="h-4 w-4 mr-2" /> Page Settings
-                    </button>
+                    {menuItems.map((item) => (
+                      <button 
+                        key={item.title}
+                        className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left"
+                        onClick={() => handleMenuItemClick(item.route)}
+                      >
+                        <item.icon className="h-4 w-4 mr-2" /> {item.title}
+                      </button>
+                    ))}
                   </nav>
                 </div>
                 <div className="mt-auto pt-4">
