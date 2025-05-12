@@ -1,15 +1,104 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useBuilder } from "@/contexts/BuilderContext";
 import BuilderElement from "../BuilderElement";
 import EmptyCanvasPlaceholder from "./EmptyCanvasPlaceholder";
+import { v4 as uuidv4 } from "@/lib/uuid";
 
 interface PageCanvasProps {
   isPreviewMode: boolean;
 }
 
 const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
-  const { elements, selectedElementId } = useBuilder();
+  const { elements, selectedElementId, addElement, loadElements } = useBuilder();
+
+  // Effect to ensure every page has a header and footer
+  useEffect(() => {
+    if (elements.length === 0) {
+      // Create a complete page structure with header and footer when canvas is empty
+      const defaultElements = [
+        {
+          id: uuidv4(),
+          type: "navbar",
+          content: "",
+          props: {
+            siteName: "Your Website",
+            links: [
+              { text: "Home", url: "#" },
+              { text: "About", url: "#" },
+              { text: "Services", url: "#" },
+              { text: "Contact", url: "#" }
+            ]
+          }
+        },
+        {
+          id: uuidv4(),
+          type: "section",
+          content: "",
+          props: {
+            padding: "large"
+          },
+          children: []
+        },
+        {
+          id: uuidv4(),
+          type: "footer",
+          content: "",
+          props: {
+            siteName: "Your Website",
+            links: [
+              { text: "Home", url: "#" },
+              { text: "About", url: "#" },
+              { text: "Services", url: "#" },
+              { text: "Contact", url: "#" }
+            ]
+          }
+        }
+      ];
+
+      loadElements(defaultElements);
+    } else {
+      // Check if header and footer exist
+      const hasNavbar = elements.some(el => el.type === "navbar");
+      const hasFooter = elements.some(el => el.type === "footer");
+
+      // Add navbar if missing
+      if (!hasNavbar) {
+        addElement({
+          id: uuidv4(),
+          type: "navbar",
+          content: "",
+          props: {
+            siteName: "Your Website",
+            links: [
+              { text: "Home", url: "#" },
+              { text: "About", url: "#" },
+              { text: "Services", url: "#" },
+              { text: "Contact", url: "#" }
+            ]
+          }
+        });
+      }
+
+      // Add footer if missing
+      if (!hasFooter) {
+        addElement({
+          id: uuidv4(),
+          type: "footer",
+          content: "",
+          props: {
+            siteName: "Your Website",
+            links: [
+              { text: "Home", url: "#" },
+              { text: "About", url: "#" },
+              { text: "Services", url: "#" },
+              { text: "Contact", url: "#" }
+            ]
+          }
+        });
+      }
+    }
+  }, []); // Run once on mount
 
   return (
     <div className="w-full h-full bg-white">

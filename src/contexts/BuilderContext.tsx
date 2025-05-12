@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { v4 as uuidv4 } from "@/lib/uuid";
 
@@ -60,7 +59,21 @@ export const BuilderProvider: React.FC<{
   }, [initialElements]);
 
   const addElement = (element: BuilderElement) => {
-    setElements((prev) => [...prev, element]);
+    setElements((prev) => {
+      // Preserve navbar at the top and footer at the bottom
+      const navbarElements = prev.filter(el => el.type === "navbar");
+      const footerElements = prev.filter(el => el.type === "footer");
+      const contentElements = prev.filter(el => el.type !== "navbar" && el.type !== "footer");
+
+      // Determine where to insert the new element
+      if (element.type === "navbar") {
+        return [...navbarElements, element, ...contentElements, ...footerElements];
+      } else if (element.type === "footer") {
+        return [...navbarElements, ...contentElements, element];
+      } else {
+        return [...navbarElements, ...contentElements, element, ...footerElements];
+      }
+    });
     setSelectedElementId(element.id);
   };
 
@@ -73,6 +86,14 @@ export const BuilderProvider: React.FC<{
   };
 
   const removeElement = (id: string) => {
+    // Check if it's a navbar or footer before removing
+    const elementToRemove = elements.find(el => el.id === id);
+    if (elementToRemove && (elementToRemove.type === "navbar" || elementToRemove.type === "footer")) {
+      // Don't remove essential elements
+      console.warn(`Cannot remove ${elementToRemove.type} element - it is required for the page structure.`);
+      return;
+    }
+    
     setElements((prev) => prev.filter((element) => element.id !== id));
     if (selectedElementId === id) {
       setSelectedElementId(null);
@@ -112,7 +133,49 @@ export const BuilderProvider: React.FC<{
   };
 
   const loadElements = (newElements: BuilderElement[]) => {
-    setElements(newElements);
+    // Ensure we have at least one navbar and footer
+    let hasNavbar = newElements.some(el => el.type === "navbar");
+    let hasFooter = newElements.some(el => el.type === "footer");
+    
+    const elementsToSet = [...newElements];
+    
+    // Add navbar if missing
+    if (!hasNavbar) {
+      elementsToSet.unshift({
+        id: uuidv4(),
+        type: "navbar",
+        content: "",
+        props: {
+          siteName: pageSettings.title || "Your Website",
+          links: [
+            { text: "Home", url: "#" },
+            { text: "About", url: "#" },
+            { text: "Services", url: "#" },
+            { text: "Contact", url: "#" }
+          ]
+        }
+      });
+    }
+    
+    // Add footer if missing
+    if (!hasFooter) {
+      elementsToSet.push({
+        id: uuidv4(),
+        type: "footer",
+        content: "",
+        props: {
+          siteName: pageSettings.title || "Your Website",
+          links: [
+            { text: "Home", url: "#" },
+            { text: "About", url: "#" },
+            { text: "Services", url: "#" },
+            { text: "Contact", url: "#" }
+          ]
+        }
+      });
+    }
+    
+    setElements(elementsToSet);
     setSelectedElementId(null);
   };
 
@@ -125,6 +188,24 @@ export const BuilderProvider: React.FC<{
   
   const updatePageSettings = (settings: Partial<PageSettings>) => {
     setPageSettings(prev => ({ ...prev, ...settings }));
+    
+    // Update site name in navbar and footer if title changes
+    if (settings.title) {
+      setElements(prev => 
+        prev.map(element => {
+          if (element.type === "navbar" || element.type === "footer") {
+            return {
+              ...element,
+              props: {
+                ...element.props,
+                siteName: settings.title
+              }
+            };
+          }
+          return element;
+        })
+      );
+    }
   };
 
   return (

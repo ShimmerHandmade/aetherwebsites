@@ -15,9 +15,24 @@ const FooterElement: React.FC<ElementProps> = ({ element }) => {
     { text: "Services", url: "#" },
     { text: "Contact", url: "#" }
   ];
+  const variant = element.props?.variant || "dark";
+
+  // Variants for footer
+  const footerStyles = {
+    dark: "bg-gray-800 text-gray-200",
+    light: "bg-gray-100 text-gray-800",
+    brand: "bg-indigo-800 text-gray-200"
+  };
+  
+  // Link styles based on variant
+  const linkStyles = {
+    dark: "text-gray-400 hover:text-white transition-colors",
+    light: "text-gray-600 hover:text-gray-900 transition-colors",
+    brand: "text-indigo-200 hover:text-white transition-colors"
+  };
 
   return (
-    <footer className="p-6 bg-gray-800 text-gray-200">
+    <footer className={`p-6 ${footerStyles[variant as keyof typeof footerStyles]}`}>
       <div className="container mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0">
@@ -31,7 +46,7 @@ const FooterElement: React.FC<ElementProps> = ({ element }) => {
                 <li key={index}>
                   <a 
                     href={link.url} 
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className={linkStyles[variant as keyof typeof linkStyles]}
                   >
                     {link.text}
                   </a>
