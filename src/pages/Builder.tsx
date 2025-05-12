@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
 import BuilderLayout from "@/components/builder/BuilderLayout";
@@ -41,6 +42,15 @@ const Builder = () => {
   const [currentPageId, setCurrentPageId] = useState<string | null>(null);
   const [currentPageElements, setCurrentPageElements] = useState<BuilderElement[]>([]);
   const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
+
+  // Check URL params for preview mode
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const preview = urlParams.get('preview');
+    if (preview === 'true') {
+      setIsPreviewMode(true);
+    }
+  }, []);
 
   // Set current page to home page by default or from URL param
   useEffect(() => {
@@ -246,6 +256,21 @@ const Builder = () => {
 
   const pages = website?.settings?.pages || [];
   const currentPage = pages.find(page => page.id === currentPageId);
+
+  // If in preview mode via URL parameter, only show the canvas without builder UI
+  if (isPreviewMode && new URLSearchParams(window.location.search).get('preview') === 'true') {
+    return (
+      <BuilderProvider 
+        initialElements={currentPageElements} 
+        initialPageSettings={currentPageSettings || { title: currentPage?.title || websiteName }}
+        onSave={handleSaveComplete}
+      >
+        <div className="w-full min-h-screen">
+          <BuilderContent isPreviewMode={true} />
+        </div>
+      </BuilderProvider>
+    );
+  }
 
   return (
     <BuilderProvider 

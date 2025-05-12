@@ -10,7 +10,20 @@ import { Edit } from "lucide-react";
 const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  
+  // Check if we're in full preview mode via URL parameter
+  const isFullPreview = isPreviewMode && new URLSearchParams(window.location.search).get('preview') === 'true';
 
+  // For full preview mode, render just the canvas without any UI controls
+  if (isFullPreview) {
+    return (
+      <div className="flex-1 min-h-screen">
+        <BuilderCanvas isPreviewMode={true} />
+      </div>
+    );
+  }
+
+  // Regular preview mode or edit mode
   if (isPreviewMode) {
     return (
       <div className="flex-1 bg-slate-100 overflow-auto">

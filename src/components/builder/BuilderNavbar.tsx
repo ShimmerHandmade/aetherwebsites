@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,8 @@ import {
   Package,
   Save,
   ArrowLeft,
-  Home
+  Home,
+  ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -111,6 +111,14 @@ const BuilderNavbar = ({
     }
   };
 
+  const handleOpenFullPreview = () => {
+    const websiteId = window.location.pathname.split("/")[2];
+    if (!websiteId) return;
+    
+    // Open a new tab with the preview URL
+    window.open(`/builder/${websiteId}?preview=true`, '_blank');
+  };
+
   return (
     <div className="w-full flex flex-col bg-white border-b border-slate-200">
       {/* Top bar */}
@@ -164,6 +172,16 @@ const BuilderNavbar = ({
         </div>
 
         <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleOpenFullPreview}
+            title="Open in new tab"
+            className="flex items-center gap-1"
+          >
+            <ExternalLink className="h-4 w-4" />
+            View Site
+          </Button>
           <Button
             variant="outline"
             size="sm"
