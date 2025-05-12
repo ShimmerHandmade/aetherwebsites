@@ -72,23 +72,25 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
         return;
       }
       
-      // Cast settings to WebsiteSettings to work with pageSettings and pages
-      const settings = data.settings as WebsiteSettings;
+      // Parse the settings field if it's a string, otherwise cast it
+      const parsedSettings: WebsiteSettings = typeof data.settings === 'string' 
+        ? JSON.parse(data.settings as string)
+        : (data.settings as unknown as WebsiteSettings) || {};
       
       // Convert the database response to the correct type
       const websiteData: WebsiteData = {
         id: data.id,
         name: data.name,
         content: Array.isArray(data.content) ? data.content as unknown as BuilderElement[] : [],
-        settings: data.settings,
+        settings: parsedSettings,
         // Store page settings from the settings object if it exists
-        pageSettings: settings?.pageSettings || null,
+        pageSettings: parsedSettings?.pageSettings || null,
         published: !!data.published
       };
 
       setWebsite(websiteData);
       setWebsiteName(data.name);
-      setPageSettings(settings?.pageSettings || { title: data.name });
+      setPageSettings(parsedSettings?.pageSettings || { title: data.name });
       
       // Load elements from content if available
       if (data.content && Array.isArray(data.content) && data.content.length > 0) {
@@ -116,7 +118,7 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
       const settingsToSave = updatedPageSettings || pageSettings;
       
       // Store page settings and additional settings within the settings object
-      const updatedSettings = {
+      const updatedSettings: WebsiteSettings = {
         ...website.settings,
         pageSettings: settingsToSave,
         ...(additionalSettings || {})
