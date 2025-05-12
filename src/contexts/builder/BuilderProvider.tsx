@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 import { BuilderElement, BuilderContextType, PageSettings } from "./types";
 import { v4 as uuidv4 } from "@/lib/uuid";
@@ -139,8 +140,15 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     setSelectedElementId(id);
   };
 
-  const moveElement = (sourceIndex: number, destinationIndex: number, targetParentId?: string, sourceParentId?: string) => {
-    // Handle moves within the same parent container
+  const moveElement = (
+    sourceIndex: number, 
+    destinationIndex: number, 
+    targetParentId?: string, 
+    sourceParentId?: string
+  ) => {
+    console.log(`Move element: sourceIndex=${sourceIndex}, destIndex=${destinationIndex}, targetParent=${targetParentId}, sourceParent=${sourceParentId}`);
+    
+    // Case 1: Moving within the same parent container
     if (sourceParentId === targetParentId) {
       if (!sourceParentId) {
         // Moving at root level
@@ -164,10 +172,71 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
           });
         });
       }
-    } else {
-      // Moving between different containers is handled by the add/remove pattern in CanvasDragDropHandler
-      console.log("Moving between different containers - handled by add/remove");
+      return;
     }
+    
+    // Case 2: Moving between different containers
+    // This is more complex and requires:
+    // 1. Get the element from the source location
+    // 2. Remove it from the source
+    // 3. Add it to the destination
+    
+    // First, get a reference to the element being moved
+    let elementToMove: BuilderElement | null = null;
+    
+    if (!sourceParentId) {
+      // Element is at the root level
+      elementToMove = elements[sourceIndex];
+    } else {
+      // Element is in a container
+      const sourceContainer = findElementById(sourceParentId);
+      if (sourceContainer && sourceContainer.children) {
+        elementToMove = sourceContainer.children[sourceIndex];
+      }
+    }
+    
+    if (!elementToMove) {
+      console.error("Element to move not found");
+      return;
+    }
+    
+    // Now remove the element from its source location
+    setElements(prev => {
+      let updatedElements = [...prev];
+      
+      if (!sourceParentId) {
+        // Remove from root level
+        updatedElements.splice(sourceIndex, 1);
+      } else {
+        // Remove from container
+        updatedElements = updateElementInTree(updatedElements, sourceParentId, parent => {
+          const updatedChildren = [...(parent.children || [])];
+          updatedChildren.splice(sourceIndex, 1);
+          return {
+            ...parent,
+            children: updatedChildren
+          };
+        });
+      }
+      
+      // Now add it to the destination
+      if (!targetParentId) {
+        // Add to root level
+        updatedElements.splice(destinationIndex, 0, elementToMove!);
+      } else {
+        // Add to container
+        updatedElements = updateElementInTree(updatedElements, targetParentId, parent => {
+          const updatedChildren = [...(parent.children || [])];
+          updatedChildren.splice(destinationIndex, 0, elementToMove!);
+          return {
+            ...parent,
+            children: updatedChildren
+          };
+        });
+      }
+      
+      return updatedElements;
+    });
   };
   
   const duplicateElement = (id: string) => {
