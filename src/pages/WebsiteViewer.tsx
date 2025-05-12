@@ -27,8 +27,10 @@ const WebsiteViewer = () => {
       const homePage = website.settings.pages.find(page => page.isHomePage);
       if (homePage) {
         setCurrentPageId(homePage.id);
+        console.log("Home page found:", homePage);
       } else if (website.settings.pages.length > 0) {
         setCurrentPageId(website.settings.pages[0].id);
+        console.log("No home page found, using first page:", website.settings.pages[0]);
       }
     }
   }, [website]);
@@ -42,8 +44,25 @@ const WebsiteViewer = () => {
     const pageContent = pagesContent[currentPageId] || [];
     const pageSettings = website.settings.pagesSettings?.[currentPageId] || { title: websiteName };
     
-    // Set current page elements and settings
-    setCurrentPageElements(pageContent.length ? pageContent : elements || []);
+    console.log("Loading content for page ID:", currentPageId);
+    console.log("Available page content:", Object.keys(pagesContent));
+    console.log("Number of elements in page content:", pageContent.length);
+    
+    // If the page has no specific content and this is the homepage, use the main content
+    if (pageContent.length === 0) {
+      const homePage = website.settings.pages.find(p => p.isHomePage);
+      if (homePage && homePage.id === currentPageId && Array.isArray(website.content)) {
+        console.log("Using website main content for home page");
+        setCurrentPageElements(website.content);
+      } else {
+        console.log("Using empty or fallback content");
+        setCurrentPageElements(pageContent.length ? pageContent : elements || []);
+      }
+    } else {
+      console.log("Using page-specific content");
+      setCurrentPageElements(pageContent);
+    }
+    
     setCurrentPageSettings(pageSettings);
   }, [currentPageId, website, elements, websiteName]);
 

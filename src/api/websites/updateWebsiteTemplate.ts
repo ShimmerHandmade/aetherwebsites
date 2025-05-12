@@ -43,34 +43,48 @@ export const updateWebsiteTemplate = async (
       (typeof website.settings === 'string' ? JSON.parse(website.settings) : website.settings) : 
       {};
     
+    // Create new pages array with uuids
+    const pages = templateSettings.pages.map(page => ({
+      ...page,
+      id: uuidv4() // Generate new unique IDs for each page
+    }));
+    
+    // Find the home page
+    const homePage = pages.find(p => p.isHomePage);
+    
+    if (!homePage) {
+      return {
+        success: false,
+        error: "Template has no home page defined"
+      };
+    }
+    
     // Update settings with template data
     const updatedSettings = {
       ...settings,
       ...templateSettings,
+      pages, // Use the newly generated page IDs
       pageSettings: templateSettings.pageSettings || settings.pageSettings || { title: "My Website" },
-      pages: templateSettings.pages || settings.pages || []
     };
     
-    // For each page in the template, add its content to pagesContent
+    // For each page in the template, add its content to pagesContent using the NEW page IDs
     const pagesContent = { ...(settings.pagesContent || {}) };
-    if (templateSettings.pages && templateSettings.pages.length > 0) {
-      templateSettings.pages.forEach((page) => {
-        // Find corresponding page content in template
-        const pageTemplateContent = templateContent.pages?.[page.id] || [];
-        pagesContent[page.id] = pageTemplateContent;
-      });
-    }
     
-    // Make sure home page content is set as main content as well
-    const homePage = templateSettings.pages?.find(p => p.isHomePage);
-    const homePageContent = homePage ? pagesContent[homePage.id] || [] : [];
+    // Get the home page content from the template
+    // The template structure stores pages as an object with keys
+    const homePageContent = templateContent.pages?.homepage || [];
+    
+    // Store this content under the new home page ID
+    pagesContent[homePage.id] = homePageContent;
+    
+    // Make sure to also set the main content for the website to be the home page content
     
     // Update website with template name, content and settings
     const { error } = await supabase
       .from("websites")
       .update({ 
         template,
-        content: homePageContent,
+        content: homePageContent, // Set main content to home page content
         settings: {
           ...updatedSettings,
           pagesContent
@@ -86,6 +100,7 @@ export const updateWebsiteTemplate = async (
       };
     }
     
+    console.log("Template applied successfully with home page:", homePage);
     return { success: true };
   } catch (error) {
     console.error("Error in updateWebsiteTemplate:", error);
@@ -118,25 +133,19 @@ const getTemplateSettings = (templateId: string) => {
   const baseSettings = {
     pages: [
       {
-        id: uuidv4(),
+        id: "homepage", // This ID will be replaced with a UUID in the function above
         title: "Home",
         slug: "/",
         isHomePage: true
       },
       {
-        id: uuidv4(),
+        id: "about",
         title: "About",
         slug: "/about",
         isHomePage: false
       },
       {
-        id: uuidv4(),
-        title: "Shop",
-        slug: "/shop",
-        isHomePage: false
-      },
-      {
-        id: uuidv4(),
+        id: "contact",
         title: "Contact",
         slug: "/contact",
         isHomePage: false
@@ -152,6 +161,21 @@ const getTemplateSettings = (templateId: string) => {
     case 'ecommerce':
       return {
         ...baseSettings,
+        pages: [
+          ...baseSettings.pages,
+          {
+            id: "shop",
+            title: "Shop",
+            slug: "/shop",
+            isHomePage: false
+          },
+          {
+            id: "cart",
+            title: "Cart",
+            slug: "/cart",
+            isHomePage: false
+          }
+        ],
         pageSettings: {
           ...baseSettings.pageSettings,
           title: "My E-Commerce Store"
@@ -160,6 +184,15 @@ const getTemplateSettings = (templateId: string) => {
     case 'portfolio':
       return {
         ...baseSettings,
+        pages: [
+          ...baseSettings.pages,
+          {
+            id: "projects",
+            title: "Projects",
+            slug: "/projects",
+            isHomePage: false
+          }
+        ],
         pageSettings: {
           ...baseSettings.pageSettings,
           title: "My Portfolio"
@@ -168,6 +201,21 @@ const getTemplateSettings = (templateId: string) => {
     case 'blog':
       return {
         ...baseSettings,
+        pages: [
+          ...baseSettings.pages,
+          {
+            id: "articles",
+            title: "Articles",
+            slug: "/articles",
+            isHomePage: false
+          },
+          {
+            id: "categories",
+            title: "Categories",
+            slug: "/categories",
+            isHomePage: false
+          }
+        ],
         pageSettings: {
           ...baseSettings.pageSettings,
           title: "My Blog"
@@ -176,6 +224,21 @@ const getTemplateSettings = (templateId: string) => {
     case 'business':
       return {
         ...baseSettings,
+        pages: [
+          ...baseSettings.pages,
+          {
+            id: "services",
+            title: "Services",
+            slug: "/services",
+            isHomePage: false
+          },
+          {
+            id: "testimonials",
+            title: "Testimonials",
+            slug: "/testimonials",
+            isHomePage: false
+          }
+        ],
         pageSettings: {
           ...baseSettings.pageSettings,
           title: "My Business"
