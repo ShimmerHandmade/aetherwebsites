@@ -81,7 +81,8 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
     const planData = profile.plans;
     if (!planData) return planRestrictions.default;
     
-    const planName = typeof planData === 'object' && 'name' in planData 
+    // Use non-null assertion since we've already checked planData is not null
+    const planName = typeof planData === 'object' && 'name' in planData! 
       ? (planData as any).name as string 
       : 'default';
     
@@ -133,7 +134,8 @@ export async function getUserPlanName(): Promise<string | null> {
     const planData = profile.plans;
     if (!planData) return null;
     
-    return typeof planData === 'object' && 'name' in planData 
+    // Use non-null assertion since we've already checked planData is not null
+    return typeof planData === 'object' && 'name' in planData! 
       ? (planData as any).name as string 
       : null;
   } catch (error) {
