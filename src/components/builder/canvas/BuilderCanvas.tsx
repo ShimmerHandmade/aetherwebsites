@@ -1,6 +1,6 @@
 
 import React from "react";
-import { useBuilder } from "@/contexts/BuilderContext";
+import { useBuilder } from "@/contexts/builder";
 import CanvasDragDropHandler from "./CanvasDragDropHandler";
 import PageCanvas from "./PageCanvas";
 import EmptyCanvasPlaceholder from "./EmptyCanvasPlaceholder";
