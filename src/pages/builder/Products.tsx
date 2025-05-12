@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,10 @@ const BuilderProducts = () => {
     isLoading, 
     websiteName 
   } = useWebsite(id, navigate);
+
+  const handleBackToBuilder = () => {
+    navigate(`/builder/${id}`);
+  };
 
   if (isLoading) {
     return (
@@ -43,14 +48,18 @@ const BuilderProducts = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
-          <Button variant="outline" size="sm" onClick={() => navigate(`/builder/${id}`)}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleBackToBuilder}
+          >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Builder
           </Button>
         </div>
         
         <div className="bg-white rounded-lg shadow-sm p-6 h-[calc(100vh-200px)]">
-          <ProductManager />
+          <ProductManager websiteId={id} onBackToBuilder={handleBackToBuilder} />
         </div>
       </div>
     </div>

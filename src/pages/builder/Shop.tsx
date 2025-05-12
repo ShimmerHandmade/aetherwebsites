@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -167,16 +168,39 @@ const BuilderShop = () => {
   };
 
   const handleBackToBuilder = () => {
-    // Save first
-    handleSave();
+    // If there are unsaved changes, ask for confirmation
+    if (unsavedChanges) {
+      const confirmed = confirm("You have unsaved changes. Would you like to save before leaving?");
+      if (confirmed) {
+        // Save first, then navigate
+        handleSave();
+      }
+    }
     
-    // Then navigate back
+    // Navigate back
     navigate(`/builder/${id}`);
   };
   
   const handleReturnToDashboard = () => {
     navigate('/dashboard');
   };
+
+  // Track unsaved changes
+  const [unsavedChanges, setUnsavedChanges] = React.useState(false);
+  
+  // Listen for changes that should mark the page as having unsaved changes
+  useEffect(() => {
+    const markAsUnsaved = () => setUnsavedChanges(true);
+    const markAsSaved = () => setUnsavedChanges(false);
+    
+    document.addEventListener('builder-content-changed', markAsUnsaved);
+    document.addEventListener('save-complete', markAsSaved);
+    
+    return () => {
+      document.removeEventListener('builder-content-changed', markAsUnsaved);
+      document.removeEventListener('save-complete', markAsSaved);
+    };
+  }, []);
 
   if (isLoading) {
     return (

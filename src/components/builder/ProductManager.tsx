@@ -13,7 +13,8 @@ import {
   Loader2, 
   FileImage, 
   Tag,
-  Tags
+  Tags,
+  ArrowLeft
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,8 +46,13 @@ interface UniqueCategory {
   name: string;
 }
 
-const ProductManager: React.FC = () => {
-  const { id: websiteId } = useParams<{ id: string }>();
+interface ProductManagerProps {
+  websiteId?: string;
+  onBackToBuilder?: () => void;
+}
+
+const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuilder }) => {
+  const { id: websiteIdParam } = useParams<{ id: string }>();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<UniqueCategory[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -398,6 +404,23 @@ const ProductManager: React.FC = () => {
     toast.success("Category removed from list");
   };
 
+  const handleBackToBuilder = () => {
+    if (editingProduct) {
+      // If editing, ask for confirmation before navigating away
+      if (confirm("You have unsaved product changes. Are you sure you want to go back without saving?")) {
+        setEditingProduct(null);
+        setImagePreview(null);
+        setImageFile(null);
+      } 
+      return;
+    }
+    
+    // Navigate back to builder if not editing and callback exists
+    if (onBackToBuilder) {
+      onBackToBuilder();
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="h-full flex flex-col items-center justify-center">
@@ -412,15 +435,28 @@ const ProductManager: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold">Product Manager</h2>
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={() => setCurrentView(currentView === "grid" ? "list" : "grid")}
-          >
-            {currentView === "grid" ? "List View" : "Grid View"}
-          </Button>
-          <Button onClick={handleAddNew} className="flex items-center gap-1">
-            <Plus className="h-4 w-4" /> Add Product
-          </Button>
+          {editingProduct ? (
+            <Button 
+              variant="outline" 
+              onClick={handleBackToBuilder}
+              className="flex items-center gap-1"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Products
+            </Button>
+          ) : (
+            <>
+              <Button 
+                variant="outline" 
+                onClick={() => setCurrentView(currentView === "grid" ? "list" : "grid")}
+              >
+                {currentView === "grid" ? "List View" : "Grid View"}
+              </Button>
+              <Button onClick={handleAddNew} className="flex items-center gap-1">
+                <Plus className="h-4 w-4" /> Add Product
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
