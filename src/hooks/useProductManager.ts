@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Product, UniqueCategory } from "@/types/product";
 import { fetchProducts, saveProduct, deleteProduct } from "@/api/products";
+import { checkProductLimit } from "@/utils/planRestrictions";
 
 export function useProductManager(websiteId: string | undefined) {
   const [products, setProducts] = useState<Product[]>([]);
@@ -56,7 +57,14 @@ export function useProductManager(websiteId: string | undefined) {
     return matchesSearch;
   });
 
-  const handleAddNew = () => {
+  const handleAddNew = async () => {
+    // Check if adding a new product would exceed the plan limit
+    const canAddProduct = await checkProductLimit(products.length);
+    
+    if (!canAddProduct) {
+      return; // Don't allow adding new product if limit is reached
+    }
+    
     setEditingProduct({
       id: "",
       name: "",
@@ -129,6 +137,14 @@ export function useProductManager(websiteId: string | undefined) {
 
   const handleSave = async () => {
     if (!editingProduct || !websiteId) return;
+    
+    // If this is a new product, check if it would exceed the plan limit
+    if (isAddingNew) {
+      const canAddProduct = await checkProductLimit(products.length);
+      if (!canAddProduct) {
+        return; // Don't allow saving if limit is reached
+      }
+    }
     
     // Validate required fields
     if (!editingProduct.name.trim()) {

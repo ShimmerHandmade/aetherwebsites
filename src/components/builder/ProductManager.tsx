@@ -1,10 +1,11 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useProductManager } from "@/hooks/useProductManager";
 import ProductHeader from "./products/ProductHeader";
 import ProductSearch from "./products/ProductSearch";
 import ProductContent from "./products/ProductContent";
+import PlanLimitsInfo from "@/components/PlanLimitsInfo";
 
 interface ProductManagerProps {
   websiteId?: string;
@@ -16,6 +17,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
   const effectiveWebsiteId = websiteId || websiteIdParam;
   
   const {
+    products,
     editingProduct,
     setEditingProduct,
     isAddingNew,
@@ -71,17 +73,24 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
       />
 
       {!editingProduct && (
-        <ProductSearch
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          categories={categories}
-          newCategory={newCategory}
-          onNewCategoryChange={setNewCategory}
-          onAddCategory={handleAddCategory}
-          onDeleteCategory={handleDeleteCategory}
-        />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4 px-4">
+          <div className="lg:col-span-3">
+            <ProductSearch
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              categories={categories}
+              newCategory={newCategory}
+              onNewCategoryChange={setNewCategory}
+              onAddCategory={handleAddCategory}
+              onDeleteCategory={handleDeleteCategory}
+            />
+          </div>
+          <div className="lg:col-span-1">
+            <PlanLimitsInfo productCount={products.length} />
+          </div>
+        </div>
       )}
 
       <ProductContent
