@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { v4 as uuidv4 } from "@/lib/uuid";
 
@@ -27,7 +28,7 @@ interface BuilderContextType {
   elements: BuilderElement[];
   selectedElementId: string | null;
   pageSettings: PageSettings | null;
-  addElement: (element: BuilderElement) => void;
+  addElement: (element: BuilderElement, position?: number) => void;
   updateElement: (id: string, updates: Partial<BuilderElement>) => void;
   removeElement: (id: string) => void;
   selectElement: (id: string | null) => void;
@@ -58,20 +59,42 @@ export const BuilderProvider: React.FC<{
     }
   }, [initialElements]);
 
-  const addElement = (element: BuilderElement) => {
+  const addElement = (element: BuilderElement, position?: number) => {
     setElements((prev) => {
-      // Preserve navbar at the top and footer at the bottom
-      const navbarElements = prev.filter(el => el.type === "navbar");
-      const footerElements = prev.filter(el => el.type === "footer");
-      const contentElements = prev.filter(el => el.type !== "navbar" && el.type !== "footer");
-
-      // Determine where to insert the new element
+      // If this is a navbar, always add it to the beginning
       if (element.type === "navbar") {
-        return [...navbarElements, element, ...contentElements, ...footerElements];
-      } else if (element.type === "footer") {
-        return [...navbarElements, ...contentElements, element];
+        // Remove any existing navbars first
+        const filteredElements = prev.filter(el => el.type !== "navbar");
+        return [element, ...filteredElements];
+      }
+      
+      // If this is a footer, always add it to the end
+      if (element.type === "footer") {
+        // Remove any existing footers first
+        const filteredElements = prev.filter(el => el.type !== "footer");
+        return [...filteredElements, element];
+      }
+      
+      // For other elements, insert at the specified position or before the footer
+      if (position !== undefined) {
+        const newElements = [...prev];
+        newElements.splice(position, 0, element);
+        return newElements;
       } else {
-        return [...navbarElements, ...contentElements, element, ...footerElements];
+        // Find any footers to ensure new content is added before them
+        const footerIndices = prev
+          .map((el, i) => el.type === "footer" ? i : -1)
+          .filter(i => i !== -1);
+        
+        if (footerIndices.length > 0) {
+          const firstFooterIndex = footerIndices[0];
+          const newElements = [...prev];
+          newElements.splice(firstFooterIndex, 0, element);
+          return newElements;
+        }
+        
+        // No footers, just append
+        return [...prev, element];
       }
     });
     setSelectedElementId(element.id);
@@ -152,7 +175,8 @@ export const BuilderProvider: React.FC<{
             { text: "About", url: "#" },
             { text: "Services", url: "#" },
             { text: "Contact", url: "#" }
-          ]
+          ],
+          variant: "default"
         }
       });
     }
@@ -170,7 +194,8 @@ export const BuilderProvider: React.FC<{
             { text: "About", url: "#" },
             { text: "Services", url: "#" },
             { text: "Contact", url: "#" }
-          ]
+          ],
+          variant: "dark"
         }
       });
     }

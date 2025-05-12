@@ -19,23 +19,23 @@ const NavbarElement: React.FC<ElementProps> = ({ element }) => {
   
   // Variants for navbar
   const navbarStyles = {
-    default: "bg-white shadow-sm",
+    default: "bg-white shadow-sm border-b border-gray-200",
     transparent: "bg-transparent",
     dark: "bg-gray-900 text-white"
   };
   
   // Link styles based on variant
   const linkStyles = {
-    default: "text-gray-600 hover:text-indigo-600 transition-colors",
-    transparent: "text-gray-800 hover:text-indigo-600 transition-colors",
-    dark: "text-gray-300 hover:text-white transition-colors"
+    default: "text-gray-600 hover:text-indigo-600 transition-colors font-medium",
+    transparent: "text-gray-800 hover:text-indigo-600 transition-colors font-medium",
+    dark: "text-gray-300 hover:text-white transition-colors font-medium"
   };
   
   return (
     <header className={navbarStyles[variant as keyof typeof navbarStyles]}>
       <div className="container mx-auto p-4">
         <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             {logo ? (
               <img src={logo} alt={`${siteName} logo`} className="h-8" />
             ) : (
@@ -47,7 +47,7 @@ const NavbarElement: React.FC<ElementProps> = ({ element }) => {
           </div>
           
           <nav className="hidden md:block">
-            <ul className="flex space-x-6">
+            <ul className="flex space-x-8">
               {links.map((link, index) => (
                 <li key={index}>
                   <a 
@@ -63,7 +63,7 @@ const NavbarElement: React.FC<ElementProps> = ({ element }) => {
           
           <div className="md:hidden">
             <button 
-              className={`p-2 ${variant === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}
+              className={`p-2 ${variant === 'dark' ? 'text-gray-300' : 'text-gray-600'} hover:bg-gray-100 hover:text-gray-900 rounded-md transition-colors`}
               aria-label="Menu"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

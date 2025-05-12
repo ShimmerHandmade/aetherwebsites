@@ -28,7 +28,8 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
               { text: "About", url: "#" },
               { text: "Services", url: "#" },
               { text: "Contact", url: "#" }
-            ]
+            ],
+            variant: "default"
           }
         },
         {
@@ -51,7 +52,8 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
               { text: "About", url: "#" },
               { text: "Services", url: "#" },
               { text: "Contact", url: "#" }
-            ]
+            ],
+            variant: "dark"
           }
         }
       ];
@@ -75,9 +77,10 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
               { text: "About", url: "#" },
               { text: "Services", url: "#" },
               { text: "Contact", url: "#" }
-            ]
+            ],
+            variant: "default"
           }
-        });
+        }, 0); // Add at the beginning
       }
 
       // Add footer if missing
@@ -93,9 +96,10 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
               { text: "About", url: "#" },
               { text: "Services", url: "#" },
               { text: "Contact", url: "#" }
-            ]
+            ],
+            variant: "dark"
           }
-        });
+        }); // Add at the end
       }
     }
   }, []); // Run once on mount

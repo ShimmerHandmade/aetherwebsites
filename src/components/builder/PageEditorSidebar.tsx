@@ -7,16 +7,18 @@ import PageSettings from "./PageSettings";
 import ProductManager from "./ProductManager";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { v4 as uuidv4 } from "@/lib/uuid";
 import {
   LayoutGrid,
   Pencil,
   Settings,
   ShoppingBag,
   Search,
-  Text,
+  Type,
   Image,
   Video,
-  Square, // Using Square instead of Button as it's a valid Lucide icon
+  Square,
   FormInput,
   FileText as FileTextIcon,
   Package,
@@ -33,17 +35,72 @@ interface PageEditorSidebarProps {
 const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) => {
   const [activeTab, setActiveTab] = useState<string>("elements");
   const [searchTerm, setSearchTerm] = useState("");
-  const { selectedElementId } = useBuilder();
+  const { selectedElementId, addElement } = useBuilder();
 
   if (isPreviewMode) return null;
 
   const basicElements = [
-    { label: "Text", icon: Text },
-    { label: "Image", icon: Image },
-    { label: "Button", icon: Square }, // Updated to use Square icon
-    { label: "Video", icon: Video },
-    { label: "Form", icon: FormInput }
+    { 
+      label: "Text", 
+      icon: Type,
+      onClick: () => addElement({
+        id: uuidv4(),
+        type: "text",
+        content: "Double-click to edit this text",
+        props: {}
+      })
+    },
+    { 
+      label: "Image", 
+      icon: Image,
+      onClick: () => addElement({
+        id: uuidv4(),
+        type: "image",
+        content: "",
+        props: {}
+      })
+    },
+    { 
+      label: "Button", 
+      icon: Square,
+      onClick: () => addElement({
+        id: uuidv4(),
+        type: "button",
+        content: "Click Me",
+        props: {
+          variant: "primary"
+        }
+      })
+    },
+    { 
+      label: "Video", 
+      icon: Video,
+      onClick: () => addElement({
+        id: uuidv4(),
+        type: "video",
+        content: "",
+        props: {
+          controls: true
+        }
+      })
+    },
+    { 
+      label: "Form", 
+      icon: FormInput,
+      onClick: () => addElement({
+        id: uuidv4(),
+        type: "form",
+        content: "",
+        props: {}
+      })
+    }
   ];
+
+  const handleAddElement = (elementInfo: typeof basicElements[0]) => {
+    if (elementInfo.onClick) {
+      elementInfo.onClick();
+    }
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -110,15 +167,15 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
                   {basicElements.map((element) => (
                     <div
                       key={element.label}
-                      className="flex flex-col items-center justify-center p-3 hover:bg-slate-50 rounded-md cursor-pointer"
-                      draggable
+                      className="flex flex-col items-center justify-center p-3 hover:bg-slate-50 rounded-md cursor-pointer border border-slate-200 transition-colors duration-200"
+                      onClick={() => handleAddElement(element)}
                     >
                       <element.icon className="h-6 w-6 mb-2 text-slate-600" />
                       <span className="text-xs text-slate-600">{element.label}</span>
                     </div>
                   ))}
                   <div
-                    className="flex flex-col items-center justify-center p-3 hover:bg-slate-50 rounded-md cursor-pointer"
+                    className="flex flex-col items-center justify-center p-3 hover:bg-slate-50 rounded-md cursor-pointer border border-slate-200 transition-colors duration-200"
                   >
                     <Plus className="h-6 w-6 mb-2 text-slate-600" />
                     <span className="text-xs text-slate-600">More</span>

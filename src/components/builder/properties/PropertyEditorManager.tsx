@@ -14,6 +14,8 @@ import TextPropertyEditor from "./TextPropertyEditor";
 import FormPropertyEditor from "./FormPropertyEditor";
 import ListPropertyEditor from "./ListPropertyEditor";
 import CardPropertyEditor from "./CardPropertyEditor";
+import NavbarPropertyEditor from "./NavbarPropertyEditor";
+import FooterPropertyEditor from "./FooterPropertyEditor";
 
 interface PropertyEditorManagerProps {
   element: BuilderElement;
@@ -138,31 +140,21 @@ const PropertyEditorManager: React.FC<PropertyEditorManagerProps> = ({
       );
       
     case "navbar":
+      return (
+        <NavbarPropertyEditor
+          element={element}
+          onPropertyChange={onPropertyChange}
+          onContentChange={onContentChange}
+        />
+      );
+      
     case "footer":
       return (
-        <div className="space-y-4">
-          <ContentPropertyEditor 
-            content={element.content} 
-            onContentChange={onContentChange} 
-          />
-          <div className="space-y-2">
-            <Label>Site Name</Label>
-            <Input
-              value={element.props?.siteName || "Your Website"}
-              onChange={(e) => onPropertyChange("siteName", e.target.value)}
-            />
-          </div>
-          {element.type === "navbar" && (
-            <div className="space-y-2">
-              <Label>Logo URL</Label>
-              <Input
-                value={element.props?.logo || ""}
-                onChange={(e) => onPropertyChange("logo", e.target.value)}
-                placeholder="https://example.com/logo.png"
-              />
-            </div>
-          )}
-        </div>
+        <FooterPropertyEditor
+          element={element}
+          onPropertyChange={onPropertyChange}
+          onContentChange={onContentChange}
+        />
       );
 
     // Default case - just show content editor for simple elements
@@ -184,8 +176,5 @@ const PropertyEditorManager: React.FC<PropertyEditorManagerProps> = ({
       );
   }
 };
-
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 
 export default PropertyEditorManager;
