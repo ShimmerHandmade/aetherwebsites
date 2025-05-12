@@ -26,21 +26,80 @@ const Builder = () => {
   // Track preview mode state at this level
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [currentPageId, setCurrentPageId] = useState<string | null>(null);
+  const [currentPageElements, setCurrentPageElements] = useState<BuilderElement[]>([]);
+  const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
 
   // Set current page to home page by default
   useEffect(() => {
     if (website?.settings?.pages) {
-      const homePage = website.settings.pages.find(page => page.isHomePage);
-      if (homePage) {
-        setCurrentPageId(homePage.id);
-      } else if (website.settings.pages.length > 0) {
-        setCurrentPageId(website.settings.pages[0].id);
+      const pageId = new URLSearchParams(window.location.search).get('pageId');
+      
+      // If pageId is specified in URL, use it
+      if (pageId) {
+        const page = website.settings.pages.find(page => page.id === pageId);
+        if (page) {
+          setCurrentPageId(pageId);
+        } else {
+          // If specified pageId doesn't exist, default to home
+          const homePage = website.settings.pages.find(page => page.isHomePage);
+          setCurrentPageId(homePage?.id || website.settings.pages[0]?.id || null);
+        }
+      } else {
+        // Default to home page
+        const homePage = website.settings.pages.find(page => page.isHomePage);
+        if (homePage) {
+          setCurrentPageId(homePage.id);
+        } else if (website.settings.pages.length > 0) {
+          setCurrentPageId(website.settings.pages[0].id);
+        }
       }
     }
   }, [website]);
 
+  // Load page content when currentPageId changes
+  useEffect(() => {
+    if (!website || !currentPageId) return;
+    
+    // Get content for current page
+    const pagesContent = website.settings.pagesContent || {};
+    const pageContent = pagesContent[currentPageId] || [];
+    const pageSettings = website.settings.pagesSettings?.[currentPageId] || { title: websiteName };
+    
+    // Set current page elements and settings
+    setCurrentPageElements(pageContent.length ? pageContent : elements || []);
+    setCurrentPageSettings(pageSettings);
+    
+  }, [currentPageId, website, elements, websiteName]);
+
   const handleSave = async (updatedElements: BuilderElement[], updatedPageSettings: PageSettings) => {
-    await saveWebsite(updatedElements, updatedPageSettings);
+    if (!currentPageId || !website) return;
+
+    // Create or update pagesContent and pagesSettings in website settings
+    const pagesContent = website.settings.pagesContent || {};
+    const pagesSettings = website.settings.pagesSettings || {};
+    
+    // Update content and settings for current page
+    pagesContent[currentPageId] = updatedElements;
+    pagesSettings[currentPageId] = updatedPageSettings;
+    
+    // Save to database
+    await saveWebsite(
+      updatedElements, 
+      updatedPageSettings, 
+      {
+        pagesContent,
+        pagesSettings
+      }
+    );
+  };
+  
+  const handleChangePage = (pageId: string) => {
+    // Save current page first
+    document.dispatchEvent(new CustomEvent('save-website'));
+    
+    // Update URL with pageId parameter
+    navigate(`/builder/${id}?pageId=${pageId}`);
+    setCurrentPageId(pageId);
   };
 
   if (isLoading) {
@@ -68,10 +127,13 @@ const Builder = () => {
     );
   }
 
+  const pages = website.settings.pages || [];
+  const currentPage = pages.find(page => page.id === currentPageId);
+
   return (
     <BuilderProvider 
-      initialElements={elements} 
-      initialPageSettings={pageSettings || { title: websiteName }}
+      initialElements={currentPageElements} 
+      initialPageSettings={currentPageSettings || { title: currentPage?.title || websiteName }}
       onSave={handleSave}
     >
       <BuilderLayout isPreviewMode={isPreviewMode} setIsPreviewMode={setIsPreviewMode}>
@@ -85,6 +147,9 @@ const Builder = () => {
           isPublished={website.published}
           isPreviewMode={isPreviewMode}
           setIsPreviewMode={setIsPreviewMode}
+          currentPage={currentPage}
+          pages={pages}
+          onChangePage={handleChangePage}
         />
         <BuilderContent isPreviewMode={isPreviewMode} />
       </BuilderLayout>

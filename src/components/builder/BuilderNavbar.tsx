@@ -1,8 +1,9 @@
+
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Menu, Save, Eye, EyeOff, Settings, Monitor, Smartphone, FileIcon, LayoutTemplate, ShoppingBag } from "lucide-react";
+import { Menu, Save, Eye, EyeOff, Settings, Monitor, Smartphone, FileIcon, LayoutTemplate, ShoppingBag, ChevronDown } from "lucide-react";
 import { Toggle } from "@/components/ui/toggle";
 import { PreviewModeProps } from "./BuilderLayout";
 import { useBuilder } from "@/contexts/BuilderContext";
@@ -20,6 +21,21 @@ import {
   CommandItem,
   CommandGroup,
 } from "@/components/ui/command";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+
+interface Page {
+  id: string;
+  title: string;
+  slug: string;
+  isHomePage?: boolean;
+}
 
 interface BuilderNavbarProps extends PreviewModeProps {
   websiteName: string;
@@ -27,6 +43,9 @@ interface BuilderNavbarProps extends PreviewModeProps {
   onSave: () => Promise<void>;
   onPublish: () => Promise<void>;
   isPublished: boolean;
+  currentPage?: Page | null;
+  pages?: Page[];
+  onChangePage?: (pageId: string) => void;
 }
 
 const BuilderNavbar: React.FC<BuilderNavbarProps> = ({ 
@@ -36,7 +55,10 @@ const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
   onPublish,
   isPublished,
   isPreviewMode = false,
-  setIsPreviewMode = () => {}
+  setIsPreviewMode = () => {},
+  currentPage,
+  pages = [],
+  onChangePage = () => {}
 }) => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -150,11 +172,42 @@ const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
         {/* Page title */}
         <div className="ml-4">
           {!isPreviewMode ? (
-            <Input
-              value={websiteName}
-              onChange={(e) => setWebsiteName(e.target.value)}
-              className="max-w-xs border-slate-200 font-medium"
-            />
+            <div className="flex flex-col gap-1">
+              <Input
+                value={websiteName}
+                onChange={(e) => setWebsiteName(e.target.value)}
+                className="max-w-xs border-slate-200 font-medium"
+              />
+              <div className="flex items-center">
+                <span className="text-xs text-slate-500 mr-2">Page:</span>
+                {pages.length > 1 ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                        {currentPage?.title || "Select Page"}
+                        <ChevronDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuLabel>Switch Page</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {pages.map(page => (
+                        <DropdownMenuItem 
+                          key={page.id} 
+                          onClick={() => onChangePage(page.id)}
+                          className="flex items-center"
+                        >
+                          {page.title}
+                          {page.isHomePage && <span className="ml-2 text-xs bg-green-100 text-green-700 px-1 py-0.5 rounded">Home</span>}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <span className="text-xs font-medium">{currentPage?.title || "Home"}</span>
+                )}
+              </div>
+            </div>
           ) : (
             <div className="text-slate-800 font-medium">{websiteName}</div>
           )}

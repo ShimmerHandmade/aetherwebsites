@@ -10,7 +10,7 @@ export interface WebsiteData {
   id: string;
   name: string;
   content: BuilderElement[];
-  settings: any;
+  settings: WebsiteSettings;
   pageSettings?: PageSettings;
   published: boolean;
 }
@@ -23,6 +23,12 @@ interface WebsiteSettings {
     slug: string;
     isHomePage?: boolean;
   }>;
+  pagesContent?: {
+    [pageId: string]: BuilderElement[];
+  };
+  pagesSettings?: {
+    [pageId: string]: PageSettings;
+  };
   [key: string]: any;
 }
 

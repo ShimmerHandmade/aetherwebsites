@@ -2,12 +2,23 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plus, File, Trash, Edit, ChevronRight } from "lucide-react";
+import { ArrowLeft, Plus, File, Trash, Edit, ChevronRight, Home } from "lucide-react";
 import { useWebsite } from "@/hooks/useWebsite";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "@/lib/uuid";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface Page {
   id: string;
@@ -30,6 +41,9 @@ const BuilderPages = () => {
   const [newPageTitle, setNewPageTitle] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [editingPage, setEditingPage] = useState<Page | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editIsHomePage, setEditIsHomePage] = useState(false);
 
   // Initialize pages from website settings if available
   useEffect(() => {
@@ -80,10 +94,70 @@ const BuilderPages = () => {
     const updatedPages = pages.filter(page => page.id !== pageId);
     setPages(updatedPages);
     
-    // Save updated pages to database
-    await savePagesToDB(updatedPages);
+    // Delete page content as well
+    if (website?.settings) {
+      const pagesContent = { ...(website.settings.pagesContent || {}) };
+      const pagesSettings = { ...(website.settings.pagesSettings || {}) };
+      
+      delete pagesContent[pageId];
+      delete pagesSettings[pageId];
+      
+      // Save updated pages and remove page content
+      await saveWebsite(website.content, website.pageSettings, {
+        pages: updatedPages,
+        pagesContent,
+        pagesSettings
+      });
+    } else {
+      // Just save the updated pages
+      await savePagesToDB(updatedPages);
+    }
     
     toast.success("Page deleted");
+  };
+
+  const handleEditPage = (page: Page) => {
+    setEditingPage(page);
+    setEditTitle(page.title);
+    setEditIsHomePage(!!page.isHomePage);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingPage || !editTitle.trim()) {
+      toast.error("Page title cannot be empty");
+      return;
+    }
+    
+    // If setting a new homepage, unset the current one
+    let updatedPages = [...pages];
+    if (editIsHomePage) {
+      updatedPages = updatedPages.map(p => ({
+        ...p, 
+        isHomePage: p.id === editingPage.id
+      }));
+    } else {
+      // Make sure we still have a homepage
+      const hasAnotherHomePage = updatedPages.some(p => p.id !== editingPage.id && p.isHomePage);
+      if (!hasAnotherHomePage && editingPage.isHomePage) {
+        toast.error("You must have a home page. Please set another page as home before removing this one.");
+        return;
+      }
+      
+      // Update just this page
+      updatedPages = updatedPages.map(p => 
+        p.id === editingPage.id 
+          ? { ...p, title: editTitle, isHomePage: editIsHomePage }
+          : p
+      );
+    }
+    
+    setPages(updatedPages);
+    setEditingPage(null);
+    
+    // Save pages to website settings
+    await savePagesToDB(updatedPages);
+    
+    toast.success("Page updated");
   };
 
   const savePagesToDB = async (updatedPages: Page[]) => {
@@ -111,9 +185,8 @@ const BuilderPages = () => {
   };
 
   const navigateToPage = (pageId: string) => {
-    // For now, this always navigates to the builder page
-    // In a multi-page setup, this would navigate to the specific page editor
-    navigate(`/builder/${id}`);
+    // Navigate to builder with query param for page
+    navigate(`/builder/${id}?pageId=${pageId}`);
   };
 
   if (isLoading) {
@@ -192,7 +265,11 @@ const BuilderPages = () => {
               <Card key={page.id} className="border border-gray-200 hover:border-gray-300">
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center">
-                    <File className="h-5 w-5 text-blue-500 mr-3" />
+                    {page.isHomePage ? (
+                      <Home className="h-5 w-5 text-green-500 mr-3" />
+                    ) : (
+                      <File className="h-5 w-5 text-blue-500 mr-3" />
+                    )}
                     <div>
                       <div className="font-medium">{page.title}</div>
                       <div className="text-sm text-gray-500">{page.slug}</div>
@@ -212,10 +289,19 @@ const BuilderPages = () => {
                     >
                       <Trash className="h-4 w-4 text-gray-500" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => navigateToPage(page.id)}>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleEditPage(page)}
+                      disabled={isSaving}
+                    >
                       <Edit className="h-4 w-4 text-gray-500" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => navigateToPage(page.id)}>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => navigateToPage(page.id)}
+                    >
                       <ChevronRight className="h-4 w-4 text-gray-500" />
                     </Button>
                   </div>
@@ -231,6 +317,44 @@ const BuilderPages = () => {
           )}
         </div>
       </div>
+      
+      {/* Edit Page Dialog */}
+      <Dialog open={!!editingPage} onOpenChange={(open) => !open && setEditingPage(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Page</DialogTitle>
+            <DialogDescription>
+              Update the details for this page
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-page-title">Page Title</Label>
+              <Input 
+                id="edit-page-title" 
+                value={editTitle} 
+                onChange={(e) => setEditTitle(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="home-page" 
+                checked={editIsHomePage}
+                onCheckedChange={setEditIsHomePage}
+                disabled={editingPage?.isHomePage}
+              />
+              <Label htmlFor="home-page">Set as Home Page</Label>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingPage(null)}>Cancel</Button>
+            <Button onClick={handleSaveEdit}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
