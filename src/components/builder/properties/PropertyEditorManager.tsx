@@ -19,6 +19,7 @@ import FooterPropertyEditor from "./FooterPropertyEditor";
 import FlexPropertyEditor from "./FlexPropertyEditor";
 import GridPropertyEditor from "./GridPropertyEditor";
 import HeroPropertyEditor from "./HeroPropertyEditor";
+import ProductsListPropertyEditor from "./ProductsListPropertyEditor";
 
 interface PropertyEditorManagerProps {
   element: BuilderElement;
@@ -136,6 +137,15 @@ const PropertyEditorManager: React.FC<PropertyEditorManagerProps> = ({
     case "card":
       return (
         <CardPropertyEditor
+          element={element}
+          onPropertyChange={onPropertyChange}
+          onContentChange={onContentChange}
+        />
+      );
+      
+    case "productsList":
+      return (
+        <ProductsListPropertyEditor
           element={element}
           onPropertyChange={onPropertyChange}
           onContentChange={onContentChange}

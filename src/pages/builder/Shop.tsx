@@ -1,88 +1,170 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ChevronLeft, ChevronRight, Store } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useWebsite } from "@/hooks/useWebsite";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/ui/pagination";
-
-interface Product {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  stock: number | null;
-  sku: string | null;
-}
+import { BuilderProvider } from "@/contexts/BuilderContext";
+import BuilderLayout from "@/components/builder/BuilderLayout";
+import BuilderNavbar from "@/components/builder/BuilderNavbar";
+import BuilderContent from "@/components/builder/BuilderContent";
+import { v4 as uuidv4 } from "@/lib/uuid";
+import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
 
 const BuilderShop = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { website, isLoading, websiteName } = useWebsite(id, navigate);
+  const { 
+    website, 
+    isLoading, 
+    websiteName, 
+    saveWebsite 
+  } = useWebsite(id, navigate);
   
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isProductsLoading, setIsProductsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const productsPerPage = 20;
+  // Use state hooks from the Builder component
+  const [isPreviewMode, setIsPreviewMode] = React.useState(false);
+  const [shopPageElements, setShopPageElements] = React.useState<BuilderElement[]>([]);
+  const [shopPageSettings, setShopPageSettings] = React.useState<PageSettings | null>(null);
 
-  // Fetch products with pagination
+  // Initialize shop page elements
   useEffect(() => {
-    if (!id) return;
+    if (!website) return;
     
-    const fetchProducts = async () => {
-      setIsProductsLoading(true);
-      try {
-        // Get count for pagination
-        const { count, error: countError } = await supabase
-          .from("products")
-          .select("*", { count: "exact", head: true })
-          .eq("website_id", id);
-        
-        if (countError) {
-          console.error("Error counting products:", countError);
-          return;
+    // Check if there's shop page content already
+    const shopPageId = website.settings?.pages?.find(page => page.title.toLowerCase() === 'shop')?.id;
+    
+    if (shopPageId && website.settings.pagesContent && website.settings.pagesContent[shopPageId]) {
+      // Use existing shop page content
+      setShopPageElements(website.settings.pagesContent[shopPageId]);
+      setShopPageSettings(website.settings.pagesSettings?.[shopPageId] || { title: 'Shop' });
+    } else {
+      // Create default shop page elements with navbar, products list, and footer
+      const defaultElements: BuilderElement[] = [
+        {
+          id: uuidv4(),
+          type: "navbar",
+          content: "",
+          props: {
+            siteName: websiteName,
+            links: [
+              { text: "Home", url: "#" },
+              { text: "About", url: "#" },
+              { text: "Shop", url: "#" },
+              { text: "Contact", url: "#" }
+            ],
+            variant: "default"
+          }
+        },
+        {
+          id: uuidv4(),
+          type: "section",
+          content: "",
+          props: {
+            padding: "large",
+            backgroundColor: "bg-white",
+            className: "py-12"
+          },
+          children: [
+            {
+              id: uuidv4(),
+              type: "heading",
+              content: "Our Shop",
+              props: {
+                level: "h1",
+                className: "text-3xl font-bold text-center mb-8"
+              }
+            },
+            {
+              id: uuidv4(),
+              type: "text",
+              content: "Browse our collection of amazing products.",
+              props: {
+                className: "text-center text-gray-600 max-w-2xl mx-auto mb-12"
+              }
+            }
+          ]
+        },
+        {
+          id: uuidv4(),
+          type: "section",
+          content: "",
+          props: {
+            padding: "large",
+            backgroundColor: "bg-gray-50",
+            className: "py-12"
+          },
+          children: [
+            {
+              id: uuidv4(),
+              type: "productsList",
+              content: "",
+              props: {
+                columns: 4,
+                productsPerPage: 8,
+                showPagination: true,
+                cardStyle: "default"
+              }
+            }
+          ]
+        },
+        {
+          id: uuidv4(),
+          type: "footer",
+          content: "",
+          props: {
+            siteName: websiteName,
+            links: [
+              { text: "Home", url: "#" },
+              { text: "About", url: "#" },
+              { text: "Shop", url: "#" },
+              { text: "Contact", url: "#" }
+            ],
+            variant: "dark"
+          }
         }
-        
-        const totalItems = count || 0;
-        const calculatedTotalPages = Math.max(1, Math.ceil(totalItems / productsPerPage));
-        setTotalPages(calculatedTotalPages);
-        
-        // Fetch paginated products
-        const from = (currentPage - 1) * productsPerPage;
-        const to = from + productsPerPage - 1;
-        
-        const { data, error } = await supabase
-          .from("products")
-          .select("*")
-          .eq("website_id", id)
-          .order('created_at', { ascending: false })
-          .range(from, to);
+      ];
+      
+      setShopPageElements(defaultElements);
+      setShopPageSettings({ title: 'Shop' });
+    }
+  }, [website, websiteName]);
 
-        if (error) {
-          console.error("Error fetching products:", error);
-          toast.error("Failed to load products");
-          return;
-        }
+  const handleSave = async () => {
+    // Dispatch custom event to get latest elements from builder context
+    document.dispatchEvent(new CustomEvent('save-website'));
+  };
 
-        setProducts(data || []);
-      } catch (error) {
-        console.error("Error in fetchProducts:", error);
-        toast.error("An unexpected error occurred");
-      } finally {
-        setIsProductsLoading(false);
+  const handleSaveComplete = async (elements: BuilderElement[], pageSettings: PageSettings) => {
+    if (!id || !website) return;
+    
+    // Get shop page ID
+    const shopPage = website.settings.pages?.find(page => page.title.toLowerCase() === 'shop');
+    if (!shopPage?.id) return;
+    
+    // Update content for shop page
+    const pagesContent = { ...(website.settings.pagesContent || {}) };
+    const pagesSettings = { ...(website.settings.pagesSettings || {}) };
+    
+    pagesContent[shopPage.id] = elements;
+    pagesSettings[shopPage.id] = pageSettings;
+    
+    // Save to database
+    await saveWebsite(
+      elements, 
+      pageSettings, 
+      {
+        pagesContent,
+        pagesSettings
       }
-    };
+    );
+  };
 
-    fetchProducts();
-  }, [id, currentPage]);
-
-  const handlePageChange = (page: number) => {
-    if (page < 1 || page > totalPages) return;
-    setCurrentPage(page);
+  const handleBackToBuilder = () => {
+    // Save first
+    handleSave();
+    
+    // Then navigate back
+    navigate(`/builder/${id}`);
   };
 
   if (isLoading) {
@@ -111,113 +193,47 @@ const BuilderShop = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Button variant="outline" size="sm" onClick={() => navigate(`/builder/${id}`)}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Builder
+    <div className="min-h-screen flex flex-col">
+      <div className="bg-white shadow-sm py-2 px-4 flex items-center">
+        <Button variant="outline" size="sm" onClick={handleBackToBuilder} className="mr-4">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Builder
+        </Button>
+        <h2 className="text-lg font-medium">Shop Page Editor</h2>
+        <div className="ml-auto">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="mr-2"
+            onClick={() => navigate(`/builder/${id}/products`)}
+          >
+            Manage Products
           </Button>
         </div>
-        
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-2xl font-bold">Shop - {websiteName}</h1>
-              <p className="text-gray-500">Displaying all products available in your store</p>
-            </div>
-            <Button 
-              onClick={() => navigate(`/builder/${id}/products`)} 
-              className="flex items-center gap-1"
-            >
-              Manage Products
-            </Button>
-          </div>
-          
-          {isProductsLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="h-8 w-8 border-4 border-t-blue-600 border-r-blue-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mr-2"></div>
-              <p className="text-gray-500">Loading products...</p>
-            </div>
-          ) : (
-            <>
-              {products.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                  {products.map((product) => (
-                    <Card key={product.id} className="overflow-hidden flex flex-col">
-                      <div className="bg-gray-100 h-48 flex items-center justify-center">
-                        <Store className="h-12 w-12 text-gray-400" />
-                      </div>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">{product.name}</CardTitle>
-                      </CardHeader>
-                      <CardContent className="pb-2 flex-grow">
-                        <p className="text-sm text-gray-500 line-clamp-3">{product.description || 'No description available'}</p>
-                      </CardContent>
-                      <CardFooter className="flex items-center justify-between pt-2">
-                        <span className="font-bold">${product.price.toFixed(2)}</span>
-                        <div className="text-sm text-gray-500">
-                          {product.stock !== null ? `${product.stock} in stock` : 'Stock not tracked'}
-                        </div>
-                      </CardFooter>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-16 border border-dashed border-gray-300 rounded-lg">
-                  <Store className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                  <h3 className="text-xl font-medium text-gray-700 mb-2">No products found</h3>
-                  <p className="text-gray-500 mb-4">You haven't added any products to your store yet.</p>
-                  <Button onClick={() => navigate(`/builder/${id}/products`)}>
-                    Add Products
-                  </Button>
-                </div>
-              )}
-              
-              {totalPages > 1 && (
-                <Pagination className="mt-8">
-                  <PaginationContent>
-                    <PaginationItem>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        <span className="sr-only">Previous</span>
-                      </Button>
-                    </PaginationItem>
-                    
-                    {Array.from({length: totalPages}, (_, i) => i + 1).map((page) => (
-                      <PaginationItem key={page}>
-                        <PaginationLink
-                          isActive={currentPage === page}
-                          onClick={() => handlePageChange(page)}
-                        >
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
-                    
-                    <PaginationItem>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                        <span className="sr-only">Next</span>
-                      </Button>
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              )}
-            </>
-          )}
-        </div>
       </div>
+      
+      <BuilderProvider 
+        initialElements={shopPageElements} 
+        initialPageSettings={shopPageSettings || { title: 'Shop' }}
+        onSave={handleSaveComplete}
+      >
+        <BuilderLayout isPreviewMode={isPreviewMode} setIsPreviewMode={setIsPreviewMode}>
+          <BuilderNavbar 
+            websiteName={websiteName}
+            setWebsiteName={() => {}} // Read-only in this context
+            onSave={handleSave}
+            onPublish={() => {}}
+            isPublished={website?.published}
+            isPreviewMode={isPreviewMode}
+            setIsPreviewMode={setIsPreviewMode}
+            currentPage={website.settings.pages?.find(p => p.title.toLowerCase() === 'shop')}
+            pages={website.settings.pages || []}
+            onChangePage={() => {}}
+            onShopLinkClick={() => {}}
+          />
+          <BuilderContent isPreviewMode={isPreviewMode} />
+        </BuilderLayout>
+      </BuilderProvider>
     </div>
   );
 };

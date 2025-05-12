@@ -1,4 +1,3 @@
-
 import React from "react";
 import { BuilderElement } from "@/contexts/BuilderContext";
 import FeatureElement from "./FeatureElement";
@@ -8,6 +7,7 @@ import PricingElement from "./PricingElement";
 import CtaElement from "./CtaElement";
 import CardElement from "./CardElement";
 import FaqElement from "./FaqElement";
+import ProductsList from './ProductsList';
 
 export const renderComplexElement = (element: BuilderElement): React.ReactNode => {
   switch (element.type) {
@@ -25,6 +25,8 @@ export const renderComplexElement = (element: BuilderElement): React.ReactNode =
       return <CardElement element={element} />;
     case "faq":
       return <FaqElement element={element} />;
+    case "productsList":
+      return <ProductsList element={element} />;
     default:
       return null;
   }
