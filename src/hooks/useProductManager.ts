@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Product, UniqueCategory } from "@/types/product";
-import { fetchProducts, saveProduct, deleteProduct } from "@/api/productApi";
+import { fetchProducts, saveProduct, deleteProduct } from "@/api/products";
 
 export function useProductManager(websiteId: string | undefined) {
   const [products, setProducts] = useState<Product[]>([]);
