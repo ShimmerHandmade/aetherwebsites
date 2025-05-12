@@ -1,20 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CircleCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-interface Plan {
-  id: string;
-  name: string;
-  description: string;
-  monthly_price: number;
-  annual_price: number;
-  features: string[];
-  isPopular?: boolean;
-}
+import { Plan, getPlans } from "@/api/websites";
 
 const PricingSection = () => {
   const [isAnnual, setIsAnnual] = useState(false);
@@ -27,10 +17,7 @@ const PricingSection = () => {
     const fetchPlans = async () => {
       try {
         setIsLoading(true);
-        const { data, error } = await supabase
-          .from("plans")
-          .select("*")
-          .order("monthly_price", { ascending: true });
+        const { data, error } = await getPlans();
         
         if (error) {
           console.error("Error fetching plans:", error);
@@ -38,16 +25,16 @@ const PricingSection = () => {
           return;
         }
         
-        // Map the data and add isPopular flag to the Professional plan
-        const processedPlans = data.map(plan => ({
-          ...plan,
-          // Parse the JSONB features column to JS array
-          features: Array.isArray(plan.features) ? plan.features : plan.features,
-          // Mark the Professional plan as popular
-          isPopular: plan.name === 'Professional'
-        }));
-        
-        setPlans(processedPlans);
+        if (data) {
+          // Add isPopular flag to the Professional plan
+          const processedPlans = data.map(plan => ({
+            ...plan,
+            // Mark the Professional plan as popular
+            isPopular: plan.name === 'Professional'
+          }));
+          
+          setPlans(processedPlans);
+        }
       } catch (error) {
         console.error("Error in fetchPlans:", error);
         toast.error("An unexpected error occurred");
@@ -70,7 +57,7 @@ const PricingSection = () => {
     setIsAnnual(!isAnnual);
   };
   
-  const handlePlanSelect = async (plan: Plan) => {
+  const handlePlanSelect = async (plan: Plan & { isPopular?: boolean }) => {
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {

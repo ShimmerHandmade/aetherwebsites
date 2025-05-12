@@ -31,12 +31,22 @@ export const getPlans = async (): Promise<{
       };
     }
     
-    // Process the plans data
+    // Process the plans data - ensure features is properly parsed to string[]
     const processedPlans = data.map(plan => ({
-      ...plan,
-      // Ensure features is always an array
-      features: Array.isArray(plan.features) ? plan.features : plan.features
-    }));
+      id: plan.id,
+      name: plan.name,
+      description: plan.description || '',
+      monthly_price: plan.monthly_price,
+      annual_price: plan.annual_price,
+      // Parse features from jsonb to ensure it's a string array
+      features: Array.isArray(plan.features) 
+        ? plan.features.map(feature => String(feature))
+        : typeof plan.features === 'string'
+          ? [plan.features]
+          : plan.features instanceof Object 
+            ? Object.keys(plan.features).map(key => String(plan.features[key])) 
+            : []
+    })) as Plan[];
     
     return { data: processedPlans };
   } catch (error) {

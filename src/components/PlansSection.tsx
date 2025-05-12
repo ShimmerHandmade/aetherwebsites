@@ -1,19 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { CircleCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Profile } from "@/pages/Dashboard";
-
-interface Plan {
-  id: string;
-  name: string;
-  description: string;
-  monthly_price: number;
-  annual_price: number;
-  features: string[];
-}
+import { Plan, getPlans } from "@/api/websites";
 
 interface PlansSectionProps {
   profile: Profile | null;
@@ -29,27 +20,16 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
     const fetchPlans = async () => {
       try {
         setIsLoading(true);
-        const { data, error } = await supabase
-          .from("plans")
-          .select("*")
-          .order("monthly_price", { ascending: true });
+        const { data, error } = await getPlans();
         
         if (error) {
           console.error("Error fetching plans:", error);
           return;
         }
         
-        // Parse the features JSONB to array
-        const parsedPlans = data.map(plan => ({
-          ...plan,
-          features: Array.isArray(plan.features) 
-            ? plan.features.map(feature => String(feature))
-            : typeof plan.features === 'string' 
-              ? [plan.features] 
-              : []
-        }));
-        
-        setPlans(parsedPlans);
+        if (data) {
+          setPlans(data);
+        }
       } catch (error) {
         console.error("Error in fetchPlans:", error);
       } finally {
