@@ -25,6 +25,8 @@ const Builder = () => {
   const { 
     website, 
     isLoading, 
+    isSaving,
+    isPublishing,
     websiteName, 
     elements,
     pageSettings,
@@ -250,6 +252,8 @@ const Builder = () => {
           onSave={handleSave} 
           onPublish={publishWebsite}
           isPublished={website?.published}
+          isSaving={isSaving}
+          isPublishing={isPublishing}
           isPreviewMode={isPreviewMode}
           setIsPreviewMode={setIsPreviewMode}
           currentPage={currentPage}

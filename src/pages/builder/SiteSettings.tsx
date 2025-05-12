@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Upload } from "lucide-react";
+import { ArrowLeft, Upload, Home } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useWebsite } from "@/hooks/useWebsite";
@@ -57,6 +57,10 @@ const BuilderSiteSettings = () => {
     }
   };
 
+  const handleReturnToDashboard = () => {
+    navigate('/dashboard');
+  };
+
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -85,10 +89,20 @@ const BuilderSiteSettings = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
+        <div className="flex justify-between mb-6">
           <Button variant="outline" size="sm" onClick={() => navigate(`/builder/${id}`)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Builder
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleReturnToDashboard}
+            className="flex items-center gap-1"
+          >
+            <Home className="h-4 w-4 mr-1" />
+            Return to Dashboard
           </Button>
         </div>
         

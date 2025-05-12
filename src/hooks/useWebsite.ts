@@ -36,6 +36,7 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
   const [website, setWebsite] = useState<WebsiteData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [websiteName, setWebsiteName] = useState("");
   const [elements, setElements] = useState<BuilderElement[]>([]);
   const [pageSettings, setPageSettings] = useState<PageSettings | null>(null);
@@ -68,6 +69,7 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
       
       if (error) {
         console.error("Error fetching website:", error);
+        toast.error("Error loading website");
         navigate("/dashboard");
         return;
       }
@@ -99,6 +101,7 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
       }
     } catch (error) {
       console.error("Error in fetchWebsite:", error);
+      toast.error("Error loading website");
     } finally {
       setIsLoading(false);
     }
@@ -110,7 +113,10 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
     additionalSettings?: any
   ) => {
     try {
-      if (!id || !website) return;
+      if (!id || !website) {
+        toast.error("No website to save");
+        return;
+      }
       
       setIsSaving(true);
       
@@ -159,7 +165,15 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
 
   const publishWebsite = async () => {
     try {
-      if (!id || !website) return;
+      if (!id || !website) {
+        toast.error("No website to publish");
+        return;
+      }
+      
+      setIsPublishing(true);
+      
+      // First save the latest state
+      await saveWebsite();
       
       const { error } = await supabase
         .from("websites")
@@ -177,6 +191,8 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
     } catch (error) {
       console.error("Error in publishWebsite:", error);
       toast.error("An unexpected error occurred");
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -188,6 +204,7 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
     website,
     isLoading,
     isSaving,
+    isPublishing,
     websiteName,
     elements,
     pageSettings,

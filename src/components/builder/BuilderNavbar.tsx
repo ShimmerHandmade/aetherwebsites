@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,24 +12,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Eye,
   EyeOff,
-  ChevronDown,
-  Plus,
-  Globe,
   Settings,
   PanelsTopLeft,
   Store,
   FileText,
-  Package
+  Package,
+  Save,
+  ArrowLeft,
+  Home
 } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface Page {
   id: string;
@@ -44,6 +38,8 @@ interface BuilderNavbarProps {
   onSave: () => void;
   onPublish: () => void;
   isPublished?: boolean;
+  isSaving?: boolean;
+  isPublishing?: boolean;
   isPreviewMode: boolean;
   setIsPreviewMode: (isPreview: boolean) => void;
   currentPage?: Page | null;
@@ -58,6 +54,8 @@ const BuilderNavbar = ({
   onSave,
   onPublish,
   isPublished = false,
+  isSaving = false,
+  isPublishing = false,
   isPreviewMode,
   setIsPreviewMode,
   currentPage,
@@ -65,25 +63,8 @@ const BuilderNavbar = ({
   onChangePage,
   onShopLinkClick
 }: BuilderNavbarProps) => {
-  const [activeTab, setActiveTab] = useState("edit");
-  const [autoSave, setAutoSave] = useState(true);
+  const [activeTab, setActiveTab] = React.useState("edit");
   const navigate = useNavigate();
-  
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-
-    if (autoSave) {
-      timer = setTimeout(() => {
-        onSave();
-        toast({
-          title: "Auto-save",
-          description: "Website saved automatically"
-        });
-      }, 60000);
-    }
-
-    return () => clearTimeout(timer);
-  }, [websiteName, autoSave, onSave]);
   
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -112,11 +93,33 @@ const BuilderNavbar = ({
     }
   };
 
+  const handleReturnToDashboard = () => {
+    // Show confirmation if there are unsaved changes
+    if (isSaving) {
+      toast("Please wait for the current save to complete", {
+        description: "Your changes are being saved"
+      });
+      return;
+    }
+    
+    navigate('/dashboard');
+  };
+
   return (
     <div className="w-full flex flex-col bg-white border-b border-slate-200">
       {/* Top bar */}
       <div className="h-14 flex items-center px-4 justify-between">
         <div className="flex items-center space-x-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleReturnToDashboard}
+            className="flex items-center gap-1"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Dashboard
+          </Button>
+          
           <Input
             className="w-48 h-8 text-sm font-medium"
             value={websiteName}
@@ -155,9 +158,6 @@ const BuilderNavbar = ({
         </div>
 
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={() => setAutoSave(!autoSave)}>
-            {autoSave ? "Auto-save: On" : "Auto-save: Off"}
-          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -175,11 +175,23 @@ const BuilderNavbar = ({
               </>
             )}
           </Button>
-          <Button size="sm" onClick={onSave}>
-            Save
+          <Button 
+            size="sm" 
+            onClick={onSave}
+            disabled={isSaving}
+            className="flex items-center gap-1"
+          >
+            <Save className="h-4 w-4" />
+            {isSaving ? "Saving..." : "Save"}
           </Button>
-          <Button size="sm" onClick={onPublish} disabled={isPublished}>
-            Publish
+          <Button 
+            size="sm" 
+            onClick={onPublish} 
+            disabled={isPublishing || isPublished}
+            className="flex items-center gap-1"
+          >
+            <Home className="h-4 w-4" />
+            {isPublishing ? "Publishing..." : isPublished ? "Published" : "Publish"}
           </Button>
         </div>
       </div>

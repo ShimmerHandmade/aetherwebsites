@@ -17,6 +17,8 @@ const BuilderShop = () => {
   const { 
     website, 
     isLoading, 
+    isSaving,
+    isPublishing,
     websiteName, 
     saveWebsite 
   } = useWebsite(id, navigate);
@@ -224,6 +226,8 @@ const BuilderShop = () => {
             onSave={handleSave}
             onPublish={() => {}}
             isPublished={website?.published}
+            isSaving={isSaving}
+            isPublishing={isPublishing}
             isPreviewMode={isPreviewMode}
             setIsPreviewMode={setIsPreviewMode}
             currentPage={website.settings.pages?.find(p => p.title.toLowerCase() === 'shop')}
