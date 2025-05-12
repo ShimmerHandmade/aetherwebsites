@@ -24,12 +24,12 @@ export interface PageSettings {
 export interface BuilderContextType {
   elements: BuilderElement[];
   selectedElementId: string | null;
-  pageSettings: PageSettings | null;
+  pageSettings: PageSettings;
   addElement: (element: BuilderElement, position?: number, parentId?: string) => void;
   updateElement: (id: string, updates: Partial<BuilderElement>) => void;
   removeElement: (id: string) => void;
   selectElement: (id: string | null) => void;
-  moveElement: (sourceIndex: number, destinationIndex: number, targetParentId?: string) => void;
+  moveElement: (sourceIndex: number, destinationIndex: number, parentId?: string) => void;
   duplicateElement: (id: string) => void;
   loadElements: (elements: BuilderElement[]) => void;
   saveElements: () => BuilderElement[];

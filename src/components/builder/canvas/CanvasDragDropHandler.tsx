@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from "react";
 import { useBuilder } from "@/contexts/builder";
 import { v4 as uuidv4 } from "@/lib/uuid";
@@ -140,7 +139,8 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
                   adjustedTargetIndex - 1 : adjustedTargetIndex;
               
               console.log(`Moving element from ${sourceIndex} to ${destinationIndex} in same container`);
-              moveElement(sourceIndex, destinationIndex, sourceParentId, sourceParentId);
+              // Fix: Update moveElement call to match the expected parameter count
+              moveElement(sourceIndex, destinationIndex, sourceParentId);
               return;
             }
           }
