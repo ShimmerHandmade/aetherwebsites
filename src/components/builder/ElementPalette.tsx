@@ -5,12 +5,11 @@ import {
   Text,
   Heading,
   ImageIcon,
-  Button as LucideButton,
   Package,
   Layout,
   Image as ImageIconComponent,
   Video as VideoIcon,
-  Form as FormIcon,
+  FormInput,
   List as ListIcon,
   CreditCard,
   MessageSquare,
@@ -45,12 +44,12 @@ const LucideIcons = {
   text: Text,
   heading: Heading,
   "image-icon": ImageIcon,
-  button: LucideButton,
+  "button": LayoutDashboard,
   package: Package,
   layout: Layout,
   image: ImageIconComponent,
   video: VideoIcon,
-  form: FormIcon,
+  form: FormInput,
   "list-icon": ListIcon,
   "credit-card": CreditCard,
   "message-square": MessageSquare,
@@ -322,4 +321,35 @@ export const addElement = (type: string): BuilderElement => {
   };
 };
 
-export default elementCategories;
+// Create a React component to render the element palette
+const ElementPaletteComponent: React.FC = () => {
+  return (
+    <div className="space-y-6">
+      {elementCategories.map((category) => (
+        <div key={category.name} className="space-y-2">
+          <h3 className="text-sm font-medium text-gray-500">{category.name}</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {category.elements.map((element) => {
+              const IconComponent = LucideIcons[element.icon];
+              return (
+                <button
+                  key={element.type}
+                  className="flex flex-col items-center justify-center p-3 text-center bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition-colors"
+                  title={element.description}
+                  onClick={() => addElement(element.type)}
+                >
+                  {IconComponent && <IconComponent className="h-5 w-5 mb-1 text-blue-600" />}
+                  <span className="text-xs mt-1">{element.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Export both the component and the categories
+export default ElementPaletteComponent;
+export { elementCategories };
