@@ -9,6 +9,10 @@ import FeaturePropertyEditor from "./FeaturePropertyEditor";
 import TestimonialPropertyEditor from "./TestimonialPropertyEditor";
 import PricingPropertyEditor from "./PricingPropertyEditor";
 import ContentPropertyEditor from "./ContentPropertyEditor";
+import TextPropertyEditor from "./TextPropertyEditor";
+import FormPropertyEditor from "./FormPropertyEditor";
+import ListPropertyEditor from "./ListPropertyEditor";
+import CardPropertyEditor from "./CardPropertyEditor";
 
 interface PropertyEditorManagerProps {
   element: BuilderElement;
@@ -42,6 +46,15 @@ const PropertyEditorManager: React.FC<PropertyEditorManagerProps> = ({
         />
       );
 
+    case "text":
+      return (
+        <TextPropertyEditor
+          element={element}
+          onPropertyChange={onPropertyChange}
+          onContentChange={onContentChange}
+        />
+      );
+
     case "image":
       return (
         <ImagePropertyEditor
@@ -54,6 +67,33 @@ const PropertyEditorManager: React.FC<PropertyEditorManagerProps> = ({
     case "button":
       return (
         <ButtonPropertyEditor
+          element={element}
+          onPropertyChange={onPropertyChange}
+          onContentChange={onContentChange}
+        />
+      );
+      
+    case "list":
+      return (
+        <ListPropertyEditor
+          element={element}
+          onPropertyChange={onPropertyChange}
+          onContentChange={onContentChange}
+        />
+      );
+      
+    case "form":
+      return (
+        <FormPropertyEditor
+          element={element}
+          onPropertyChange={onPropertyChange}
+          onContentChange={onContentChange}
+        />
+      );
+      
+    case "card":
+      return (
+        <CardPropertyEditor
           element={element}
           onPropertyChange={onPropertyChange}
           onContentChange={onContentChange}
@@ -95,6 +135,13 @@ const PropertyEditorManager: React.FC<PropertyEditorManagerProps> = ({
             content={element.content} 
             onContentChange={onContentChange} 
           />
+          <div className="p-4 bg-gray-50 rounded-md">
+            <h4 className="text-sm font-medium mb-2 text-gray-600">Properties</h4>
+            <p className="text-xs text-gray-500">
+              No specific property editor for this element type yet.
+              Basic content editing is available.
+            </p>
+          </div>
         </div>
       );
   }
