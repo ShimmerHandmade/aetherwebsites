@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ interface BuilderNavbarProps {
   onChangePage: (pageId: string) => void;
   onShopLinkClick?: () => void;
   onReturnToDashboard?: () => void;
+  viewSiteUrl?: string; // Added this property to fix the type error
 }
 
 const BuilderNavbar = ({
@@ -63,7 +65,8 @@ const BuilderNavbar = ({
   pages,
   onChangePage,
   onShopLinkClick,
-  onReturnToDashboard
+  onReturnToDashboard,
+  viewSiteUrl // Added this prop to accept the viewSiteUrl value
 }: BuilderNavbarProps) => {
   const [activeTab, setActiveTab] = React.useState("edit");
   const navigate = useNavigate();
@@ -112,11 +115,16 @@ const BuilderNavbar = ({
   };
 
   const handleOpenFullPreview = () => {
-    const websiteId = window.location.pathname.split("/")[2];
-    if (!websiteId) return;
-    
-    // Open a new tab with the preview URL
-    window.open(`/builder/${websiteId}?preview=true`, '_blank');
+    // If viewSiteUrl is provided, use that, otherwise use the default preview URL
+    if (viewSiteUrl) {
+      window.open(viewSiteUrl, '_blank');
+    } else {
+      const websiteId = window.location.pathname.split("/")[2];
+      if (!websiteId) return;
+      
+      // Open a new tab with the preview URL
+      window.open(`/builder/${websiteId}?preview=true`, '_blank');
+    }
   };
 
   return (

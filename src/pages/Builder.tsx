@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
 import BuilderLayout from "@/components/builder/BuilderLayout";
@@ -297,7 +298,7 @@ const Builder = () => {
           onChangePage={handleChangePage}
           onShopLinkClick={handleShopLinkClick}
           onReturnToDashboard={handleReturnToDashboard}
-          viewSiteUrl={`/site/${id}`} // Updated to use new URL format
+          viewSiteUrl={`/site/${id}`} // This now matches the updated interface
         />
         <BuilderContent isPreviewMode={isPreviewMode} />
       </BuilderLayout>
