@@ -140,13 +140,14 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     setSelectedElementId(id);
   };
 
+  // Improved moveElement function with proper parameters
   const moveElement = (
     sourceIndex: number, 
     destinationIndex: number, 
-    targetParentId?: string, 
-    sourceParentId?: string
+    sourceParentId?: string,
+    targetParentId?: string
   ) => {
-    console.log(`Move element: sourceIndex=${sourceIndex}, destIndex=${destinationIndex}, targetParent=${targetParentId}, sourceParent=${sourceParentId}`);
+    console.log(`Move element: sourceIndex=${sourceIndex}, destIndex=${destinationIndex}, sourceParent=${sourceParentId}, targetParent=${targetParentId}`);
     
     // Case 1: Moving within the same parent container
     if (sourceParentId === targetParentId) {
@@ -154,8 +155,13 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
         // Moving at root level
         setElements((prev) => {
           const result = Array.from(prev);
-          const [removed] = result.splice(sourceIndex, 1);
-          result.splice(destinationIndex, 0, removed);
+          // Check if the sourceIndex is valid
+          if (sourceIndex >= 0 && sourceIndex < result.length) {
+            const [removed] = result.splice(sourceIndex, 1);
+            result.splice(destinationIndex, 0, removed);
+          } else {
+            console.error("Invalid source index for root level move:", sourceIndex);
+          }
           return result;
         });
       } else {
@@ -163,8 +169,13 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
         setElements((prev) => {
           return updateElementInTree(prev, sourceParentId, parent => {
             const children = [...(parent.children || [])];
-            const [removed] = children.splice(sourceIndex, 1);
-            children.splice(destinationIndex, 0, removed);
+            // Check if the sourceIndex is valid
+            if (sourceIndex >= 0 && sourceIndex < children.length) {
+              const [removed] = children.splice(sourceIndex, 1);
+              children.splice(destinationIndex, 0, removed);
+            } else {
+              console.error("Invalid source index for container move:", sourceIndex);
+            }
             return {
               ...parent,
               children
@@ -186,32 +197,34 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     
     if (!sourceParentId) {
       // Element is at the root level
-      elementToMove = elements[sourceIndex];
+      if (sourceIndex >= 0 && sourceIndex < elements.length) {
+        elementToMove = { ...elements[sourceIndex] }; // Clone to avoid reference issues
+      }
     } else {
       // Element is in a container
       const sourceContainer = findElementById(sourceParentId);
-      if (sourceContainer && sourceContainer.children) {
-        elementToMove = sourceContainer.children[sourceIndex];
+      if (sourceContainer && sourceContainer.children && 
+          sourceIndex >= 0 && sourceIndex < sourceContainer.children.length) {
+        elementToMove = { ...sourceContainer.children[sourceIndex] }; // Clone to avoid reference issues
       }
     }
     
     if (!elementToMove) {
-      console.error("Element to move not found");
+      console.error("Element to move not found or invalid indexes");
       return;
     }
     
-    // Now remove the element from its source location
+    // Now remove the element from its source location and add to destination
     setElements(prev => {
       let updatedElements = [...prev];
       
       if (!sourceParentId) {
         // Remove from root level
-        updatedElements.splice(sourceIndex, 1);
+        updatedElements = updatedElements.filter((_, idx) => idx !== sourceIndex);
       } else {
         // Remove from container
         updatedElements = updateElementInTree(updatedElements, sourceParentId, parent => {
-          const updatedChildren = [...(parent.children || [])];
-          updatedChildren.splice(sourceIndex, 1);
+          const updatedChildren = (parent.children || []).filter((_, idx) => idx !== sourceIndex);
           return {
             ...parent,
             children: updatedChildren
@@ -222,12 +235,16 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       // Now add it to the destination
       if (!targetParentId) {
         // Add to root level
-        updatedElements.splice(destinationIndex, 0, elementToMove!);
+        // Protect against out of bounds insertion
+        const insertIndex = Math.min(destinationIndex, updatedElements.length);
+        updatedElements.splice(insertIndex, 0, elementToMove!);
       } else {
         // Add to container
         updatedElements = updateElementInTree(updatedElements, targetParentId, parent => {
           const updatedChildren = [...(parent.children || [])];
-          updatedChildren.splice(destinationIndex, 0, elementToMove!);
+          // Protect against out of bounds insertion
+          const insertIndex = Math.min(destinationIndex, updatedChildren.length);
+          updatedChildren.splice(insertIndex, 0, elementToMove!);
           return {
             ...parent,
             children: updatedChildren

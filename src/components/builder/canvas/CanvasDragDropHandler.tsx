@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useBuilder } from "@/contexts/builder";
 import { v4 as uuidv4 } from "@/lib/uuid";
 
@@ -21,7 +21,8 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
   const { addElement, moveElement, elements, findElementById, removeElement } = useBuilder();
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [dropTarget, setDropTarget] = useState<{top: boolean, element: string | null}>({top: true, element: null});
-
+  const dragOverTimer = useRef<number | null>(null);
+  
   const handleDragOver = (e: React.DragEvent) => {
     if (isPreviewMode) return;
     
@@ -124,7 +125,7 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
         if (!sourceElement) return;
         
         const sourceParentId = elementData.parentId;
-        const sourceIndex = elementData.sourceIndex;
+        const sourceIndex = elementData.sourceIndex !== undefined ? Number(elementData.sourceIndex) : -1;
         
         // Moving within the same container
         if (sourceParentId === containerId) {
@@ -135,17 +136,17 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
               const adjustedTargetIndex = dropTarget.top ? targetIndex : targetIndex + 1;
               // Adjust index if source is before target and getting removed
               const destinationIndex = 
-                sourceIndex !== undefined && sourceIndex < targetIndex ? 
+                sourceIndex !== -1 && sourceIndex < targetIndex ? 
                   adjustedTargetIndex - 1 : adjustedTargetIndex;
               
               console.log(`Moving element from ${sourceIndex} to ${destinationIndex} in same container`);
-              moveElement(sourceIndex, destinationIndex, sourceParentId);
+              moveElement(sourceIndex, destinationIndex, sourceParentId, sourceParentId);
               return;
             }
           }
           
           // If at root level with no specific target
-          if (!containerId && sourceIndex !== undefined) {
+          if (!containerId && sourceIndex !== -1) {
             const dropIndex = elements.length - 1; // Default to end of list
             moveElement(sourceIndex, dropIndex);
             console.log(`Moving element from ${sourceIndex} to ${dropIndex} at root level`);
@@ -176,11 +177,13 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
           console.log("Added element to new container at the end");
         }
         
-        // We need to delay the removal slightly to avoid React rendering issues
-        setTimeout(() => {
-          // Remove from the original location  
-          removeElement(elementData.id);
-        }, 50);
+        // Remove from the original location
+        if (sourceIndex !== -1) {
+          // We need to delay the removal slightly to avoid React rendering issues
+          setTimeout(() => {
+            removeElement(elementData.id);
+          }, 50);
+        }
       }
     } catch (error) {
       console.error("Error handling drop:", error);

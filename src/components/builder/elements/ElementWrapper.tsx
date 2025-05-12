@@ -59,10 +59,25 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
     // Add a class to the element being dragged
     if (elementRef.current) {
       elementRef.current.classList.add("opacity-50");
+      
+      // Create a drag image
+      const dragImage = document.createElement('div');
+      dragImage.textContent = element.type;
+      dragImage.className = 'bg-blue-100 text-blue-800 p-2 rounded shadow';
+      dragImage.style.position = 'absolute';
+      dragImage.style.top = '-1000px';
+      document.body.appendChild(dragImage);
+      
+      e.dataTransfer.setDragImage(dragImage, 0, 0);
+      
+      // Remove the element after drag starts
+      setTimeout(() => {
+        document.body.removeChild(dragImage);
+      }, 0);
     }
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (e: React.DragEvent) => {
     setIsDragging(false);
     if (elementRef.current) {
       elementRef.current.classList.remove("opacity-50");
