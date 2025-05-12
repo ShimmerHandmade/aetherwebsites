@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -10,7 +9,26 @@ import { useBuilder } from "@/contexts/BuilderContext";
 import { toast } from "sonner";
 import { TextArea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Settings2, Search, LayoutGrid, PenLine, Share } from "lucide-react";
+import { Globe, Settings2, Search, LayoutGrid, PenLine, Share, ExternalLink } from "lucide-react";
+
+// Helper function to ensure URLs are properly formatted
+const formatUrl = (url: string) => {
+  if (!url) return url;
+  
+  // If it's an absolute URL already (starts with http:// or https://), return as is
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+  
+  // If it starts with a slash, prepend the current website domain
+  if (url.startsWith('/')) {
+    const origin = window.location.origin;
+    return `${origin}${url}`;
+  }
+  
+  // Otherwise, add https:// prefix
+  return `https://${url}`;
+};
 
 const PageSettings: React.FC = () => {
   const { pageSettings, updatePageSettings } = useBuilder();
@@ -35,8 +53,17 @@ const PageSettings: React.FC = () => {
     toast.success(`${key.charAt(0).toUpperCase() + key.slice(1)} updated`);
   };
 
+  // URL formatting handlers
+  const handleUrlBlur = (e: React.FocusEvent<HTMLInputElement>, key: string) => {
+    const formattedUrl = formatUrl(e.target.value);
+    if (formattedUrl !== e.target.value) {
+      e.target.value = formattedUrl;
+      handleMetadataChange(key, formattedUrl);
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-medium">Page Settings</h2>
         <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
@@ -45,7 +72,7 @@ const PageSettings: React.FC = () => {
       </div>
       
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid grid-cols-3 mb-4">
+        <TabsList className="grid grid-cols-3 mb-6">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings2 className="h-4 w-4" />
             <span>General</span>
@@ -60,11 +87,11 @@ const PageSettings: React.FC = () => {
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="general" className="space-y-5">
+        <TabsContent value="general" className="space-y-6">
           <Card>
-            <CardContent className="pt-5 space-y-4">
+            <CardContent className="pt-6 space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="page-title">Page Title</Label>
+                <Label htmlFor="page-title" className="text-sm font-medium">Page Title</Label>
                 <Input 
                   id="page-title" 
                   placeholder="Enter page title" 
@@ -72,10 +99,13 @@ const PageSettings: React.FC = () => {
                   onChange={handleTitleChange}
                   className="border border-gray-300"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  The title that appears in the browser tab
+                </p>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="page-description">Description</Label>
+                <Label htmlFor="page-description" className="text-sm font-medium">Description</Label>
                 <TextArea 
                   id="page-description" 
                   placeholder="Enter page description" 
@@ -83,11 +113,16 @@ const PageSettings: React.FC = () => {
                   onChange={handleDescriptionChange}
                   className="min-h-[100px] border border-gray-300"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Brief description of this page's content
+                </p>
               </div>
+
+              <Separator className="my-4" />
 
               <div className="flex items-center justify-between pt-2">
                 <div className="space-y-0.5">
-                  <Label htmlFor="page-visibility">Page Visibility</Label>
+                  <Label htmlFor="page-visibility" className="text-sm font-medium">Page Visibility</Label>
                   <p className="text-xs text-muted-foreground">
                     Control whether this page is visible on your site
                   </p>
@@ -102,11 +137,11 @@ const PageSettings: React.FC = () => {
           </Card>
         </TabsContent>
         
-        <TabsContent value="seo" className="space-y-5">
+        <TabsContent value="seo" className="space-y-6">
           <Card>
-            <CardContent className="pt-5 space-y-4">
+            <CardContent className="pt-6 space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="meta-title">Meta Title</Label>
+                <Label htmlFor="meta-title" className="text-sm font-medium">Meta Title</Label>
                 <Input 
                   id="meta-title" 
                   placeholder="Enter meta title" 
@@ -114,13 +149,13 @@ const PageSettings: React.FC = () => {
                   onChange={(e) => handleMetadataChange('title', e.target.value)}
                   className="border border-gray-300"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground mt-1">
                   Recommended length: 50-60 characters
                 </p>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="meta-description">Meta Description</Label>
+                <Label htmlFor="meta-description" className="text-sm font-medium">Meta Description</Label>
                 <TextArea 
                   id="meta-description" 
                   placeholder="Enter meta description" 
@@ -128,14 +163,34 @@ const PageSettings: React.FC = () => {
                   onChange={(e) => handleMetadataChange('description', e.target.value)}
                   className="min-h-[100px] border border-gray-300"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground mt-1">
                   Recommended length: 150-160 characters
                 </p>
               </div>
               
+              <div className="space-y-2">
+                <Label htmlFor="canonical-url" className="text-sm font-medium">Canonical URL</Label>
+                <div className="relative">
+                  <Input 
+                    id="canonical-url" 
+                    placeholder="https://example.com/page" 
+                    value={pageSettings?.meta?.canonical || ''}
+                    onChange={(e) => handleMetadataChange('canonical', e.target.value)}
+                    onBlur={(e) => handleUrlBlur(e, 'canonical')}
+                    className="border border-gray-300 pr-10"
+                  />
+                  <ExternalLink className="h-4 w-4 absolute right-3 top-3 text-gray-400" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Use to specify the preferred URL for this page
+                </p>
+              </div>
+              
+              <Separator className="my-4" />
+              
               <div className="flex items-center justify-between pt-2">
                 <div className="space-y-0.5">
-                  <Label htmlFor="indexable">Allow search indexing</Label>
+                  <Label htmlFor="indexable" className="text-sm font-medium">Allow search indexing</Label>
                   <p className="text-xs text-muted-foreground">
                     Let search engines discover this page
                   </p>
@@ -150,11 +205,11 @@ const PageSettings: React.FC = () => {
           </Card>
         </TabsContent>
         
-        <TabsContent value="social" className="space-y-5">
+        <TabsContent value="social" className="space-y-6">
           <Card>
-            <CardContent className="pt-5 space-y-4">
+            <CardContent className="pt-6 space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="og-title">Social Title</Label>
+                <Label htmlFor="og-title" className="text-sm font-medium">Social Title</Label>
                 <Input 
                   id="og-title" 
                   placeholder="Enter social title" 
@@ -162,10 +217,13 @@ const PageSettings: React.FC = () => {
                   onChange={(e) => handleMetadataChange('ogTitle', e.target.value)}
                   className="border border-gray-300"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Title displayed when shared on social media
+                </p>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="og-description">Social Description</Label>
+                <Label htmlFor="og-description" className="text-sm font-medium">Social Description</Label>
                 <TextArea 
                   id="og-description" 
                   placeholder="Enter social description" 
@@ -173,18 +231,25 @@ const PageSettings: React.FC = () => {
                   onChange={(e) => handleMetadataChange('ogDescription', e.target.value)}
                   className="min-h-[100px] border border-gray-300"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Description displayed when shared on social media
+                </p>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="og-image">Social Image URL</Label>
-                <Input 
-                  id="og-image" 
-                  placeholder="https://example.com/image.jpg" 
-                  value={pageSettings?.meta?.ogImage || ''}
-                  onChange={(e) => handleMetadataChange('ogImage', e.target.value)}
-                  className="border border-gray-300"
-                />
-                <p className="text-xs text-muted-foreground">
+                <Label htmlFor="og-image" className="text-sm font-medium">Social Image URL</Label>
+                <div className="relative">
+                  <Input 
+                    id="og-image" 
+                    placeholder="https://example.com/image.jpg" 
+                    value={pageSettings?.meta?.ogImage || ''}
+                    onChange={(e) => handleMetadataChange('ogImage', e.target.value)}
+                    onBlur={(e) => handleUrlBlur(e, 'ogImage')}
+                    className="border border-gray-300 pr-10"
+                  />
+                  <ExternalLink className="h-4 w-4 absolute right-3 top-3 text-gray-400" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
                   Recommended size: 1200 x 630 pixels
                 </p>
               </div>
@@ -201,24 +266,30 @@ const PageSettings: React.FC = () => {
           </CardTitle>
           <CardDescription>Additional page configuration options</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="canonical-url">Canonical URL</Label>
-            <Input 
-              id="canonical-url" 
-              placeholder="https://example.com/page" 
-              value={pageSettings?.meta?.canonical || ''}
-              onChange={(e) => handleMetadataChange('canonical', e.target.value)}
-              className="border border-gray-300"
-            />
-            <p className="text-xs text-muted-foreground">
-              Use this to specify the preferred URL for this page
+            <Label htmlFor="canonical-url" className="text-sm font-medium">External Redirect URL</Label>
+            <div className="relative">
+              <Input 
+                id="redirect-url" 
+                placeholder="https://example.com/external-page" 
+                value={pageSettings?.meta?.redirectUrl || ''}
+                onChange={(e) => handleMetadataChange('redirectUrl', e.target.value)}
+                onBlur={(e) => handleUrlBlur(e, 'redirectUrl')}
+                className="border border-gray-300 pr-10"
+              />
+              <ExternalLink className="h-4 w-4 absolute right-3 top-3 text-gray-400" />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Redirect visitors to another URL when they visit this page
             </p>
           </div>
           
+          <Separator className="my-4" />
+          
           <div className="flex items-center justify-between pt-2">
             <div className="space-y-0.5">
-              <Label htmlFor="password-protection">Password Protection</Label>
+              <Label htmlFor="password-protection" className="text-sm font-medium">Password Protection</Label>
               <p className="text-xs text-muted-foreground">
                 Require a password to view this page
               </p>
