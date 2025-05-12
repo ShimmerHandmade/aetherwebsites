@@ -1,23 +1,29 @@
 
 import React, { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useBuilder } from "@/contexts/BuilderContext";
 import ElementPalette from "./ElementPalette";
 import ElementProperties from "./ElementProperties";
 import PageSettings from "./PageSettings";
 import ProductManager from "./ProductManager";
-import { 
-  LayoutGrid, 
-  Pencil, 
-  Settings, 
-  ShoppingBag, 
-  FileText, 
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import {
+  LayoutGrid,
+  Pencil,
+  Settings,
+  ShoppingBag,
+  Search,
+  Text,
   Image,
+  Video,
+  Button as ButtonIcon,
+  Form,
+  FileText,
   Package,
   Users,
-  CreditCard
+  CreditCard,
+  Plus
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface PageEditorSidebarProps {
@@ -26,116 +32,106 @@ interface PageEditorSidebarProps {
 
 const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) => {
   const [activeTab, setActiveTab] = useState<string>("elements");
+  const [searchTerm, setSearchTerm] = useState("");
+  const { selectedElementId } = useBuilder();
 
   if (isPreviewMode) return null;
 
+  const basicElements = [
+    { label: "Text", icon: Text },
+    { label: "Image", icon: Image },
+    { label: "Button", icon: ButtonIcon },
+    { label: "Video", icon: Video },
+    { label: "Form", icon: Form }
+  ];
+
   return (
-    <div className="h-full flex flex-col bg-slate-50 border-l border-slate-200">
-      <div className="py-5 px-5 border-b border-slate-200">
-        <h2 className="text-xl font-medium text-slate-800">Editor</h2>
+    <div className="h-full flex flex-col">
+      {/* Search bar at top */}
+      <div className="p-4 border-b border-slate-200">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Search"
+            className="pl-9 bg-slate-50 border-slate-200"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
       </div>
 
-      <Tabs 
-        defaultValue="elements" 
-        className="h-full flex flex-col"
-        value={activeTab}
-        onValueChange={setActiveTab}
-      >
-        <div className="border-b border-slate-200 bg-white px-2">
-          <TabsList className="flex w-full justify-start gap-2 bg-transparent p-0">
-            <TabsTrigger 
-              value="elements" 
-              className={cn(
-                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent",
-                activeTab === "elements" ? "border-indigo-600 text-indigo-600 font-medium" : "text-slate-600"
-              )}
-            >
-              <LayoutGrid className="h-4 w-4" />
-              <span>Elements</span>
-            </TabsTrigger>
-            
-            <TabsTrigger 
-              value="properties" 
-              className={cn(
-                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent",
-                activeTab === "properties" ? "border-indigo-600 text-indigo-600 font-medium" : "text-slate-600"
-              )}
-            >
-              <Pencil className="h-4 w-4" />
-              <span>Properties</span>
-            </TabsTrigger>
-            
-            <TabsTrigger 
-              value="settings" 
-              className={cn(
-                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent",
-                activeTab === "settings" ? "border-indigo-600 text-indigo-600 font-medium" : "text-slate-600"
-              )}
-            >
-              <Settings className="h-4 w-4" />
-              <span>Page</span>
-            </TabsTrigger>
-            
-            <TabsTrigger 
-              value="products" 
-              className={cn(
-                "flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent",
-                activeTab === "products" ? "border-indigo-600 text-indigo-600 font-medium" : "text-slate-600"
-              )}
-            >
-              <ShoppingBag className="h-4 w-4" />
-              <span>Products</span>
-            </TabsTrigger>
-          </TabsList>
+      <div className="flex flex-col h-full">
+        {/* Navigation tabs */}
+        <div className="flex border-b border-slate-200 bg-white">
+          <button
+            onClick={() => setActiveTab("elements")}
+            className={cn(
+              "flex-1 p-4 text-sm font-medium border-b-2 transition-colors",
+              activeTab === "elements"
+                ? "border-blue-500 text-blue-600"
+                : "border-transparent text-slate-600 hover:text-slate-900"
+            )}
+          >
+            Elements
+          </button>
+          <button
+            onClick={() => setActiveTab("properties")}
+            className={cn(
+              "flex-1 p-4 text-sm font-medium border-b-2 transition-colors",
+              selectedElementId ? "" : "opacity-50 cursor-not-allowed",
+              activeTab === "properties"
+                ? "border-blue-500 text-blue-600"
+                : "border-transparent text-slate-600 hover:text-slate-900"
+            )}
+            disabled={!selectedElementId}
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => setActiveTab("settings")}
+            className={cn(
+              "flex-1 p-4 text-sm font-medium border-b-2 transition-colors",
+              activeTab === "settings"
+                ? "border-blue-500 text-blue-600"
+                : "border-transparent text-slate-600 hover:text-slate-900"
+            )}
+          >
+            Page
+          </button>
         </div>
-        
-        <ScrollArea className="flex-1 overflow-auto">
-          <TabsContent value="elements" className="p-6 h-full m-0">
-            <ElementPalette />
-          </TabsContent>
-          
-          <TabsContent value="properties" className="p-6 h-full m-0">
-            <ElementProperties />
-          </TabsContent>
-          
-          <TabsContent value="settings" className="p-6 h-full m-0">
-            <PageSettings />
-          </TabsContent>
-          
-          <TabsContent value="products" className="p-6 h-full m-0">
-            <ProductManager />
-          </TabsContent>
-        </ScrollArea>
-      </Tabs>
 
-      {/* Squarespace-like navigation sidebar - now wider with more spacing */}
-      <div className="fixed left-0 top-0 bottom-0 w-[80px] hidden md:flex flex-col items-center pt-20 bg-slate-900 text-white">
-        <div className="flex flex-col items-center gap-9">
-          <button className="p-3 rounded-lg hover:bg-slate-800 transition-colors group relative">
-            <FileText className="h-6 w-6" />
-            <span className="absolute left-20 bg-slate-800 text-white text-sm px-3 py-1.5 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Pages</span>
-          </button>
-          <button className="p-3 rounded-lg hover:bg-slate-800 transition-colors group relative bg-slate-800">
-            <LayoutGrid className="h-6 w-6" />
-            <span className="absolute left-20 bg-slate-800 text-white text-sm px-3 py-1.5 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Page Editor</span>
-          </button>
-          <button className="p-3 rounded-lg hover:bg-slate-800 transition-colors group relative">
-            <Image className="h-6 w-6" />
-            <span className="absolute left-20 bg-slate-800 text-white text-sm px-3 py-1.5 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Media</span>
-          </button>
-          <button className="p-3 rounded-lg hover:bg-slate-800 transition-colors group relative">
-            <Package className="h-6 w-6" />
-            <span className="absolute left-20 bg-slate-800 text-white text-sm px-3 py-1.5 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Products</span>
-          </button>
-          <button className="p-3 rounded-lg hover:bg-slate-800 transition-colors group relative">
-            <Users className="h-6 w-6" />
-            <span className="absolute left-20 bg-slate-800 text-white text-sm px-3 py-1.5 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Customers</span>
-          </button>
-          <button className="p-3 rounded-lg hover:bg-slate-800 transition-colors group relative">
-            <CreditCard className="h-6 w-6" />
-            <span className="absolute left-20 bg-slate-800 text-white text-sm px-3 py-1.5 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap">Payments</span>
-          </button>
-        </div>
+        {/* Tab content */}
+        <ScrollArea className="flex-1">
+          {activeTab === "elements" && (
+            <div className="p-4">
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-slate-600 mb-3">Basic</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {basicElements.map((element) => (
+                    <div
+                      key={element.label}
+                      className="flex flex-col items-center justify-center p-3 hover:bg-slate-50 rounded-md cursor-pointer"
+                      draggable
+                    >
+                      <element.icon className="h-6 w-6 mb-2 text-slate-600" />
+                      <span className="text-xs text-slate-600">{element.label}</span>
+                    </div>
+                  ))}
+                  <div
+                    className="flex flex-col items-center justify-center p-3 hover:bg-slate-50 rounded-md cursor-pointer"
+                  >
+                    <Plus className="h-6 w-6 mb-2 text-slate-600" />
+                    <span className="text-xs text-slate-600">More</span>
+                  </div>
+                </div>
+              </div>
+              <ElementPalette />
+            </div>
+          )}
+          {activeTab === "properties" && <ElementProperties />}
+          {activeTab === "settings" && <PageSettings />}
+          {activeTab === "products" && <ProductManager />}
+        </ScrollArea>
       </div>
     </div>
   );
