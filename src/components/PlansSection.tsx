@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -29,7 +28,12 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
         }
         
         if (data) {
-          setPlans(data);
+          // Sort plans by tier level to ensure proper feature filtering
+          const sortedPlans = data.sort((a, b) => {
+            const tiers: Record<string, number> = { 'Basic': 1, 'Professional': 2, 'Enterprise': 3 };
+            return (tiers[a.name] || 0) - (tiers[b.name] || 0);
+          });
+          setPlans(sortedPlans);
         }
       } catch (error) {
         console.error("Error in fetchPlans:", error);
@@ -40,6 +44,31 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
 
     fetchPlans();
   }, []);
+
+  // Filter features based on plan tier (each plan should only show features for its tier)
+  const getFilteredFeaturesForPlan = (plan: Plan, allPlans: Plan[]): string[] => {
+    // Find plan index to determine tier level
+    const planIndex = allPlans.findIndex(p => p.id === plan.id);
+    
+    if (!plan.features || !Array.isArray(plan.features)) {
+      return [];
+    }
+
+    // Filter features for this specific plan
+    return plan.features.filter(feature => {
+      // If the feature contains tier information (T1:, T2:, T3:)
+      if (typeof feature === 'string' && feature.match(/^T[1-3]:/)) {
+        const featureTier = parseInt(feature.charAt(1));
+        // Only show features with tier <= current plan tier
+        return featureTier <= planIndex + 1;
+      }
+      // Otherwise include all features (backward compatibility)
+      return true;
+    }).map(feature => {
+      // Remove tier prefix if present
+      return typeof feature === 'string' ? feature.replace(/^T[1-3]:/, '').trim() : String(feature);
+    });
+  };
 
   const handleSelectPlan = async (plan: Plan) => {
     try {
@@ -145,8 +174,10 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {plans.map((plan) => {
+        {plans.map((plan, planIndex) => {
           const isPopular = plan.name === 'Professional';
+          // Get features specific to this plan tier
+          const planFeatures = getFilteredFeaturesForPlan(plan, plans);
           
           return (
             <div
@@ -185,7 +216,7 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
 
               <div className="mt-8 space-y-4">
                 <p className="text-sm uppercase font-semibold text-gray-500">What's included:</p>
-                {plan.features.map((feature, idx) => (
+                {planFeatures.map((feature, idx) => (
                   <div key={idx} className="flex items-start">
                     <CircleCheck className="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" />
                     <span>{feature}</span>

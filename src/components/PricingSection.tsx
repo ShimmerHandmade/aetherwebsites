@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CircleCheck } from "lucide-react";
@@ -27,12 +26,17 @@ const PricingSection = () => {
         }
         
         if (data) {
-          // Add isPopular flag to the Professional plan
-          const processedPlans = data.map(plan => ({
-            ...plan,
-            // Mark the Professional plan as popular
-            isPopular: plan.name === 'Professional'
-          }));
+          // Sort plans by tier level and add isPopular flag to the Professional plan
+          const processedPlans = data
+            .sort((a, b) => {
+              const tiers: Record<string, number> = { 'Basic': 1, 'Professional': 2, 'Enterprise': 3 };
+              return (tiers[a.name] || 0) - (tiers[b.name] || 0);
+            })
+            .map(plan => ({
+              ...plan,
+              // Mark the Professional plan as popular
+              isPopular: plan.name === 'Professional'
+            }));
           
           setPlans(processedPlans);
         }
@@ -53,6 +57,31 @@ const PricingSection = () => {
     
     checkAuth();
   }, []);
+
+  // Filter features based on plan tier
+  const getFilteredFeaturesForPlan = (plan: Plan, allPlans: Plan[]): string[] => {
+    // Find plan index to determine tier level
+    const planIndex = allPlans.findIndex(p => p.id === plan.id);
+    
+    if (!plan.features || !Array.isArray(plan.features)) {
+      return [];
+    }
+
+    // Filter features for this specific plan
+    return plan.features.filter(feature => {
+      // If the feature contains tier information (T1:, T2:, T3:)
+      if (typeof feature === 'string' && feature.match(/^T[1-3]:/)) {
+        const featureTier = parseInt(feature.charAt(1));
+        // Only show features exactly matching this plan's tier
+        return featureTier === planIndex + 1;
+      }
+      // Otherwise include all features (backward compatibility)
+      return true;
+    }).map(feature => {
+      // Remove tier prefix if present
+      return typeof feature === 'string' ? feature.replace(/^T[1-3]:/, '').trim() : String(feature);
+    });
+  };
 
   const toggleBilling = () => {
     setIsAnnual(!isAnnual);
@@ -118,46 +147,51 @@ const PricingSection = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {plans.map((plan) => (
-              <div
-                key={plan.id}
-                className={`pricing-card bg-white rounded-lg shadow-lg p-6 border ${
-                  plan.isPopular ? 'border-indigo-500 ring-2 ring-indigo-500 ring-opacity-50' : 'border-gray-200'
-                } relative`}
-              >
-                {plan.isPopular && (
-                  <div className="absolute top-0 right-0 bg-indigo-500 text-white px-4 py-1 rounded-bl-lg rounded-tr-lg text-sm font-medium">
-                    Popular
-                  </div>
-                )}
-                
-                <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                <div className="mb-6">
-                  <div className="flex items-baseline">
-                    <span className="text-4xl font-bold">${isAnnual ? plan.annual_price : plan.monthly_price}</span>
-                    <span className="text-gray-500 ml-2">/{isAnnual ? 'year' : 'month'}</span>
-                  </div>
-                  <p className="text-gray-600 mt-2">{plan.description}</p>
-                </div>
-
-                <Button 
-                  className={`w-full ${plan.isPopular ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
-                  onClick={() => handlePlanSelect(plan)}
+            {plans.map((plan) => {
+              // Get features specific to this plan tier
+              const planFeatures = getFilteredFeaturesForPlan(plan, plans);
+              
+              return (
+                <div
+                  key={plan.id}
+                  className={`pricing-card bg-white rounded-lg shadow-lg p-6 border ${
+                    plan.isPopular ? 'border-indigo-500 ring-2 ring-indigo-500 ring-opacity-50' : 'border-gray-200'
+                  } relative`}
                 >
-                  Choose {plan.name}
-                </Button>
-
-                <div className="mt-8 space-y-4">
-                  <p className="text-sm uppercase font-semibold text-gray-500">What's included:</p>
-                  {plan.features.map((feature, idx) => (
-                    <div key={idx} className="flex items-start">
-                      <CircleCheck className="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" />
-                      <span>{feature}</span>
+                  {plan.isPopular && (
+                    <div className="absolute top-0 right-0 bg-indigo-500 text-white px-4 py-1 rounded-bl-lg rounded-tr-lg text-sm font-medium">
+                      Popular
                     </div>
-                  ))}
+                  )}
+                  
+                  <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                  <div className="mb-6">
+                    <div className="flex items-baseline">
+                      <span className="text-4xl font-bold">${isAnnual ? plan.annual_price : plan.monthly_price}</span>
+                      <span className="text-gray-500 ml-2">/{isAnnual ? 'year' : 'month'}</span>
+                    </div>
+                    <p className="text-gray-600 mt-2">{plan.description}</p>
+                  </div>
+
+                  <Button 
+                    className={`w-full ${plan.isPopular ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
+                    onClick={() => handlePlanSelect(plan)}
+                  >
+                    Choose {plan.name}
+                  </Button>
+
+                  <div className="mt-8 space-y-4">
+                    <p className="text-sm uppercase font-semibold text-gray-500">What's included:</p>
+                    {planFeatures.map((feature, idx) => (
+                      <div key={idx} className="flex items-start">
+                        <CircleCheck className="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" />
+                        <span>{feature}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

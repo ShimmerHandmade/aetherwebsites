@@ -1,4 +1,3 @@
-
 import React from "react";
 import { PropertyEditorProps } from "./PropertyEditor";
 import { Label } from "@/components/ui/label";
@@ -14,6 +13,33 @@ const PricingPropertyEditor: React.FC<PropertyEditorProps> = ({
   onContentChange,
 }) => {
   const properties = element.props || {};
+  const planName = element.content || "Basic Plan";
+  const tierLevel = getTierLevel(planName);
+  
+  // Handle feature change with proper tier prefix
+  const handleFeatureChange = (index: number, value: string) => {
+    // Preserve tier prefix if it exists
+    const features = [...(properties.features || [])];
+    const oldFeature = features[index];
+    let newFeature = value;
+    
+    // Keep tier prefix if it exists in the old feature
+    if (oldFeature.match(/^T[1-3]:/)) {
+      const tierPrefix = oldFeature.substring(0, 3); // Get "T1:" etc.
+      newFeature = `${tierPrefix} ${value}`;
+    }
+    
+    features[index] = newFeature;
+    onPropertyChange("features", features);
+  };
+  
+  // Add new feature with appropriate tier
+  const addFeature = () => {
+    const features = [...(properties.features || [])];
+    const tierPrefix = `T${tierLevel}:`; // Use the current plan's tier
+    features.push(`${tierPrefix} New Feature`);
+    onPropertyChange("features", features);
+  };
   
   return (
     <div className="space-y-4">
@@ -59,15 +85,11 @@ const PricingPropertyEditor: React.FC<PropertyEditorProps> = ({
           <ChevronDown className="h-4 w-4" />
         </CollapsibleTrigger>
         <CollapsibleContent className="pl-2 border-l-2 border-gray-100 space-y-2">
-          {(properties.features || ["Feature 1", "Feature 2"]).map((feature: string, index: number) => (
+          {(properties.features || ["T1: Feature 1", "T1: Feature 2"]).map((feature: string, index: number) => (
             <div key={index} className="flex gap-2">
               <Input
-                value={feature}
-                onChange={(e) => {
-                  const newFeatures = [...(properties.features || [])];
-                  newFeatures[index] = e.target.value;
-                  onPropertyChange("features", newFeatures);
-                }}
+                value={feature.replace(/^T[1-3]:/, '').trim()} // Remove tier prefix for editing
+                onChange={(e) => handleFeatureChange(index, e.target.value)}
                 className="w-full"
               />
               <button 
@@ -85,10 +107,7 @@ const PricingPropertyEditor: React.FC<PropertyEditorProps> = ({
           ))}
           <button 
             type="button"
-            onClick={() => {
-              const newFeatures = [...(properties.features || []), "New Feature"];
-              onPropertyChange("features", newFeatures);
-            }}
+            onClick={addFeature}
             className="text-sm text-blue-600 hover:text-blue-800"
           >
             + Add Feature
@@ -98,5 +117,13 @@ const PricingPropertyEditor: React.FC<PropertyEditorProps> = ({
     </div>
   );
 };
+
+// Helper function to determine tier level from plan name
+function getTierLevel(planName: string): number {
+  const lowerPlanName = planName.toLowerCase();
+  if (lowerPlanName.includes("enterprise") || lowerPlanName.includes("premium")) return 3;
+  if (lowerPlanName.includes("professional") || lowerPlanName.includes("pro")) return 2;
+  return 1; // Default to Basic
+}
 
 export default PricingPropertyEditor;
