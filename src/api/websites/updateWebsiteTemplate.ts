@@ -72,7 +72,10 @@ export const updateWebsiteTemplate = async (
     
     // Get the home page content from the template
     // The template structure stores pages as an object with keys
-    const homePageContent = templateContent.pages?.homepage || [];
+    // Check if templateContent.pages exists and if it has a homepage property
+    const homePageContent = templateContent.pages && 'homepage' in templateContent.pages 
+      ? templateContent.pages.homepage 
+      : [];
     
     // Store this content under the new home page ID
     pagesContent[homePage.id] = homePageContent;
