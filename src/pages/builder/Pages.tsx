@@ -1,9 +1,19 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus, File, Trash, Edit, ChevronRight } from "lucide-react";
 import { useWebsite } from "@/hooks/useWebsite";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
+
+interface Page {
+  id: string;
+  title: string;
+  slug: string;
+  isHomePage?: boolean;
+}
 
 const BuilderPages = () => {
   const { id } = useParams<{ id: string }>();
@@ -11,8 +21,57 @@ const BuilderPages = () => {
   const { 
     website, 
     isLoading, 
-    websiteName
+    websiteName,
+    saveWebsite
   } = useWebsite(id, navigate);
+  
+  // For now, we'll simulate having just a homepage
+  const [pages, setPages] = useState<Page[]>([
+    { id: '1', title: 'Home', slug: '/', isHomePage: true }
+  ]);
+  
+  const [newPageTitle, setNewPageTitle] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+
+  const handleAddPage = () => {
+    if (!newPageTitle.trim()) {
+      toast.error("Page title cannot be empty");
+      return;
+    }
+    
+    // Create slug from title
+    const slug = newPageTitle.toLowerCase().replace(/\s+/g, '-');
+    
+    const newPage: Page = {
+      id: Date.now().toString(),
+      title: newPageTitle,
+      slug: `/${slug}`
+    };
+    
+    setPages([...pages, newPage]);
+    setNewPageTitle('');
+    setIsCreating(false);
+    
+    toast.success(`Page "${newPageTitle}" created`);
+  };
+
+  const handleDeletePage = (pageId: string) => {
+    // Don't allow deleting the homepage
+    const pageToDelete = pages.find(p => p.id === pageId);
+    if (pageToDelete?.isHomePage) {
+      toast.error("Cannot delete the home page");
+      return;
+    }
+    
+    setPages(pages.filter(page => page.id !== pageId));
+    toast.success("Page deleted");
+  };
+
+  const navigateToPage = (pageId: string) => {
+    // For now, this always navigates to the builder page
+    // In a multi-page setup, this would navigate to the specific page editor
+    navigate(`/builder/${id}`);
+  };
 
   if (isLoading) {
     return (
@@ -50,18 +109,75 @@ const BuilderPages = () => {
         </div>
         
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h1 className="text-2xl font-bold mb-6">Pages - {websiteName}</h1>
-          
-          <div className="text-gray-600">
-            <p>This is where you can manage all the pages of your website.</p>
-            <p className="mt-4">Current website: {websiteName}</p>
-            
-            {/* Placeholder for future page management functionality */}
-            <div className="mt-8 p-6 border border-dashed border-gray-300 rounded-lg text-center">
-              <p className="text-gray-500">Page management functionality will be implemented here.</p>
-              <p className="mt-2 text-sm text-gray-400">You'll be able to create, edit, and organize pages for {websiteName}.</p>
-            </div>
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold">Pages - {websiteName}</h1>
+            <Button onClick={() => setIsCreating(true)} className="flex items-center gap-1">
+              <Plus className="h-4 w-4" /> Add Page
+            </Button>
           </div>
+          
+          {isCreating && (
+            <div className="mb-6 p-4 border border-blue-100 bg-blue-50 rounded-lg">
+              <h2 className="text-lg font-medium mb-3">Create New Page</h2>
+              <div className="flex gap-3">
+                <Input 
+                  placeholder="Page title" 
+                  value={newPageTitle} 
+                  onChange={(e) => setNewPageTitle(e.target.value)}
+                  className="flex-1"
+                />
+                <Button onClick={handleAddPage} className="bg-blue-600 hover:bg-blue-700">
+                  Create
+                </Button>
+                <Button variant="outline" onClick={() => setIsCreating(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          <div className="space-y-3">
+            {pages.map(page => (
+              <Card key={page.id} className="border border-gray-200 hover:border-gray-300">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center">
+                    <File className="h-5 w-5 text-blue-500 mr-3" />
+                    <div>
+                      <div className="font-medium">{page.title}</div>
+                      <div className="text-sm text-gray-500">{page.slug}</div>
+                    </div>
+                    {page.isHomePage && (
+                      <span className="ml-3 text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                        Home Page
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDeletePage(page.id)}
+                      disabled={page.isHomePage}
+                    >
+                      <Trash className="h-4 w-4 text-gray-500" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => navigateToPage(page.id)}>
+                      <Edit className="h-4 w-4 text-gray-500" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => navigateToPage(page.id)}>
+                      <ChevronRight className="h-4 w-4 text-gray-500" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {pages.length === 0 && (
+            <div className="text-center p-8 border border-dashed border-gray-300 rounded-lg">
+              <p className="text-gray-500">No pages created yet</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

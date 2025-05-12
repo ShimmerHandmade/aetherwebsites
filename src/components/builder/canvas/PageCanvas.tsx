@@ -10,7 +10,7 @@ interface PageCanvasProps {
 }
 
 const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
-  const { elements, selectedElementId, addElement, loadElements } = useBuilder();
+  const { elements, selectedElementId, addElement, loadElements, updateElement } = useBuilder();
 
   // Effect to ensure every page has a header and footer
   useEffect(() => {
@@ -66,7 +66,7 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
 
       // Add navbar if missing
       if (!hasNavbar) {
-        addElement({
+        const navbarElement = {
           id: uuidv4(),
           type: "navbar",
           content: "",
@@ -80,12 +80,13 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
             ],
             variant: "default"
           }
-        }, 0); // Add at the beginning
+        };
+        addElement(navbarElement, 0); // Add at the beginning
       }
 
       // Add footer if missing
       if (!hasFooter) {
-        addElement({
+        const footerElement = {
           id: uuidv4(),
           type: "footer",
           content: "",
@@ -99,7 +100,8 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
             ],
             variant: "dark"
           }
-        }); // Add at the end
+        };
+        addElement(footerElement); // Add at the end
       }
     }
   }, []); // Run once on mount

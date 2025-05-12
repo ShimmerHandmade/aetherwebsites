@@ -1,11 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useWebsite } from "@/hooks/useWebsite";
+import { toast } from "sonner";
 
 const BuilderSiteSettings = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,10 +18,32 @@ const BuilderSiteSettings = () => {
     setWebsiteName, 
     saveWebsite 
   } = useWebsite(id, navigate);
+  
+  const [localWebsiteName, setLocalWebsiteName] = useState(websiteName);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Update local state when websiteName from hook changes
+  React.useEffect(() => {
+    setLocalWebsiteName(websiteName);
+  }, [websiteName]);
 
   const handleSave = async () => {
-    // This will just save the current state
-    await saveWebsite(website?.content || [], website?.pageSettings || {});
+    try {
+      setIsSaving(true);
+      
+      // Update the website name in the parent hook
+      setWebsiteName(localWebsiteName);
+      
+      // This will save the current state
+      await saveWebsite(website?.content || [], website?.pageSettings || {});
+      
+      toast.success("Site settings saved successfully");
+    } catch (error) {
+      console.error("Error saving site settings:", error);
+      toast.error("Failed to save site settings");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (isLoading) {
@@ -66,8 +89,8 @@ const BuilderSiteSettings = () => {
               <Label htmlFor="site-name">Website Name</Label>
               <Input 
                 id="site-name" 
-                value={websiteName} 
-                onChange={(e) => setWebsiteName(e.target.value)}
+                value={localWebsiteName} 
+                onChange={(e) => setLocalWebsiteName(e.target.value)}
                 className="max-w-md"
               />
             </div>
@@ -88,7 +111,13 @@ const BuilderSiteSettings = () => {
             </div>
             
             <div className="pt-4">
-              <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">Save Settings</Button>
+              <Button 
+                onClick={handleSave} 
+                className="bg-blue-600 hover:bg-blue-700"
+                disabled={isSaving}
+              >
+                {isSaving ? "Saving..." : "Save Settings"}
+              </Button>
             </div>
           </div>
         </div>

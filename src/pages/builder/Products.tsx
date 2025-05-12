@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useWebsite } from "@/hooks/useWebsite";
+import ProductManager from "@/components/builder/ProductManager";
 
 const BuilderProducts = () => {
   const { id } = useParams<{ id: string }>();
@@ -49,24 +49,8 @@ const BuilderProducts = () => {
           </Button>
         </div>
         
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Products - {websiteName}</h1>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Product
-            </Button>
-          </div>
-          
-          <div className="text-gray-600">
-            <p>Manage your product catalog for {websiteName}.</p>
-            
-            {/* Placeholder for product table */}
-            <div className="mt-8 p-6 border border-dashed border-gray-300 rounded-lg text-center">
-              <p className="text-gray-500">Product management functionality will be implemented here.</p>
-              <p className="mt-2 text-sm text-gray-400">You'll be able to add, edit, and organize products for your store.</p>
-            </div>
-          </div>
+        <div className="bg-white rounded-lg shadow-sm p-6 h-[calc(100vh-200px)]">
+          <ProductManager />
         </div>
       </div>
     </div>

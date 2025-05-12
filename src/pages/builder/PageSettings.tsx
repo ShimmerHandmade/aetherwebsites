@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -7,16 +8,56 @@ import { Label } from "@/components/ui/label";
 import { TextArea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useWebsite } from "@/hooks/useWebsite";
+import { toast } from "sonner";
 
 const BuilderPageSettings = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { 
     website, 
-    isLoading, 
+    isLoading,
     websiteName,
     pageSettings,
+    saveWebsite
   } = useWebsite(id, navigate);
+
+  const [title, setTitle] = useState<string>(pageSettings?.title || websiteName || '');
+  const [description, setDescription] = useState<string>(pageSettings?.description || '');
+  const [keywords, setKeywords] = useState<string>(pageSettings?.keywords || '');
+  const [indexable, setIndexable] = useState<boolean>(pageSettings?.indexable !== false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Update state when pageSettings changes
+  React.useEffect(() => {
+    if (pageSettings) {
+      setTitle(pageSettings.title || websiteName || '');
+      setDescription(pageSettings.description || '');
+      setKeywords(pageSettings.keywords || '');
+      setIndexable(pageSettings.indexable !== false);
+    }
+  }, [pageSettings, websiteName]);
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      
+      const updatedPageSettings = {
+        ...pageSettings,
+        title,
+        description,
+        keywords,
+        indexable
+      };
+      
+      await saveWebsite(website?.content || [], updatedPageSettings);
+      toast.success("Page settings saved successfully");
+    } catch (error) {
+      console.error("Error saving page settings:", error);
+      toast.error("Failed to save page settings");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -61,7 +102,8 @@ const BuilderPageSettings = () => {
               <Label htmlFor="page-title">Page Title</Label>
               <Input 
                 id="page-title" 
-                defaultValue={pageSettings?.title || websiteName}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
               />
               <p className="text-sm text-gray-500">The title that appears in the browser tab</p>
             </div>
@@ -72,7 +114,8 @@ const BuilderPageSettings = () => {
                 id="page-description" 
                 placeholder="A brief description of this page for search engines"
                 rows={3}
-                defaultValue={pageSettings?.description || ""}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
               />
               <p className="text-sm text-gray-500">Important for SEO, appears in search engine results</p>
             </div>
@@ -82,17 +125,28 @@ const BuilderPageSettings = () => {
               <Input 
                 id="page-keywords" 
                 placeholder="keyword1, keyword2, keyword3"
-                defaultValue={pageSettings?.keywords || ""}
+                value={keywords}
+                onChange={(e) => setKeywords(e.target.value)}
               />
             </div>
             
             <div className="flex items-center space-x-2 pt-2">
-              <Switch id="indexing" defaultChecked={pageSettings?.indexable !== false} />
+              <Switch 
+                id="indexing" 
+                checked={indexable} 
+                onCheckedChange={setIndexable}
+              />
               <Label htmlFor="indexing">Allow search engines to index this page</Label>
             </div>
             
             <div className="pt-4">
-              <Button className="bg-blue-600 hover:bg-blue-700">Save Page Settings</Button>
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700"
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? "Saving..." : "Save Page Settings"}
+              </Button>
             </div>
           </div>
         </div>
