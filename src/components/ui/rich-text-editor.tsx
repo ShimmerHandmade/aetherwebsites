@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { 
   Bold, 
@@ -20,12 +19,15 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { TextArea, TextAreaProps } from "./textarea";
+import { TextArea } from "./textarea";
 import { Button } from "./button";
 
-interface RichTextEditorProps extends Omit<TextAreaProps, "richEditor"> {
+// Create a custom interface that doesn't extend TextAreaProps
+interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
+  className?: string;
+  id?: string;
 }
 
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({
@@ -37,6 +39,11 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const [activeFormat, setActiveFormat] = React.useState<string[]>([]);
   const [headingLevel, setHeadingLevel] = React.useState<string>("paragraph");
   const editorRef = React.useRef<HTMLTextAreaElement>(null);
+
+  // Handle text area change event and extract the value
+  const handleTextAreaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onChange(e.target.value);
+  };
 
   // This is a simplified implementation that just shows the UI
   // In a real implementation, we'd apply the formatting to the text
@@ -202,7 +209,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       <TextArea
         ref={editorRef}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={handleTextAreaChange}
         richEditor={true}
         className="min-h-[200px] focus:outline-none"
         {...props}
