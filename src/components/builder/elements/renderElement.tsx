@@ -28,7 +28,7 @@ export const renderElement = (element: BuilderElement): React.ReactNode => {
     }
     
     // Complex Elements
-    if (['feature', 'testimonial', 'contact', 'pricing', 'cta', 'card', 'faq'].includes(element.type)) {
+    if (['feature', 'testimonial', 'contact', 'pricing', 'cta', 'card', 'faq', 'productsList'].includes(element.type)) {
       return renderComplexElement(element);
     }
     

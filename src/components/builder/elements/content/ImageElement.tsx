@@ -9,9 +9,13 @@ interface ElementProps {
 const ImageElement: React.FC<ElementProps> = ({ element }) => {
   return (
     <div className="p-4">
-      <div className="bg-gray-200 h-48 flex items-center justify-center">
+      <div className="bg-gray-200 h-48 flex items-center justify-center overflow-hidden">
         {element.props?.src ? (
-          <img src={element.props.src} alt={element.props.alt || ""} className="max-h-full" />
+          <img 
+            src={element.props.src} 
+            alt={element.props.alt || ""} 
+            className="w-full h-full object-cover" 
+          />
         ) : (
           <span className="text-gray-500">Image placeholder</span>
         )}

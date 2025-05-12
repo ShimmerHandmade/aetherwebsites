@@ -132,7 +132,7 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
           <div className={`grid ${getColumnClasses()} gap-6 mb-6`}>
             {products.map((product) => (
               <Card key={product.id} className={`overflow-hidden flex flex-col ${getCardStyle()}`}>
-                <div className="bg-gray-100 h-48 flex items-center justify-center">
+                <div className="bg-gray-100 h-48 flex items-center justify-center overflow-hidden">
                   <Store className="h-12 w-12 text-gray-400" />
                 </div>
                 <CardHeader className="pb-2">
