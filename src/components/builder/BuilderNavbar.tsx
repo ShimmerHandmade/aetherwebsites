@@ -25,6 +25,7 @@ import {
   PanelsTopLeft,
   Store
 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface Page {
   id: string;
@@ -68,12 +69,15 @@ const BuilderNavbar = ({
     if (autoSave) {
       timer = setTimeout(() => {
         onSave();
-        toast.success("Website saved automatically");
+        toast({
+          title: "Auto-save",
+          description: "Website saved automatically"
+        });
       }, 60000);
     }
 
     return () => clearTimeout(timer);
-  }, [websiteName, autoSave]);
+  }, [websiteName, autoSave, onSave]);
 
   return (
     <div className="w-full h-14 flex items-center border-b border-slate-200 bg-white px-4 justify-between">

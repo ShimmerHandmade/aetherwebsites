@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Index from "@/pages/Index";
@@ -11,7 +12,8 @@ import Pages from "@/pages/builder/Pages";
 import PageSettings from "@/pages/builder/PageSettings";
 import SiteSettings from "@/pages/builder/SiteSettings";
 import NotFound from "@/pages/NotFound";
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
 
 function App() {
   return (
@@ -31,6 +33,7 @@ function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
+      <Toaster />
     </ThemeProvider>
   );
 }
