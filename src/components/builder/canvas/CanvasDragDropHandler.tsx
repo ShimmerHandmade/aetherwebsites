@@ -8,13 +8,15 @@ interface CanvasDragDropHandlerProps {
   isPreviewMode: boolean;
   onCanvasClick: (e: React.MouseEvent) => void;
   className: string;
+  containerId?: string; // Add support for container elements
 }
 
 const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({ 
   children, 
   isPreviewMode, 
   onCanvasClick,
-  className
+  className,
+  containerId
 }) => {
   const { addElement, moveElement, elements } = useBuilder();
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -52,14 +54,14 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
             type: elementData.type,
             content: elementData.content,
             props: elementData.props || {},
-          });
+          }, undefined, containerId);
           return;
         }
         
         // Handle element reordering
         if (elementData.id && elementData.sourceIndex !== undefined) {
           const dropIndex = elements.length;
-          moveElement(elementData.sourceIndex, dropIndex);
+          moveElement(elementData.sourceIndex, dropIndex, containerId);
         }
       }
     } catch (error) {
@@ -80,6 +82,7 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      data-container-id={containerId}
     >
       {children}
     </div>

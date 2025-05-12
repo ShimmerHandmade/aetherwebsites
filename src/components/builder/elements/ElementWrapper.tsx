@@ -3,6 +3,7 @@ import React from "react";
 import { useBuilder, BuilderElement as ElementType } from "@/contexts/BuilderContext";
 import { Move, Grip, Trash, Copy, Settings, Edit } from "lucide-react";
 import { renderElement } from "./renderElement";
+import CanvasDragDropHandler from "../canvas/CanvasDragDropHandler";
 
 interface BuilderElementProps {
   element: ElementType;
@@ -60,6 +61,20 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   const handleDragEnd = () => {
     document.body.classList.remove("is-dragging");
   };
+  
+  // Check if this is a container element
+  const isContainer = element.type === 'container' || element.type === 'grid' || element.type === 'flex' || element.type === 'section';
+  
+  // If this is a container and it's in edit mode, wrap the content with a CanvasDragDropHandler
+  const renderContent = () => {
+    if (isContainer && !isPreviewMode) {
+      // The container's own content is rendered by the ContainerElement component
+      // We just need to make sure it's draggable
+      return renderElement(element);
+    } else {
+      return renderElement(element);
+    }
+  };
 
   return (
     <div
@@ -71,6 +86,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       data-element-type={element.type}
+      data-element-id={element.id}
     >
       {!isPreviewMode && (
         <div className={`absolute top-0 left-0 w-full h-full pointer-events-none ${
@@ -111,7 +127,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
       )}
       
       <div className={`${selected && !isPreviewMode ? 'opacity-90' : ''}`}>
-        {renderElement(element)}
+        {renderContent()}
       </div>
     </div>
   );

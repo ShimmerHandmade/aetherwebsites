@@ -28,15 +28,16 @@ interface BuilderContextType {
   elements: BuilderElement[];
   selectedElementId: string | null;
   pageSettings: PageSettings | null;
-  addElement: (element: BuilderElement, position?: number) => void;
+  addElement: (element: BuilderElement, position?: number, parentId?: string) => void;
   updateElement: (id: string, updates: Partial<BuilderElement>) => void;
   removeElement: (id: string) => void;
   selectElement: (id: string | null) => void;
-  moveElement: (sourceIndex: number, destinationIndex: number) => void;
+  moveElement: (sourceIndex: number, destinationIndex: number, targetParentId?: string) => void;
   duplicateElement: (id: string) => void;
   loadElements: (elements: BuilderElement[]) => void;
   saveElements: () => BuilderElement[];
   updatePageSettings: (settings: Partial<PageSettings>) => void;
+  findElementById: (id: string) => BuilderElement | null;
 }
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
@@ -59,7 +60,90 @@ export const BuilderProvider: React.FC<{
     }
   }, [initialElements]);
 
-  const addElement = (element: BuilderElement, position?: number) => {
+  // Helper function to find an element by ID anywhere in the tree
+  const findElementById = (id: string, elementList = elements): BuilderElement | null => {
+    for (const element of elementList) {
+      if (element.id === id) {
+        return element;
+      }
+      
+      if (element.children && element.children.length > 0) {
+        const foundInChildren = findElementById(id, element.children);
+        if (foundInChildren) {
+          return foundInChildren;
+        }
+      }
+    }
+    
+    return null;
+  };
+
+  // Helper function to update an element in a nested structure
+  const updateElementInTree = (
+    elements: BuilderElement[],
+    id: string,
+    updateFn: (element: BuilderElement) => BuilderElement
+  ): BuilderElement[] => {
+    return elements.map(element => {
+      if (element.id === id) {
+        return updateFn(element);
+      }
+      
+      if (element.children && element.children.length > 0) {
+        return {
+          ...element,
+          children: updateElementInTree(element.children, id, updateFn)
+        };
+      }
+      
+      return element;
+    });
+  };
+  
+  // Helper function to remove an element from a nested structure
+  const removeElementFromTree = (
+    elements: BuilderElement[],
+    id: string
+  ): BuilderElement[] => {
+    return elements.filter(element => {
+      if (element.id === id) {
+        return false;
+      }
+      
+      if (element.children && element.children.length > 0) {
+        element.children = removeElementFromTree(element.children, id);
+      }
+      
+      return true;
+    });
+  };
+
+  const addElement = (element: BuilderElement, position?: number, parentId?: string) => {
+    // If parentId is provided, add as a child of that element
+    if (parentId) {
+      setElements(prevElements => {
+        return updateElementInTree(prevElements, parentId, parent => {
+          const children = parent.children || [];
+          const updatedChildren = [...children];
+          
+          if (position !== undefined) {
+            updatedChildren.splice(position, 0, element);
+          } else {
+            updatedChildren.push(element);
+          }
+          
+          return {
+            ...parent,
+            children: updatedChildren
+          };
+        });
+      });
+      
+      setSelectedElementId(element.id);
+      return;
+    }
+    
+    // Handle top-level elements
     setElements((prev) => {
       // If this is a navbar, always add it to the beginning
       if (element.type === "navbar") {
@@ -101,23 +185,22 @@ export const BuilderProvider: React.FC<{
   };
 
   const updateElement = (id: string, updates: Partial<BuilderElement>) => {
-    setElements((prev) =>
-      prev.map((element) =>
-        element.id === id ? { ...element, ...updates } : element
-      )
+    setElements(prev => 
+      updateElementInTree(prev, id, element => ({ ...element, ...updates }))
     );
   };
 
   const removeElement = (id: string) => {
     // Check if it's a navbar or footer before removing
-    const elementToRemove = elements.find(el => el.id === id);
+    const elementToRemove = findElementById(id);
     if (elementToRemove && (elementToRemove.type === "navbar" || elementToRemove.type === "footer")) {
       // Don't remove essential elements
       console.warn(`Cannot remove ${elementToRemove.type} element - it is required for the page structure.`);
       return;
     }
     
-    setElements((prev) => prev.filter((element) => element.id !== id));
+    setElements(prev => removeElementFromTree(prev, id));
+    
     if (selectedElementId === id) {
       setSelectedElementId(null);
     }
@@ -127,32 +210,66 @@ export const BuilderProvider: React.FC<{
     setSelectedElementId(id);
   };
 
-  const moveElement = (sourceIndex: number, destinationIndex: number) => {
-    setElements((prev) => {
-      const result = Array.from(prev);
-      const [removed] = result.splice(sourceIndex, 1);
-      result.splice(destinationIndex, 0, removed);
-      return result;
-    });
+  const moveElement = (sourceIndex: number, destinationIndex: number, targetParentId?: string) => {
+    // For now, only handle top-level moves
+    if (!targetParentId) {
+      setElements((prev) => {
+        const result = Array.from(prev);
+        const [removed] = result.splice(sourceIndex, 1);
+        result.splice(destinationIndex, 0, removed);
+        return result;
+      });
+    }
   };
   
   const duplicateElement = (id: string) => {
-    const elementToDuplicate = elements.find((element) => element.id === id);
-    if (elementToDuplicate) {
+    const elementToDuplicate = findElementById(id);
+    if (!elementToDuplicate) return;
+    
+    const cloneElement = (element: BuilderElement): BuilderElement => {
       const newElement = {
-        ...elementToDuplicate,
+        ...element,
         id: uuidv4(),
       };
-      setElements((prev) => {
-        // Find the index of the element to duplicate
-        const index = prev.findIndex((element) => element.id === id);
-        // Insert the new element after the original
-        const result = [...prev];
-        result.splice(index + 1, 0, newElement);
-        return result;
-      });
-      setSelectedElementId(newElement.id);
+      
+      if (element.children && element.children.length > 0) {
+        newElement.children = element.children.map(child => cloneElement(child));
+      }
+      
+      return newElement;
+    };
+    
+    const newElement = cloneElement(elementToDuplicate);
+    
+    // Find the parent of the element to duplicate
+    let parentId: string | undefined;
+    let elementIndex = -1;
+    
+    // Check if element is at the root level
+    const rootIndex = elements.findIndex(e => e.id === id);
+    if (rootIndex !== -1) {
+      elementIndex = rootIndex;
+    } else {
+      // Search for parent
+      for (const element of elements) {
+        if (element.children) {
+          const childIndex = element.children.findIndex(child => child.id === id);
+          if (childIndex !== -1) {
+            parentId = element.id;
+            elementIndex = childIndex;
+            break;
+          }
+        }
+      }
     }
+    
+    if (parentId) {
+      addElement(newElement, elementIndex + 1, parentId);
+    } else if (elementIndex !== -1) {
+      addElement(newElement, elementIndex + 1);
+    }
+    
+    setSelectedElementId(newElement.id);
   };
 
   const loadElements = (newElements: BuilderElement[]) => {
@@ -248,6 +365,7 @@ export const BuilderProvider: React.FC<{
         loadElements,
         saveElements,
         updatePageSettings,
+        findElementById,
       }}
     >
       {children}
