@@ -139,15 +139,34 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     setSelectedElementId(id);
   };
 
-  const moveElement = (sourceIndex: number, destinationIndex: number, targetParentId?: string) => {
-    // For now, only handle top-level moves
-    if (!targetParentId) {
-      setElements((prev) => {
-        const result = Array.from(prev);
-        const [removed] = result.splice(sourceIndex, 1);
-        result.splice(destinationIndex, 0, removed);
-        return result;
-      });
+  const moveElement = (sourceIndex: number, destinationIndex: number, targetParentId?: string, sourceParentId?: string) => {
+    // Handle moves within the same parent container
+    if (sourceParentId === targetParentId) {
+      if (!sourceParentId) {
+        // Moving at root level
+        setElements((prev) => {
+          const result = Array.from(prev);
+          const [removed] = result.splice(sourceIndex, 1);
+          result.splice(destinationIndex, 0, removed);
+          return result;
+        });
+      } else {
+        // Moving within a nested container
+        setElements((prev) => {
+          return updateElementInTree(prev, sourceParentId, parent => {
+            const children = [...(parent.children || [])];
+            const [removed] = children.splice(sourceIndex, 1);
+            children.splice(destinationIndex, 0, removed);
+            return {
+              ...parent,
+              children
+            };
+          });
+        });
+      }
+    } else {
+      // Moving between different containers is handled by the add/remove pattern in CanvasDragDropHandler
+      console.log("Moving between different containers - handled by add/remove");
     }
   };
   

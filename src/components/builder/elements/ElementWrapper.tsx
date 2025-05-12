@@ -40,25 +40,32 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   const handleDragStart = (e: React.DragEvent) => {
     if (isPreviewMode) return;
     
+    // Find parent container id if any
+    const container = e.currentTarget.closest('[data-container-id]');
+    const parentId = container ? (container as HTMLElement).dataset.containerId : undefined;
+    
     const data = {
       id: element.id,
       type: element.type,
       sourceIndex: index,
+      parentId
     };
     
     e.dataTransfer.setData("application/json", JSON.stringify(data));
     e.dataTransfer.effectAllowed = "move";
     
-    // Add a slight delay to improve UX
+    // Add visual feedback for dragging
     setTimeout(() => {
+      document.body.classList.add("is-dragging");
       if (selected) {
-        document.body.classList.add("is-dragging");
+        e.currentTarget.classList.add("opacity-50");
       }
     }, 0);
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (e: React.DragEvent) => {
     document.body.classList.remove("is-dragging");
+    e.currentTarget.classList.remove("opacity-50");
   };
   
   return (
@@ -92,8 +99,15 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
             <Edit className="h-4 w-4" />
           </button>
           <button 
-            className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded" 
+            className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded cursor-grab" 
             title="Drag to move"
+            onMouseDown={(e) => {
+              // This helps initiate drag from the handle
+              const parentElement = e.currentTarget.closest('[draggable="true"]');
+              if (parentElement) {
+                e.stopPropagation();
+              }
+            }}
           >
             <Grip className="h-4 w-4" />
           </button>

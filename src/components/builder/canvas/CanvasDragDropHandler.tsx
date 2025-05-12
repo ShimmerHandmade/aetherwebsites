@@ -43,51 +43,56 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
     if (isPreviewMode) return;
     
     try {
-      // Handle drops from the element palette
       const data = e.dataTransfer.getData("application/json");
-      if (data) {
-        const elementData = JSON.parse(data);
+      if (!data) return;
+      
+      const elementData = JSON.parse(data);
+      
+      // Add new element from palette
+      if (!elementData.id) {
+        const newElement = {
+          id: uuidv4(),
+          type: elementData.type,
+          content: elementData.content || "",
+          props: elementData.props || {},
+        };
         
-        // Add new element from palette
-        if (!elementData.id) {
-          const newElement = {
-            id: uuidv4(),
-            type: elementData.type,
-            content: elementData.content || "",
-            props: elementData.props || {},
-          };
-          
-          // Add to container or root
-          addElement(newElement, undefined, containerId);
-          console.log("Added new element to container:", containerId, newElement);
-          return;
-        }
+        // Add to container or root
+        addElement(newElement, undefined, containerId);
+        console.log("Added new element to container:", containerId, newElement);
+        return;
+      }
+      
+      // Element already exists, handle moving
+      if (elementData.id) {
+        const sourceElement = findElementById(elementData.id);
+        if (!sourceElement) return;
         
-        // Handle element reordering or moving between containers
-        if (elementData.id && elementData.sourceIndex !== undefined) {
-          if (containerId) {
-            // Move an element to this container
-            const sourceElement = findElementById(elementData.id);
-            if (sourceElement) {
-              // Remove from original location and add to this container
-              console.log("Moving element to container:", containerId, sourceElement);
-              
-              // Add element to the new container first before removing
-              addElement({...sourceElement}, undefined, containerId);
-              
-              // We need to delay the removal slightly to avoid React rendering issues
-              setTimeout(() => {
-                // Remove from the original location
-                console.log("Removing original element:", elementData.id);
-                removeElement(elementData.id);
-              }, 50);
-            }
-          } else {
-            // Move at root level
+        const sourceParentId = elementData.parentId;
+        
+        // If moving within same container or both at root level
+        if (sourceParentId === containerId) {
+          // Let the existing moveElement handle this case if it's at root level
+          if (!containerId && elementData.sourceIndex !== undefined) {
             const dropIndex = elements.length;
             moveElement(elementData.sourceIndex, dropIndex);
+            return;
           }
         }
+        
+        // Add a cloned copy to the new location
+        const elementCopy = {
+          ...sourceElement
+        };
+        
+        // Add element to the new container first before removing
+        addElement(elementCopy, undefined, containerId);
+        
+        // We need to delay the removal slightly to avoid React rendering issues
+        setTimeout(() => {
+          // Remove from the original location  
+          removeElement(elementData.id);
+        }, 50);
       }
     } catch (error) {
       console.error("Error handling drop:", error);
