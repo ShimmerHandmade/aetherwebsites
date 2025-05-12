@@ -3,7 +3,6 @@ import React from "react";
 import { useBuilder, BuilderElement as ElementType } from "@/contexts/BuilderContext";
 import { Move, Grip, Trash, Copy, Settings, Edit } from "lucide-react";
 import { renderElement } from "./renderElement";
-import CanvasDragDropHandler from "../canvas/CanvasDragDropHandler";
 
 interface BuilderElementProps {
   element: ElementType;
@@ -85,7 +84,10 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
           <button 
             className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded" 
             title="Edit properties"
-            onClick={() => selectElement(element.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              selectElement(element.id);
+            }}
           >
             <Edit className="h-4 w-4" />
           </button>

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { BuilderElement } from "@/contexts/BuilderContext";
 import ContainerPropertyEditor from "./ContainerPropertyEditor";
@@ -16,6 +15,8 @@ import ListPropertyEditor from "./ListPropertyEditor";
 import CardPropertyEditor from "./CardPropertyEditor";
 import NavbarPropertyEditor from "./NavbarPropertyEditor";
 import FooterPropertyEditor from "./FooterPropertyEditor";
+import FlexPropertyEditor from "./FlexPropertyEditor";
+import GridPropertyEditor from "./GridPropertyEditor";
 
 interface PropertyEditorManagerProps {
   element: BuilderElement;
@@ -34,6 +35,24 @@ const PropertyEditorManager: React.FC<PropertyEditorManagerProps> = ({
     case "section":
       return (
         <ContainerPropertyEditor
+          element={element}
+          onPropertyChange={onPropertyChange}
+          onContentChange={onContentChange}
+        />
+      );
+
+    case "flex":
+      return (
+        <FlexPropertyEditor
+          element={element}
+          onPropertyChange={onPropertyChange}
+          onContentChange={onContentChange}
+        />
+      );
+
+    case "grid":
+      return (
+        <GridPropertyEditor
           element={element}
           onPropertyChange={onPropertyChange}
           onContentChange={onContentChange}
