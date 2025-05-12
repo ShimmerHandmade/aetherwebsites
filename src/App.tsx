@@ -10,6 +10,10 @@ import Dashboard from "./pages/Dashboard";
 import Builder from "./pages/Builder";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import BuilderPages from "./pages/builder/Pages";
+import BuilderSiteSettings from "./pages/builder/SiteSettings";
+import BuilderProducts from "./pages/builder/Products";
+import BuilderPageSettings from "./pages/builder/PageSettings";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -57,6 +61,10 @@ const App = () => {
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/builder/:id" element={<Builder />} />
+            <Route path="/builder/:id/pages" element={<BuilderPages />} />
+            <Route path="/builder/:id/site-settings" element={<BuilderSiteSettings />} />
+            <Route path="/builder/:id/products" element={<BuilderProducts />} />
+            <Route path="/builder/:id/page-settings" element={<BuilderPageSettings />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

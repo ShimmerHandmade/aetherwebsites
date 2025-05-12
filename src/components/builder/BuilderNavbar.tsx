@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Menu, Save, Eye, EyeOff, Settings, Monitor, Smartphone, FileIcon, LayoutTemplate, ShoppingBag } from "lucide-react";
@@ -40,6 +40,7 @@ const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
   setIsPreviewMode = () => {}
 }) => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const [isSaving, setIsSaving] = useState(false);
   const { saveElements } = useBuilder();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -64,8 +65,16 @@ const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
     setIsPreviewMode(!isPreviewMode);
   };
 
-  // Define menu items with their routes - updated to routes that exist in App.tsx
+  // Define menu items with their routes - updated to builder-specific routes
   const menuItems = [
+    { title: "Pages", icon: FileIcon, route: `/builder/${id}/pages` },
+    { title: "Site Settings", icon: LayoutTemplate, route: `/builder/${id}/site-settings` },
+    { title: "Products", icon: ShoppingBag, route: `/builder/${id}/products` },
+    { title: "Page Settings", icon: Settings, route: `/builder/${id}/page-settings` }
+  ];
+
+  // Also include links to Dashboard and Profile
+  const appMenuItems = [
     { title: "Dashboard", icon: FileIcon, route: "/dashboard" },
     { title: "Profile", icon: Settings, route: "/profile" }
   ];
@@ -98,15 +107,30 @@ const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
                 </SheetHeader>
                 <div className="py-4">
                   <nav className="space-y-1">
-                    {menuItems.map((item) => (
-                      <button 
-                        key={item.title}
-                        className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left"
-                        onClick={() => handleMenuItemClick(item.route)}
-                      >
-                        <item.icon className="h-4 w-4 mr-2" /> {item.title}
-                      </button>
-                    ))}
+                    <div className="mb-3">
+                      <h3 className="text-sm font-medium text-gray-500 px-2 mb-2">Site Controls</h3>
+                      {menuItems.map((item) => (
+                        <button 
+                          key={item.title}
+                          className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left"
+                          onClick={() => handleMenuItemClick(item.route)}
+                        >
+                          <item.icon className="h-4 w-4 mr-2" /> {item.title}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="pt-3 border-t border-gray-100">
+                      <h3 className="text-sm font-medium text-gray-500 px-2 mb-2">App Navigation</h3>
+                      {appMenuItems.map((item) => (
+                        <button 
+                          key={item.title}
+                          className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left"
+                          onClick={() => handleMenuItemClick(item.route)}
+                        >
+                          <item.icon className="h-4 w-4 mr-2" /> {item.title}
+                        </button>
+                      ))}
+                    </div>
                   </nav>
                 </div>
                 <div className="mt-auto pt-4">
