@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useBuilder } from "@/contexts/BuilderContext";
 import ElementPalette from "./ElementPalette";
@@ -16,9 +15,9 @@ import {
   Text,
   Image,
   Video,
-  Button as ButtonIcon,
-  Form,
-  FileText,
+  ButtonIcon,
+  FormInput,
+  FileText as FileTextIcon,
   Package,
   Users,
   CreditCard,
@@ -42,7 +41,7 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
     { label: "Image", icon: Image },
     { label: "Button", icon: ButtonIcon },
     { label: "Video", icon: Video },
-    { label: "Form", icon: Form }
+    { label: "Form", icon: FormInput }
   ];
 
   return (
