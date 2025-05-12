@@ -1,6 +1,8 @@
 
 import React from "react";
-import { BuilderElement } from "@/contexts/BuilderContext";
+import { BuilderElement } from "@/contexts/builder/types";
+import { renderElement } from "../renderElement";
+import CanvasDragDropHandler from "../../canvas/CanvasDragDropHandler";
 
 interface ElementProps {
   element: BuilderElement;
@@ -27,26 +29,36 @@ const GridElement: React.FC<ElementProps> = ({ element }) => {
   const columnClass = colClasses[columns as keyof typeof colClasses] || colClasses[2];
   
   return (
-    <div className={`grid ${columnClass} ${gap} ${padding} border border-dashed border-transparent hover:border-gray-300 transition-colors duration-200`}>
-      {element.children && element.children.length > 0 ? (
-        element.children.map((child, index) => (
-          <div key={index} className="min-h-[100px] bg-white rounded-md">
-            {/* Child elements would be rendered by parent component */}
-            <div className="text-center text-gray-400 p-4">Child element placeholder</div>
+    <div className={`${padding} border border-dashed border-gray-300 hover:border-blue-300 transition-colors rounded-md relative min-h-[100px]`}>
+      <CanvasDragDropHandler
+        isPreviewMode={false}
+        onCanvasClick={(e) => e.stopPropagation()}
+        className="min-h-[80px] w-full"
+        containerId={element.id}
+      >
+        {element.children && element.children.length > 0 ? (
+          <div className={`grid ${columnClass} ${gap} w-full`}>
+            {element.children.map((child) => (
+              <div key={child.id} className="min-h-[80px]">
+                {renderElement(child)}
+              </div>
+            ))}
           </div>
-        ))
-      ) : (
-        Array(columns).fill(0).map((_, i) => (
-          <div 
-            key={i} 
-            className="border border-dashed border-gray-300 rounded-md bg-white shadow-sm hover:shadow-md transition-all duration-200"
-          >
-            <div className="aspect-video flex items-center justify-center text-gray-400">
-              Drop elements here
-            </div>
+        ) : (
+          <div className={`grid ${columnClass} ${gap} w-full`}>
+            {Array(columns).fill(0).map((_, i) => (
+              <div 
+                key={i} 
+                className="border border-dashed border-gray-300 rounded-md bg-white shadow-sm hover:shadow-md transition-all duration-200"
+              >
+                <div className="aspect-video flex items-center justify-center text-gray-400">
+                  Drop elements here
+                </div>
+              </div>
+            ))}
           </div>
-        ))
-      )}
+        )}
+      </CanvasDragDropHandler>
     </div>
   );
 };
