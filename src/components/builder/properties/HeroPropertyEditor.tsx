@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import ContentPropertyEditor from "./ContentPropertyEditor";
 
 const HeroPropertyEditor: React.FC<PropertyEditorProps> = ({
@@ -56,6 +57,18 @@ const HeroPropertyEditor: React.FC<PropertyEditorProps> = ({
                 id="buttonText"
                 value={properties.buttonText || ""}
                 onChange={(e) => onPropertyChange("buttonText", e.target.value)}
+                className="w-full"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="buttonLink" className="text-sm text-gray-600 block mb-1">
+                Button Link
+              </Label>
+              <Input
+                id="buttonLink"
+                value={properties.buttonLink || ""}
+                onChange={(e) => onPropertyChange("buttonLink", e.target.value)}
                 className="w-full"
               />
             </div>
@@ -118,6 +131,41 @@ const HeroPropertyEditor: React.FC<PropertyEditorProps> = ({
                 <SelectItem value="dark">Dark</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Height</Label>
+            <Select 
+              value={properties.height || "medium"} 
+              onValueChange={(value) => onPropertyChange("height", value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Height" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="small">Small</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="large">Large</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Image URL</Label>
+            <Input
+              value={properties.imageUrl || ""}
+              onChange={(e) => onPropertyChange("imageUrl", e.target.value)}
+              placeholder="/placeholder.svg"
+            />
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Switch
+              checked={properties.overlay || false}
+              onCheckedChange={(checked) => onPropertyChange("overlay", checked)}
+              id="overlay-switch"
+            />
+            <Label htmlFor="overlay-switch">Enable overlay (for image backgrounds)</Label>
           </div>
         </TabsContent>
       </Tabs>
