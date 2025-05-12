@@ -1,11 +1,11 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Website } from "@/pages/Dashboard";
 import { Edit, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { deleteWebsite } from "@/api/websites";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,21 +31,21 @@ const WebsiteCard = ({ website, onWebsiteUpdate }: WebsiteCardProps) => {
     try {
       setIsDeleting(true);
       
-      const { error } = await supabase
-        .from("websites")
-        .delete()
-        .eq("id", website.id);
+      toast.loading("Deleting website and associated data...");
+      const result = await deleteWebsite(website.id);
         
-      if (error) {
-        toast.error("Failed to delete website");
-        console.error("Error deleting website:", error);
+      if (!result.success) {
+        toast.dismiss();
+        toast.error(result.error || "Failed to delete website");
         return;
       }
       
-      toast.success("Website deleted successfully");
+      toast.dismiss();
+      toast.success("Website and all associated data deleted successfully");
       onWebsiteUpdate();
     } catch (error) {
       console.error("Error in handleDelete:", error);
+      toast.dismiss();
       toast.error("An unexpected error occurred");
     } finally {
       setIsDeleting(false);
@@ -124,7 +124,12 @@ const WebsiteCard = ({ website, onWebsiteUpdate }: WebsiteCardProps) => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete "{website.name}" and all of its data. 
+              This will permanently delete "{website.name}" and all associated data including:
+              <ul className="list-disc ml-6 mt-2 space-y-1">
+                <li>All website content and settings</li>
+                <li>All products linked to this website</li>
+                <li>All uploaded images and files</li>
+              </ul>
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -135,7 +140,7 @@ const WebsiteCard = ({ website, onWebsiteUpdate }: WebsiteCardProps) => {
               disabled={isDeleting}
               className="bg-red-500 hover:bg-red-600"
             >
-              {isDeleting ? "Deleting..." : "Delete"}
+              {isDeleting ? "Deleting..." : "Delete Everything"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
