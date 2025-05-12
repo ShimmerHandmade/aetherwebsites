@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,7 +25,9 @@ import {
   Globe,
   Settings,
   PanelsTopLeft,
-  Store
+  Store,
+  FileText,
+  Package
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -64,7 +67,8 @@ const BuilderNavbar = ({
 }: BuilderNavbarProps) => {
   const [activeTab, setActiveTab] = useState("edit");
   const [autoSave, setAutoSave] = useState(true);
-
+  const navigate = useNavigate();
+  
   useEffect(() => {
     let timer: NodeJS.Timeout;
 
@@ -80,6 +84,33 @@ const BuilderNavbar = ({
 
     return () => clearTimeout(timer);
   }, [websiteName, autoSave, onSave]);
+  
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    
+    if (value === "edit") {
+      // Stay on the current page, just change the tab
+      return;
+    }
+    
+    const websiteId = window.location.pathname.split("/")[2];
+    if (!websiteId) return;
+    
+    switch (value) {
+      case "products":
+        navigate(`/builder/${websiteId}/products`);
+        break;
+      case "pages":
+        navigate(`/builder/${websiteId}/pages`);
+        break;
+      case "page-settings":
+        navigate(`/builder/${websiteId}/page-settings`);
+        break;
+      case "settings":
+        navigate(`/builder/${websiteId}/settings`);
+        break;
+    }
+  };
 
   return (
     <div className="w-full flex flex-col bg-white border-b border-slate-200">
@@ -155,7 +186,7 @@ const BuilderNavbar = ({
 
       {/* Tabs row */}
       <div className="px-4 border-t border-slate-200">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="bg-transparent h-10 p-0 border-b border-transparent gap-4">
             <TabsTrigger 
               value="edit" 
@@ -165,28 +196,32 @@ const BuilderNavbar = ({
               Edit
             </TabsTrigger>
             <TabsTrigger 
+              value="products" 
+              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
+            >
+              <Package className="h-4 w-4 mr-2" />
+              Products
+            </TabsTrigger>
+            <TabsTrigger 
+              value="pages" 
+              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Pages
+            </TabsTrigger>
+            <TabsTrigger 
+              value="page-settings" 
+              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Page Settings
+            </TabsTrigger>
+            <TabsTrigger 
               value="settings" 
               className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
             >
               <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </TabsTrigger>
-            {onShopLinkClick && (
-              <TabsTrigger 
-                value="shop" 
-                className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
-                onClick={onShopLinkClick}
-              >
-                <Store className="h-4 w-4 mr-2" />
-                Shop
-              </TabsTrigger>
-            )}
-            <TabsTrigger 
-              value="publish" 
-              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
-            >
-              <Globe className="h-4 w-4 mr-2" />
-              Publish
+              Site Settings
             </TabsTrigger>
           </TabsList>
         </Tabs>
