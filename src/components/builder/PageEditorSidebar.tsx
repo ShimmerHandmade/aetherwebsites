@@ -16,7 +16,7 @@ import {
   Text,
   Image,
   Video,
-  Button as ButtonComp,
+  Square, // Using Square instead of Button as it's a valid Lucide icon
   FormInput,
   FileText as FileTextIcon,
   Package,
@@ -40,7 +40,7 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
   const basicElements = [
     { label: "Text", icon: Text },
     { label: "Image", icon: Image },
-    { label: "Button", icon: ButtonComp },
+    { label: "Button", icon: Square }, // Updated to use Square icon
     { label: "Video", icon: Video },
     { label: "Form", icon: FormInput }
   ];
