@@ -11,6 +11,8 @@ export interface PlanRestriction {
   allowAdvancedAnalytics: boolean;
   allowCustomDomain: boolean;
   maxPages: number;
+  allowPremiumTemplates: boolean;
+  allowPremiumElements: boolean;
 }
 
 // Define restrictions for each plan tier
@@ -22,6 +24,8 @@ const planRestrictions: Record<string, PlanRestriction> = {
     allowAdvancedAnalytics: false,
     allowCustomDomain: false,
     maxPages: 5,
+    allowPremiumTemplates: false,
+    allowPremiumElements: false
   },
   "Professional": {
     maxProducts: 100,
@@ -30,6 +34,8 @@ const planRestrictions: Record<string, PlanRestriction> = {
     allowAdvancedAnalytics: true,
     allowCustomDomain: true,
     maxPages: 20,
+    allowPremiumTemplates: true,
+    allowPremiumElements: false
   },
   "Enterprise": {
     maxProducts: 1000,
@@ -38,6 +44,8 @@ const planRestrictions: Record<string, PlanRestriction> = {
     allowAdvancedAnalytics: true,
     allowCustomDomain: true,
     maxPages: 100,
+    allowPremiumTemplates: true,
+    allowPremiumElements: true
   },
   // Default restrictions for users without a plan
   "default": {
@@ -47,6 +55,8 @@ const planRestrictions: Record<string, PlanRestriction> = {
     allowAdvancedAnalytics: false,
     allowCustomDomain: false,
     maxPages: 3,
+    allowPremiumTemplates: false,
+    allowPremiumElements: false
   }
 };
 
@@ -56,20 +66,22 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return planRestrictions.default;
 
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
       .from("profiles")
       .select("*, plans:plan_id(*)")
       .eq("id", user.id)
       .single();
-
-    // If user has no plan or plan subscription is expired, use default restrictions
-    if (!profile?.is_subscribed || !profile.plans || 
+    
+    if (error || !profile?.is_subscribed || !profile.plans || 
         (profile.subscription_end && new Date(profile.subscription_end) < new Date())) {
       return planRestrictions.default;
     }
 
-    // Get the plan name and return corresponding restrictions
-    const planName = profile.plans.name;
+    // Check if plans data is valid and has a name property
+    const planName = profile.plans && typeof profile.plans === 'object' && 'name' in profile.plans 
+      ? profile.plans.name as string 
+      : 'default';
+    
     return planRestrictions[planName] || planRestrictions.default;
   } catch (error) {
     console.error("Error getting user plan restrictions:", error);
@@ -103,19 +115,21 @@ export async function getUserPlanName(): Promise<string | null> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
       .from("profiles")
       .select("*, plans:plan_id(*)")
       .eq("id", user.id)
       .single();
-
-    // Check if user has an active subscription
-    if (!profile?.is_subscribed || !profile.plans || 
+    
+    if (error || !profile?.is_subscribed || !profile.plans || 
         (profile.subscription_end && new Date(profile.subscription_end) < new Date())) {
       return null;
     }
 
-    return profile.plans.name;
+    // Check if plans data is valid and has a name property
+    return profile.plans && typeof profile.plans === 'object' && 'name' in profile.plans 
+      ? profile.plans.name as string 
+      : null;
   } catch (error) {
     console.error("Error getting user plan:", error);
     return null;

@@ -116,6 +116,20 @@ const PlanLimitsInfo: React.FC<PlanLimitsInfoProps> = ({
               <AlertCircle className="h-4 w-4 text-gray-400 mr-2" />}
             Custom Domain
           </div>
+          
+          <div className="text-sm flex items-center">
+            {restrictions.allowPremiumTemplates ? 
+              <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" /> : 
+              <AlertCircle className="h-4 w-4 text-gray-400 mr-2" />}
+            Premium Templates
+          </div>
+          
+          <div className="text-sm flex items-center">
+            {restrictions.allowPremiumElements ? 
+              <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" /> : 
+              <AlertCircle className="h-4 w-4 text-gray-400 mr-2" />}
+            Premium UI Elements
+          </div>
         </div>
 
         {!planName && (

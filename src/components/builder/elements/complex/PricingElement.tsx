@@ -15,8 +15,16 @@ const PricingElement: React.FC<ElementProps> = ({ element }) => {
   const allFeatures = element.props?.features || ["Feature 1", "Feature 2"];
   const tierFeatures = filterFeaturesByTier(allFeatures, tierLevel);
 
+  // Add premium badge for higher tier plans
+  const showPremiumBadge = tierLevel > 1;
+
   return (
-    <div className="p-6 border rounded-lg shadow-sm">
+    <div className="p-6 border rounded-lg shadow-sm relative">
+      {showPremiumBadge && (
+        <div className="absolute top-0 right-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 py-1 text-xs font-medium rounded-bl-lg rounded-tr-lg">
+          {tierLevel === 3 ? 'Premium' : 'Pro'}
+        </div>
+      )}
       <div className="text-center">
         <h3 className="text-xl font-medium mb-2">{planName}</h3>
         <div className="text-3xl font-bold mb-2">{element.props?.price || "$9.99"}</div>
@@ -28,7 +36,15 @@ const PricingElement: React.FC<ElementProps> = ({ element }) => {
             </li>
           ))}
         </ul>
-        <button className="w-full px-4 py-2 bg-indigo-600 text-white rounded">Select Plan</button>
+        <button className={`w-full px-4 py-2 text-white rounded ${
+          tierLevel === 3 
+            ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700' 
+            : tierLevel === 2 
+              ? 'bg-indigo-600 hover:bg-indigo-700' 
+              : 'bg-blue-600 hover:bg-blue-700'
+        }`}>
+          Select Plan
+        </button>
       </div>
     </div>
   );
