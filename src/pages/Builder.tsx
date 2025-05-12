@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
 import BuilderLayout from "@/components/builder/BuilderLayout";
@@ -33,7 +32,8 @@ const Builder = () => {
     setWebsiteName, 
     saveWebsite, 
     publishWebsite,
-    updateElements
+    updateElements,
+    refreshWebsite
   } = useWebsite(id, navigate);
   
   // Track preview mode state at this level
@@ -97,7 +97,6 @@ const Builder = () => {
     setCurrentPageSettings(pageSettings);
     
     console.log("Loaded page content for:", currentPageId, pageContent);
-    
   }, [currentPageId, website, elements, websiteName]);
 
   // Ensure Home, Shop and About pages exist
@@ -173,9 +172,11 @@ const Builder = () => {
   const handleSaveComplete = async (updatedElements: BuilderElement[], updatedPageSettings: PageSettings) => {
     if (!currentPageId || !website) return;
 
-    // Create or update pagesContent and pagesSettings in website settings
-    const pagesContent = website.settings.pagesContent || {};
-    const pagesSettings = website.settings.pagesSettings || {};
+    console.log("Saving page content:", updatedElements);
+    
+    // Create deep copies of objects to avoid mutation issues
+    const pagesContent = JSON.parse(JSON.stringify(website.settings.pagesContent || {}));
+    const pagesSettings = JSON.parse(JSON.stringify(website.settings.pagesSettings || {}));
     
     // Update content and settings for current page
     pagesContent[currentPageId] = updatedElements;
@@ -185,13 +186,16 @@ const Builder = () => {
     
     // Save to database
     await saveWebsite(
-      updatedElements, 
+      currentPageId === website.settings.pages?.find(p => p.isHomePage)?.id ? updatedElements : website.content, 
       updatedPageSettings, 
       {
         pagesContent,
         pagesSettings
       }
     );
+    
+    // Refresh website data after save to ensure consistency
+    refreshWebsite();
   };
   
   const handleChangePage = (pageId: string) => {
@@ -210,6 +214,10 @@ const Builder = () => {
     // Navigate to the shop page
     navigate(`/builder/${id}/shop`);
   }, [handleSave, id, navigate]);
+  
+  const handleReturnToDashboard = () => {
+    navigate('/dashboard');
+  };
 
   if (isLoading) {
     return (
@@ -260,6 +268,7 @@ const Builder = () => {
           pages={pages}
           onChangePage={handleChangePage}
           onShopLinkClick={handleShopLinkClick}
+          onReturnToDashboard={handleReturnToDashboard}
         />
         <BuilderContent isPreviewMode={isPreviewMode} />
       </BuilderLayout>

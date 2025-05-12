@@ -40,6 +40,7 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
   const [websiteName, setWebsiteName] = useState("");
   const [elements, setElements] = useState<BuilderElement[]>([]);
   const [pageSettings, setPageSettings] = useState<PageSettings | null>(null);
+  const [unsavedChanges, setUnsavedChanges] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -99,6 +100,9 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
         // Use a proper type assertion with unknown as intermediate step
         setElements(data.content as unknown as BuilderElement[]);
       }
+      
+      // Reset unsaved changes flag after fetching fresh data
+      setUnsavedChanges(false);
     } catch (error) {
       console.error("Error in fetchWebsite:", error);
       toast.error("Error loading website");
@@ -123,12 +127,18 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
       const contentToSave = updatedElements || elements;
       const settingsToSave = updatedPageSettings || pageSettings;
       
+      // Make a deep copy of the current website settings to avoid mutation issues
+      const currentSettings = JSON.parse(JSON.stringify(website.settings || {}));
+      
       // Store page settings and additional settings within the settings object
       const updatedSettings: WebsiteSettings = {
-        ...website.settings,
+        ...currentSettings,
         pageSettings: settingsToSave,
         ...(additionalSettings || {})
       };
+      
+      console.log("Saving website with settings:", updatedSettings);
+      console.log("Content being saved:", contentToSave);
       
       const { error } = await supabase
         .from("websites")
@@ -145,6 +155,7 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
         return;
       }
       
+      // Update local state with the saved data to ensure consistency
       setWebsite({
         ...website,
         name: websiteName,
@@ -154,6 +165,10 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
       });
       setElements(contentToSave);
       setPageSettings(settingsToSave);
+      
+      // Reset unsaved changes flag
+      setUnsavedChanges(false);
+      
       toast.success("Website saved successfully");
     } catch (error) {
       console.error("Error in saveWebsite:", error);
@@ -172,7 +187,7 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
       
       setIsPublishing(true);
       
-      // First save the latest state
+      // First save the latest state to ensure we're publishing the most recent version
       await saveWebsite();
       
       const { error } = await supabase
@@ -198,6 +213,17 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
 
   const updateElements = (newElements: BuilderElement[]) => {
     setElements(newElements);
+    setUnsavedChanges(true);
+  };
+  
+  const hasUnsavedChanges = () => {
+    return unsavedChanges;
+  };
+  
+  // Set unsaved changes when website name is updated
+  const updateWebsiteName = (name: string) => {
+    setWebsiteName(name);
+    setUnsavedChanges(true);
   };
 
   return {
@@ -208,9 +234,11 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
     websiteName,
     elements,
     pageSettings,
-    setWebsiteName,
+    setWebsiteName: updateWebsiteName,
     saveWebsite,
     publishWebsite,
-    updateElements
+    updateElements,
+    hasUnsavedChanges,
+    refreshWebsite: fetchWebsite
   };
 };

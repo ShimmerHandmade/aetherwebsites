@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,8 @@ const BuilderShop = () => {
     isSaving,
     isPublishing,
     websiteName, 
-    saveWebsite 
+    saveWebsite,
+    refreshWebsite
   } = useWebsite(id, navigate);
   
   // Use state hooks from the Builder component
@@ -139,26 +139,31 @@ const BuilderShop = () => {
   const handleSaveComplete = async (elements: BuilderElement[], pageSettings: PageSettings) => {
     if (!id || !website) return;
     
+    console.log("Saving shop page content:", elements);
+    
     // Get shop page ID
     const shopPage = website.settings.pages?.find(page => page.title.toLowerCase() === 'shop');
     if (!shopPage?.id) return;
     
-    // Update content for shop page
-    const pagesContent = { ...(website.settings.pagesContent || {}) };
-    const pagesSettings = { ...(website.settings.pagesSettings || {}) };
+    // Update content for shop page - create deep copies to avoid mutation issues
+    const pagesContent = JSON.parse(JSON.stringify(website.settings.pagesContent || {}));
+    const pagesSettings = JSON.parse(JSON.stringify(website.settings.pagesSettings || {}));
     
     pagesContent[shopPage.id] = elements;
     pagesSettings[shopPage.id] = pageSettings;
     
     // Save to database
     await saveWebsite(
-      elements, 
+      website.content, 
       pageSettings, 
       {
         pagesContent,
         pagesSettings
       }
     );
+    
+    // Refresh website data after save
+    refreshWebsite();
   };
 
   const handleBackToBuilder = () => {
@@ -167,6 +172,10 @@ const BuilderShop = () => {
     
     // Then navigate back
     navigate(`/builder/${id}`);
+  };
+  
+  const handleReturnToDashboard = () => {
+    navigate('/dashboard');
   };
 
   if (isLoading) {
@@ -211,6 +220,13 @@ const BuilderShop = () => {
           >
             Manage Products
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleReturnToDashboard}
+          >
+            Return to Dashboard
+          </Button>
         </div>
       </div>
       
@@ -234,6 +250,7 @@ const BuilderShop = () => {
             pages={website.settings.pages || []}
             onChangePage={() => {}}
             onShopLinkClick={() => {}}
+            onReturnToDashboard={handleReturnToDashboard}
           />
           <BuilderContent isPreviewMode={isPreviewMode} />
         </BuilderLayout>

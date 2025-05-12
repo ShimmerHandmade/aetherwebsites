@@ -46,6 +46,7 @@ interface BuilderNavbarProps {
   pages: Page[];
   onChangePage: (pageId: string) => void;
   onShopLinkClick?: () => void;
+  onReturnToDashboard?: () => void;
 }
 
 const BuilderNavbar = ({
@@ -61,7 +62,8 @@ const BuilderNavbar = ({
   currentPage,
   pages,
   onChangePage,
-  onShopLinkClick
+  onShopLinkClick,
+  onReturnToDashboard
 }: BuilderNavbarProps) => {
   const [activeTab, setActiveTab] = React.useState("edit");
   const navigate = useNavigate();
@@ -102,7 +104,11 @@ const BuilderNavbar = ({
       return;
     }
     
-    navigate('/dashboard');
+    if (onReturnToDashboard) {
+      onReturnToDashboard();
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   return (
