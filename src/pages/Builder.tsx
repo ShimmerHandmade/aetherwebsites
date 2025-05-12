@@ -8,6 +8,16 @@ import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
 import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "@/lib/uuid";
 
+// Declare global site settings interface for window
+declare global {
+  interface Window {
+    __SITE_SETTINGS__?: {
+      logoUrl?: string;
+      [key: string]: any;
+    };
+  }
+}
+
 const Builder = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -214,6 +224,17 @@ const Builder = () => {
 
   const pages = website?.settings?.pages || [];
   const currentPage = pages.find(page => page.id === currentPageId);
+
+  // Set global site settings for components to access
+  useEffect(() => {
+    if (website?.settings) {
+      // Make site settings available globally for components
+      window.__SITE_SETTINGS__ = {
+        logoUrl: website.settings.logoUrl,
+        // Add other global settings here as needed
+      };
+    }
+  }, [website?.settings]);
 
   return (
     <BuilderProvider 

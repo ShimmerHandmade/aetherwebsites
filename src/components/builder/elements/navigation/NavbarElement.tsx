@@ -11,7 +11,13 @@ interface ElementProps {
 const NavbarElement: React.FC<ElementProps> = ({ element }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const siteName = element.props?.siteName || "Your Website";
-  const logo = element.props?.logo || "";
+  
+  // Use the logo from element props, or fall back to the global site settings if available
+  const logo = element.props?.logo || 
+               (typeof window !== 'undefined' && 
+                window.__SITE_SETTINGS__?.logoUrl) || 
+               "";
+               
   const links = element.props?.links || [
     { text: "Home", url: "#" },
     { text: "About", url: "#" },

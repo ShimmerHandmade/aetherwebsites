@@ -9,6 +9,13 @@ interface ElementProps {
 const FooterElement: React.FC<ElementProps> = ({ element }) => {
   const year = new Date().getFullYear();
   const siteName = element.props?.siteName || "Your Website";
+  
+  // Use the logo from element props, or fall back to the global site settings if available
+  const logo = element.props?.logo || 
+               (typeof window !== 'undefined' && 
+                window.__SITE_SETTINGS__?.logoUrl) || 
+               "";
+               
   const links = element.props?.links || [
     { text: "Home", url: "#" },
     { text: "About", url: "#" },
@@ -39,11 +46,15 @@ const FooterElement: React.FC<ElementProps> = ({ element }) => {
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0">
             <div className="flex items-center space-x-2 mb-2">
-              <div className={`w-6 h-6 ${
-                variant === 'dark' || variant === 'brand' ? 'bg-white text-gray-800' : 'bg-indigo-600 text-white'
-              } rounded flex items-center justify-center text-xs font-bold`}>
-                {siteName.charAt(0)}
-              </div>
+              {logo ? (
+                <img src={logo} alt={`${siteName} logo`} className="h-8 w-auto" />
+              ) : (
+                <div className={`w-6 h-6 ${
+                  variant === 'dark' || variant === 'brand' ? 'bg-white text-gray-800' : 'bg-indigo-600 text-white'
+                } rounded flex items-center justify-center text-xs font-bold`}>
+                  {siteName.charAt(0)}
+                </div>
+              )}
               <h3 className="text-lg font-bold">{siteName}</h3>
             </div>
             <p className="text-sm mt-1">© {year} {siteName}. All rights reserved.</p>

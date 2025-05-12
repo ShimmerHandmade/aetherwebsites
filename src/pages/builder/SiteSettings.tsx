@@ -2,11 +2,14 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Upload } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useWebsite } from "@/hooks/useWebsite";
 import { toast } from "sonner";
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 
 const BuilderSiteSettings = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,12 +23,14 @@ const BuilderSiteSettings = () => {
   } = useWebsite(id, navigate);
   
   const [localWebsiteName, setLocalWebsiteName] = useState(websiteName);
+  const [logoUrl, setLogoUrl] = useState(website?.settings?.logoUrl || '');
   const [isSaving, setIsSaving] = useState(false);
   
-  // Update local state when websiteName from hook changes
+  // Update local state when website data from hook changes
   React.useEffect(() => {
     setLocalWebsiteName(websiteName);
-  }, [websiteName]);
+    setLogoUrl(website?.settings?.logoUrl || '');
+  }, [websiteName, website?.settings?.logoUrl]);
 
   const handleSave = async () => {
     try {
@@ -34,8 +39,14 @@ const BuilderSiteSettings = () => {
       // Update the website name in the parent hook
       setWebsiteName(localWebsiteName);
       
-      // This will save the current state
-      await saveWebsite(website?.content || [], website?.pageSettings || {});
+      // This will save the current state with updated settings
+      await saveWebsite(
+        website?.content || [], 
+        website?.pageSettings || {}, 
+        { 
+          logoUrl: logoUrl
+        }
+      );
       
       toast.success("Site settings saved successfully");
     } catch (error) {
@@ -81,45 +92,110 @@ const BuilderSiteSettings = () => {
           </Button>
         </div>
         
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h1 className="text-2xl font-bold mb-6">Site Settings</h1>
+        <Tabs defaultValue="general" className="space-y-6">
+          <TabsList className="bg-white border rounded-md p-1">
+            <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="branding">Branding</TabsTrigger>
+            <TabsTrigger value="domain">Domain</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="general" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>General Settings</CardTitle>
+                <CardDescription>Basic information about your website</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="site-name">Website Name</Label>
+                  <Input 
+                    id="site-name" 
+                    value={localWebsiteName} 
+                    onChange={(e) => setLocalWebsiteName(e.target.value)}
+                    className="max-w-md"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
           
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="site-name">Website Name</Label>
-              <Input 
-                id="site-name" 
-                value={localWebsiteName} 
-                onChange={(e) => setLocalWebsiteName(e.target.value)}
-                className="max-w-md"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="site-domain">Domain</Label>
-              <div className="max-w-md flex items-center space-x-2">
-                <span className="text-gray-500">https://</span>
-                <Input 
-                  id="site-domain" 
-                  placeholder="yoursite.com" 
-                  disabled
-                  className="flex-1"
-                />
-                <Button variant="outline" size="sm" disabled>Configure</Button>
-              </div>
-              <p className="text-sm text-gray-500">Domain configuration coming soon</p>
-            </div>
-            
-            <div className="pt-4">
-              <Button 
-                onClick={handleSave} 
-                className="bg-blue-600 hover:bg-blue-700"
-                disabled={isSaving}
-              >
-                {isSaving ? "Saving..." : "Save Settings"}
-              </Button>
-            </div>
-          </div>
+          <TabsContent value="branding" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Branding</CardTitle>
+                <CardDescription>Customize your website's visual identity</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="logo-url">Logo URL</Label>
+                    <div className="flex gap-2 items-center mt-1.5">
+                      <Input 
+                        id="logo-url" 
+                        value={logoUrl} 
+                        onChange={(e) => setLogoUrl(e.target.value)}
+                        placeholder="https://example.com/logo.png"
+                        className="max-w-md"
+                      />
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Enter the URL of your logo image. This will be displayed in your site's header and footer.
+                    </p>
+                  </div>
+                  
+                  {logoUrl && (
+                    <div className="rounded-md border border-gray-200 p-4 max-w-xs">
+                      <p className="text-sm font-medium mb-2">Logo Preview:</p>
+                      <img 
+                        src={logoUrl} 
+                        alt="Website Logo" 
+                        className="max-h-20 max-w-full"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          toast.error("Failed to load logo image");
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="domain" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Domain Settings</CardTitle>
+                <CardDescription>Configure your website's domain</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="site-domain">Domain</Label>
+                  <div className="max-w-md flex items-center space-x-2">
+                    <span className="text-gray-500">https://</span>
+                    <Input 
+                      id="site-domain" 
+                      placeholder="yoursite.com" 
+                      disabled
+                      className="flex-1"
+                    />
+                    <Button variant="outline" size="sm" disabled>Configure</Button>
+                  </div>
+                  <p className="text-sm text-gray-500">Domain configuration coming soon</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        <div className="mt-6">
+          <Button 
+            onClick={handleSave} 
+            className="bg-blue-600 hover:bg-blue-700"
+            disabled={isSaving}
+          >
+            {isSaving ? "Saving..." : "Save Settings"}
+          </Button>
         </div>
       </div>
     </div>
