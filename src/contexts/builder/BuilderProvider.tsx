@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 import { BuilderElement, BuilderContextType, PageSettings } from "./types";
 import { v4 as uuidv4 } from "@/lib/uuid";
@@ -256,6 +255,128 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     });
   };
   
+  // New function to move an element up in the list
+  const moveElementUp = (id: string) => {
+    // Find the element and its parent
+    const element = findElementById(id);
+    if (!element) return;
+    
+    // Find the parent container and the element's index
+    let parentId: string | undefined;
+    let elementIndex = -1;
+    
+    // Check if element is at the root level
+    const rootIndex = elements.findIndex(e => e.id === id);
+    if (rootIndex !== -1) {
+      elementIndex = rootIndex;
+      
+      // Can't move up if already at the top
+      if (rootIndex === 0) {
+        console.log("Element is already at the top of the root level");
+        return;
+      }
+      
+      // Move the element up one position
+      setElements(prev => {
+        const result = Array.from(prev);
+        // Swap with the element above
+        [result[rootIndex], result[rootIndex - 1]] = [result[rootIndex - 1], result[rootIndex]];
+        return result;
+      });
+      return;
+    }
+    
+    // Search for the element in all containers
+    for (const element of elements) {
+      if (element.children) {
+        const childIndex = element.children.findIndex(child => child.id === id);
+        if (childIndex !== -1) {
+          parentId = element.id;
+          elementIndex = childIndex;
+          break;
+        }
+      }
+    }
+    
+    // If found in a container, move it up
+    if (parentId && elementIndex > 0) {
+      setElements((prev) => {
+        return updateElementInTree(prev, parentId!, parent => {
+          const children = [...(parent.children || [])];
+          // Swap with the element above
+          [children[elementIndex], children[elementIndex - 1]] = [children[elementIndex - 1], children[elementIndex]];
+          return {
+            ...parent,
+            children
+          };
+        });
+      });
+    } else if (parentId && elementIndex === 0) {
+      console.log("Element is already at the top of its container");
+    }
+  };
+  
+  // New function to move an element down in the list
+  const moveElementDown = (id: string) => {
+    // Find the element and its parent
+    const element = findElementById(id);
+    if (!element) return;
+    
+    // Find the parent container and the element's index
+    let parentId: string | undefined;
+    let elementIndex = -1;
+    
+    // Check if element is at the root level
+    const rootIndex = elements.findIndex(e => e.id === id);
+    if (rootIndex !== -1) {
+      elementIndex = rootIndex;
+      
+      // Can't move down if already at the bottom
+      if (rootIndex === elements.length - 1) {
+        console.log("Element is already at the bottom of the root level");
+        return;
+      }
+      
+      // Move the element down one position
+      setElements(prev => {
+        const result = Array.from(prev);
+        // Swap with the element below
+        [result[rootIndex], result[rootIndex + 1]] = [result[rootIndex + 1], result[rootIndex]];
+        return result;
+      });
+      return;
+    }
+    
+    // Search for the element in all containers
+    for (const element of elements) {
+      if (element.children) {
+        const childIndex = element.children.findIndex(child => child.id === id);
+        if (childIndex !== -1) {
+          parentId = element.id;
+          elementIndex = childIndex;
+          break;
+        }
+      }
+    }
+    
+    // If found in a container, move it down
+    if (parentId && elementIndex !== -1 && elementIndex < (findElementById(parentId)?.children?.length || 0) - 1) {
+      setElements((prev) => {
+        return updateElementInTree(prev, parentId!, parent => {
+          const children = [...(parent.children || [])];
+          // Swap with the element below
+          [children[elementIndex], children[elementIndex + 1]] = [children[elementIndex + 1], children[elementIndex]];
+          return {
+            ...parent,
+            children
+          };
+        });
+      });
+    } else if (parentId && elementIndex === (findElementById(parentId)?.children?.length || 0) - 1) {
+      console.log("Element is already at the bottom of its container");
+    }
+  };
+  
   const duplicateElement = (id: string) => {
     const elementToDuplicate = findElementById(id);
     if (!elementToDuplicate) return;
@@ -397,6 +518,8 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
         removeElement,
         selectElement,
         moveElement,
+        moveElementUp,
+        moveElementDown,
         duplicateElement,
         loadElements,
         saveElements,

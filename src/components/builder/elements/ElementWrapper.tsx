@@ -3,7 +3,7 @@ import React, { useState, useRef } from "react";
 import { useBuilder } from "@/contexts/builder";
 import { renderElement } from "./renderElement";
 import { Button } from "@/components/ui/button";
-import { Pencil, Copy, Trash, GripVertical } from "lucide-react";
+import { Pencil, Copy, Trash, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
 
 interface BuilderElementProps {
   element: any;
@@ -20,7 +20,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   isPreviewMode = false,
   parentId,
 }) => {
-  const { selectElement, removeElement, duplicateElement } = useBuilder();
+  const { selectElement, removeElement, duplicateElement, moveElementUp, moveElementDown } = useBuilder();
   const [isDragging, setIsDragging] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
 
@@ -39,6 +39,16 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     removeElement(element.id);
+  };
+  
+  const handleMoveUpClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    moveElementUp(element.id);
+  };
+  
+  const handleMoveDownClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    moveElementDown(element.id);
   };
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -130,6 +140,26 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
       
       {!isPreviewMode && selected && (
         <div className="absolute top-0 right-0 -mt-10 flex space-x-1 bg-white p-1 rounded shadow-sm z-10">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={handleMoveUpClick}
+            title="Move element up"
+          >
+            <ArrowUp className="h-4 w-4" />
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={handleMoveDownClick}
+            title="Move element down"
+          >
+            <ArrowDown className="h-4 w-4" />
+          </Button>
+          
           {isDraggable && (
             <Button
               variant="outline"
@@ -140,6 +170,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
               <GripVertical className="h-4 w-4" />
             </Button>
           )}
+          
           <Button
             variant="outline"
             size="icon"
@@ -149,6 +180,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
           >
             <Copy className="h-4 w-4" />
           </Button>
+          
           {!["navbar", "footer"].includes(element.type) && (
             <Button
               variant="outline"

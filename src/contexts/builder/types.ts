@@ -30,6 +30,8 @@ export interface BuilderContextType {
   removeElement: (id: string) => void;
   selectElement: (id: string | null) => void;
   moveElement: (sourceIndex: number, destinationIndex: number, parentId?: string) => void;
+  moveElementUp: (id: string) => void;
+  moveElementDown: (id: string) => void;
   duplicateElement: (id: string) => void;
   loadElements: (elements: BuilderElement[]) => void;
   saveElements: () => BuilderElement[];
