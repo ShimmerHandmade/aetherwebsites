@@ -4,6 +4,7 @@ import { BuilderElement } from "@/contexts/BuilderContext";
 import ContainerPropertyEditor from "./ContainerPropertyEditor";
 import HeadingPropertyEditor from "./HeadingPropertyEditor";
 import ImagePropertyEditor from "./ImagePropertyEditor";
+import VideoPropertyEditor from "./VideoPropertyEditor";
 import ButtonPropertyEditor from "./ButtonPropertyEditor";
 import FeaturePropertyEditor from "./FeaturePropertyEditor";
 import TestimonialPropertyEditor from "./TestimonialPropertyEditor";
@@ -58,6 +59,15 @@ const PropertyEditorManager: React.FC<PropertyEditorManagerProps> = ({
     case "image":
       return (
         <ImagePropertyEditor
+          element={element}
+          onPropertyChange={onPropertyChange}
+          onContentChange={onContentChange}
+        />
+      );
+
+    case "video":
+      return (
+        <VideoPropertyEditor
           element={element}
           onPropertyChange={onPropertyChange}
           onContentChange={onContentChange}
@@ -126,6 +136,34 @@ const PropertyEditorManager: React.FC<PropertyEditorManagerProps> = ({
           onContentChange={onContentChange}
         />
       );
+      
+    case "navbar":
+    case "footer":
+      return (
+        <div className="space-y-4">
+          <ContentPropertyEditor 
+            content={element.content} 
+            onContentChange={onContentChange} 
+          />
+          <div className="space-y-2">
+            <Label>Site Name</Label>
+            <Input
+              value={element.props?.siteName || "Your Website"}
+              onChange={(e) => onPropertyChange("siteName", e.target.value)}
+            />
+          </div>
+          {element.type === "navbar" && (
+            <div className="space-y-2">
+              <Label>Logo URL</Label>
+              <Input
+                value={element.props?.logo || ""}
+                onChange={(e) => onPropertyChange("logo", e.target.value)}
+                placeholder="https://example.com/logo.png"
+              />
+            </div>
+          )}
+        </div>
+      );
 
     // Default case - just show content editor for simple elements
     default:
@@ -146,5 +184,8 @@ const PropertyEditorManager: React.FC<PropertyEditorManagerProps> = ({
       );
   }
 };
+
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 export default PropertyEditorManager;

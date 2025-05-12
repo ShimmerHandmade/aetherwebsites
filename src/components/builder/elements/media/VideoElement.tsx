@@ -13,9 +13,11 @@ const VideoElement: React.FC<ElementProps> = ({ element }) => {
         <video 
           src={element.props.src} 
           poster={element.props.poster}
-          controls
+          controls={element.props.controls !== false}
           autoPlay={element.props.autoplay}
-          className="w-full max-h-96"
+          muted={element.props.autoplay}
+          loop={element.props.loop}
+          className="w-full rounded-lg"
         ></video>
       ) : (
         <div className="bg-gray-200 aspect-video flex items-center justify-center">
