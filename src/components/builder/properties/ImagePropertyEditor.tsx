@@ -30,6 +30,11 @@ const ImagePropertyEditor: React.FC<PropertyEditorProps> = ({
     };
     reader.readAsDataURL(file);
   };
+
+  // Stop propagation for click events on the input to prevent bubbling
+  const handleInputClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
   
   return (
     <div className="space-y-4">
@@ -46,6 +51,7 @@ const ImagePropertyEditor: React.FC<PropertyEditorProps> = ({
               id="imageUpload"
               accept="image/*"
               onChange={handleFileUpload} 
+              onClick={handleInputClick}
               className="hidden"
             />
             <label htmlFor="imageUpload" className="cursor-pointer">

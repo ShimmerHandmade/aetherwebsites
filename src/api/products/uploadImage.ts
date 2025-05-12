@@ -16,11 +16,14 @@ export const uploadProductImage = async (
   }
   
   try {
+    console.log("Starting image upload process...");
+    
     // Check if product-images bucket exists, if not create it
     const { data: buckets } = await supabase.storage.listBuckets();
     const bucketName = 'product-images';
     
     if (!buckets?.find(b => b.name === bucketName)) {
+      console.log("Creating product-images bucket");
       const { error: bucketError } = await supabase.storage.createBucket(bucketName, { 
         public: true,
         fileSizeLimit: 5 * 1024 * 1024, // 5MB limit
@@ -37,11 +40,13 @@ export const uploadProductImage = async (
     
     // Upload the file
     const filePath = `${websiteId}/${productId}/${uniqueFileName}`;
+    console.log(`Uploading to path: ${filePath}`);
+    
     const { error: uploadError } = await supabase.storage
       .from(bucketName)
       .upload(filePath, imageFile, {
         cacheControl: '3600',
-        upsert: true // Updated from false to true to handle overwrites
+        upsert: true // This is critical for handling existing files
       });
       
     if (uploadError) {
