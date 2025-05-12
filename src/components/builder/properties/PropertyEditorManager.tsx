@@ -1,3 +1,4 @@
+
 import React from "react";
 import { BuilderElement } from "@/contexts/BuilderContext";
 import ContainerPropertyEditor from "./ContainerPropertyEditor";
@@ -17,6 +18,7 @@ import NavbarPropertyEditor from "./NavbarPropertyEditor";
 import FooterPropertyEditor from "./FooterPropertyEditor";
 import FlexPropertyEditor from "./FlexPropertyEditor";
 import GridPropertyEditor from "./GridPropertyEditor";
+import HeroPropertyEditor from "./HeroPropertyEditor";
 
 interface PropertyEditorManagerProps {
   element: BuilderElement;
@@ -53,6 +55,15 @@ const PropertyEditorManager: React.FC<PropertyEditorManagerProps> = ({
     case "grid":
       return (
         <GridPropertyEditor
+          element={element}
+          onPropertyChange={onPropertyChange}
+          onContentChange={onContentChange}
+        />
+      );
+      
+    case "hero":
+      return (
+        <HeroPropertyEditor
           element={element}
           onPropertyChange={onPropertyChange}
           onContentChange={onContentChange}
