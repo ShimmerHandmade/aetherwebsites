@@ -8,13 +8,15 @@ export interface PreviewModeProps {
   setIsPreviewMode?: (value: boolean) => void;
 }
 
-interface BuilderLayoutProps {
+interface BuilderLayoutProps extends PreviewModeProps {
   children: ReactNode;
-  isPreviewMode: boolean;
-  setIsPreviewMode: (value: boolean) => void;
 }
 
-const BuilderLayout: React.FC<BuilderLayoutProps> = ({ children, isPreviewMode, setIsPreviewMode }) => {
+const BuilderLayout: React.FC<BuilderLayoutProps> = ({ 
+  children, 
+  isPreviewMode = false, 
+  setIsPreviewMode = () => {} 
+}) => {
   // Clone each child and pass the preview mode props
   const childrenWithProps = React.Children.map(children, child => {
     // Check if the child is a valid React element

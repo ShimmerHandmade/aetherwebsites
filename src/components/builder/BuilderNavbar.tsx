@@ -35,6 +35,7 @@ const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
   const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
   const { saveElements } = useBuilder();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const handleSave = async () => {
     try {
@@ -56,13 +57,22 @@ const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
     setIsPreviewMode(!isPreviewMode);
   };
 
+  const handleMenuItemClick = (route: string) => {
+    // Close the sheet after clicking a menu item
+    setIsSheetOpen(false);
+    // Navigate to the route if provided, otherwise do nothing
+    if (route) {
+      navigate(route);
+    }
+  };
+
   return (
     <div className={`bg-white border-b border-slate-200 py-2 px-4 flex items-center justify-between ${isPreviewMode ? 'bg-opacity-95' : ''}`}>
       {/* Left section */}
       <div className="flex items-center">
         {!isPreviewMode && (
           <>
-            <Sheet>
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-slate-600">
                   <Menu size={18} />
@@ -74,16 +84,28 @@ const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
                 </SheetHeader>
                 <div className="py-4">
                   <nav className="space-y-1">
-                    <button className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left">
+                    <button 
+                      className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left"
+                      onClick={() => handleMenuItemClick("")}
+                    >
                       <FileIcon className="h-4 w-4 mr-2" /> Pages
                     </button>
-                    <button className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left">
+                    <button 
+                      className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left"
+                      onClick={() => handleMenuItemClick("")}
+                    >
                       <LayoutTemplate className="h-4 w-4 mr-2" /> Site Settings
                     </button>
-                    <button className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left">
+                    <button 
+                      className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left"
+                      onClick={() => handleMenuItemClick("")}
+                    >
                       <ShoppingBag className="h-4 w-4 mr-2" /> Products
                     </button>
-                    <button className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left">
+                    <button 
+                      className="w-full flex items-center px-2 py-2 rounded hover:bg-slate-100 text-left"
+                      onClick={() => handleMenuItemClick("")}
+                    >
                       <Settings className="h-4 w-4 mr-2" /> Page Settings
                     </button>
                   </nav>
@@ -92,7 +114,7 @@ const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
                   <Button 
                     className="w-full justify-start"
                     variant="outline"
-                    onClick={() => navigate("/dashboard")}
+                    onClick={() => handleMenuItemClick("/dashboard")}
                   >
                     Back to Dashboard
                   </Button>
