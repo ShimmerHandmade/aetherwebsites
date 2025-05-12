@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +8,7 @@ import { toast } from "sonner";
 import DashboardNavbar from "@/components/DashboardNavbar";
 import WebsiteCard from "@/components/WebsiteCard";
 import PlansSection from "@/components/PlansSection";
+import OnboardingFlow from "@/components/OnboardingFlow";
 
 export type Website = {
   id: string;
@@ -31,6 +33,7 @@ const Dashboard = () => {
   const [websites, setWebsites] = useState<Website[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [newWebsiteId, setNewWebsiteId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -122,15 +125,30 @@ const Dashboard = () => {
       }
       
       toast.success("New website created");
-      navigate(`/builder/${data.id}`);
+      setNewWebsiteId(data.id);
     } catch (error) {
       console.error("Error in createNewWebsite:", error);
       toast.error("An unexpected error occurred");
     }
   };
 
+  const completeOnboarding = () => {
+    setNewWebsiteId(null);
+    fetchWebsites();
+  };
+
   // Check if user has a subscription or not
   const hasSubscription = profile?.is_subscribed;
+
+  // If onboarding is in progress, show onboarding flow
+  if (newWebsiteId) {
+    return (
+      <OnboardingFlow 
+        websiteId={newWebsiteId} 
+        onComplete={completeOnboarding} 
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

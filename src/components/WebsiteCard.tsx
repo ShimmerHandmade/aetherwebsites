@@ -55,15 +55,27 @@ const WebsiteCard = ({ website, onWebsiteUpdate }: WebsiteCardProps) => {
 
   const formattedDate = new Date(website.created_at).toLocaleDateString();
 
+  // Function to get template image path
+  const getTemplateImagePath = () => {
+    if (website.template) {
+      return `/templates/${website.template}.png`;
+    }
+    return null;
+  };
+
   return (
     <>
       <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
-        <div className="h-40 bg-gradient-to-r from-gray-100 to-gray-200 flex items-center justify-center">
+        <div className="h-40 bg-gradient-to-r from-gray-100 to-gray-200 flex items-center justify-center overflow-hidden">
           {website.template ? (
             <img
-              src={`/templates/${website.template}.png`}
+              src={getTemplateImagePath() || "/placeholder.svg"}
               alt={website.name}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                // Fallback if template image doesn't exist
+                e.currentTarget.src = "/placeholder.svg";
+              }}
             />
           ) : (
             <div className="text-gray-400 text-lg">No preview available</div>
@@ -82,6 +94,11 @@ const WebsiteCard = ({ website, onWebsiteUpdate }: WebsiteCardProps) => {
             ) : (
               <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
                 Draft
+              </span>
+            )}
+            {website.template && (
+              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                {website.template.charAt(0).toUpperCase() + website.template.slice(1)}
               </span>
             )}
           </div>
