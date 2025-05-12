@@ -8,8 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 const pricingPlans = [
   {
     name: "Basic",
-    monthlyPrice: 14.99,
-    annualPrice: 149.99,
+    monthlyPrice: 9.99,
+    annualPrice: 99.99,
     description: "Perfect for small businesses just getting started.",
     features: [
       "Up to 20 products",
@@ -22,8 +22,8 @@ const pricingPlans = [
   },
   {
     name: "Professional",
-    monthlyPrice: 29.99,
-    annualPrice: 349.99,
+    monthlyPrice: 24.99,
+    annualPrice: 199.99,
     description: "Ideal for growing businesses needing more features.",
     features: [
       "Up to 500 products",
@@ -32,14 +32,13 @@ const pricingPlans = [
       "Advanced analytics",
       "Product variants",
       "Discounts & coupons",
-      "Customer accounts",
     ],
     isPopular: true,
   },
   {
     name: "Enterprise",
-    monthlyPrice: 49.99,
-    annualPrice: 549.99,
+    monthlyPrice: 39.99,
+    annualPrice: 319.99,
     description: "For established businesses with high volume needs.",
     features: [
       "Unlimited products",
