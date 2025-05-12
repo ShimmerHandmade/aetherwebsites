@@ -34,6 +34,7 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
   const [isProductsLoading, setIsProductsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   
   // Get display properties from element props or use defaults
   const productsPerPage = element.props?.productsPerPage || 8;
@@ -66,16 +67,30 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
           query = query.eq("is_new", true);
         }
         
-        // Get count for pagination
-        const { count, error: countError } = await query.count();
+        // Get count for pagination - Fix: use separate count query
+        const countQuery = supabase
+          .from("products")
+          .select("*", { count: "exact", head: true })
+          .eq("website_id", websiteId);
+        
+        // Apply same filters to count query
+        if (categoryFilter === "featured") {
+          countQuery.eq("is_featured", true);
+        } else if (categoryFilter === "sale") {
+          countQuery.eq("is_sale", true);
+        } else if (categoryFilter === "new") {
+          countQuery.eq("is_new", true);
+        }
+        
+        const { count: itemCount, error: countError } = await countQuery;
         
         if (countError) {
           console.error("Error counting products:", countError);
           return;
         }
         
-        const totalItems = count || 0;
-        const calculatedTotalPages = Math.max(1, Math.ceil(totalItems / productsPerPage));
+        setTotalItems(itemCount || 0);
+        const calculatedTotalPages = Math.max(1, Math.ceil((itemCount || 0) / productsPerPage));
         setTotalPages(calculatedTotalPages);
         
         // Fetch paginated products
