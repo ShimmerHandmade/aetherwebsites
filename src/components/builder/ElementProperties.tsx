@@ -4,11 +4,12 @@ import { useBuilder } from "@/contexts/BuilderContext";
 import PropertyEditorManager from "./properties/PropertyEditorManager";
 
 const ElementProperties = () => {
-  const { elements, selectedElementId, updateElement } = useBuilder();
+  const { elements, selectedElementId, updateElement, findElementById } = useBuilder();
   const [content, setContent] = useState("");
   const [properties, setProperties] = useState<Record<string, any>>({});
 
-  const selectedElement = elements.find((el) => el.id === selectedElementId);
+  // Using findElementById to get the selected element from anywhere in the tree
+  const selectedElement = selectedElementId ? findElementById(selectedElementId) : null;
 
   useEffect(() => {
     if (selectedElement) {

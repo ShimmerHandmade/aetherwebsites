@@ -1,7 +1,6 @@
 
 import React from "react";
 import { BuilderElement } from "@/contexts/builder/types";
-import { renderElement } from "../renderElement";
 import CanvasDragDropHandler from "../../canvas/CanvasDragDropHandler";
 import { ElementWrapper } from "../ElementWrapper";
 import { useBuilder } from "@/contexts/BuilderContext";
@@ -34,7 +33,7 @@ const FlexElement: React.FC<ElementProps> = ({ element }) => {
         {element.children && element.children.length > 0 ? (
           <div className={`flex ${direction} ${wrap} ${gap} w-full`}>
             {element.children.map((child, index) => (
-              <div key={child.id} className="flex-1 min-w-0">
+              <div key={child.id} className="flex-1 min-w-0 relative">
                 <ElementWrapper 
                   element={child} 
                   index={index} 

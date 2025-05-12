@@ -1,7 +1,6 @@
 
 import React from "react";
 import { BuilderElement } from "@/contexts/builder/types";
-import { renderElement } from "../renderElement";
 import CanvasDragDropHandler from "../../canvas/CanvasDragDropHandler";
 import { ElementWrapper } from "../ElementWrapper";
 import { useBuilder } from "@/contexts/BuilderContext";
@@ -42,7 +41,7 @@ const GridElement: React.FC<ElementProps> = ({ element }) => {
         {element.children && element.children.length > 0 ? (
           <div className={`grid ${columnClass} ${gap} w-full`}>
             {element.children.map((child, index) => (
-              <div key={child.id} className="min-h-[80px]">
+              <div key={child.id} className="min-h-[80px] relative">
                 <ElementWrapper 
                   element={child} 
                   index={index} 

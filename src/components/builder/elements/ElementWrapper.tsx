@@ -80,7 +80,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
       )}
       
       {selected && !isPreviewMode && (
-        <div className="absolute top-2 right-2 flex space-x-1 bg-white p-1 rounded shadow-sm z-10">
+        <div className="absolute top-2 right-2 flex space-x-1 bg-white p-1 rounded shadow-sm z-20">
           <button 
             className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded" 
             title="Edit properties"

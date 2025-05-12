@@ -1,7 +1,6 @@
 
 import React from "react";
 import { BuilderElement } from "@/contexts/builder/types";
-import { renderElement } from "../renderElement";
 import CanvasDragDropHandler from "../../canvas/CanvasDragDropHandler";
 import { ElementWrapper } from "../ElementWrapper";
 import { useBuilder } from "@/contexts/BuilderContext";
@@ -30,7 +29,7 @@ const ContainerElement: React.FC<ElementProps> = ({ element }) => {
         {element.children && element.children.length > 0 ? (
           <div className="space-y-4">
             {element.children.map((child, index) => (
-              <div key={child.id}>
+              <div key={child.id} className="relative">
                 <ElementWrapper 
                   element={child} 
                   index={index} 
