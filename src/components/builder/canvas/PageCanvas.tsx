@@ -10,10 +10,11 @@ interface PageCanvasProps {
 }
 
 const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
-  const { elements, selectedElementId, addElement, loadElements, updateElement } = useBuilder();
+  const { elements, selectedElementId, addElement, loadElements } = useBuilder();
 
   // Effect to ensure every page has a header and footer
   useEffect(() => {
+    // Only add default elements if the canvas is completely empty
     if (elements.length === 0) {
       // Create a complete page structure with header and footer when canvas is empty
       const defaultElements = [
@@ -104,7 +105,7 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
         addElement(footerElement); // Add at the end
       }
     }
-  }, []); // Run once on mount
+  }, [elements.length]); // Only run when elements array length changes
 
   return (
     <div className="w-full h-full bg-white">
@@ -112,7 +113,7 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
         <div className="page-content">
           {elements.map((element, index) => (
             <BuilderElement
-              key={element.id}
+              key={`${element.id}-${index}`} // Adding index to key to force re-render when switching pages
               element={element}
               index={index}
               selected={element.id === selectedElementId}

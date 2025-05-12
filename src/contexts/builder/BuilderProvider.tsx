@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 import { BuilderElement, BuilderContextType, PageSettings } from "./types";
 import { v4 as uuidv4 } from "@/lib/uuid";
@@ -30,12 +29,18 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [pageSettings, setPageSettings] = useState<PageSettings>(initialPageSettings);
 
-  // Load initial elements when provided
+  // Load initial elements when provided or when they change
   useEffect(() => {
-    if (initialElements && initialElements.length > 0) {
-      setElements(initialElements);
-    }
+    console.log("InitialElements changed in BuilderProvider", initialElements);
+    setElements(initialElements);
+    setSelectedElementId(null);
   }, [initialElements]);
+
+  // Load initial page settings when provided or when they change
+  useEffect(() => {
+    console.log("InitialPageSettings changed in BuilderProvider", initialPageSettings);
+    setPageSettings(initialPageSettings);
+  }, [initialPageSettings]);
 
   // Helper function to find an element by ID anywhere in the tree
   const findElementById = (id: string): BuilderElement | null => {
@@ -231,6 +236,21 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     setElements(elementsToSet);
     setSelectedElementId(null);
   };
+
+  // Add event listener for saving
+  useEffect(() => {
+    const handleSaveEvent = () => {
+      if (onSave) {
+        onSave(elements, pageSettings);
+      }
+    };
+    
+    document.addEventListener('save-website', handleSaveEvent);
+    
+    return () => {
+      document.removeEventListener('save-website', handleSaveEvent);
+    };
+  }, [elements, pageSettings, onSave]);
 
   const saveElements = () => {
     if (onSave) {

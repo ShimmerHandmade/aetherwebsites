@@ -29,7 +29,7 @@ const Builder = () => {
   const [currentPageElements, setCurrentPageElements] = useState<BuilderElement[]>([]);
   const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
 
-  // Set current page to home page by default
+  // Set current page to home page by default or from URL param
   useEffect(() => {
     if (website?.settings?.pages) {
       const pageId = new URLSearchParams(window.location.search).get('pageId');
@@ -69,9 +69,18 @@ const Builder = () => {
     setCurrentPageElements(pageContent.length ? pageContent : elements || []);
     setCurrentPageSettings(pageSettings);
     
+    console.log("Loaded page content for:", currentPageId, pageContent);
+    
   }, [currentPageId, website, elements, websiteName]);
 
-  const handleSave = async (updatedElements: BuilderElement[], updatedPageSettings: PageSettings) => {
+  const handleSave = async () => {
+    if (!currentPageId || !website) return;
+    
+    // Get the current elements from the builder context
+    document.dispatchEvent(new CustomEvent('save-website'));
+  };
+
+  const handleSaveComplete = async (updatedElements: BuilderElement[], updatedPageSettings: PageSettings) => {
     if (!currentPageId || !website) return;
 
     // Create or update pagesContent and pagesSettings in website settings
@@ -81,6 +90,8 @@ const Builder = () => {
     // Update content and settings for current page
     pagesContent[currentPageId] = updatedElements;
     pagesSettings[currentPageId] = updatedPageSettings;
+    
+    console.log("Saving content for page:", currentPageId, updatedElements);
     
     // Save to database
     await saveWebsite(
@@ -95,7 +106,7 @@ const Builder = () => {
   
   const handleChangePage = (pageId: string) => {
     // Save current page first
-    document.dispatchEvent(new CustomEvent('save-website'));
+    handleSave();
     
     // Update URL with pageId parameter
     navigate(`/builder/${id}?pageId=${pageId}`);
@@ -134,15 +145,13 @@ const Builder = () => {
     <BuilderProvider 
       initialElements={currentPageElements} 
       initialPageSettings={currentPageSettings || { title: currentPage?.title || websiteName }}
-      onSave={handleSave}
+      onSave={handleSaveComplete}
     >
       <BuilderLayout isPreviewMode={isPreviewMode} setIsPreviewMode={setIsPreviewMode}>
         <BuilderNavbar 
           websiteName={websiteName} 
           setWebsiteName={setWebsiteName} 
-          onSave={async () => {
-            document.dispatchEvent(new CustomEvent('save-website'));
-          }} 
+          onSave={handleSave} 
           onPublish={publishWebsite}
           isPublished={website.published}
           isPreviewMode={isPreviewMode}
