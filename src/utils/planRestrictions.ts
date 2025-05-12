@@ -78,9 +78,11 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
     }
 
     // Check if plans data is valid and has a name property
-    // Add proper null check for profile.plans
-    const planName = profile.plans && typeof profile.plans === 'object' && 'name' in profile.plans 
-      ? (profile.plans as any).name as string 
+    const planData = profile.plans;
+    if (!planData) return planRestrictions.default;
+    
+    const planName = typeof planData === 'object' && 'name' in planData 
+      ? (planData as any).name as string 
       : 'default';
     
     return planRestrictions[planName] || planRestrictions.default;
@@ -128,9 +130,11 @@ export async function getUserPlanName(): Promise<string | null> {
     }
 
     // Check if plans data is valid and has a name property
-    // Add proper null check for profile.plans
-    return profile.plans && typeof profile.plans === 'object' && 'name' in profile.plans 
-      ? (profile.plans as any).name as string 
+    const planData = profile.plans;
+    if (!planData) return null;
+    
+    return typeof planData === 'object' && 'name' in planData 
+      ? (planData as any).name as string 
       : null;
   } catch (error) {
     console.error("Error getting user plan:", error);
