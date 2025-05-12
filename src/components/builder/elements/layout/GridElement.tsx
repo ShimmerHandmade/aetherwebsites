@@ -3,12 +3,15 @@ import React from "react";
 import { BuilderElement } from "@/contexts/builder/types";
 import { renderElement } from "../renderElement";
 import CanvasDragDropHandler from "../../canvas/CanvasDragDropHandler";
+import { ElementWrapper } from "../ElementWrapper";
+import { useBuilder } from "@/contexts/BuilderContext";
 
 interface ElementProps {
   element: BuilderElement;
 }
 
 const GridElement: React.FC<ElementProps> = ({ element }) => {
+  const { selectedElementId } = useBuilder();
   // Use the props from the element, or provide defaults
   const columns = element.props?.columns || 2;
   const gap = element.props?.gap === 'large' ? 'gap-6' : 
@@ -38,9 +41,13 @@ const GridElement: React.FC<ElementProps> = ({ element }) => {
       >
         {element.children && element.children.length > 0 ? (
           <div className={`grid ${columnClass} ${gap} w-full`}>
-            {element.children.map((child) => (
+            {element.children.map((child, index) => (
               <div key={child.id} className="min-h-[80px]">
-                {renderElement(child)}
+                <ElementWrapper 
+                  element={child} 
+                  index={index} 
+                  selected={child.id === selectedElementId}
+                />
               </div>
             ))}
           </div>

@@ -110,8 +110,24 @@ const ElementTemplate: React.FC<ElementTemplateProps> = ({ type, label, content,
 
   const handleDragStart = (e: React.DragEvent) => {
     const elementData = { type, content: content || label, props };
+    
+    // Fix: Properly set the MIME type and stringify the data
     e.dataTransfer.setData("application/json", JSON.stringify(elementData));
     e.dataTransfer.effectAllowed = "copy";
+    
+    // Add visual feedback
+    const target = e.currentTarget as HTMLElement;
+    target.classList.add("opacity-50");
+    
+    // Set a drag image if needed
+    if (target.firstElementChild) {
+      e.dataTransfer.setDragImage(target.firstElementChild, 15, 15);
+    }
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    const target = e.currentTarget as HTMLElement;
+    target.classList.remove("opacity-50");
   };
 
   const handleClick = () => {
@@ -126,8 +142,9 @@ const ElementTemplate: React.FC<ElementTemplateProps> = ({ type, label, content,
   return (
     <div
       className="flex flex-col items-center justify-center p-3 bg-gray-50 rounded cursor-pointer hover:bg-gray-100 transition-colors text-center"
-      draggable
+      draggable="true"
       onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onClick={handleClick}
     >
       <div className="w-8 h-8 mb-1 text-gray-500">

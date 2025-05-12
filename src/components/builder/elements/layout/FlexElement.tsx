@@ -3,12 +3,15 @@ import React from "react";
 import { BuilderElement } from "@/contexts/builder/types";
 import { renderElement } from "../renderElement";
 import CanvasDragDropHandler from "../../canvas/CanvasDragDropHandler";
+import { ElementWrapper } from "../ElementWrapper";
+import { useBuilder } from "@/contexts/BuilderContext";
 
 interface ElementProps {
   element: BuilderElement;
 }
 
 const FlexElement: React.FC<ElementProps> = ({ element }) => {
+  const { selectedElementId } = useBuilder();
   const direction = element.props?.direction === 'column' ? 'flex-col' : 'flex-row';
   const justify = element.props?.justify === 'between' ? 'justify-between' : 
                 element.props?.justify === 'around' ? 'justify-around' :
@@ -30,9 +33,13 @@ const FlexElement: React.FC<ElementProps> = ({ element }) => {
       >
         {element.children && element.children.length > 0 ? (
           <div className={`flex ${direction} ${wrap} ${gap} w-full`}>
-            {element.children.map((child) => (
+            {element.children.map((child, index) => (
               <div key={child.id} className="flex-1 min-w-0">
-                {renderElement(child)}
+                <ElementWrapper 
+                  element={child} 
+                  index={index} 
+                  selected={child.id === selectedElementId}
+                />
               </div>
             ))}
           </div>

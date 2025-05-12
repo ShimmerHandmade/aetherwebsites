@@ -37,6 +37,7 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDraggingOver(false);
     
     if (isPreviewMode) return;
@@ -70,13 +71,16 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
             if (sourceElement) {
               // Remove from original location and add to this container
               console.log("Moving element to container:", containerId, sourceElement);
+              
+              // Add element to the new container first before removing
               addElement({...sourceElement}, undefined, containerId);
+              
               // We need to delay the removal slightly to avoid React rendering issues
               setTimeout(() => {
                 // Remove from the original location
                 console.log("Removing original element:", elementData.id);
                 removeElement(elementData.id);
-              }, 10);
+              }, 50);
             }
           } else {
             // Move at root level

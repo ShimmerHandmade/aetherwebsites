@@ -3,12 +3,15 @@ import React from "react";
 import { BuilderElement } from "@/contexts/builder/types";
 import { renderElement } from "../renderElement";
 import CanvasDragDropHandler from "../../canvas/CanvasDragDropHandler";
+import { ElementWrapper } from "../ElementWrapper";
+import { useBuilder } from "@/contexts/BuilderContext";
 
 interface ElementProps {
   element: BuilderElement;
 }
 
 const ContainerElement: React.FC<ElementProps> = ({ element }) => {
+  const { selectedElementId } = useBuilder();
   const padding = element.props?.padding === 'large' ? 'p-8' : 
                 element.props?.padding === 'small' ? 'p-2' : 'p-4';
   const background = element.props?.background === 'gray' ? 'bg-gray-50' : 
@@ -26,9 +29,13 @@ const ContainerElement: React.FC<ElementProps> = ({ element }) => {
       >
         {element.children && element.children.length > 0 ? (
           <div className="space-y-4">
-            {element.children.map((child) => (
+            {element.children.map((child, index) => (
               <div key={child.id}>
-                {renderElement(child)}
+                <ElementWrapper 
+                  element={child} 
+                  index={index} 
+                  selected={child.id === selectedElementId}
+                />
               </div>
             ))}
           </div>
