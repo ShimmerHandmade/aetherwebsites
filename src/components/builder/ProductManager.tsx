@@ -41,15 +41,15 @@ interface Product {
   image_url?: string | null;
 }
 
-interface Category {
-  id: string;
+// Simple interface for unique category names
+interface UniqueCategory {
   name: string;
 }
 
 const ProductManager: React.FC = () => {
   const { id: websiteId } = useParams<{ id: string }>();
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<UniqueCategory[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
@@ -61,7 +61,7 @@ const ProductManager: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<"grid" | "list">("grid");
 
-  // Fetch products and categories from Supabase
+  // Fetch products and extract unique categories
   useEffect(() => {
     if (!websiteId) return;
     
@@ -89,19 +89,16 @@ const ProductManager: React.FC = () => {
 
         setProducts(data || []);
         
-        // Fetch categories (assuming you have a categories table)
-        try {
-          const { data: categoriesData } = await supabase
-            .from("product_categories")
-            .select("*")
-            .eq("website_id", websiteId);
+        // Extract unique categories from products
+        const uniqueCategories = Array.from(
+          new Set(
+            data
+              ?.filter(product => product.category)
+              .map(product => product.category)
+          )
+        ).map(name => ({ name: name as string }));
             
-          if (categoriesData) {
-            setCategories(categoriesData);
-          }
-        } catch (categoryError) {
-          console.log("Categories table might not exist yet:", categoryError);
-        }
+        setCategories(uniqueCategories);
         
       } catch (error) {
         console.error("Error in fetchProducts:", error);
@@ -209,47 +206,11 @@ const ProductManager: React.FC = () => {
   const handleAddCategory = async () => {
     if (!newCategory.trim() || !websiteId) return;
     
-    try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) {
-        toast.error("You need to be logged in to add categories");
-        return;
-      }
-      
-      const userId = session.session.user.id;
-      
-      // First, check if the categories table exists
-      try {
-        // Try to add the category
-        const { data, error } = await supabase
-          .from("product_categories")
-          .insert({
-            name: newCategory,
-            user_id: userId,
-            website_id: websiteId
-          })
-          .select();
-        
-        if (error) {
-          // If table doesn't exist, this might be an error
-          console.error("Error adding category:", error);
-          toast.error("Failed to add category");
-          return;
-        }
-        
-        if (data && data.length > 0) {
-          setCategories([...categories, data[0]]);
-          toast.success("Category added");
-          setNewCategory("");
-        }
-      } catch (error) {
-        console.error("Error in handleAddCategory:", error);
-        toast.error("An unexpected error occurred");
-      }
-    } catch (error) {
-      console.error("Error in handleAddCategory:", error);
-      toast.error("An unexpected error occurred");
-    }
+    // Add the new category to our local state
+    const newCategoryObj = { name: newCategory };
+    setCategories([...categories, newCategoryObj]);
+    setNewCategory("");
+    toast.success("Category added");
   };
 
   const handleSave = async () => {
@@ -323,6 +284,11 @@ const ProductManager: React.FC = () => {
           
           setProducts([...products, newProduct]);
           toast.success("Product added successfully");
+          
+          // If this product has a new category, add it to our categories list
+          if (newProduct.category && !categories.some(c => c.name === newProduct.category)) {
+            setCategories([...categories, { name: newProduct.category }]);
+          }
         }
       } else {
         // Upload new image if changed
@@ -357,6 +323,11 @@ const ProductManager: React.FC = () => {
 
         setProducts(products.map(p => p.id === editingProduct.id ? {...editingProduct, image_url: imageUrl} : p));
         toast.success("Product updated successfully");
+        
+        // If this product has a new category, add it to our categories list
+        if (editingProduct.category && !categories.some(c => c.name === editingProduct.category)) {
+          setCategories([...categories, { name: editingProduct.category }]);
+        }
       }
 
       setEditingProduct(null);
@@ -401,10 +372,31 @@ const ProductManager: React.FC = () => {
 
       setProducts(products.filter(p => p.id !== id));
       toast.success("Product deleted");
+      
+      // Update categories list if needed
+      refreshCategoriesList();
     } catch (error) {
       console.error("Error in handleDelete:", error);
       toast.error("An unexpected error occurred");
     }
+  };
+  
+  // Function to refresh categories list based on current products
+  const refreshCategoriesList = () => {
+    const uniqueCategories = Array.from(
+      new Set(
+        products
+          .filter(product => product.category)
+          .map(product => product.category)
+      )
+    ).map(name => ({ name: name as string }));
+        
+    setCategories(uniqueCategories);
+  };
+  
+  const handleDeleteCategory = (categoryName: string) => {
+    setCategories(categories.filter(c => c.name !== categoryName));
+    toast.success("Category removed from list");
   };
 
   if (isLoading) {
@@ -468,26 +460,12 @@ const ProductManager: React.FC = () => {
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {categories.length > 0 ? (
                   categories.map((category) => (
-                    <div key={category.id} className="flex items-center justify-between p-2 border rounded-md">
+                    <div key={category.name} className="flex items-center justify-between p-2 border rounded-md">
                       <span>{category.name}</span>
                       <Button 
                         variant="ghost" 
                         size="sm"
-                        onClick={async () => {
-                          try {
-                            const { error } = await supabase
-                              .from("product_categories")
-                              .delete()
-                              .eq("id", category.id);
-                              
-                            if (!error) {
-                              setCategories(categories.filter(c => c.id !== category.id));
-                              toast.success("Category deleted");
-                            }
-                          } catch (error) {
-                            toast.error("Failed to delete category");
-                          }
-                        }}
+                        onClick={() => handleDeleteCategory(category.name)}
                       >
                         <Trash className="h-4 w-4 text-red-500" />
                       </Button>
@@ -571,22 +549,50 @@ const ProductManager: React.FC = () => {
                 
                 <div className="space-y-2">
                   <Label htmlFor="product-category">Category</Label>
-                  <Select
-                    value={editingProduct.category || ''}
-                    onValueChange={(value) => setEditingProduct({...editingProduct, category: value})}
-                  >
-                    <SelectTrigger id="product-category">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">None</SelectItem>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.name}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select
+                      value={editingProduct.category || ''}
+                      onValueChange={(value) => setEditingProduct({...editingProduct, category: value})}
+                    >
+                      <SelectTrigger id="product-category" className="flex-grow">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category.name} value={category.name}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    <Input 
+                      placeholder="Or type new category..."
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      className="flex-grow"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newCategory.trim() !== '') {
+                          setEditingProduct({...editingProduct, category: newCategory});
+                          setNewCategory('');
+                        }
+                      }}
+                    />
+                    
+                    <Button 
+                      type="button"
+                      disabled={!newCategory.trim()} 
+                      onClick={() => {
+                        if (newCategory.trim()) {
+                          setEditingProduct({...editingProduct, category: newCategory});
+                          setNewCategory('');
+                        }
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </div>
                 </div>
               </div>
               

@@ -44,9 +44,14 @@ export type Database = {
       }
       products: {
         Row: {
+          category: string | null
           created_at: string
           description: string | null
           id: string
+          image_url: string | null
+          is_featured: boolean | null
+          is_new: boolean | null
+          is_sale: boolean | null
           name: string
           price: number
           sku: string | null
@@ -56,9 +61,14 @@ export type Database = {
           website_id: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           description?: string | null
           id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          is_new?: boolean | null
+          is_sale?: boolean | null
           name: string
           price: number
           sku?: string | null
@@ -68,9 +78,14 @@ export type Database = {
           website_id: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           description?: string | null
           id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          is_new?: boolean | null
+          is_sale?: boolean | null
           name?: string
           price?: number
           sku?: string | null

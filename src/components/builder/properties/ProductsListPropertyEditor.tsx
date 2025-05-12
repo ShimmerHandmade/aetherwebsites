@@ -11,7 +11,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface ProductsListPropertyEditorProps {
@@ -23,7 +22,6 @@ interface ProductsListPropertyEditorProps {
 const ProductsListPropertyEditor: React.FC<ProductsListPropertyEditorProps> = ({
   element,
   onPropertyChange,
-  onContentChange,
 }) => {
   const columns = element.props?.columns || 4;
   const productsPerPage = element.props?.productsPerPage || 8;
