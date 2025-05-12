@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -551,14 +550,14 @@ const ProductManager: React.FC = () => {
                   <Label htmlFor="product-category">Category</Label>
                   <div className="flex gap-2">
                     <Select
-                      value={editingProduct.category || ''}
-                      onValueChange={(value) => setEditingProduct({...editingProduct, category: value})}
+                      value={editingProduct.category || 'none'} /* Changed from empty string to 'none' */
+                      onValueChange={(value) => setEditingProduct({...editingProduct, category: value === 'none' ? '' : value})}
                     >
                       <SelectTrigger id="product-category" className="flex-grow">
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem> {/* Changed from empty string to 'none' */}
                         {categories.map((category) => (
                           <SelectItem key={category.name} value={category.name}>
                             {category.name}

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { BuilderElement } from "@/contexts/BuilderContext";
 import { Slider } from "@/components/ui/slider";
