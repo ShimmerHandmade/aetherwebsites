@@ -9,15 +9,15 @@ interface BuilderElementProps {
   element: any;
   index: number;
   selected: boolean;
-  isPreviewMode: boolean;
+  isPreviewMode?: boolean;
   parentId?: string;
 }
 
-const BuilderElement: React.FC<BuilderElementProps> = ({
+export const ElementWrapper: React.FC<BuilderElementProps> = ({
   element,
   index,
   selected,
-  isPreviewMode,
+  isPreviewMode = false,
   parentId,
 }) => {
   const { selectElement, removeElement, duplicateElement } = useBuilder();
@@ -151,4 +151,5 @@ const BuilderElement: React.FC<BuilderElementProps> = ({
   );
 };
 
-export default BuilderElement;
+// Also export as default for backward compatibility
+export default ElementWrapper;

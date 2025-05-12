@@ -1,4 +1,4 @@
 
-import BuilderElement from "./elements/ElementWrapper";
+import { ElementWrapper } from "./elements/ElementWrapper";
 
-export default BuilderElement;
+export default ElementWrapper;

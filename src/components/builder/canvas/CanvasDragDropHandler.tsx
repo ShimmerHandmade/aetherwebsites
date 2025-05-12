@@ -139,7 +139,7 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
                   adjustedTargetIndex - 1 : adjustedTargetIndex;
               
               console.log(`Moving element from ${sourceIndex} to ${destinationIndex} in same container`);
-              moveElement(sourceIndex, destinationIndex, containerId, sourceParentId);
+              moveElement(sourceIndex, destinationIndex, sourceParentId);
               return;
             }
           }

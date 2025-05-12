@@ -6,4 +6,4 @@ export * from './interactive';
 export * from './complex';
 export * from './media';
 export * from './navigation';
-export * from './ElementWrapper';
+export { ElementWrapper } from './ElementWrapper';

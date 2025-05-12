@@ -46,6 +46,7 @@ const GridElement: React.FC<ElementProps> = ({ element }) => {
                   element={child} 
                   index={index} 
                   selected={child.id === selectedElementId}
+                  parentId={element.id}
                 />
               </div>
             ))}
