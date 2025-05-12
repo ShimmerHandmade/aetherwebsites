@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CircleCheck } from "lucide-react";
@@ -9,7 +10,7 @@ import { Plan, getPlans } from "@/api/websites";
 const PricingSection = () => {
   const [isAnnual, setIsAnnual] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [plans, setPlans] = useState<Plan[]>([]);
+  const [plans, setPlans] = useState<(Plan & { isPopular?: boolean })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 

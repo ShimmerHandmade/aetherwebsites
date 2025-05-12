@@ -8,6 +8,7 @@ export interface Plan {
   monthly_price: number;
   annual_price: number;
   features: string[];
+  isPopular?: boolean; // Added isPopular as an optional property
 }
 
 /**
