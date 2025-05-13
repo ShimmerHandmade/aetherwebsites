@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBuilder } from "@/contexts/BuilderContext";
 import { toast } from "sonner";
-import { TextArea } from "@/components/ui/textarea";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Globe, Settings2, Search, LayoutGrid, PenLine, Share, ExternalLink } from "lucide-react";
 
@@ -106,7 +106,7 @@ const PageSettings: React.FC = () => {
               
               <div className="space-y-2">
                 <Label htmlFor="page-description" className="text-sm font-medium">Description</Label>
-                <TextArea 
+                <Textarea 
                   id="page-description" 
                   placeholder="Enter page description" 
                   value={pageSettings?.description || ''}
@@ -156,7 +156,7 @@ const PageSettings: React.FC = () => {
               
               <div className="space-y-2">
                 <Label htmlFor="meta-description" className="text-sm font-medium">Meta Description</Label>
-                <TextArea 
+                <Textarea 
                   id="meta-description" 
                   placeholder="Enter meta description" 
                   value={pageSettings?.meta?.description || pageSettings?.description || ''}
@@ -224,7 +224,7 @@ const PageSettings: React.FC = () => {
               
               <div className="space-y-2">
                 <Label htmlFor="og-description" className="text-sm font-medium">Social Description</Label>
-                <TextArea 
+                <Textarea 
                   id="og-description" 
                   placeholder="Enter social description" 
                   value={pageSettings?.meta?.ogDescription || pageSettings?.description || ''}

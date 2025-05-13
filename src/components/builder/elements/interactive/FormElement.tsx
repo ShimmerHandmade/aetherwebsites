@@ -1,9 +1,8 @@
-
 import React from "react";
 import { BuilderElement } from "@/contexts/BuilderContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { TextArea } from "@/components/ui/textarea";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -46,7 +45,7 @@ const FormElement: React.FC<ElementProps> = ({ element }) => {
             <div key={index}>
               <Label htmlFor={field.name} className="mb-2 block">{field.label}</Label>
               {field.type === "textarea" ? (
-                <TextArea 
+                <Textarea 
                   id={field.name} 
                   name={field.name} 
                   placeholder={field.label}

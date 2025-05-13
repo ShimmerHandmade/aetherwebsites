@@ -1,9 +1,8 @@
-
 import React from "react";
 import { PropertyEditorProps } from "./PropertyEditor";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { TextArea } from "@/components/ui/textarea";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ContentPropertyEditor from "./ContentPropertyEditor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -38,7 +37,7 @@ const FeaturePropertyEditor: React.FC<PropertyEditorProps> = ({
             <Label htmlFor="featureDescription" className="text-sm text-gray-600 block mb-1">
               Description
             </Label>
-            <TextArea
+            <Textarea
               id="featureDescription"
               value={properties.description || ""}
               onChange={(e) => onPropertyChange("description", e.target.value)}

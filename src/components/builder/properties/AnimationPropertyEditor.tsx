@@ -1,10 +1,9 @@
-
 import React from "react";
 import { BuilderElement } from "@/contexts/BuilderContext";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TextArea } from "@/components/ui/textarea";
+import { Textarea } from "@/components/ui/textarea";
 import { usePlan } from "@/contexts/PlanContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
@@ -44,7 +43,7 @@ const AnimationPropertyEditor: React.FC<AnimationPropertyEditorProps> = ({
       
       <div>
         <Label htmlFor="content">Content</Label>
-        <TextArea
+        <Textarea
           id="content"
           value={props.content || element.content || ""}
           onChange={(e) => onPropertyChange("content", e.target.value)}

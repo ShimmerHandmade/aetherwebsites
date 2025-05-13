@@ -1,7 +1,6 @@
-
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { TextArea } from "@/components/ui/textarea";
+import { Textarea } from "@/components/ui/textarea";
 import { EditorToolbar } from "./editor-toolbar";
 import { RichTextEditorProps } from "./types";
 import { useToast } from "@/hooks/use-toast";
@@ -55,7 +54,7 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
           setHeading={setHeading}
         />
         
-        <TextArea
+        <Textarea
           ref={editorRef}
           id={id}
           value={value}
