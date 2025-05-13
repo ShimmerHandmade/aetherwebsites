@@ -13,7 +13,9 @@ import {
   CardContent,
   CardFooter
 } from "@/components/ui/card";
-import { Loader2, CreditCard, CheckCircle2, ShoppingCart } from "lucide-react";
+import { getPlans } from "@/api/websites";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, CreditCard, CheckCircle2, ShoppingCart, ArrowRight } from "lucide-react";
 
 interface SubscriptionManagerProps {
   profile: Profile | null;
@@ -30,6 +32,8 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [isAnnual, setIsAnnual] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
     subscribed: boolean;
     plan: any;
@@ -39,8 +43,26 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
   useEffect(() => {
     if (profile) {
       checkSubscription();
+      fetchPlans();
     }
   }, [profile]);
+
+  const fetchPlans = async () => {
+    try {
+      const { data, error } = await getPlans();
+      if (error) {
+        console.error("Error fetching plans:", error);
+        return;
+      }
+      if (data) {
+        // Sort plans by price for proper display
+        const sortedPlans = data.sort((a, b) => a.monthly_price - b.monthly_price);
+        setPlans(sortedPlans);
+      }
+    } catch (error) {
+      console.error("Error in fetchPlans:", error);
+    }
+  };
 
   const checkSubscription = async () => {
     if (!profile) return;
@@ -82,6 +104,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
       // Open customer portal in a new tab
       if (data?.url) {
         window.open(data.url, '_blank');
+        toast.info("Opening customer portal in a new tab");
       }
     } catch (error) {
       console.error("Error opening customer portal:", error);
@@ -99,7 +122,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { 
           plan_id: planId,
-          billing_type: 'monthly' // Default to monthly for simplicity
+          billing_type: isAnnual ? 'annual' : 'monthly'
         }
       });
       
@@ -112,6 +135,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
       // Redirect to checkout
       if (data?.url) {
         window.open(data.url, '_blank');
+        toast.info(`Opening checkout for ${isAnnual ? 'annual' : 'monthly'} plan in a new tab`);
       }
     } catch (error) {
       console.error("Error creating checkout session:", error);
@@ -119,6 +143,11 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const toggleBilling = () => {
+    setIsAnnual(!isAnnual);
+    toast.info(`Switched to ${!isAnnual ? 'annual' : 'monthly'} billing`);
   };
 
   if (!profile) return null;
@@ -172,7 +201,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
           </>
         )}
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex flex-col">
         {subscriptionStatus?.subscribed ? (
           <Button 
             onClick={handleManageSubscription}
@@ -187,37 +216,44 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
             Manage Subscription
           </Button>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full">
-            <Button 
-              onClick={() => handleUpgrade("1")} // Replace with actual Basic plan ID
-              variant="outline"
-              disabled={isLoading}
-              className="w-full"
-            >
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Basic Plan
-            </Button>
-            <Button 
-              onClick={() => handleUpgrade("2")} // Replace with actual Pro plan ID
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600"
-            >
-              {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <ShoppingCart className="mr-2 h-4 w-4" />
-              )}
-              Pro Plan
-            </Button>
-            <Button 
-              onClick={() => handleUpgrade("3")} // Replace with actual Enterprise plan ID
-              variant="outline"
-              disabled={isLoading}
-              className="w-full"
-            >
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Enterprise
-            </Button>
+          <div className="w-full">
+            <Tabs defaultValue="monthly" className="w-full mb-4">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="monthly" onClick={() => setIsAnnual(false)}>Monthly</TabsTrigger>
+                <TabsTrigger value="annual" onClick={() => setIsAnnual(true)}>Annual (Save 20%)</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full">
+              {plans.map(plan => (
+                <Button 
+                  key={plan.id}
+                  onClick={() => handleUpgrade(plan.id)}
+                  variant={plan.name === 'Professional' ? 'default' : 'outline'}
+                  disabled={isLoading}
+                  className={`w-full ${plan.name === 'Professional' ? 
+                    'bg-gradient-to-r from-indigo-600 to-purple-600' : ''}`}
+                >
+                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {plan.name === 'Professional' ? (
+                    <div className="flex items-center">
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      {plan.name} ${isAnnual ? plan.annual_price : plan.monthly_price}
+                    </div>
+                  ) : (
+                    <div>
+                      {plan.name} ${isAnnual ? plan.annual_price : plan.monthly_price}
+                    </div>
+                  )}
+                </Button>
+              ))}
+            </div>
+            
+            <div className="mt-4 text-center">
+              <Button variant="link" onClick={() => navigate('/subscription-success')}>
+                Already subscribed? Check status <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
           </div>
         )}
       </CardFooter>

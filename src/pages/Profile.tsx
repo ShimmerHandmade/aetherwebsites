@@ -19,6 +19,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import DashboardNavbar from "@/components/DashboardNavbar";
 import { Profile as ProfileType } from "@/pages/Dashboard";
 import SubscriptionManager from "@/components/SubscriptionManager";
+import PlanLimitsInfo from "@/components/PlanLimitsInfo";
+import PlanStatusBadge from "@/components/PlanStatusBadge";
+import { getUserPlan } from "@/api/websites/getUserPlan";
 
 const profileSchema = z.object({
   full_name: z.string().min(2, { message: "Name must be at least 2 characters" }).optional(),
@@ -31,6 +34,7 @@ const Profile = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [productCount, setProductCount] = useState(0);
   const [pageCount, setPageCount] = useState(0);
+  const [planInfo, setPlanInfo] = useState<any>(null);
   const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof profileSchema>>({
@@ -46,16 +50,31 @@ const Profile = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
+        toast.error("Please log in to view your profile");
         navigate("/auth");
         return;
       }
       
       fetchUserData();
       fetchStatsData();
+      fetchPlanData();
     };
 
     checkAuth();
   }, [navigate]);
+
+  const fetchPlanData = async () => {
+    try {
+      const { data, error } = await getUserPlan();
+      if (error) {
+        console.error("Error fetching plan data:", error);
+        return;
+      }
+      setPlanInfo(data);
+    } catch (err) {
+      console.error("Error in fetchPlanData:", err);
+    }
+  };
 
   const fetchUserData = async () => {
     try {
@@ -72,6 +91,7 @@ const Profile = () => {
       
       if (error) {
         console.error("Error fetching profile:", error);
+        toast.error("Failed to load profile information");
         return;
       }
       
@@ -82,6 +102,7 @@ const Profile = () => {
       });
     } catch (error) {
       console.error("Error in fetchUserData:", error);
+      toast.error("An unexpected error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -153,6 +174,8 @@ const Profile = () => {
 
   const handleSubscriptionUpdated = () => {
     fetchUserData();
+    fetchPlanData();
+    toast.success("Subscription information updated");
   };
 
   return (
@@ -161,7 +184,12 @@ const Profile = () => {
       
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">Account Management</h1>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-bold">Account Management</h1>
+            {planInfo && (
+              <PlanStatusBadge className="text-sm px-3 py-1.5" />
+            )}
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Profile Settings */}
