@@ -1,3 +1,4 @@
+
 import { Plan } from "@/api/websites";
 import { Profile } from "@/pages/Dashboard";
 import { supabase } from "@/integrations/supabase/client";
@@ -148,8 +149,8 @@ export async function checkProductLimit(currentCount: number): Promise<boolean> 
   
   if (!belowLimit) {
     toast({
-      title: "Plan limit reached",
       description: `You've reached your plan's limit of ${restrictions.maxProducts} products. Upgrade your plan to add more products.`,
+      variant: "destructive"
     });
   }
   
