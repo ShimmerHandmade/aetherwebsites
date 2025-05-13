@@ -19,7 +19,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import DashboardNavbar from "@/components/DashboardNavbar";
 import { Profile as ProfileType } from "@/pages/Dashboard";
 import SubscriptionManager from "@/components/SubscriptionManager";
-import PlanLimitsInfo from "@/components/PlanLimitsInfo";
 import PlanStatusBadge from "@/components/PlanStatusBadge";
 import { getUserPlan } from "@/api/websites/getUserPlan";
 
@@ -35,6 +34,7 @@ const Profile = () => {
   const [productCount, setProductCount] = useState(0);
   const [pageCount, setPageCount] = useState(0);
   const [planInfo, setPlanInfo] = useState<any>(null);
+  const [dataFetched, setDataFetched] = useState(false); // Flag to prevent multiple fetches
   const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof profileSchema>>({
@@ -55,13 +55,16 @@ const Profile = () => {
         return;
       }
       
-      fetchUserData();
-      fetchStatsData();
-      fetchPlanData();
+      if (!dataFetched) {
+        setDataFetched(true);
+        fetchUserData();
+        fetchStatsData();
+        fetchPlanData();
+      }
     };
 
     checkAuth();
-  }, [navigate]);
+  }, [navigate, dataFetched]);
 
   const fetchPlanData = async () => {
     try {
@@ -83,7 +86,6 @@ const Profile = () => {
       
       if (!user) return;
       
-      // Modified query to avoid joining with plans table directly
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
@@ -179,6 +181,26 @@ const Profile = () => {
     toast.success("Subscription information updated");
   };
 
+  // Loading state is fully controlled to prevent "flash of loading state"
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <DashboardNavbar profile={null} />
+        <main className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-bold">Account Management</h1>
+            </div>
+            <div className="py-8 text-center">
+              <div className="h-12 w-12 border-4 border-t-indigo-600 border-r-indigo-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading profile...</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardNavbar profile={profile} />
@@ -197,57 +219,50 @@ const Profile = () => {
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-xl font-bold mb-6">Profile Settings</h2>
               
-              {isLoading ? (
-                <div className="py-8 text-center">
-                  <div className="h-12 w-12 border-4 border-t-indigo-600 border-r-indigo-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading profile...</p>
-                </div>
-              ) : (
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <FormField
-                      control={form.control}
-                      name="full_name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Full Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Your name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="example@email.com" 
-                              disabled 
-                              className="bg-gray-100 cursor-not-allowed"
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <Button 
-                      type="submit" 
-                      className="bg-gradient-to-r from-indigo-600 to-purple-600"
-                      disabled={isSaving}
-                    >
-                      {isSaving ? "Saving..." : "Save Changes"}
-                    </Button>
-                  </form>
-                </Form>
-              )}
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="full_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Full Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Your name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="example@email.com" 
+                            disabled 
+                            className="bg-gray-100 cursor-not-allowed"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button 
+                    type="submit" 
+                    className="bg-gradient-to-r from-indigo-600 to-purple-600"
+                    disabled={isSaving}
+                  >
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </Button>
+                </form>
+              </Form>
             </div>
             
             {/* Subscription Management */}
