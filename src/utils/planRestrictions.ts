@@ -116,7 +116,7 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
     
     // Get the plan name with additional safeguards
     let planName = 'default';
-    if (planData !== null && typeof planData === 'object' && 'name' in planData) {
+    if (planData !== null && typeof planData === 'object' && planData && 'name' in planData) {
       planName = ((planData as any).name as string) || 'default';
     }
     
@@ -192,7 +192,7 @@ export async function getUserPlanName(): Promise<string | null> {
     
     // First try from the plans join
     const planData = profile.plans;
-    if (planData !== null && typeof planData === 'object' && 'name' in planData) {
+    if (planData !== null && typeof planData === 'object' && planData && 'name' in planData) {
       planName = (planData as any).name as string;
       console.log("Got plan name from joined data:", planName);
     }

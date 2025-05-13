@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useBuilder } from '@/contexts/builder';
 import { usePlan } from '@/contexts/PlanContext';
 import { cn } from '@/lib/utils';
-import { PageCanvas } from './PageCanvas';
+import PageCanvas from './PageCanvas';
 
 interface BuilderCanvasProps {
   isPreviewMode?: boolean;
