@@ -25,12 +25,12 @@ export const getUserPlan = async (): Promise<{
       };
     }
 
-    // Get user profile with plan join in a single query when possible
+    // Get user profile with plan info in a single query
     const { data: profile, error } = await supabase
       .from("profiles")
       .select("is_subscribed, subscription_end, plan_id, plans:plan_id(name)")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error("Error fetching user profile:", error);
@@ -40,31 +40,31 @@ export const getUserPlan = async (): Promise<{
       };
     }
     
-    // If no plan_id, return early with default values
-    if (!profile.plan_id) {
+    if (!profile) {
       return {
         data: {
           id: null,
           name: null,
           isSubscribed: false,
           subscriptionEnd: null
-        }
+        },
+        error: undefined
       };
     }
     
-    // Get plan name from the join if available
+    // Extract plan name from the joined data if available
     let planName = null;
     if (profile.plans && typeof profile.plans === 'object' && profile.plans !== null) {
       planName = (profile.plans as any).name;
     }
     
-    // If plan name wasn't in the join, fetch it separately
-    if (!planName) {
+    // If no plan name was in the join and we have a plan_id, fetch it separately
+    if (!planName && profile.plan_id) {
       const { data: planData } = await supabase
         .from("plans")
         .select("name")
         .eq("id", profile.plan_id)
-        .single();
+        .maybeSingle();
       
       planName = planData?.name || null;
     }
@@ -73,16 +73,9 @@ export const getUserPlan = async (): Promise<{
     const isSubscribed = profile.is_subscribed && 
       (!profile.subscription_end || new Date(profile.subscription_end) > new Date());
     
-    // Log plan data for debugging
-    console.log("User plan data:", {
-      planId: profile.plan_id,
-      planName,
-      isSubscribed
-    });
-    
     return {
       data: {
-        id: profile.plan_id,
+        id: profile.plan_id || null,
         name: planName,
         isSubscribed,
         subscriptionEnd: profile.subscription_end

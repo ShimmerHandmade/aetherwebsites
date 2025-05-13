@@ -12,13 +12,13 @@ export const checkSubscription = async (): Promise<{
   error?: string;
 }> => {
   try {
+    // Call the edge function to check subscription status
     const { data, error } = await supabase.functions.invoke("check-subscription", {
       method: "GET"
     });
     
     if (error) {
       console.error("Error checking subscription:", error);
-      toast.error("Failed to check subscription status");
       return {
         success: false,
         subscribed: false,
@@ -27,6 +27,7 @@ export const checkSubscription = async (): Promise<{
       };
     }
 
+    // Return the subscription status
     return {
       success: true,
       subscribed: data.subscribed,

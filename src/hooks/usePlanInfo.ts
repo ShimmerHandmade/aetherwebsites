@@ -25,26 +25,24 @@ export const usePlanInfo = () => {
     isPremium: false,
     isEnterprise: false
   });
+  
   const isMounted = useRef(true);
-  const fetchingData = useRef(false);
-  const authChecked = useRef(false);
+  const isLoadingData = useRef(false);
   const initialLoadComplete = useRef(false);
 
-  // Single useEffect to handle the entire data fetching flow
+  // Single useEffect to handle data loading
   useEffect(() => {
-    const controller = new AbortController();
-    
     const loadPlanInfo = async () => {
-      // Prevent concurrent fetches and avoid refetching if already loaded
-      if (fetchingData.current || initialLoadComplete.current) return;
-      fetchingData.current = true;
+      // Prevent concurrent loading or reloading after initial load
+      if (isLoadingData.current || initialLoadComplete.current) return;
+      
+      isLoadingData.current = true;
       
       try {
-        // Step 1: Check authentication
+        // Check for authenticated user
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
-          console.log("usePlanInfo: User not authenticated");
           if (isMounted.current) {
             setPlanInfo(prev => ({
               ...prev,
@@ -55,10 +53,8 @@ export const usePlanInfo = () => {
           initialLoadComplete.current = true;
           return;
         }
-
-        authChecked.current = true;
         
-        // Step 2: Get user's plan
+        // Get user's plan
         const { data: planData, error: planError } = await getUserPlan();
         
         if (planError) {
@@ -74,14 +70,14 @@ export const usePlanInfo = () => {
           return;
         }
         
-        // Step 3: Get plan restrictions
+        // Get plan restrictions
         const restrictions = await getUserPlanRestrictions();
         
         if (planData) {
           const isPremium = planData.name === "Professional" || planData.name === "Enterprise";
           const isEnterprise = planData.name === "Enterprise";
           
-          if (isMounted.current && !controller.signal.aborted) {
+          if (isMounted.current) {
             setPlanInfo({
               planName: planData.name,
               restrictions,
@@ -92,7 +88,7 @@ export const usePlanInfo = () => {
             });
           }
         } else {
-          if (isMounted.current && !controller.signal.aborted) {
+          if (isMounted.current) {
             setPlanInfo({
               planName: null,
               restrictions,
@@ -107,7 +103,7 @@ export const usePlanInfo = () => {
         initialLoadComplete.current = true;
       } catch (error) {
         console.error("Error in usePlanInfo:", error);
-        if (isMounted.current && !controller.signal.aborted) {
+        if (isMounted.current) {
           setPlanInfo(prev => ({
             ...prev,
             loading: false,
@@ -116,7 +112,7 @@ export const usePlanInfo = () => {
         }
         initialLoadComplete.current = true;
       } finally {
-        fetchingData.current = false;
+        isLoadingData.current = false;
       }
     };
 
@@ -124,9 +120,8 @@ export const usePlanInfo = () => {
     
     return () => {
       isMounted.current = false;
-      controller.abort();
     };
-  }, []); // Only run on mount, no dependencies
+  }, []); // Only run on mount
 
   return planInfo;
 };

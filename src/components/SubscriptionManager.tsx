@@ -23,31 +23,58 @@ interface SubscriptionManagerProps {
   productCount?: number;
   pageCount?: number;
   onSubscriptionUpdated?: () => void;
+  subscriptionStatus?: {
+    subscribed: boolean;
+    plan: any;
+    subscription_end: string | null;
+  } | null;
+  isLoading?: boolean;
 }
 
 const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ 
   profile,
   productCount = 0,
   pageCount = 0,
-  onSubscriptionUpdated
+  onSubscriptionUpdated,
+  subscriptionStatus: initialSubscriptionStatus,
+  isLoading: initialIsLoading = false
 }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(initialIsLoading);
   const [plans, setPlans] = useState<any[]>([]);
   const [isAnnual, setIsAnnual] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
     subscribed: boolean;
     plan: any;
     subscription_end: string | null;
-  } | null>(null);
+  } | null>(initialSubscriptionStatus || null);
   const navigate = useNavigate();
 
+  // Only fetch subscription status if not provided via props
   useEffect(() => {
-    if (profile) {
+    if (profile && !initialSubscriptionStatus) {
       checkSubscription();
+    }
+  }, [profile, initialSubscriptionStatus]);
+
+  // Fetch plans only once when component mounts
+  useEffect(() => {
+    if (profile && plans.length === 0) {
       fetchPlans();
     }
-  }, [profile]);
+  }, [profile, plans.length]);
+  
+  // Update local state when prop changes
+  useEffect(() => {
+    if (initialSubscriptionStatus) {
+      setSubscriptionStatus(initialSubscriptionStatus);
+    }
+  }, [initialSubscriptionStatus]);
+
+  // Update loading state when prop changes
+  useEffect(() => {
+    setSubscriptionLoading(initialIsLoading);
+  }, [initialIsLoading]);
 
   const fetchPlans = async () => {
     try {

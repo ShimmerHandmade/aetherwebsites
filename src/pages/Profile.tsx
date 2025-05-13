@@ -21,6 +21,7 @@ import { Profile as ProfileType } from "@/pages/Dashboard";
 import SubscriptionManager from "@/components/SubscriptionManager";
 import PlanStatusBadge from "@/components/PlanStatusBadge";
 import { getUserPlan } from "@/api/websites/getUserPlan";
+import { checkSubscription } from "@/api/websites/checkSubscription";
 
 const profileSchema = z.object({
   full_name: z.string().min(2, { message: "Name must be at least 2 characters" }).optional(),
@@ -34,8 +35,9 @@ const Profile = () => {
   const [productCount, setProductCount] = useState(0);
   const [pageCount, setPageCount] = useState(0);
   const [planInfo, setPlanInfo] = useState<any>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<any>(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const isInitialLoadDone = useRef(false);
-  const isFetchingRef = useRef(false);
   const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof profileSchema>>({
@@ -46,14 +48,14 @@ const Profile = () => {
     },
   });
 
-  // Single effect for initial load
+  // Single effect for initial data loading - only runs once
   useEffect(() => {
-    if (isInitialLoadDone.current || isFetchingRef.current) return;
-    
-    const fetchInitialData = async () => {
+    const loadData = async () => {
+      if (isInitialLoadDone.current) return;
+      
       try {
-        isFetchingRef.current = true;
         setIsLoading(true);
+        isInitialLoadDone.current = true;
         
         const { data: { session } } = await supabase.auth.getSession();
         
@@ -63,24 +65,49 @@ const Profile = () => {
           return;
         }
         
-        const [profileData, statsData, planData] = await Promise.all([
+        // Load all data in parallel
+        const [profileData, statsData, planData, subscriptionData] = await Promise.all([
           fetchUserData(),
           fetchStatsData(),
-          fetchPlanData()
+          fetchPlanData(),
+          fetchSubscriptionStatus()
         ]);
-        
-        isInitialLoadDone.current = true;
       } catch (error) {
         console.error("Initial data load error:", error);
         toast.error("Failed to load profile data");
       } finally {
         setIsLoading(false);
-        isFetchingRef.current = false;
       }
     };
 
-    fetchInitialData();
+    loadData();
   }, [navigate]);
+
+  const fetchSubscriptionStatus = async () => {
+    try {
+      setSubscriptionLoading(true);
+      const { success, subscribed, plan, error } = await checkSubscription();
+      
+      if (error) {
+        console.error("Error checking subscription:", error);
+        return null;
+      }
+      
+      const status = {
+        subscribed,
+        plan,
+        subscription_end: plan?.subscription_end || null
+      };
+      
+      setSubscriptionStatus(status);
+      return status;
+    } catch (error) {
+      console.error("Error in fetchSubscriptionStatus:", error);
+      return null;
+    } finally {
+      setSubscriptionLoading(false);
+    }
+  };
 
   const fetchPlanData = async () => {
     try {
@@ -192,7 +219,8 @@ const Profile = () => {
   const handleSubscriptionUpdated = async () => {
     await Promise.all([
       fetchUserData(),
-      fetchPlanData()
+      fetchPlanData(),
+      fetchSubscriptionStatus()
     ]);
     toast.success("Subscription information updated");
   };
@@ -281,12 +309,14 @@ const Profile = () => {
               </Form>
             </div>
             
-            {/* Subscription Management */}
+            {/* Subscription Management - pass the pre-fetched subscription status */}
             <SubscriptionManager 
               profile={profile} 
               productCount={productCount}
               pageCount={pageCount}
               onSubscriptionUpdated={handleSubscriptionUpdated}
+              subscriptionStatus={subscriptionStatus}
+              isLoading={subscriptionLoading}
             />
           </div>
         </div>
