@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import CartButton from "@/components/CartButton";
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -53,18 +52,14 @@ const Navbar = () => {
 
         <div className="hidden md:flex items-center space-x-4">
           {isAuthenticated ? (
-            <>
-              <CartButton />
-              <Button 
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
-                onClick={() => navigate("/dashboard")}
-              >
-                Dashboard
-              </Button>
-            </>
+            <Button 
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+              onClick={() => navigate("/dashboard")}
+            >
+              Dashboard
+            </Button>
           ) : (
             <>
-              <CartButton />
               <Button 
                 variant="outline" 
                 className="border-gray-300"
@@ -82,9 +77,8 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* Mobile Menu Button and Cart Button */}
-        <div className="md:hidden flex items-center space-x-2">
-          <CartButton />
+        {/* Mobile Menu Button (without Cart Button) */}
+        <div className="md:hidden">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="text-gray-500 hover:text-gray-700 focus:outline-none"
