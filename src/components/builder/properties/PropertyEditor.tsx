@@ -1,6 +1,7 @@
 
 import React from "react";
 import { BuilderElement } from "@/contexts/BuilderContext";
+import { Card } from "@/components/ui/card";
 
 export interface PropertyEditorProps {
   element: BuilderElement;
@@ -14,9 +15,11 @@ const PropertyEditor: React.FC<PropertyEditorProps> = ({
   onContentChange,
 }) => {
   return (
-    <div className="space-y-4">
-      {/* This is a base component that will be extended by specific property editors */}
-    </div>
+    <Card className="rounded-md border border-gray-200 overflow-hidden">
+      <div className="space-y-4 p-4">
+        {/* This is a base component that will be extended by specific property editors */}
+      </div>
+    </Card>
   );
 };
 

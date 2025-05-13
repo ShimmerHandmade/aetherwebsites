@@ -4,12 +4,14 @@ import { cn } from "@/lib/utils";
 import { TextArea } from "@/components/ui/textarea";
 import { EditorToolbar } from "./editor-toolbar";
 import { RichTextEditorProps } from "./types";
+import { useToast } from "@/hooks/use-toast";
 
 export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
   ({ value, onChange, className, id, ...props }, ref) => {
     const [activeFormat, setActiveFormat] = React.useState<string[]>([]);
     const [headingLevel, setHeadingLevel] = React.useState<string>("paragraph");
     const editorRef = React.useRef<HTMLTextAreaElement>(null);
+    const { toast } = useToast();
 
     // Convert the string onChange to handle textarea change events
     const handleTextAreaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -23,16 +25,29 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
         setActiveFormat(activeFormat.filter((f) => f !== format));
       } else {
         setActiveFormat([...activeFormat, format]);
+        // Give feedback when format is applied
+        if (!props.noToast) {
+          toast({
+            description: `${format.charAt(0).toUpperCase() + format.slice(1)} formatting applied`,
+            duration: 1500,
+          });
+        }
       }
     };
 
     const setHeading = (level: string) => {
       setHeadingLevel(level);
+      if (!props.noToast) {
+        toast({
+          description: `Heading set to ${level}`,
+          duration: 1500,
+        });
+      }
     };
 
     return (
       <div 
-        className={cn("border rounded-md overflow-hidden bg-white", className)}
+        className={cn("border rounded-md overflow-hidden bg-white shadow-sm transition-all hover:shadow-md focus-within:ring-2 focus-within:ring-blue-400 focus-within:border-blue-400", className)}
         ref={ref}
       >
         <EditorToolbar
@@ -48,7 +63,7 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
           value={value}
           onChange={handleTextAreaChange}
           richEditor={true}
-          className="min-h-[200px] focus:outline-none"
+          className="min-h-[200px] focus:outline-none px-4 py-3"
           {...props}
         />
       </div>
