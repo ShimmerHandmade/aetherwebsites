@@ -55,6 +55,7 @@ export const getUserPlan = async (): Promise<{
 
     // Extract plan name from the joined data if available
     let planName = null;
+    // Add proper type checking to handle the case when plans could be null
     if (profile.plans && typeof profile.plans === 'object' && profile.plans !== null) {
       planName = profile.plans.name;
     }
