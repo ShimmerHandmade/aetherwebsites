@@ -27,11 +27,14 @@ export const usePlanInfo = () => {
   useEffect(() => {
     const fetchPlanInfo = async () => {
       try {
+        console.log("Fetching plan information...");
         const [restrictions, planName] = await Promise.all([
           getUserPlanRestrictions(),
           getUserPlanName()
         ]);
 
+        console.log("Plan name fetched:", planName);
+        
         // Determine premium status
         const isPremium = planName === "Professional" || planName === "Enterprise";
         const isEnterprise = planName === "Enterprise";

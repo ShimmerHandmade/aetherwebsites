@@ -28,6 +28,7 @@ const PlanStatusBadge: React.FC<PlanStatusBadgeProps> = ({
     );
   }
   
+  // If there's no plan name, it's the free plan
   if (!planName) {
     return (
       <Badge 
@@ -63,11 +64,13 @@ const PlanStatusBadge: React.FC<PlanStatusBadgeProps> = ({
     );
   }
   
+  // For Basic plan or any other non-premium plans
   return (
     <Badge 
       variant="outline" 
       className={cn("bg-blue-50 text-blue-700", className)}
     >
+      {showIcon && <span className="mr-1">•</span>}
       {planName}
     </Badge>
   );

@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, ReactNode } from "react";
+import React, { createContext, useContext, ReactNode, useEffect } from "react";
 import { usePlanInfo, PlanInfo } from "@/hooks/usePlanInfo";
 
 // Create context with default values
@@ -18,6 +18,18 @@ interface PlanProviderProps {
 
 export const PlanProvider = ({ children }: PlanProviderProps) => {
   const planInfo = usePlanInfo();
+  
+  // Log plan information when it changes for debugging
+  useEffect(() => {
+    if (!planInfo.loading) {
+      console.log("Plan context updated:", {
+        planName: planInfo.planName,
+        isPremium: planInfo.isPremium,
+        isEnterprise: planInfo.isEnterprise,
+        hasRestrictions: !!planInfo.restrictions
+      });
+    }
+  }, [planInfo.loading, planInfo.planName, planInfo.isPremium, planInfo.isEnterprise, planInfo.restrictions]);
   
   return (
     <PlanContext.Provider value={planInfo}>

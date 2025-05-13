@@ -72,21 +72,35 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
       .eq("id", user.id)
       .single();
     
+    console.log("Profile data from DB:", profile);
+    
     if (error || !profile?.is_subscribed || !profile.plans || 
         (profile.subscription_end && new Date(profile.subscription_end) < new Date())) {
+      console.log("No active subscription found, using default restrictions");
       return planRestrictions.default;
     }
 
     // Check if plans data is valid and has a name property
     const planData = profile.plans;
-    if (!planData) return planRestrictions.default;
+    if (!planData) {
+      console.log("No plan data found, using default restrictions");
+      return planRestrictions.default;
+    }
     
     // Use non-null assertion since we've already checked planData is not null
     const planName = typeof planData === 'object' && 'name' in planData! 
       ? (planData as any).name as string 
       : 'default';
     
-    return planRestrictions[planName] || planRestrictions.default;
+    console.log("Plan name:", planName);
+    
+    if (planName && planRestrictions[planName]) {
+      console.log(`Using restrictions for plan: ${planName}`);
+      return planRestrictions[planName];
+    }
+    
+    console.log("Plan not found in restrictions, using default");
+    return planRestrictions.default;
   } catch (error) {
     console.error("Error getting user plan restrictions:", error);
     return planRestrictions.default;
@@ -117,7 +131,10 @@ export async function checkProductLimit(currentCount: number): Promise<boolean> 
 export async function getUserPlanName(): Promise<string | null> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    if (!user) {
+      console.log("No user found, returning null plan name");
+      return null;
+    }
 
     const { data: profile, error } = await supabase
       .from("profiles")
@@ -125,19 +142,33 @@ export async function getUserPlanName(): Promise<string | null> {
       .eq("id", user.id)
       .single();
     
-    if (error || !profile?.is_subscribed || !profile.plans || 
+    console.log("Profile data for plan name:", profile);
+    
+    if (error) {
+      console.error("Error fetching profile:", error);
+      return null;
+    }
+    
+    if (!profile?.is_subscribed || !profile.plans || 
         (profile.subscription_end && new Date(profile.subscription_end) < new Date())) {
+      console.log("No active subscription, returning null plan name");
       return null;
     }
 
     // Check if plans data is valid and has a name property
     const planData = profile.plans;
-    if (!planData) return null;
+    if (!planData) {
+      console.log("No plan data found, returning null plan name");
+      return null;
+    }
     
     // Use non-null assertion since we've already checked planData is not null
-    return typeof planData === 'object' && 'name' in planData! 
+    const planName = typeof planData === 'object' && 'name' in planData! 
       ? (planData as any).name as string 
       : null;
+    
+    console.log("Returning plan name:", planName);
+    return planName;
   } catch (error) {
     console.error("Error getting user plan:", error);
     return null;

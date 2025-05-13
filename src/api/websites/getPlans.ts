@@ -8,7 +8,7 @@ export interface Plan {
   monthly_price: number;
   annual_price: number;
   features: string[];
-  isPopular?: boolean; // Added isPopular as an optional property
+  isPopular?: boolean;
 }
 
 /**
@@ -33,6 +33,7 @@ export const getPlans = async (): Promise<{
     }
     
     // Process the plans data - ensure features is properly parsed to string[]
+    // and mark the Professional plan as popular
     const processedPlans = data.map(plan => ({
       id: plan.id,
       name: plan.name,
@@ -46,7 +47,9 @@ export const getPlans = async (): Promise<{
           ? [plan.features]
           : plan.features instanceof Object 
             ? Object.keys(plan.features).map(key => String(plan.features[key])) 
-            : []
+            : [],
+      // Mark the Professional plan as popular
+      isPopular: plan.name === 'Professional'
     })) as Plan[];
     
     return { data: processedPlans };
