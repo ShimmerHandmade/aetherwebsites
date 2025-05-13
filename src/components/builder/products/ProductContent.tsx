@@ -1,7 +1,7 @@
 
 import React from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle, RefreshCcw } from "lucide-react";
 import { Product } from "@/types/product";
 import ProductGrid from "./ProductGrid";
 import ProductList from "./ProductList";
@@ -20,10 +20,10 @@ interface ProductContentProps {
   newCategory: string;
   imagePreview: string | null;
   onProductChange: (product: Product) => void;
-  onSave: () => void;
+  onSave: () => Promise<any> | void;
   onCancel: () => void;
   onEdit: (product: Product) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => Promise<any> | void;
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClearImage: () => void;
   onNewCategoryChange: (category: string) => void;
@@ -51,6 +51,14 @@ const ProductContent: React.FC<ProductContentProps> = ({
   onNewCategoryChange,
   onAddCategory
 }) => {
+  console.log("ProductContent rendering with:", {
+    isLoading,
+    hasError: !!loadingError,
+    isEditing: !!editingProduct,
+    productCount: filteredProducts.length,
+    view: currentView
+  });
+
   if (isLoading) {
     return (
       <div className="h-full flex flex-col items-center justify-center">
@@ -67,7 +75,10 @@ const ProductContent: React.FC<ProductContentProps> = ({
         <h3 className="text-lg font-semibold mb-2">Error Loading Products</h3>
         <p className="text-gray-600 mb-6">{loadingError}</p>
         <div className="space-y-2">
-          <Button onClick={() => window.location.reload()}>Try Again</Button>
+          <Button onClick={() => window.location.reload()} className="flex items-center gap-2">
+            <RefreshCcw className="h-4 w-4" />
+            Try Again
+          </Button>
           <div className="text-sm text-gray-500 mt-4">
             <p>Debugging information:</p>
             <pre className="bg-gray-100 p-2 mt-2 rounded text-xs text-left overflow-auto max-h-32">

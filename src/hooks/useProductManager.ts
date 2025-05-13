@@ -24,6 +24,11 @@ export function useProductManager(
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<"grid" | "list">("grid");
 
+  // Debug products state changes
+  useEffect(() => {
+    console.log("Products state updated in useProductManager:", products.length, "products");
+  }, [products]);
+
   // Filter products based on search term and active tab
   const filteredProducts = products.filter(product => {
     // Filter by search term
@@ -48,15 +53,18 @@ export function useProductManager(
     
     setIsLoading(true);
     try {
+      console.log(`Manually refreshing products for website: ${websiteId}`);
       const result = await fetchProducts(websiteId);
       if (!result.error) {
+        console.log(`Refresh successful: ${result.products.length} products loaded`);
         setProducts(result.products);
         setCategories(result.categories);
       } else {
+        console.error("Error refreshing products:", result.error);
         toast.error("Failed to refresh products");
       }
     } catch (error) {
-      console.error("Error refreshing products:", error);
+      console.error("Exception refreshing products:", error);
     } finally {
       setIsLoading(false);
     }
@@ -89,6 +97,7 @@ export function useProductManager(
   };
 
   const handleEdit = (product: Product) => {
+    console.log("Editing product:", product);
     setEditingProduct({...product});
     setImagePreview(product.image_url || null);
     setImageFile(null);
@@ -141,30 +150,31 @@ export function useProductManager(
   };
 
   const handleSave = async () => {
-    if (!editingProduct || !websiteId) return;
+    if (!editingProduct || !websiteId) return { success: false };
     
     // If this is a new product, check if it would exceed the plan limit
     if (isAddingNew) {
       const canAddProduct = await checkProductLimit(products.length);
       if (!canAddProduct) {
-        return; // Don't allow saving if limit is reached
+        return { success: false }; // Don't allow saving if limit is reached
       }
     }
     
     // Validate required fields
     if (!editingProduct.name.trim()) {
       toast.error("Product name is required");
-      return;
+      return { success: false };
     }
     
     if (editingProduct.price <= 0) {
       toast.error("Price must be greater than zero");
-      return;
+      return { success: false };
     }
     
     setIsSaving(true);
 
     try {
+      console.log(`Saving product: ${editingProduct.name} (isNew: ${isAddingNew})`);
       const result = await saveProduct(
         editingProduct, 
         websiteId, 
@@ -173,12 +183,26 @@ export function useProductManager(
       );
 
       if (result.success && result.product) {
+        console.log(`Product saved successfully: ${result.product.id}`);
+        
         if (isAddingNew) {
           // Add new product to local state (at the beginning for newest first)
-          setProducts([result.product, ...products]);
+          console.log("Adding new product to local state");
+          setProducts(prevProducts => {
+            const updatedProducts = [result.product!, ...prevProducts];
+            console.log(`Updated products count: ${updatedProducts.length}`);
+            return updatedProducts;
+          });
         } else {
           // Update existing product in local state
-          setProducts(products.map(p => p.id === result.product!.id ? result.product! : p));
+          console.log("Updating existing product in local state");
+          setProducts(prevProducts => {
+            const updatedProducts = prevProducts.map(p => 
+              p.id === result.product!.id ? result.product! : p
+            );
+            console.log(`Updated products count: ${updatedProducts.length}`);
+            return updatedProducts;
+          });
         }
         
         // If this product has a new category, add it to our categories list
@@ -188,12 +212,17 @@ export function useProductManager(
         
         toast.success(isAddingNew ? "Product added successfully" : "Product updated successfully");
         setEditingProduct(null);
+        
+        return { success: true, product: result.product };
       } else {
+        console.error("Error saving product:", result.error);
         toast.error(result.error || "An error occurred");
+        return { success: false, error: result.error };
       }
     } catch (error) {
-      console.error("Error saving product:", error);
+      console.error("Exception saving product:", error);
       toast.error("Failed to save product");
+      return { success: false, error: String(error) };
     } finally {
       setIsSaving(false);
     }
@@ -206,28 +235,40 @@ export function useProductManager(
   };
 
   const handleDelete = async (id: string) => {
-    if (!websiteId) return;
+    if (!websiteId) return { success: false };
     
     if (!confirm("Are you sure you want to delete this product?")) {
-      return;
+      return { success: false };
     }
     
     try {
+      console.log(`Deleting product: ${id}`);
       const result = await deleteProduct(id, websiteId);
       
       if (result.success) {
+        console.log("Product deleted successfully");
         // Remove the deleted product from local state
-        setProducts(products.filter(p => p.id !== id));
+        setProducts(prevProducts => {
+          const updatedProducts = prevProducts.filter(p => p.id !== id);
+          console.log(`Updated products count after deletion: ${updatedProducts.length}`);
+          return updatedProducts;
+        });
+        
         toast.success("Product deleted");
         
         // Update categories list if needed
         refreshCategoriesList();
+        
+        return { success: true };
       } else {
+        console.error("Error deleting product:", result.error);
         toast.error(result.error || "Failed to delete product");
+        return { success: false, error: result.error };
       }
     } catch (error) {
-      console.error("Error deleting product:", error);
+      console.error("Exception deleting product:", error);
       toast.error("An unexpected error occurred");
+      return { success: false, error: String(error) };
     }
   };
   

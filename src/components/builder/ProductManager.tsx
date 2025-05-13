@@ -120,22 +120,32 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
   // Reload data after save/delete operations
   const handleSuccessfulSave = async () => {
     if (effectiveWebsiteId) {
+      console.log("Reloading products after save/delete operation");
       const result = await fetchProducts(effectiveWebsiteId);
       if (!result.error) {
+        console.log(`Reloaded ${result.products.length} products after operation`);
         setRawProducts(result.products);
         setRawCategories(result.categories);
+      } else {
+        console.error("Failed to reload products after operation:", result.error);
       }
     }
   };
   
   const wrappedHandleSave = async () => {
-    await handleSave();
-    handleSuccessfulSave();
+    const saveResult = await handleSave();
+    if (saveResult?.success) {
+      await handleSuccessfulSave();
+    }
+    return saveResult;
   };
   
   const wrappedHandleDelete = async (id: string) => {
-    await handleDelete(id);
-    handleSuccessfulSave();
+    const deleteResult = await handleDelete(id);
+    if (deleteResult?.success) {
+      await handleSuccessfulSave();
+    }
+    return deleteResult;
   };
   
   const handleBackToBuilder = () => {
