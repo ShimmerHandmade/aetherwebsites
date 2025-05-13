@@ -30,7 +30,9 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/builder/:id" element={<Builder />} />
-          <Route path="/site/:id/*" element={<WebsiteViewer />} /> {/* Updated to capture all nested routes */}
+          <Route path="/site/:id" element={<WebsiteViewer />} />
+          <Route path="/site/:id/cart" element={<WebsiteViewer />} />
+          <Route path="/site/:id/*" element={<WebsiteViewer />} /> {/* Catch-all route for site pages */}
           <Route path="/builder/:id/shop" element={<Shop />} />
           <Route path="/builder/:id/products" element={<Products />} />
           <Route path="/builder/:id/pages" element={<Pages />} />
