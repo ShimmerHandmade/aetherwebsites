@@ -11,7 +11,7 @@ interface CartItemProps {
       id: string;
       name: string;
       price: number;
-      image_url: string | null;
+      image_url?: string | null;
     };
     quantity: number;
   };
