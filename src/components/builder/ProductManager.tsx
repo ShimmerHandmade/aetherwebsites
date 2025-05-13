@@ -25,17 +25,25 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
   const [rawProducts, setRawProducts] = useState<Product[]>([]);
   const [rawCategories, setRawCategories] = useState<UniqueCategory[]>([]);
   
+  // Improve debug logs
+  console.log("ProductManager mounted with websiteId:", websiteId);
+  console.log("URL param websiteId:", websiteIdParam);
+  console.log("Effective websiteId:", effectiveWebsiteId);
+  
   // Fetch products directly when component mounts
   useEffect(() => {
     const loadProducts = async () => {
       if (!effectiveWebsiteId) {
+        console.error("No website ID available");
         setInitialLoading(false);
         setInitialLoadError("Website ID is missing");
         return;
       }
       
       try {
+        console.log(`Starting to load products for website: ${effectiveWebsiteId}`);
         setInitialLoading(true);
+        
         const result = await fetchProducts(effectiveWebsiteId);
         
         if (result.error) {
@@ -45,10 +53,14 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
             description: result.error
           });
         } else {
-          console.log(`Loaded ${result.products.length} products and ${result.categories.length} categories`);
+          console.log(`Successfully loaded ${result.products.length} products and ${result.categories.length} categories`);
           setRawProducts(result.products);
           setRawCategories(result.categories);
           setInitialLoadError(null);
+          
+          if (result.products.length === 0) {
+            console.log("No products found for this website");
+          }
         }
       } catch (error) {
         console.error("Exception loading products:", error);
@@ -59,6 +71,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
       }
     };
 
+    console.log("Running loadProducts effect");
     loadProducts();
   }, [effectiveWebsiteId]);
   
@@ -96,6 +109,8 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
   // Set the products and categories once they're loaded
   useEffect(() => {
     if (rawProducts.length > 0 || rawCategories.length > 0) {
+      console.log("Setting products and categories in useProductManager:", 
+        rawProducts.length, "products,", rawCategories.length, "categories");
       setProducts(rawProducts);
       setCategories(rawCategories);
     }
@@ -119,6 +134,17 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
 
   // Show loading state from either source
   const showLoading = initialLoading || isLoading;
+  
+  // Log current state
+  console.log("Current product manager state:", {
+    initialLoading,
+    isLoading,
+    showLoading,
+    initialLoadError,
+    productsCount: products.length,
+    filteredProductsCount: filteredProducts.length,
+    rawProductsCount: rawProducts.length
+  });
 
   return (
     <div className="h-full flex flex-col">

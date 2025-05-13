@@ -66,7 +66,16 @@ const ProductContent: React.FC<ProductContentProps> = ({
         <AlertTriangle className="h-10 w-10 text-amber-500 mb-4" />
         <h3 className="text-lg font-semibold mb-2">Error Loading Products</h3>
         <p className="text-gray-600 mb-6">{loadingError}</p>
-        <Button onClick={() => window.location.reload()}>Try Again</Button>
+        <div className="space-y-2">
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
+          <div className="text-sm text-gray-500 mt-4">
+            <p>Debugging information:</p>
+            <pre className="bg-gray-100 p-2 mt-2 rounded text-xs text-left overflow-auto max-h-32">
+              Error: {loadingError}<br />
+              Current timestamp: {new Date().toISOString()}
+            </pre>
+          </div>
+        </div>
       </div>
     );
   }
@@ -109,11 +118,17 @@ const ProductContent: React.FC<ProductContentProps> = ({
         )
       ) : (
         <div className="text-center py-8 text-gray-500">
-          {filteredProducts.length === 0 ? (
-            <>No products found. Try a different search or add a new product.</>
-          ) : (
-            <>You haven't added any products yet. Click "Add Product" to create your first product.</>
-          )}
+          <p className="mb-2">No products found.</p>
+          <p className="text-sm mb-4">
+            {filteredProducts.length === 0 ? (
+              <>You haven't added any products yet. Click "Add Product" to create your first product.</>
+            ) : (
+              <>Try a different search or add a new product.</>
+            )}
+          </p>
+          <pre className="bg-gray-100 p-2 mt-4 rounded text-xs text-left overflow-auto max-h-32 mx-auto max-w-md">
+            Total products available: {filteredProducts.length}
+          </pre>
         </div>
       )}
     </ScrollArea>

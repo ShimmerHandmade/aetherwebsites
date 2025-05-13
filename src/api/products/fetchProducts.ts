@@ -23,6 +23,9 @@ export const fetchProducts = async (websiteId: string): Promise<{
 
     console.log(`Fetching products for website ID: ${websiteId}`);
     
+    // Improve logging to help debug the query
+    console.log("Making Supabase query with website_id:", websiteId);
+    
     const { data, error } = await supabase
       .from("products")
       .select("*")
@@ -37,7 +40,7 @@ export const fetchProducts = async (websiteId: string): Promise<{
       };
     }
 
-    console.log(`Fetched ${data?.length || 0} products`);
+    console.log(`Fetched ${data?.length || 0} products:`, data);
     
     // Extract unique categories - only include non-null categories
     const uniqueCategories = Array.from(
@@ -48,7 +51,7 @@ export const fetchProducts = async (websiteId: string): Promise<{
       )
     ).map(name => ({ name: name as string }));
     
-    console.log(`Extracted ${uniqueCategories.length} unique categories`);
+    console.log(`Extracted ${uniqueCategories.length} unique categories:`, uniqueCategories);
     
     return { 
       products: data || [], 
