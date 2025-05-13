@@ -8,12 +8,15 @@ import { BuilderContextType } from "./types";
  * @returns BuilderContext value
  * @throws Error if used outside BuilderProvider
  */
-export const useBuilderContext = (): BuilderContextType => {
+export const useBuilder = (): BuilderContextType => {
   const context = useContext(BuilderContext);
   
   if (context === undefined) {
-    throw new Error("useBuilderContext must be used within a BuilderProvider");
+    throw new Error("useBuilder must be used within a BuilderProvider");
   }
   
   return context;
 };
+
+// For backward compatibility
+export const useBuilderContext = useBuilder;

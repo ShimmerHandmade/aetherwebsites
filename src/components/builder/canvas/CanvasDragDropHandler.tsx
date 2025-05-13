@@ -27,7 +27,9 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
     if (isPreviewMode) return;
     
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = "copy";
+    
     if (!isDraggingOver) {
       setIsDraggingOver(true);
     }
@@ -59,7 +61,9 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
     return {top: true, element: null};
   };
 
-  const handleDragLeave = () => {
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsDraggingOver(false);
     setDropTarget({top: true, element: null});
   };
@@ -74,9 +78,13 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
     
     try {
       const data = e.dataTransfer.getData("application/json");
-      if (!data) return;
+      if (!data) {
+        console.log("No data in drop event");
+        return;
+      }
       
       const elementData = JSON.parse(data);
+      console.log("Dropped element data:", elementData);
       
       // Add new element from palette
       if (!elementData.id) {
@@ -114,7 +122,7 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
         }
         
         // Add to container or root if no specific position
-        addElement(newElement, undefined, containerId);
+        addElement(newElement, containerId);
         console.log("Added new element to container:", containerId, newElement);
         return;
       }
@@ -122,7 +130,10 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
       // Element already exists, handle moving
       if (elementData.id) {
         const sourceElement = findElementById(elementData.id);
-        if (!sourceElement) return;
+        if (!sourceElement) {
+          console.log("Source element not found:", elementData.id);
+          return;
+        }
         
         const sourceParentId = elementData.parentId;
         const sourceIndex = elementData.sourceIndex !== undefined ? Number(elementData.sourceIndex) : -1;
@@ -140,7 +151,6 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
                   adjustedTargetIndex - 1 : adjustedTargetIndex;
               
               console.log(`Moving element from ${sourceIndex} to ${destinationIndex} in same container`);
-              // Fix: Update moveElement call to match the expected parameter count
               moveElement(sourceIndex, destinationIndex, sourceParentId);
               return;
             }
@@ -169,12 +179,12 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
             console.log(`Added element to new container at position ${insertIndex}`);
           } else {
             // Add to the end of the new container
-            addElement(elementCopy, undefined, containerId);
+            addElement(elementCopy, containerId);
             console.log("Added element to new container at the end");
           }
         } else {
           // Add to the end of the new container
-          addElement(elementCopy, undefined, containerId);
+          addElement(elementCopy, containerId);
           console.log("Added element to new container at the end");
         }
         
