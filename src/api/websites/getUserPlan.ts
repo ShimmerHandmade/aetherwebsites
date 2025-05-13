@@ -51,8 +51,8 @@ export const getUserPlan = async (): Promise<{
     let planName: string | null = null;
     let planId: string | null = profile.plan_id;
     
-    // Fixed TS error: planData is possibly null - separate null check from access
-    if (planData !== null && typeof planData === 'object' && 'name' in planData) {
+    // Only try to access planData.name if planData exists and has a name property
+    if (planData && typeof planData === 'object' && planData !== null && 'name' in planData) {
       planName = planData.name as string;
     }
     

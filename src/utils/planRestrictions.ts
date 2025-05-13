@@ -89,11 +89,10 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
       return planRestrictions.default;
     }
     
-    // Fixed TS error: planData is possibly null - separate null check from property access
-    let planName = 'default';
-    if (planData !== null && typeof planData === 'object' && 'name' in planData) {
-      planName = (planData as any).name as string;
-    }
+    // Get the plan name with additional safeguards
+    const planName = planData && typeof planData === 'object' && 'name' in planData 
+      ? (planData as any).name as string 
+      : 'default';
     
     console.log("Plan name:", planName);
     
@@ -168,11 +167,10 @@ export async function getUserPlanName(): Promise<string | null> {
       return null;
     }
     
-    // Fixed TS error: planData is possibly null - separate null check
-    let planName: string | null = null;
-    if (planData !== null && typeof planData === 'object' && 'name' in planData) {
-      planName = (planData as any).name as string;
-    }
+    // Safely extract the plan name
+    const planName = typeof planData === 'object' && planData !== null && 'name' in planData 
+      ? (planData as any).name as string 
+      : null;
     
     console.log("Returning plan name:", planName);
     return planName;
