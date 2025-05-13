@@ -118,7 +118,19 @@ serve(async (req) => {
         endDate: subscriptionEnd 
       });
     } else {
-      logStep("No active subscription found");
+      // If no active subscription, also check for incomplete or pending subscriptions
+      const pendingSubs = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "incomplete",
+        limit: 1,
+      });
+      
+      if (pendingSubs.data.length > 0) {
+        const pendingSub = pendingSubs.data[0];
+        logStep("Pending subscription found", { id: pendingSub.id, status: pendingSub.status });
+      } else {
+        logStep("No active or pending subscription found");
+      }
     }
 
     // Get plan details if plan ID exists
@@ -132,8 +144,11 @@ serve(async (req) => {
         
       if (planError) {
         logStep("Error fetching plan", { error: planError.message });
-      } else {
+      } else if (planData) {
         plan = planData;
+        logStep("Plan details retrieved", { planName: plan.name });
+      } else {
+        logStep("Plan not found", { planId });
       }
     }
 

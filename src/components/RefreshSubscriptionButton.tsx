@@ -23,7 +23,7 @@ const RefreshSubscriptionButton = ({
   const handleRefresh = async () => {
     try {
       setIsRefreshing(true);
-      const { error } = await supabase.functions.invoke("check-subscription");
+      const { data, error } = await supabase.functions.invoke("check-subscription");
       
       if (error) {
         console.error("Error refreshing subscription:", error);
@@ -31,7 +31,12 @@ const RefreshSubscriptionButton = ({
         return;
       }
       
-      toast.success("Subscription status refreshed");
+      if (data.subscribed) {
+        toast.success("Subscription status refreshed - Active subscription confirmed");
+      } else {
+        toast.info("Subscription status refreshed - No active subscription found");
+      }
+      
       if (onRefresh) onRefresh();
     } catch (error) {
       console.error("Error refreshing subscription:", error);

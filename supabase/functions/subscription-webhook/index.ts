@@ -86,6 +86,15 @@ serve(async (req) => {
         const customer = await stripe.customers.retrieve(customerId);
         logStep(`Processing subscription event for user: ${customer.email}, Plan: ${planId}`);
 
+        // Format timestamps to ISO strings properly
+        const currentPeriodStart = subscription.current_period_start 
+          ? new Date(subscription.current_period_start * 1000).toISOString() 
+          : null;
+          
+        const currentPeriodEnd = subscription.current_period_end 
+          ? new Date(subscription.current_period_end * 1000).toISOString() 
+          : null;
+
         // Update profile with subscription status
         await supabaseAdmin
           .from("profiles")
@@ -94,40 +103,53 @@ serve(async (req) => {
             plan_id: planId,
             subscription_id: subscription.id,
             subscription_status: subscription.status,
-            subscription_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            subscription_start: currentPeriodStart,
+            subscription_end: currentPeriodEnd,
+            stripe_customer_id: customerId,
             updated_at: new Date().toISOString(),
           })
           .eq("id", userId);
 
+        logStep("Updated profile subscription status", {
+          userId,
+          isSubscribed: subscription.status === "active",
+          start: currentPeriodStart,
+          end: currentPeriodEnd
+        });
+
         if (event.type === "customer.subscription.created") {
           // Record subscription in history
-          const { data: plan } = await supabaseAdmin
-            .from("plans")
-            .select("*")
-            .eq("id", planId)
-            .single();
+          try {
+            const { data: plan } = await supabaseAdmin
+              .from("plans")
+              .select("*")
+              .eq("id", planId)
+              .maybeSingle();
 
-          if (plan) {
-            const price = subscription.items.data[0].plan.interval === "month" 
-              ? plan.monthly_price 
-              : plan.annual_price;
+            if (plan) {
+              const price = subscription.items.data[0].plan.interval === "month" 
+                ? plan.monthly_price 
+                : plan.annual_price;
+                
+              await supabaseAdmin.from("subscription_history").insert({
+                user_id: userId,
+                plan_id: planId,
+                subscription_type: subscription.items.data[0].plan.interval === "month" ? "monthly" : "annual",
+                amount_paid: price,
+                currency: subscription.currency,
+                status: subscription.status,
+                start_date: currentPeriodStart,
+                end_date: currentPeriodEnd,
+              });
               
-            await supabaseAdmin.from("subscription_history").insert({
-              user_id: userId,
-              plan_id: planId,
-              subscription_type: subscription.items.data[0].plan.interval === "month" ? "monthly" : "annual",
-              amount_paid: price,
-              currency: subscription.currency,
-              status: subscription.status,
-              start_date: new Date(subscription.current_period_start * 1000).toISOString(),
-              end_date: new Date(subscription.current_period_end * 1000).toISOString(),
-            });
-            
-            logStep("Recorded subscription in history", { 
-              userId, 
-              planId, 
-              status: subscription.status 
-            });
+              logStep("Recorded subscription in history", { 
+                userId, 
+                planId, 
+                status: subscription.status 
+              });
+            }
+          } catch (historyErr) {
+            logStep(`Error recording subscription history: ${historyErr.message}`);
           }
         }
         break;
@@ -143,14 +165,22 @@ serve(async (req) => {
           if (userId && planId) {
             logStep(`Payment succeeded for user: ${userId}, Plan: ${planId}`);
             
+            // Format timestamp to ISO string properly
+            const subscriptionEnd = subscription.current_period_end 
+              ? new Date(subscription.current_period_end * 1000).toISOString()
+              : null;
+              
             // Update subscription_end date
             await supabaseAdmin
               .from("profiles")
               .update({
-                subscription_end: new Date(subscription.current_period_end * 1000).toISOString(),
+                is_subscribed: true,
+                subscription_end: subscriptionEnd,
                 updated_at: new Date().toISOString(),
               })
               .eq("id", userId);
+              
+            logStep("Updated subscription end date", { userId, subscriptionEnd });
           }
         }
         break;
@@ -164,7 +194,14 @@ serve(async (req) => {
           
           if (userId) {
             logStep(`Payment failed for user: ${userId}`);
-            // You could notify the user or take other actions here
+            // Update the subscription status
+            await supabaseAdmin
+              .from("profiles")
+              .update({
+                subscription_status: "payment_failed",
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", userId);
           }
         }
         break;
