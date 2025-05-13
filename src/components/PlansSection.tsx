@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { CircleCheck } from "lucide-react";
+import { CircleCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Profile } from "@/pages/Dashboard";
 import { Plan, getPlans } from "@/api/websites";
@@ -14,6 +14,7 @@ interface PlansSectionProps {
 const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isAnnual, setIsAnnual] = useState(false);
 
   useEffect(() => {
@@ -77,44 +78,32 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
         return;
       }
       
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      setIsProcessing(true);
       
-      const subscriptionType = isAnnual ? 'annual' : 'monthly';
-      const now = new Date();
-      
-      // Calculate subscription end date (1 month or 1 year from now)
-      let endDate = new Date(now);
-      if (isAnnual) {
-        endDate.setFullYear(endDate.getFullYear() + 1);
-      } else {
-        endDate.setMonth(endDate.getMonth() + 1);
-      }
-      
-      // In a real app, you would integrate with a payment provider here
-      
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          plan_id: plan.id,
-          is_subscribed: true,
-          subscription_type: subscriptionType,
-          subscription_start: now.toISOString(),
-          subscription_end: endDate.toISOString()
-        })
-        .eq("id", user.id);
+      // Use create-checkout edge function to redirect to Stripe checkout
+      const billingType = isAnnual ? 'annual' : 'monthly';
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: { 
+          billing_type: billingType,
+          plan_id: plan.id
+        }
+      });
       
       if (error) {
-        toast.error("Failed to update subscription");
-        console.error("Error updating subscription:", error);
+        console.error("Error creating checkout session:", error);
+        toast.error("Failed to create checkout session");
         return;
       }
       
-      toast.success(`Successfully subscribed to ${plan.name} plan`);
-      onPlanSelected();
+      // Redirect to Stripe checkout
+      if (data?.url) {
+        window.location.href = data.url;
+      }
     } catch (error) {
       console.error("Error in handleSelectPlan:", error);
       toast.error("An unexpected error occurred");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -210,8 +199,16 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
                     ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white' 
                     : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                 }`}
+                disabled={isProcessing}
               >
-                Choose {plan.name}
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>Choose {plan.name}</>
+                )}
               </Button>
 
               <div className="mt-8 space-y-4">
