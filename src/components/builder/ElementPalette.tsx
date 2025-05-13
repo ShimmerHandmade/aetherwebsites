@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   LayoutDashboard,
@@ -272,7 +273,7 @@ const elementCategories: ElementCategory[] = [
       {
         type: "particlesBackground",
         name: "Particles Background",
-        icon: "sparkle",
+        icon: "star",
         description: "Interactive particle animation background (Enterprise)",
         defaultProps: {
           hasAnimation: true,
@@ -285,7 +286,7 @@ const elementCategories: ElementCategory[] = [
       {
         type: "scrollReveal",
         name: "Scroll Reveal",
-        icon: "sparkle",
+        icon: "star",
         description: "Element that reveals on scroll (Enterprise)",
         defaultProps: {
           hasAnimation: true,
