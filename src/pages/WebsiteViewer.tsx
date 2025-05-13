@@ -129,7 +129,7 @@ const WebsiteViewer = () => {
       onSave={() => {}}
     >
       <div className="w-full min-h-screen">
-        <div className="mx-auto max-w-[1920px]">
+        <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
           <BuilderContent isPreviewMode={true} />
         </div>
       </div>

@@ -39,7 +39,7 @@ const FooterPropertyEditor: React.FC<PropertyEditorProps> = ({
     <div className="space-y-4">
       <ContentPropertyEditor 
         content={element.content} 
-        onContentChange={onContentChange} 
+        onContentChange={onContentChange || (() => {})} 
       />
       
       <div className="space-y-2">

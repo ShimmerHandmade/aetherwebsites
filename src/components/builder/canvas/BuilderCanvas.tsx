@@ -24,7 +24,7 @@ const BuilderCanvas: React.FC<{isPreviewMode: boolean}> = ({ isPreviewMode }) =>
     <CanvasDragDropHandler 
       isPreviewMode={isPreviewMode}
       onCanvasClick={handleCanvasClick}
-      className="builder-canvas w-full h-full overflow-auto bg-white px-4 py-4 md:px-6"
+      className="builder-canvas w-full h-full overflow-auto bg-white"
     >
       <PageCanvas 
         isPreviewMode={isPreviewMode}

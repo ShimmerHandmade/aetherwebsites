@@ -7,10 +7,11 @@ interface ElementProps {
 }
 
 const SpacerElement: React.FC<ElementProps> = ({ element }) => {
-  const height = element.props?.height === 'small' ? '4' : 
-                element.props?.height === 'large' ? '16' : '8';
+  // Use predefined classes instead of dynamic ones
+  const heightClass = element.props?.height === 'small' ? 'h-4' : 
+                element.props?.height === 'large' ? 'h-16' : 'h-8';
   
-  return <div className={`h-${height} w-full`}></div>;
+  return <div className={`${heightClass} w-full`}></div>;
 };
 
 export default SpacerElement;

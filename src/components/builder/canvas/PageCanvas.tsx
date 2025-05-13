@@ -116,7 +116,7 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
 
   return (
     <div className="w-full h-full bg-white overflow-auto">
-      <div className="mx-auto max-w-[1400px]">
+      <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         {elements.length > 0 ? (
           <div className="page-content">
             {elements.map((element, index) => (
