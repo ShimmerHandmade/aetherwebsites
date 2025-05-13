@@ -6,7 +6,7 @@ import BuilderNavbar from "@/components/builder/BuilderNavbar";
 import BuilderContent from "@/components/builder/BuilderContent";
 import { useWebsite } from "@/hooks/useWebsite";
 import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { v4 as uuidv4 } from "@/lib/uuid";
 
 // Declare global site settings interface for window
