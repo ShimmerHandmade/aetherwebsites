@@ -103,7 +103,8 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
     handleDeleteCategory,
     handleClearImage,
     setProducts,
-    setCategories
+    setCategories,
+    refreshData
   } = useProductManager(effectiveWebsiteId, rawProducts, rawCategories);
 
   // Set the products and categories once they're loaded
@@ -115,6 +116,27 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
       setCategories(rawCategories);
     }
   }, [rawProducts, rawCategories, setProducts, setCategories]);
+  
+  // Reload data after save/delete operations
+  const handleSuccessfulSave = async () => {
+    if (effectiveWebsiteId) {
+      const result = await fetchProducts(effectiveWebsiteId);
+      if (!result.error) {
+        setRawProducts(result.products);
+        setRawCategories(result.categories);
+      }
+    }
+  };
+  
+  const wrappedHandleSave = async () => {
+    await handleSave();
+    handleSuccessfulSave();
+  };
+  
+  const wrappedHandleDelete = async (id: string) => {
+    await handleDelete(id);
+    handleSuccessfulSave();
+  };
   
   const handleBackToBuilder = () => {
     if (editingProduct) {
@@ -190,10 +212,10 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
         newCategory={newCategory}
         imagePreview={imagePreview}
         onProductChange={setEditingProduct}
-        onSave={handleSave}
+        onSave={wrappedHandleSave}
         onCancel={handleCancel}
         onEdit={handleEdit}
-        onDelete={handleDelete}
+        onDelete={wrappedHandleDelete}
         onImageChange={handleImageChange}
         onClearImage={handleClearImage}
         onNewCategoryChange={setNewCategory}

@@ -1,8 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Product, UniqueCategory } from "@/types/product";
 import { saveProduct, deleteProduct } from "@/api/products";
 import { checkProductLimit } from "@/utils/planRestrictions";
+import { fetchProducts } from "@/api/products";
 
 export function useProductManager(
   websiteId: string | undefined,
@@ -39,6 +41,26 @@ export function useProductManager(
     
     return matchesSearch;
   });
+
+  // Function to refresh data from the server
+  const refreshData = async () => {
+    if (!websiteId) return;
+    
+    setIsLoading(true);
+    try {
+      const result = await fetchProducts(websiteId);
+      if (!result.error) {
+        setProducts(result.products);
+        setCategories(result.categories);
+      } else {
+        toast.error("Failed to refresh products");
+      }
+    } catch (error) {
+      console.error("Error refreshing products:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleAddNew = async () => {
     // Check if adding a new product would exceed the plan limit
@@ -152,8 +174,10 @@ export function useProductManager(
 
       if (result.success && result.product) {
         if (isAddingNew) {
-          setProducts([...products, result.product]);
+          // Add new product to local state (at the beginning for newest first)
+          setProducts([result.product, ...products]);
         } else {
+          // Update existing product in local state
           setProducts(products.map(p => p.id === result.product!.id ? result.product! : p));
         }
         
@@ -192,6 +216,7 @@ export function useProductManager(
       const result = await deleteProduct(id, websiteId);
       
       if (result.success) {
+        // Remove the deleted product from local state
         setProducts(products.filter(p => p.id !== id));
         toast.success("Product deleted");
         
@@ -262,6 +287,7 @@ export function useProductManager(
     handleClearImage,
     refreshCategoriesList,
     setProducts,
-    setCategories
+    setCategories,
+    refreshData
   };
 }

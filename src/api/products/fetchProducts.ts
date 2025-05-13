@@ -29,7 +29,8 @@ export const fetchProducts = async (websiteId: string): Promise<{
     const { data, error } = await supabase
       .from("products")
       .select("*")
-      .eq("website_id", websiteId);
+      .eq("website_id", websiteId)
+      .order('created_at', { ascending: false });  // Order by newest first
 
     if (error) {
       console.error("Error fetching products:", error);
@@ -40,7 +41,7 @@ export const fetchProducts = async (websiteId: string): Promise<{
       };
     }
 
-    console.log(`Fetched ${data?.length || 0} products:`, data);
+    console.log(`Fetched ${data?.length || 0} products successfully:`, data);
     
     // Extract unique categories - only include non-null categories
     const uniqueCategories = Array.from(
