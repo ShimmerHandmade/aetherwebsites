@@ -25,11 +25,11 @@ export const getUserPlan = async (): Promise<{
       };
     }
 
-    // Get user profile with plan info in a single query
+    // Get user profile with plan info without using a join
     // Use maybeSingle to avoid errors if no record is found
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("is_subscribed, subscription_end, plan_id, plans:plan_id(*)")
+      .select("is_subscribed, subscription_end, plan_id")
       .eq("id", user.id)
       .maybeSingle();
     
@@ -53,22 +53,18 @@ export const getUserPlan = async (): Promise<{
       };
     }
 
-    // Extract plan name from the joined data if available
+    // Fetch plan separately if we have a plan_id
     let planName = null;
-    // Add proper type checking to handle the case when plans could be null
-    if (profile.plans && typeof profile.plans === 'object' && profile.plans !== null) {
-      planName = profile.plans.name;
-    }
-    
-    // If no plan name was found in the join and we have a plan_id, fetch it separately
-    if (!planName && profile.plan_id) {
-      const { data: planData } = await supabase
+    if (profile.plan_id) {
+      const { data: planData, error: planError } = await supabase
         .from("plans")
         .select("name")
         .eq("id", profile.plan_id)
-        .single();
+        .maybeSingle();
       
-      planName = planData?.name || null;
+      if (!planError && planData) {
+        planName = planData.name;
+      }
     }
     
     // Check if subscription is active

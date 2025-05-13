@@ -10,6 +10,9 @@ export const openCustomerPortal = async (): Promise<{
   error?: string;
 }> => {
   try {
+    console.log("Opening customer portal...");
+    
+    // Call the edge function
     const { data, error } = await supabase.functions.invoke("customer-portal");
     
     if (error) {
@@ -25,8 +28,22 @@ export const openCustomerPortal = async (): Promise<{
       };
     }
     
+    if (!data || !data.url) {
+      console.error("No URL returned from customer portal");
+      toast({
+        title: "Error",
+        description: "Unable to generate subscription portal link",
+        variant: "destructive",
+      });
+      return {
+        url: null,
+        error: "No URL returned from customer portal"
+      };
+    }
+    
+    console.log("Customer portal URL generated successfully");
     return {
-      url: data?.url || null
+      url: data.url
     };
   } catch (err) {
     console.error("Error in openCustomerPortal:", err);

@@ -1,7 +1,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { getUserPlanRestrictions, PlanRestriction } from "@/utils/planRestrictions";
-import { getUserPlan } from "@/api/websites/getUserPlan";
+import { getUserPlanSimplified } from "@/api/websites/getUserPlanSimplified";
+import { toast } from "sonner";
 
 export interface PlanInfo {
   planName: string | null;
@@ -35,32 +36,19 @@ export const usePlanInfo = () => {
       if (initialLoadComplete.current) return;
       
       try {
-        // Get user's plan
-        const { data: planData, error: planError } = await getUserPlan();
-        
-        if (planError) {
-          console.error("Error fetching plan information:", planError);
-          if (isMounted.current) {
-            setPlanInfo(prev => ({
-              ...prev,
-              loading: false,
-              error: planError
-            }));
-          }
-          initialLoadComplete.current = true;
-          return;
-        }
+        // Use the simplified plan info function which avoids the database join issue
+        const planData = await getUserPlanSimplified();
         
         // Get plan restrictions
         const restrictions = await getUserPlanRestrictions();
         
-        if (planData) {
-          const isPremium = planData.name === "Professional" || planData.name === "Enterprise";
-          const isEnterprise = planData.name === "Enterprise";
+        if (planData && planData.isActive) {
+          const isPremium = planData.planName === "Professional" || planData.planName === "Enterprise";
+          const isEnterprise = planData.planName === "Enterprise";
           
           if (isMounted.current) {
             setPlanInfo({
-              planName: planData.name,
+              planName: planData.planName,
               restrictions,
               loading: false,
               error: null,
@@ -90,6 +78,8 @@ export const usePlanInfo = () => {
             loading: false,
             error: "Failed to load subscription information"
           }));
+          
+          toast.error("Failed to load plan information. Please try again later.");
         }
         initialLoadComplete.current = true;
       }
