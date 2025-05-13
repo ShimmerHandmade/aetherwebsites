@@ -28,7 +28,7 @@ export const getUserPlan = async (): Promise<{
     // Get user profile with plan information
     const { data: profile, error } = await supabase
       .from("profiles")
-      .select("*, plans:plan_id(*)")
+      .select("*, plans(*)")
       .eq("id", user.id)
       .single();
     
@@ -44,17 +44,17 @@ export const getUserPlan = async (): Promise<{
     const isSubscribed = profile.is_subscribed && 
       (!profile.subscription_end || new Date(profile.subscription_end) > new Date());
     
-    // Extract plan info from the profile
+    // Extract plan info from the profile - with careful null handling
     const planData = profile.plans;
     
-    // Handle the case where planData might be null or not have the expected structure
+    // Safely determine plan information
     let planName: string | null = null;
-    let planId = profile.plan_id;
+    let planId: string | null = profile.plan_id;
     
-    if (typeof planData === 'object' && planData !== null && 'name' in planData) {
+    // Only try to access planData.name if planData exists and has a name property
+    if (planData && typeof planData === 'object' && planData !== null && 'name' in planData) {
       planName = planData.name as string;
     }
-
     
     console.log("User plan data:", { planId, planName, isSubscribed });
     

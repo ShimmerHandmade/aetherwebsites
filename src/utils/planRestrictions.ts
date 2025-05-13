@@ -2,7 +2,7 @@
 import { Plan } from "@/api/websites";
 import { Profile } from "@/pages/Dashboard";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 
 export interface PlanRestriction {
   maxProducts: number;
@@ -68,13 +68,13 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
 
     const { data: profile, error } = await supabase
       .from("profiles")
-      .select("*, plans:plan_id(*)")
+      .select("*, plans(*)")
       .eq("id", user.id)
       .single();
     
     console.log("Profile data from DB:", profile);
     
-    if (error || !profile?.is_subscribed || !profile.plans || 
+    if (error || !profile?.is_subscribed || 
         (profile.subscription_end && new Date(profile.subscription_end) < new Date())) {
       console.log("No active subscription found, using default restrictions");
       return planRestrictions.default;
@@ -82,18 +82,21 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
 
     // Check if plans data is valid and has a name property
     const planData = profile.plans;
+    
+    // If no plan data, use default restrictions
     if (!planData) {
       console.log("No plan data found, using default restrictions");
       return planRestrictions.default;
     }
     
-    // Use non-null assertion since we've already checked planData is not null
-    const planName = typeof planData === 'object' && 'name' in planData! 
+    // Get the plan name with additional safeguards
+    const planName = planData && typeof planData === 'object' && 'name' in planData 
       ? (planData as any).name as string 
       : 'default';
     
     console.log("Plan name:", planName);
     
+    // Check if this plan exists in our restrictions mapping
     if (planName && planRestrictions[planName]) {
       console.log(`Using restrictions for plan: ${planName}`);
       return planRestrictions[planName];
@@ -119,7 +122,9 @@ export async function checkProductLimit(currentCount: number): Promise<boolean> 
   const belowLimit = currentCount < restrictions.maxProducts;
   
   if (!belowLimit) {
-    toast.error(`You've reached your plan's limit of ${restrictions.maxProducts} products`, {
+    toast({
+      variant: "destructive",
+      title: `You've reached your plan's limit of ${restrictions.maxProducts} products`, 
       description: "Upgrade your plan to add more products"
     });
   }
@@ -138,7 +143,7 @@ export async function getUserPlanName(): Promise<string | null> {
 
     const { data: profile, error } = await supabase
       .from("profiles")
-      .select("*, plans:plan_id(*)")
+      .select("*, plans(*)")
       .eq("id", user.id)
       .single();
     
@@ -149,7 +154,7 @@ export async function getUserPlanName(): Promise<string | null> {
       return null;
     }
     
-    if (!profile?.is_subscribed || !profile.plans || 
+    if (!profile?.is_subscribed || 
         (profile.subscription_end && new Date(profile.subscription_end) < new Date())) {
       console.log("No active subscription, returning null plan name");
       return null;
@@ -162,8 +167,8 @@ export async function getUserPlanName(): Promise<string | null> {
       return null;
     }
     
-    // Use non-null assertion since we've already checked planData is not null
-    const planName = typeof planData === 'object' && 'name' in planData! 
+    // Safely extract the plan name
+    const planName = typeof planData === 'object' && planData !== null && 'name' in planData 
       ? (planData as any).name as string 
       : null;
     
