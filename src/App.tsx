@@ -14,30 +14,37 @@ import PageSettings from "@/pages/builder/PageSettings";
 import SiteSettings from "@/pages/builder/SiteSettings";
 import NotFound from "@/pages/NotFound";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
+import ProductDetails from "@/pages/ProductDetails";
+import Cart from "@/pages/Cart";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
+import { CartProvider } from "@/contexts/CartContext";
 
 function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-react-theme">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/builder/:id" element={<Builder />} />
-          <Route path="/site/:id" element={<WebsiteViewer />} />
-          <Route path="/builder/:id/shop" element={<Shop />} />
-          <Route path="/builder/:id/products" element={<Products />} />
-          <Route path="/builder/:id/pages" element={<Pages />} />
-          <Route path="/builder/:id/page-settings" element={<PageSettings />} />
-          <Route path="/builder/:id/settings" element={<SiteSettings />} />
-          <Route path="/subscription-success" element={<SubscriptionSuccess />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-      <Toaster />
+      <CartProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/builder/:id" element={<Builder />} />
+            <Route path="/site/:id" element={<WebsiteViewer />} />
+            <Route path="/builder/:id/shop" element={<Shop />} />
+            <Route path="/builder/:id/products" element={<Products />} />
+            <Route path="/builder/:id/pages" element={<Pages />} />
+            <Route path="/builder/:id/page-settings" element={<PageSettings />} />
+            <Route path="/builder/:id/settings" element={<SiteSettings />} />
+            <Route path="/subscription-success" element={<SubscriptionSuccess />} />
+            <Route path="/product/:id" element={<ProductDetails />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+        <Toaster />
+      </CartProvider>
     </ThemeProvider>
   );
 }

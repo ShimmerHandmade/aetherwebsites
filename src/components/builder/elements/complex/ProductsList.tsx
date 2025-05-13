@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Store, ChevronLeft, ChevronRight, Tag, Truck, AlertCircle, PercentCircle } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +7,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 interface Product {
   id: string;
@@ -167,7 +167,7 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
           <div className={`grid ${getColumnClasses()} gap-6 mb-6`}>
             {products.map((product) => (
               <Card key={product.id} className={`overflow-hidden flex flex-col ${getCardStyle()}`}>
-                <div className="bg-gray-100 h-48 flex items-center justify-center overflow-hidden relative">
+                <Link to={`/product/${product.id}`} className="bg-gray-100 h-48 flex items-center justify-center overflow-hidden relative">
                   {product.image_url ? (
                     <img 
                       src={product.image_url} 
@@ -190,9 +190,11 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
                       <Badge className="bg-green-500">New</Badge>
                     )}
                   </div>
-                </div>
+                </Link>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">{product.name}</CardTitle>
+                  <Link to={`/product/${product.id}`}>
+                    <CardTitle className="text-lg hover:text-blue-600 transition-colors">{product.name}</CardTitle>
+                  </Link>
                   {product.category && (
                     <div className="flex items-center text-xs text-gray-500">
                       <Tag className="h-3 w-3 mr-1" />
