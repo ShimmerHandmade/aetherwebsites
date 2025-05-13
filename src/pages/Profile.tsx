@@ -18,10 +18,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import DashboardNavbar from "@/components/DashboardNavbar";
 import { Profile as ProfileType } from "@/pages/Dashboard";
-import SubscriptionManager from "@/components/SubscriptionManager";
+import PlanLimitsInfo from "@/components/PlanLimitsInfo";
 import PlanStatusBadge from "@/components/PlanStatusBadge";
-import { getUserPlan } from "@/api/websites/getUserPlan";
-import { checkSubscription } from "@/api/websites/checkSubscription";
+import { getUserPlan, openCustomerPortal, getUserPlanSimplified } from "@/api/websites";
+import SimplifiedSubscriptionDisplay from "@/components/SimplifiedSubscriptionDisplay";
 
 const profileSchema = z.object({
   full_name: z.string().min(2, { message: "Name must be at least 2 characters" }).optional(),
@@ -35,8 +35,17 @@ const Profile = () => {
   const [productCount, setProductCount] = useState(0);
   const [pageCount, setPageCount] = useState(0);
   const [planInfo, setPlanInfo] = useState<any>(null);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<any>(null);
-  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<{
+    planName: string | null;
+    subscriptionEnd: string | null;
+    isActive: boolean;
+  }>({
+    planName: null,
+    subscriptionEnd: null,
+    isActive: false
+  });
+  const [isManageLoading, setIsManageLoading] = useState(false);
   const isInitialLoadDone = useRef(false);
   const navigate = useNavigate();
 
@@ -48,7 +57,7 @@ const Profile = () => {
     },
   });
 
-  // Single effect for initial data loading - only runs once
+  // Effect for initial data loading - only runs once
   useEffect(() => {
     const loadData = async () => {
       if (isInitialLoadDone.current) return;
@@ -66,11 +75,10 @@ const Profile = () => {
         }
         
         // Load all data in parallel
-        const [profileData, statsData, planData, subscriptionData] = await Promise.all([
+        await Promise.all([
           fetchUserData(),
           fetchStatsData(),
-          fetchPlanData(),
-          fetchSubscriptionStatus()
+          fetchSubscriptionInfo()
         ]);
       } catch (error) {
         console.error("Initial data load error:", error);
@@ -83,44 +91,21 @@ const Profile = () => {
     loadData();
   }, [navigate]);
 
-  const fetchSubscriptionStatus = async () => {
+  const fetchSubscriptionInfo = async () => {
     try {
       setSubscriptionLoading(true);
-      const { success, subscribed, plan, error } = await checkSubscription();
-      
-      if (error) {
-        console.error("Error checking subscription:", error);
-        return null;
-      }
-      
-      const status = {
-        subscribed,
-        plan,
-        subscription_end: plan?.subscription_end || null
-      };
-      
-      setSubscriptionStatus(status);
-      return status;
+      const data = await getUserPlanSimplified();
+      setSubscriptionInfo(data);
+      return data;
     } catch (error) {
-      console.error("Error in fetchSubscriptionStatus:", error);
-      return null;
+      console.error("Error fetching subscription info:", error);
+      return {
+        planName: null,
+        subscriptionEnd: null,
+        isActive: false
+      };
     } finally {
       setSubscriptionLoading(false);
-    }
-  };
-
-  const fetchPlanData = async () => {
-    try {
-      const { data, error } = await getUserPlan();
-      if (error) {
-        console.error("Error fetching plan data:", error);
-        return null;
-      }
-      setPlanInfo(data);
-      return data;
-    } catch (err) {
-      console.error("Error in fetchPlanData:", err);
-      return null;
     }
   };
 
@@ -216,12 +201,31 @@ const Profile = () => {
     }
   };
 
+  const handleManageSubscription = async () => {
+    try {
+      setIsManageLoading(true);
+      const { url, error } = await openCustomerPortal();
+      
+      if (error) {
+        toast.error("Failed to access customer portal");
+        console.error("Error accessing customer portal:", error);
+        return;
+      }
+      
+      if (url) {
+        window.open(url, '_blank');
+        toast.info("Opening customer portal in a new tab");
+      }
+    } catch (error) {
+      console.error("Error opening customer portal:", error);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsManageLoading(false);
+    }
+  };
+
   const handleSubscriptionUpdated = async () => {
-    await Promise.all([
-      fetchUserData(),
-      fetchPlanData(),
-      fetchSubscriptionStatus()
-    ]);
+    await fetchSubscriptionInfo();
     toast.success("Subscription information updated");
   };
 
@@ -253,7 +257,7 @@ const Profile = () => {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold">Account Management</h1>
-            {planInfo && (
+            {subscriptionInfo.isActive && (
               <PlanStatusBadge className="text-sm px-3 py-1.5" />
             )}
           </div>
@@ -309,15 +313,25 @@ const Profile = () => {
               </Form>
             </div>
             
-            {/* Subscription Management - pass the pre-fetched subscription status */}
-            <SubscriptionManager 
-              profile={profile} 
-              productCount={productCount}
-              pageCount={pageCount}
-              onSubscriptionUpdated={handleSubscriptionUpdated}
-              subscriptionStatus={subscriptionStatus}
-              isLoading={subscriptionLoading}
-            />
+            {/* Simplified Subscription Display */}
+            <div>
+              <SimplifiedSubscriptionDisplay
+                loading={subscriptionLoading}
+                planName={subscriptionInfo.planName}
+                subscriptionEnd={subscriptionInfo.subscriptionEnd}
+                onManageClick={handleManageSubscription}
+                isManageLoading={isManageLoading}
+              />
+              
+              {!subscriptionLoading && (
+                <div className="mt-6">
+                  <PlanLimitsInfo 
+                    productCount={productCount}
+                    pageCount={pageCount}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </main>

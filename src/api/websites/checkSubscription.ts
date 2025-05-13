@@ -27,6 +27,8 @@ export const checkSubscription = async (): Promise<{
       };
     }
 
+    console.log("Subscription check response:", data);
+
     // Return the subscription status
     return {
       success: true,

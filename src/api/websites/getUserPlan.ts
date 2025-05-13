@@ -25,12 +25,13 @@ export const getUserPlan = async (): Promise<{
       };
     }
 
-    // Get user profile
+    // Get user profile with plan info in a single query
+    // Use maybeSingle to avoid errors if no record is found
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("is_subscribed, subscription_end, plan_id")
+      .select("is_subscribed, subscription_end, plan_id, plans:plan_id(*)")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
     
     if (profileError) {
       console.error("Error fetching user profile:", profileError);
@@ -39,8 +40,7 @@ export const getUserPlan = async (): Promise<{
         error: "Failed to fetch user profile information"
       };
     }
-
-    // If user has no plan, return default values
+    
     if (!profile || !profile.plan_id) {
       return {
         data: {
@@ -53,34 +53,38 @@ export const getUserPlan = async (): Promise<{
       };
     }
 
-    // Get plan details
-    const { data: planData, error: planError } = await supabase
-      .from("plans")
-      .select("name")
-      .eq("id", profile.plan_id)
-      .single();
+    // Extract plan name from the joined data if available
+    let planName = null;
+    if (profile.plans && typeof profile.plans === 'object' && profile.plans !== null) {
+      planName = profile.plans.name;
+    }
     
-    if (planError) {
-      console.error("Error fetching plan details:", planError);
-      return {
-        data: {
-          id: profile.plan_id,
-          name: null,
-          isSubscribed: !!profile.is_subscribed,
-          subscriptionEnd: profile.subscription_end
-        },
-        error: undefined
-      };
+    // If no plan name was found in the join and we have a plan_id, fetch it separately
+    if (!planName && profile.plan_id) {
+      const { data: planData } = await supabase
+        .from("plans")
+        .select("name")
+        .eq("id", profile.plan_id)
+        .single();
+      
+      planName = planData?.name || null;
     }
     
     // Check if subscription is active
     const isSubscribed = profile.is_subscribed && 
       (!profile.subscription_end || new Date(profile.subscription_end) > new Date());
     
+    console.log("Plan data retrieved:", {
+      id: profile.plan_id,
+      name: planName,
+      isSubscribed,
+      subscriptionEnd: profile.subscription_end
+    });
+    
     return {
       data: {
         id: profile.plan_id,
-        name: planData?.name || null,
+        name: planName,
         isSubscribed,
         subscriptionEnd: profile.subscription_end
       }

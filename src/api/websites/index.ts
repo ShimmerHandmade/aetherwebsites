@@ -6,3 +6,4 @@ export * from './getPlans';
 export * from './getUserPlan';
 export * from './checkSubscription';
 export * from './manageSubscription';
+export * from './getUserPlanSimplified';
