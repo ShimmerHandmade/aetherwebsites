@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -12,7 +13,7 @@ import {
   CardContent,
   CardFooter
 } from "@/components/ui/card";
-import { getPlans } from "@/api/websites";
+import { getPlans, openCustomerPortal } from "@/api/websites";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, CreditCard, CheckCircle2, ShoppingCart, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -94,7 +95,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
     
     try {
       setIsLoading(true);
-      const { data, error } = await supabase.functions.invoke("customer-portal");
+      const { url, error } = await openCustomerPortal();
       
       if (error) {
         toast.error("Failed to access customer portal");
@@ -103,8 +104,8 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
       }
       
       // Open customer portal in a new tab
-      if (data?.url) {
-        window.open(data.url, '_blank');
+      if (url) {
+        window.open(url, '_blank');
         toast.info("Opening customer portal in a new tab");
       }
     } catch (error) {

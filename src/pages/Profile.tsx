@@ -98,7 +98,7 @@ const Profile = () => {
       setProfile(data);
       form.reset({
         full_name: data.full_name || "",
-        email: data.email || "",
+        email: user.email || "",
       });
     } catch (error) {
       console.error("Error in fetchUserData:", error);
@@ -228,6 +228,7 @@ const Profile = () => {
                             <Input 
                               placeholder="example@email.com" 
                               disabled 
+                              className="bg-gray-100 cursor-not-allowed"
                               {...field} 
                             />
                           </FormControl>
