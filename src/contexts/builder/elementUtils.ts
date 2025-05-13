@@ -1,78 +1,54 @@
 
-import { BuilderElement } from "./types";
-import { v4 as uuidv4 } from "@/lib/uuid";
+import { BuilderElement } from './types';
 
-// Find an element by ID in a nested structure
-export const findElementById = (
-  id: string, 
-  elementList: BuilderElement[]
-): BuilderElement | null => {
-  for (const element of elementList) {
+// Helper function to generate a unique ID for elements
+export const generateElementId = (): string => {
+  return Math.random().toString(36).substring(2, 9);
+};
+
+// Helper function to check if an element is a premium element
+export const isPremiumElement = (elementType: string): boolean => {
+  const premiumElements = [
+    'PricingElement',
+    'FeatureTableElement',
+    'AnimatedHeroElement',
+    'TestimonialsCarouselElement',
+    'AdvancedGalleryElement',
+    'TeamMembersElement',
+    'StatisticsElement'
+  ];
+  
+  return premiumElements.includes(elementType);
+};
+
+// Helper function to check if an element is an enterprise-only element
+export const isEnterpriseElement = (elementType: string): boolean => {
+  const enterpriseElements = [
+    'CustomFormElement',
+    '3DModelElement',
+    'DataVisualizationElement',
+    'InteractiveMapElement'
+  ];
+  
+  return enterpriseElements.includes(elementType);
+};
+
+/**
+ * Helper function to find an element by ID in the elements tree
+ */
+export const findElementById = (elements: BuilderElement[], id: string): BuilderElement | null => {
+  for (const element of elements) {
     if (element.id === id) {
       return element;
     }
     
     if (element.children && element.children.length > 0) {
-      const foundInChildren = findElementById(id, element.children);
-      if (foundInChildren) {
-        return foundInChildren;
+      const found = findElementById(element.children, id);
+      if (found) {
+        return found;
       }
     }
   }
   
   return null;
-};
-
-// Update an element in a nested structure
-export const updateElementInTree = (
-  elements: BuilderElement[],
-  id: string,
-  updateFn: (element: BuilderElement) => BuilderElement
-): BuilderElement[] => {
-  return elements.map(element => {
-    if (element.id === id) {
-      return updateFn(element);
-    }
-    
-    if (element.children && element.children.length > 0) {
-      return {
-        ...element,
-        children: updateElementInTree(element.children, id, updateFn)
-      };
-    }
-    
-    return element;
-  });
-};
-
-// Remove an element from a nested structure
-export const removeElementFromTree = (
-  elements: BuilderElement[],
-  id: string
-): BuilderElement[] => {
-  return elements.filter(element => {
-    if (element.id === id) {
-      return false;
-    }
-    
-    if (element.children && element.children.length > 0) {
-      element.children = removeElementFromTree(element.children, id);
-    }
-    
-    return true;
-  });
-};
-
-// Clone an element and all its children with new IDs
-export const cloneElement = (element: BuilderElement): BuilderElement => {
-  const newElement = {
-    ...element,
-    id: uuidv4(),
-  };
-  
-  if (element.children && element.children.length > 0) {
-    newElement.children = element.children.map(child => cloneElement(child));
-  }
-  
-  return newElement;
 };

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useProductManager } from "@/hooks/useProductManager";
@@ -9,6 +8,8 @@ import PlanLimitsInfo from "@/components/PlanLimitsInfo";
 import { toast } from "sonner";
 import { fetchProducts } from "@/api/products";
 import { Product, UniqueCategory } from "@/types/product";
+import { usePlan } from "@/contexts/PlanContext";
+import { checkProductLimit } from "@/utils/planRestrictions";
 
 interface ProductManagerProps {
   websiteId?: string;
@@ -18,6 +19,7 @@ interface ProductManagerProps {
 const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuilder }) => {
   const { id: websiteIdParam } = useParams<{ id: string }>();
   const effectiveWebsiteId = websiteId || websiteIdParam;
+  const { planName, restrictions, loading: planLoading } = usePlan();
   
   // States for data management
   const [initialLoading, setInitialLoading] = useState(true);
@@ -31,7 +33,9 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
     websiteId,
     websiteIdParam,
     effectiveWebsiteId,
-    productsCount: rawProducts.length
+    productsCount: rawProducts.length,
+    planName,
+    productLimit: restrictions?.maxProducts
   });
   
   // Enhanced data loading function
@@ -56,7 +60,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
           description: result.error
         });
       } else {
-        console.log(`Successfully loaded ${result.products.length} products and ${result.categories.length} categories`);
+        console.log(`Successfully loaded ${result.products.length} products and ${result.categories.length}`);
         // Important: Set state with the new data
         setRawProducts(result.products);
         setRawCategories(result.categories);
@@ -95,7 +99,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
     setCurrentView,
     filteredProducts,
     categories,
-    handleAddNew,
+    handleAddNew: handleAddNewProduct,
     handleEdit,
     handleImageChange,
     handleAddCategory,
@@ -140,6 +144,21 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
     return deleteResult;
   };
   
+  const handleAddNew = async () => {
+    // Check if adding a new product would exceed the plan limit
+    const canAddProduct = await checkProductLimit(products.length);
+    
+    if (!canAddProduct) {
+      toast.error(`You've reached your plan's limit of ${restrictions?.maxProducts} products.`, {
+        description: `Upgrade to ${planName === 'Basic' ? 'Professional' : 'Enterprise'} plan for more products.`
+      });
+      return;
+    }
+    
+    // If within limits, proceed with adding new product
+    handleAddNewProduct();
+  };
+  
   const handleBackToBuilder = () => {
     if (editingProduct) {
       if (confirm("You have unsaved product changes. Are you sure you want to go back without saving?")) {
@@ -155,18 +174,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
   };
 
   // Determine if we should show loading state
-  const showLoading = initialLoading || isLoading;
-  
-  // Debug current state
-  console.log("Current product manager state:", {
-    initialLoading,
-    isLoading,
-    showLoading,
-    initialLoadError,
-    productsCount: products.length,
-    filteredProductsCount: filteredProducts.length,
-    rawProductsCount: rawProducts.length
-  });
+  const showLoading = initialLoading || isLoading || planLoading;
 
   return (
     <div className="h-full flex flex-col">
@@ -195,7 +203,10 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
             />
           </div>
           <div className="lg:col-span-1">
-            <PlanLimitsInfo productCount={products.length} />
+            <PlanLimitsInfo 
+              productCount={products.length} 
+              pageCount={0}
+            />
           </div>
         </div>
       )}
@@ -220,6 +231,10 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
         onClearImage={handleClearImage}
         onNewCategoryChange={setNewCategory}
         onAddCategory={handleAddCategory}
+        planInfo={{
+          maxProducts: restrictions?.maxProducts || 0,
+          currentCount: products.length
+        }}
       />
     </div>
   );

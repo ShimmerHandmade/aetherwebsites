@@ -7,6 +7,13 @@ import ProductGrid from "./ProductGrid";
 import ProductList from "./ProductList";
 import ProductForm from "./ProductForm";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+interface PlanLimitInfo {
+  maxProducts: number;
+  currentCount: number;
+}
 
 interface ProductContentProps {
   isLoading: boolean;
@@ -28,6 +35,7 @@ interface ProductContentProps {
   onClearImage: () => void;
   onNewCategoryChange: (category: string) => void;
   onAddCategory: () => void;
+  planInfo?: PlanLimitInfo;
 }
 
 const ProductContent: React.FC<ProductContentProps> = ({
@@ -49,14 +57,16 @@ const ProductContent: React.FC<ProductContentProps> = ({
   onImageChange,
   onClearImage,
   onNewCategoryChange,
-  onAddCategory
+  onAddCategory,
+  planInfo
 }) => {
   // Debug logs to track component rendering and props
   useEffect(() => {
     console.log("ProductContent rendering with products:", filteredProducts);
     console.log("Current loading state:", isLoading);
     console.log("Error state:", loadingError);
-  }, [filteredProducts, isLoading, loadingError]);
+    console.log("Plan info:", planInfo);
+  }, [filteredProducts, isLoading, loadingError, planInfo]);
 
   if (isLoading) {
     return (
@@ -110,38 +120,84 @@ const ProductContent: React.FC<ProductContentProps> = ({
     );
   }
 
+  // Display plan limits if we have that information
+  const showPlanLimits = planInfo && planInfo.maxProducts > 0;
+  const productUsagePercentage = showPlanLimits 
+    ? (planInfo.currentCount / planInfo.maxProducts) * 100
+    : 0;
+  const isNearLimit = productUsagePercentage >= 80;
+  const isAtLimit = planInfo?.currentCount >= planInfo?.maxProducts;
+
   return (
-    <ScrollArea className="flex-1 h-[calc(100%-100px)]">
-      {filteredProducts && filteredProducts.length > 0 ? (
-        currentView === "grid" ? (
-          <ProductGrid 
-            products={filteredProducts}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        ) : (
-          <ProductList
-            products={filteredProducts}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        )
-      ) : (
-        <div className="text-center py-8 text-gray-500">
-          <p className="mb-2">No products found.</p>
-          <p className="text-sm mb-4">
-            {!filteredProducts || filteredProducts.length === 0 ? (
-              <>You haven't added any products yet. Click "Add Product" to create your first product.</>
-            ) : (
-              <>Try a different search or add a new product.</>
+    <>
+      {showPlanLimits && (
+        <div className="px-4 mb-4">
+          <div className="bg-white p-3 rounded-md border shadow-sm">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm text-gray-600">
+                Products: {planInfo.currentCount} / {planInfo.maxProducts}
+              </span>
+              <span className="text-xs font-medium">
+                {Math.round(productUsagePercentage)}%
+              </span>
+            </div>
+            <Progress 
+              value={productUsagePercentage} 
+              className={`h-2 ${isNearLimit ? 'bg-amber-100' : ''}`}
+              indicatorClassName={isNearLimit ? 'bg-amber-500' : undefined}
+            />
+            
+            {isAtLimit && (
+              <Alert variant="destructive" className="mt-2 p-2">
+                <AlertDescription className="text-xs">
+                  You've reached your product limit. Upgrade your plan to add more products.
+                </AlertDescription>
+              </Alert>
             )}
-          </p>
-          <pre className="bg-gray-100 p-2 mt-4 rounded text-xs text-left overflow-auto max-h-32 mx-auto max-w-md">
-            Total products available: {filteredProducts ? filteredProducts.length : 0}
-          </pre>
+            
+            {!isAtLimit && isNearLimit && (
+              <Alert variant="warning" className="mt-2 p-2 bg-amber-50 border-amber-200 text-amber-800">
+                <AlertDescription className="text-xs">
+                  You're approaching your product limit. Consider upgrading your plan soon.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
         </div>
       )}
-    </ScrollArea>
+      
+      <ScrollArea className="flex-1 h-[calc(100%-100px)]">
+        {filteredProducts && filteredProducts.length > 0 ? (
+          currentView === "grid" ? (
+            <ProductGrid 
+              products={filteredProducts}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          ) : (
+            <ProductList
+              products={filteredProducts}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          )
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <p className="mb-2">No products found.</p>
+            <p className="text-sm mb-4">
+              {!filteredProducts || filteredProducts.length === 0 ? (
+                <>You haven't added any products yet. Click "Add Product" to create your first product.</>
+              ) : (
+                <>Try a different search or add a new product.</>
+              )}
+            </p>
+            <pre className="bg-gray-100 p-2 mt-4 rounded text-xs text-left overflow-auto max-h-32 mx-auto max-w-md">
+              Total products available: {filteredProducts ? filteredProducts.length : 0}
+            </pre>
+          </div>
+        )}
+      </ScrollArea>
+    </>
   );
 };
 

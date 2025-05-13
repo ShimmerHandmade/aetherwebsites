@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { getUserPlanRestrictions, PlanRestriction, getUserPlanName } from "@/utils/planRestrictions";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { usePlan } from "@/contexts/PlanContext";
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface PlanLimitsInfoProps {
   productCount?: number;
@@ -14,44 +15,31 @@ const PlanLimitsInfo: React.FC<PlanLimitsInfoProps> = ({
   productCount = 0, 
   pageCount = 0 
 }) => {
-  const [restrictions, setRestrictions] = useState<PlanRestriction | null>(null);
-  const [planName, setPlanName] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadPlanInfo = async () => {
-      try {
-        const [userRestrictions, userPlan] = await Promise.all([
-          getUserPlanRestrictions(),
-          getUserPlanName()
-        ]);
-        
-        setRestrictions(userRestrictions);
-        setPlanName(userPlan);
-      } catch (error) {
-        console.error("Error loading plan information:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadPlanInfo();
-  }, []);
+  const { planName, restrictions, loading, error, isPremium, isEnterprise } = usePlan();
 
   if (loading) {
     return (
-      <div className="p-4 border rounded-md animate-pulse bg-gray-50">
-        <div className="h-5 bg-gray-200 rounded w-1/3 mb-2"></div>
-        <div className="space-y-2">
-          <div className="h-4 bg-gray-200 rounded w-full"></div>
-          <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+      <div className="p-4 border rounded-md bg-gray-50 flex items-center justify-center h-40">
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-6 w-6 text-gray-400 animate-spin mb-2" />
+          <p className="text-sm text-gray-500">Loading plan information...</p>
         </div>
       </div>
     );
   }
 
-  if (!restrictions) {
-    return null;
+  if (error || !restrictions) {
+    return (
+      <div className="p-4 border rounded-md bg-gray-50">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            {error || "Failed to load plan information. Please try refreshing the page."}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   const productPercentage = (productCount / restrictions.maxProducts) * 100;
@@ -59,9 +47,16 @@ const PlanLimitsInfo: React.FC<PlanLimitsInfoProps> = ({
 
   return (
     <div className="bg-white p-4 rounded-lg border shadow-sm">
-      <h3 className="font-medium text-lg mb-2">
-        {planName ? `${planName} Plan Limits` : 'Free Plan Limits'}
-      </h3>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="font-medium text-lg">
+          {planName ? `${planName} Plan` : 'Free Plan'}
+        </h3>
+        {isPremium && (
+          <Badge variant={isEnterprise ? "default" : "secondary"} className={isEnterprise ? "bg-indigo-600" : ""}>
+            {isEnterprise ? "Enterprise" : "Premium"}
+          </Badge>
+        )}
+      </div>
       
       <div className="space-y-4">
         <div>
@@ -73,7 +68,11 @@ const PlanLimitsInfo: React.FC<PlanLimitsInfoProps> = ({
               {Math.round(productPercentage)}%
             </span>
           </div>
-          <Progress value={productPercentage} className="h-2" />
+          <Progress 
+            value={productPercentage} 
+            className={`h-2 ${productPercentage > 80 ? 'bg-amber-100' : ''}`}
+            indicatorClassName={productPercentage > 80 ? 'bg-amber-500' : undefined}
+          />
         </div>
         
         <div>
@@ -85,50 +84,54 @@ const PlanLimitsInfo: React.FC<PlanLimitsInfoProps> = ({
               {Math.round(pagePercentage)}%
             </span>
           </div>
-          <Progress value={pagePercentage} className="h-2" />
+          <Progress 
+            value={pagePercentage}
+            className={`h-2 ${pagePercentage > 80 ? 'bg-amber-100' : ''}`}
+            indicatorClassName={pagePercentage > 80 ? 'bg-amber-500' : undefined}
+          />
         </div>
 
-        <div className="mt-4 space-y-2">
-          <div className="text-sm flex items-center">
+        <div className="mt-4 grid grid-cols-2 gap-y-2 gap-x-4 text-sm">
+          <div className="flex items-center">
             {restrictions.allowCoupons ? 
               <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" /> : 
               <AlertCircle className="h-4 w-4 text-gray-400 mr-2" />}
             Coupon Codes
           </div>
           
-          <div className="text-sm flex items-center">
+          <div className="flex items-center">
             {restrictions.allowDiscounts ? 
               <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" /> : 
               <AlertCircle className="h-4 w-4 text-gray-400 mr-2" />}
             Product Discounts
           </div>
           
-          <div className="text-sm flex items-center">
+          <div className="flex items-center">
             {restrictions.allowAdvancedAnalytics ? 
               <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" /> : 
               <AlertCircle className="h-4 w-4 text-gray-400 mr-2" />}
-            Advanced Analytics
+            Analytics
           </div>
           
-          <div className="text-sm flex items-center">
+          <div className="flex items-center">
             {restrictions.allowCustomDomain ? 
               <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" /> : 
               <AlertCircle className="h-4 w-4 text-gray-400 mr-2" />}
             Custom Domain
           </div>
           
-          <div className="text-sm flex items-center">
+          <div className="flex items-center">
             {restrictions.allowPremiumTemplates ? 
               <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" /> : 
               <AlertCircle className="h-4 w-4 text-gray-400 mr-2" />}
             Premium Templates
           </div>
           
-          <div className="text-sm flex items-center">
+          <div className="flex items-center">
             {restrictions.allowPremiumElements ? 
               <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" /> : 
               <AlertCircle className="h-4 w-4 text-gray-400 mr-2" />}
-            Premium UI Elements
+            Premium Elements
           </div>
         </div>
 

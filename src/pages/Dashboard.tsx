@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +9,8 @@ import WebsiteCard from "@/components/WebsiteCard";
 import PlansSection from "@/components/PlansSection";
 import OnboardingFlow from "@/components/OnboardingFlow";
 import RefreshSubscriptionButton from "@/components/RefreshSubscriptionButton";
+import PlanStatusBadge from "@/components/PlanStatusBadge";
+import { usePlan } from "@/contexts/PlanContext";
 
 export type Website = {
   id: string;
@@ -36,6 +37,7 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [newWebsiteId, setNewWebsiteId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { planName, restrictions } = usePlan();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -105,6 +107,14 @@ const Dashboard = () => {
 
   const createNewWebsite = async () => {
     try {
+      // Check if we've reached the website limit
+      if (restrictions && websites.length >= restrictions.maxPages) {
+        toast.error(`You've reached your plan's limit of ${restrictions.maxPages} websites`, {
+          description: `Upgrade your plan to create more websites`
+        });
+        return;
+      }
+      
       const name = `My Store ${websites.length + 1}`;
       
       const { data: { user } } = await supabase.auth.getUser();
@@ -174,17 +184,34 @@ const Dashboard = () => {
         ) : (
           <>
             <div className="flex justify-between items-center mb-8">
-              <h1 className="text-2xl font-bold">My Websites</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-bold">My Websites</h1>
+                <PlanStatusBadge />
+              </div>
               <div className="flex space-x-4">
                 <RefreshSubscriptionButton onRefresh={fetchUserData} />
                 <Button 
                   onClick={createNewWebsite}
                   className="bg-gradient-to-r from-indigo-600 to-purple-600"
+                  disabled={restrictions && websites.length >= restrictions.maxPages}
                 >
                   <Plus className="mr-2 h-4 w-4" /> New Website
                 </Button>
               </div>
             </div>
+
+            {/* Website limit warning */}
+            {restrictions && websites.length > 0 && websites.length >= (restrictions.maxPages * 0.8) && (
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-6">
+                <p className="text-amber-800 text-sm">
+                  {websites.length >= restrictions.maxPages ? (
+                    <>You've reached your plan's limit of {restrictions.maxPages} websites. Upgrade to add more.</>
+                  ) : (
+                    <>You're approaching your plan's limit of {restrictions.maxPages} websites ({websites.length}/{restrictions.maxPages}).</>
+                  )}
+                </p>
+              </div>
+            )}
 
             {isLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
