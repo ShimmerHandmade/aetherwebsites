@@ -54,6 +54,7 @@ export const useWebsite = (
   const [autoSaveEnabled] = useState(options?.autoSave ?? false);
   const autoSaveIntervalRef = useRef<number | null>(null);
   const pendingSaveRef = useRef<boolean>(false);
+  const forcedRefreshRef = useRef<boolean>(false);
   
   // Track whether we have content to save
   const contentToSaveRef = useRef<{
@@ -77,7 +78,7 @@ export const useWebsite = (
     checkAuth();
   }, [id, navigate]);
 
-  const fetchWebsite = async () => {
+  const fetchWebsite = async (forceRefresh = false) => {
     try {
       if (!id) return;
       
@@ -115,15 +116,23 @@ export const useWebsite = (
       setWebsiteName(data.name);
       setPageSettings(parsedSettings?.pageSettings || { title: data.name });
       
-      // Load elements from content if available
-      if (data.content && Array.isArray(data.content) && data.content.length > 0) {
-        // Use a proper type assertion with unknown as intermediate step
-        setElements(data.content as unknown as BuilderElement[]);
+      // Only update elements if this is an initial load or forced refresh
+      if (forcedRefreshRef.current || forceRefresh || !elements.length) {
+        // Load elements from content if available
+        if (data.content && Array.isArray(data.content) && data.content.length > 0) {
+          // Use a proper type assertion with unknown as intermediate step
+          setElements(data.content as unknown as BuilderElement[]);
+          console.log("Loaded elements from database", data.content);
+        }
       }
       
       // Reset unsaved changes flag after fetching fresh data
-      setUnsavedChanges(false);
+      if (forceRefresh) {
+        setUnsavedChanges(false);
+      }
+      
       setLastSaved(new Date());
+      forcedRefreshRef.current = false;
     } catch (error) {
       console.error("Error in fetchWebsite:", error);
       toast.error("Error loading website");
@@ -171,6 +180,7 @@ export const useWebsite = (
       };
       
       console.log("Saving website with settings:", updatedSettings);
+      console.log("Saving elements:", contentToSave);
       
       const { error } = await supabase
         .from("websites")
@@ -189,13 +199,15 @@ export const useWebsite = (
       }
       
       // Update local state with the saved data to ensure consistency
-      setWebsite({
+      const updatedWebsite = {
         ...website,
         name: websiteName,
         content: contentToSave,
         pageSettings: settingsToSave,
         settings: updatedSettings
-      });
+      };
+      
+      setWebsite(updatedWebsite);
       setElements(contentToSave);
       setPageSettings(settingsToSave);
       
@@ -231,7 +243,7 @@ export const useWebsite = (
         }, 500);
       }
     }
-  }, [id, website, isSaving, elements, pageSettings, websiteName]);
+  }, [id, website, isSaving, elements, pageSettings, websiteName, options?.autoSave]);
 
   const publishWebsite = async () => {
     try {
@@ -297,6 +309,7 @@ export const useWebsite = (
   }, [autoSaveEnabled, options?.autoSaveInterval, unsavedChanges, isSaving, id, website, saveWebsite]);
 
   const updateElements = (newElements: BuilderElement[]) => {
+    console.log("Updating elements:", newElements);
     setElements(newElements);
     setUnsavedChanges(true);
   };
@@ -311,6 +324,12 @@ export const useWebsite = (
     setUnsavedChanges(true);
   };
 
+  // Force refresh the website from the database
+  const refreshWebsite = useCallback(() => {
+    forcedRefreshRef.current = true;
+    return fetchWebsite(true);
+  }, []);
+
   return {
     website,
     isLoading,
@@ -324,7 +343,7 @@ export const useWebsite = (
     publishWebsite,
     updateElements,
     hasUnsavedChanges,
-    refreshWebsite: fetchWebsite,
+    refreshWebsite,
     lastSaved,
     unsavedChanges
   };

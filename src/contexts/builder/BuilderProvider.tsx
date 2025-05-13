@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { BuilderElement, PageSettings } from './types';
 import { isPremiumElement, isEnterpriseElement } from './elementUtils';
@@ -60,6 +59,7 @@ export const BuilderProvider = ({
   useEffect(() => {
     const handleSave = () => {
       if (onSave) {
+        console.log("Save requested with current elements:", elements);
         onSave(elements, pageSettings);
       }
     };
@@ -69,6 +69,21 @@ export const BuilderProvider = ({
       document.removeEventListener('save-website', handleSave);
     };
   }, [elements, pageSettings, onSave]);
+
+  // Update initial elements when they change from the parent component
+  useEffect(() => {
+    if (initialElements && initialElements.length > 0) {
+      console.log("Initializing builder with elements:", initialElements);
+      setElements(initialElements);
+    }
+  }, [initialElements]);
+
+  // Update initial page settings when they change
+  useEffect(() => {
+    if (initialPageSettings) {
+      setPageSettings(initialPageSettings);
+    }
+  }, [initialPageSettings]);
 
   // Notify content changes for auto-save
   const notifyContentChanged = () => {
@@ -212,46 +227,56 @@ export const BuilderProvider = ({
   };
 
   const deleteElement = (id: string) => {
-    // Handle deletion of top-level elements
+    // First try to handle deletion of top-level elements
     setElements(prevElements => {
-      const filteredElements = prevElements.filter(el => el.id !== id);
-      if (filteredElements.length !== prevElements.length) {
-        notifyContentChanged();
-        return filteredElements;
-      }
-      return prevElements;
-    });
-
-    // Handle deletion of nested elements
-    setElements(prevElements => {
-      let hasChanged = false;
+      const filteredTopLevelElements = prevElements.filter(el => el.id !== id);
       
-      const processElements = (elements: BuilderElement[]): BuilderElement[] => {
-        return elements.map(el => {
+      // If we found and removed a top-level element
+      if (filteredTopLevelElements.length !== prevElements.length) {
+        console.log(`Deleted top-level element with ID: ${id}`);
+        console.log("New elements array:", filteredTopLevelElements);
+        notifyContentChanged();
+        return filteredTopLevelElements;
+      }
+      
+      // If not a top-level element, let's check in children recursively
+      const processNestedElements = (elemArray: BuilderElement[]): [BuilderElement[], boolean] => {
+        let hasChanged = false;
+        const processed = elemArray.map(el => {
           if (el.children && el.children.length > 0) {
+            // First check direct children
             const filteredChildren = el.children.filter(child => child.id !== id);
+            
+            // If we found and removed a direct child
             if (filteredChildren.length !== el.children.length) {
               hasChanged = true;
-              return {
-                ...el,
-                children: filteredChildren
-              };
+              return { ...el, children: filteredChildren };
             }
-            return {
-              ...el,
-              children: processElements(el.children)
-            };
+            
+            // If not found in direct children, check deeper
+            const [processedChildren, deeperChange] = processNestedElements(el.children);
+            if (deeperChange) {
+              hasChanged = true;
+              return { ...el, children: processedChildren };
+            }
           }
           return el;
         });
+        
+        return [processed, hasChanged];
       };
       
-      const updatedElements = processElements(prevElements);
+      const [processedElements, hasChanged] = processNestedElements(prevElements);
       
       if (hasChanged) {
+        console.log(`Deleted nested element with ID: ${id}`);
+        console.log("New elements array:", processedElements);
         notifyContentChanged();
-        return updatedElements;
+        return processedElements;
       }
+      
+      // If we reach here, we couldn't find the element
+      console.warn(`Could not find element with ID: ${id} to delete`);
       return prevElements;
     });
 
@@ -439,6 +464,7 @@ export const BuilderProvider = ({
         setElements(prevElements => {
           const newElements = [...prevElements];
           newElements.splice(position[0] + 1, 0, duplicated);
+          notifyContentChanged();
           return newElements;
         });
       }

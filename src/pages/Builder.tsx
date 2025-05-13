@@ -33,7 +33,6 @@ const Builder = () => {
     setWebsiteName, 
     saveWebsite, 
     publishWebsite,
-    updateElements,
     refreshWebsite,
     lastSaved,
     unsavedChanges
@@ -48,6 +47,7 @@ const Builder = () => {
   const [currentPageElements, setCurrentPageElements] = useState<BuilderElement[]>([]);
   const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
   const [saveStatus, setSaveStatus] = useState<string>('');
+  const latestElementsRef = useRef<BuilderElement[]>([]);
 
   // Format the last saved time
   useEffect(() => {
@@ -157,6 +157,19 @@ const Builder = () => {
     console.log("Loaded page content for:", currentPageId, pageContent);
   }, [currentPageId, website, elements, websiteName]);
 
+  // Subscribe to builder content changes
+  useEffect(() => {
+    const handleContentChanged = () => {
+      setSaveStatus('Unsaved changes');
+    };
+    
+    document.addEventListener('builder-content-changed', handleContentChanged);
+    
+    return () => {
+      document.removeEventListener('builder-content-changed', handleContentChanged);
+    };
+  }, []);
+
   // Ensure Home, Shop and About pages exist
   const ensureRequiredPages = async () => {
     if (!website?.settings?.pages) return;
@@ -220,6 +233,7 @@ const Builder = () => {
     }
   };
 
+  // This function triggers the save event and gets the current builder elements
   const handleSave = async () => {
     if (!currentPageId || !website) return;
     
@@ -228,10 +242,12 @@ const Builder = () => {
     setSaveStatus('Saving...');
   };
 
+  // This is called when the BuilderProvider's onSave is triggered
   const handleSaveComplete = async (updatedElements: BuilderElement[], updatedPageSettings: PageSettings) => {
     if (!currentPageId || !website) return;
 
     console.log("Saving page content:", updatedElements);
+    latestElementsRef.current = updatedElements;
     
     // Create deep copies of objects to avoid mutation issues
     const pagesContent = JSON.parse(JSON.stringify(website.settings.pagesContent || {}));
@@ -260,7 +276,8 @@ const Builder = () => {
     }
     
     // Refresh website data after save to ensure consistency
-    refreshWebsite();
+    // Changed to false to avoid overwriting the changes we just made
+    // refreshWebsite();
   };
   
   const handleChangePage = (pageId: string) => {
