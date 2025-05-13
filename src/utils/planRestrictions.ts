@@ -66,6 +66,7 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return planRestrictions.default;
 
+    // Get the user profile first
     const { data: profile, error } = await supabase
       .from("profiles")
       .select("*, plans(*)")
@@ -80,12 +81,28 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
       return planRestrictions.default;
     }
 
-    // Check if plans data is valid and has a name property
+    // Check if plans data is valid
     const planData = profile.plans;
     
-    // If no plan data, use default restrictions
-    if (!planData) {
-      console.log("No plan data found, using default restrictions");
+    // If no plan data but we have a plan_id, try to get the plan directly
+    if ((!planData || typeof planData !== 'object') && profile.plan_id) {
+      console.log("No plan data in profile relation, trying direct query with plan_id:", profile.plan_id);
+      const { data: directPlan, error: directPlanError } = await supabase
+        .from("plans")
+        .select("name")
+        .eq("id", profile.plan_id)
+        .maybeSingle();
+        
+      if (!directPlanError && directPlan && directPlan.name) {
+        console.log("Retrieved plan name directly:", directPlan.name);
+        // Check if this plan exists in our restrictions mapping
+        if (planRestrictions[directPlan.name]) {
+          console.log(`Using restrictions for plan: ${directPlan.name}`);
+          return planRestrictions[directPlan.name];
+        }
+      }
+      
+      console.log("Could not find plan by ID, using default");
       return planRestrictions.default;
     }
     
@@ -141,6 +158,7 @@ export async function getUserPlanName(): Promise<string | null> {
       return null;
     }
 
+    // Get the user profile
     const { data: profile, error } = await supabase
       .from("profiles")
       .select("*, plans(*)")
@@ -160,17 +178,30 @@ export async function getUserPlanName(): Promise<string | null> {
       return null;
     }
 
-    // Check if plans data is valid and has a name property
+    // Try to get the plan name in multiple ways
+    let planName: string | null = null;
+    
+    // First try from the plans join
     const planData = profile.plans;
-    if (!planData) {
-      console.log("No plan data found, returning null plan name");
-      return null;
+    if (planData && typeof planData === 'object' && 'name' in planData) {
+      planName = planData.name as string;
+      console.log("Got plan name from joined data:", planName);
     }
     
-    // Safely extract the plan name
-    const planName = typeof planData === 'object' && planData !== null && 'name' in planData 
-      ? (planData as any).name as string 
-      : null;
+    // If that failed but we have a plan_id, try direct query
+    if (!planName && profile.plan_id) {
+      console.log("Trying direct query for plan name with ID:", profile.plan_id);
+      const { data: directPlan, error: planError } = await supabase
+        .from("plans")
+        .select("name")
+        .eq("id", profile.plan_id)
+        .maybeSingle();
+        
+      if (!planError && directPlan) {
+        planName = directPlan.name;
+        console.log("Got plan name from direct query:", planName);
+      }
+    }
     
     console.log("Returning plan name:", planName);
     return planName;

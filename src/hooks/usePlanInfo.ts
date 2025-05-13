@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { getUserPlanRestrictions, PlanRestriction, getUserPlanName } from "@/utils/planRestrictions";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface PlanInfo {
   planName: string | null;
@@ -28,6 +29,28 @@ export const usePlanInfo = () => {
     const fetchPlanInfo = async () => {
       try {
         console.log("Fetching plan information...");
+
+        // Try to get the plan ID directly first
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.log("No authenticated user found");
+          setPlanInfo(prev => ({
+            ...prev,
+            loading: false,
+            error: "Not authenticated"
+          }));
+          return;
+        }
+
+        // Query profile directly to check plan_id
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("plan_id, is_subscribed")
+          .eq("id", user.id)
+          .single();
+
+        console.log("Profile data from direct query:", profile);
+
         const [restrictions, planName] = await Promise.all([
           getUserPlanRestrictions(),
           getUserPlanName()

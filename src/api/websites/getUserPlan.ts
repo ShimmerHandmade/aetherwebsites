@@ -47,13 +47,26 @@ export const getUserPlan = async (): Promise<{
     // Extract plan info from the profile - with careful null handling
     const planData = profile.plans;
     
-    // Safely determine plan information
+    // Safely determine plan information with enhanced null checking
     let planName: string | null = null;
     let planId: string | null = profile.plan_id;
     
-    // Only try to access planData.name if planData exists and has a name property
-    if (planData && typeof planData === 'object' && planData !== null && 'name' in planData) {
+    // Only try to access planData properties if it's a non-null object with a name property
+    if (planData !== null && typeof planData === 'object' && 'name' in planData) {
       planName = planData.name as string;
+    } else if (planId) {
+      // If planData is not available but we have a planId, try to get the plan name directly
+      // This helps with plans purchased before the feature was implemented
+      const { data: directPlan } = await supabase
+        .from("plans")
+        .select("name")
+        .eq("id", planId)
+        .maybeSingle();
+      
+      if (directPlan) {
+        planName = directPlan.name;
+        console.log("Retrieved plan name directly:", planName);
+      }
     }
     
     console.log("User plan data:", { planId, planName, isSubscribed });
