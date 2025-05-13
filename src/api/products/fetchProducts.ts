@@ -11,8 +11,9 @@ export const fetchProducts = async (websiteId: string): Promise<{
   error?: string;
 }> => {
   try {
-    const { data: session } = await supabase.auth.getSession();
-    if (!session.session) {
+    // First check if we have an active session
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
       console.log("No active session found when fetching products");
       return { 
         products: [], 
@@ -23,14 +24,12 @@ export const fetchProducts = async (websiteId: string): Promise<{
 
     console.log(`Fetching products for website ID: ${websiteId}`);
     
-    // Improve logging to help debug the query
-    console.log("Making Supabase query with website_id:", websiteId);
-    
+    // Make the Supabase query with improved error handling
     const { data, error } = await supabase
       .from("products")
       .select("*")
       .eq("website_id", websiteId)
-      .order('created_at', { ascending: false });  // Order by newest first
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error("Error fetching products:", error);
@@ -43,7 +42,7 @@ export const fetchProducts = async (websiteId: string): Promise<{
 
     console.log(`Fetched ${data?.length || 0} products successfully:`, data);
     
-    // Extract unique categories - only include non-null categories
+    // Extract unique categories from products - only include non-null categories
     const uniqueCategories = Array.from(
       new Set(
         data
