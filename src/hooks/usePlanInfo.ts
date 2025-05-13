@@ -25,17 +25,22 @@ export const usePlanInfo = () => {
     isPremium: false,
     isEnterprise: false
   });
-  const [authChecked, setAuthChecked] = useState(false);
   const isMounted = useRef(true);
   const fetchingData = useRef(false);
+  const authChecked = useRef(false);
+  const initialLoadComplete = useRef(false);
 
-  // First check authentication
+  // Single useEffect to handle the entire data fetching flow
   useEffect(() => {
-    const checkAuth = async () => {
-      if (fetchingData.current) return;
+    const controller = new AbortController();
+    
+    const loadPlanInfo = async () => {
+      // Prevent concurrent fetches and avoid refetching if already loaded
+      if (fetchingData.current || initialLoadComplete.current) return;
+      fetchingData.current = true;
       
       try {
-        fetchingData.current = true;
+        // Step 1: Check authentication
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
@@ -47,43 +52,13 @@ export const usePlanInfo = () => {
               error: "Not authenticated"
             }));
           }
+          initialLoadComplete.current = true;
+          return;
         }
-        
-        if (isMounted.current) {
-          setAuthChecked(!!user);
-        }
-      } catch (error) {
-        console.error("Error checking authentication:", error);
-        if (isMounted.current) {
-          setAuthChecked(true); // Set to true to allow next effect to run
-          setPlanInfo(prev => ({
-            ...prev,
-            loading: false,
-            error: "Authentication check failed"
-          }));
-        }
-      } finally {
-        fetchingData.current = false;
-      }
-    };
-    
-    checkAuth();
-    
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
 
-  // Then fetch plan information if authenticated - using the direct API call
-  useEffect(() => {
-    if (!authChecked || fetchingData.current) return;
-    
-    const fetchPlanInfo = async () => {
-      if (fetchingData.current) return;
-      fetchingData.current = true;
-      
-      try {
-        // Use the getUserPlan API instead of direct database queries
+        authChecked.current = true;
+        
+        // Step 2: Get user's plan
         const { data: planData, error: planError } = await getUserPlan();
         
         if (planError) {
@@ -95,18 +70,18 @@ export const usePlanInfo = () => {
               error: planError
             }));
           }
+          initialLoadComplete.current = true;
           return;
         }
         
-        // Get restrictions regardless of plan status
+        // Step 3: Get plan restrictions
         const restrictions = await getUserPlanRestrictions();
         
-        // Determine plan status based on the API response
         if (planData) {
           const isPremium = planData.name === "Professional" || planData.name === "Enterprise";
           const isEnterprise = planData.name === "Enterprise";
           
-          if (isMounted.current) {
+          if (isMounted.current && !controller.signal.aborted) {
             setPlanInfo({
               planName: planData.name,
               restrictions,
@@ -117,8 +92,7 @@ export const usePlanInfo = () => {
             });
           }
         } else {
-          // No plan found
-          if (isMounted.current) {
+          if (isMounted.current && !controller.signal.aborted) {
             setPlanInfo({
               planName: null,
               restrictions,
@@ -129,26 +103,30 @@ export const usePlanInfo = () => {
             });
           }
         }
+        
+        initialLoadComplete.current = true;
       } catch (error) {
-        console.error("Error in fetchPlanInfo:", error);
-        if (isMounted.current) {
+        console.error("Error in usePlanInfo:", error);
+        if (isMounted.current && !controller.signal.aborted) {
           setPlanInfo(prev => ({
             ...prev,
             loading: false,
             error: "Failed to load subscription information"
           }));
         }
+        initialLoadComplete.current = true;
       } finally {
         fetchingData.current = false;
       }
     };
 
-    fetchPlanInfo();
+    loadPlanInfo();
     
     return () => {
       isMounted.current = false;
+      controller.abort();
     };
-  }, [authChecked]); // Only depends on authChecked, not any other state
+  }, []); // Only run on mount, no dependencies
 
   return planInfo;
 };

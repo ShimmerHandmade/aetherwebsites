@@ -34,6 +34,7 @@ const Profile = () => {
   const [productCount, setProductCount] = useState(0);
   const [pageCount, setPageCount] = useState(0);
   const [planInfo, setPlanInfo] = useState<any>(null);
+  const isInitialLoadDone = useRef(false);
   const isFetchingRef = useRef(false);
   const navigate = useNavigate();
 
@@ -45,11 +46,14 @@ const Profile = () => {
     },
   });
 
+  // Single effect for initial load
   useEffect(() => {
-    const checkAuth = async () => {
+    if (isInitialLoadDone.current || isFetchingRef.current) return;
+    
+    const fetchInitialData = async () => {
       try {
-        if (isFetchingRef.current) return;
         isFetchingRef.current = true;
+        setIsLoading(true);
         
         const { data: { session } } = await supabase.auth.getSession();
         
@@ -59,20 +63,23 @@ const Profile = () => {
           return;
         }
         
-        await Promise.all([
+        const [profileData, statsData, planData] = await Promise.all([
           fetchUserData(),
           fetchStatsData(),
           fetchPlanData()
         ]);
+        
+        isInitialLoadDone.current = true;
       } catch (error) {
-        console.error("Auth check error:", error);
-        toast.error("Authentication error");
+        console.error("Initial data load error:", error);
+        toast.error("Failed to load profile data");
       } finally {
+        setIsLoading(false);
         isFetchingRef.current = false;
       }
     };
 
-    checkAuth();
+    fetchInitialData();
   }, [navigate]);
 
   const fetchPlanData = async () => {
@@ -80,20 +87,21 @@ const Profile = () => {
       const { data, error } = await getUserPlan();
       if (error) {
         console.error("Error fetching plan data:", error);
-        return;
+        return null;
       }
       setPlanInfo(data);
+      return data;
     } catch (err) {
       console.error("Error in fetchPlanData:", err);
+      return null;
     }
   };
 
   const fetchUserData = async () => {
     try {
-      setIsLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user) return;
+      if (!user) return null;
       
       const { data, error } = await supabase
         .from("profiles")
@@ -103,8 +111,7 @@ const Profile = () => {
       
       if (error) {
         console.error("Error fetching profile:", error);
-        toast.error("Failed to load profile information");
-        return;
+        return null;
       }
       
       setProfile(data);
@@ -112,18 +119,18 @@ const Profile = () => {
         full_name: data.full_name || "",
         email: user.email || "",
       });
+      
+      return data;
     } catch (error) {
       console.error("Error in fetchUserData:", error);
-      toast.error("An unexpected error occurred");
-    } finally {
-      setIsLoading(false);
+      return null;
     }
   };
 
   const fetchStatsData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) return null;
       
       // Count products
       const { count: productsCount, error: productsError } = await supabase
@@ -131,26 +138,24 @@ const Profile = () => {
         .select("id", { count: 'exact', head: true })
         .eq("user_id", user.id);
       
-      if (productsError) {
-        console.error("Error counting products:", productsError);
-      } else {
+      if (!productsError) {
         setProductCount(productsCount || 0);
       }
       
-      // Count pages (simplified, in a real app you would count pages from websites)
+      // Count pages (simplified)
       const { data: websites, error: websitesError } = await supabase
         .from("websites")
         .select("id")
         .eq("owner_id", user.id);
       
-      if (websitesError) {
-        console.error("Error fetching websites:", websitesError);
-      } else {
-        // This is a simplified example, in a real app you would count actual pages
+      if (!websitesError) {
         setPageCount(websites?.length || 0);
       }
+      
+      return { productsCount, websitesCount: websites?.length || 0 };
     } catch (error) {
       console.error("Error fetching stats:", error);
+      return null;
     }
   };
 
@@ -175,7 +180,7 @@ const Profile = () => {
       }
       
       toast.success("Profile updated successfully");
-      fetchUserData();
+      await fetchUserData();
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.error("An unexpected error occurred");
@@ -184,13 +189,15 @@ const Profile = () => {
     }
   };
 
-  const handleSubscriptionUpdated = () => {
-    fetchUserData();
-    fetchPlanData();
+  const handleSubscriptionUpdated = async () => {
+    await Promise.all([
+      fetchUserData(),
+      fetchPlanData()
+    ]);
     toast.success("Subscription information updated");
   };
 
-  // Loading state is fully controlled to prevent "flash of loading state"
+  // When loading, show a static loader to prevent flicker
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
