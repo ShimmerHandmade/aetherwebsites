@@ -1,5 +1,6 @@
+
 import React, { useState, useRef } from "react";
-import { useBuilder } from "@/contexts/builder";
+import { useBuilder } from "@/contexts/builder/BuilderProvider";
 import { v4 as uuidv4 } from "@/lib/uuid";
 
 interface CanvasDragDropHandlerProps {

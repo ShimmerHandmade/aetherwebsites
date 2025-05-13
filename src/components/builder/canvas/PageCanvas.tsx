@@ -1,6 +1,6 @@
 
 import React, { useEffect } from "react";
-import { useBuilder } from "@/contexts/BuilderContext";
+import { useBuilder } from "@/contexts/builder/BuilderProvider";
 import BuilderElement from "../BuilderElement";
 import EmptyCanvasPlaceholder from "./EmptyCanvasPlaceholder";
 import { v4 as uuidv4 } from "@/lib/uuid";
@@ -10,7 +10,7 @@ interface PageCanvasProps {
 }
 
 const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
-  const { elements, selectedElementId, addElement, loadElements } = useBuilder();
+  const { elements, selectedElementId, addElement, setElements } = useBuilder();
 
   // Effect to ensure every page has a header and footer
   useEffect(() => {
@@ -59,7 +59,7 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
         }
       ];
 
-      loadElements(defaultElements);
+      setElements(defaultElements);
     } else {
       // Check if header and footer exist
       const hasNavbar = elements.some(el => el.type === "navbar");

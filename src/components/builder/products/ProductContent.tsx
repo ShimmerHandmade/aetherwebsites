@@ -9,6 +9,7 @@ import ProductForm from "./ProductForm";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 interface PlanLimitInfo {
   maxProducts: number;
@@ -143,8 +144,7 @@ const ProductContent: React.FC<ProductContentProps> = ({
             </div>
             <Progress 
               value={productUsagePercentage} 
-              className={`h-2 ${isNearLimit ? 'bg-amber-100' : ''}`}
-              indicatorClassName={isNearLimit ? 'bg-amber-500' : undefined}
+              className={cn("h-2", isNearLimit ? "bg-amber-100" : "")}
             />
             
             {isAtLimit && (
@@ -156,7 +156,7 @@ const ProductContent: React.FC<ProductContentProps> = ({
             )}
             
             {!isAtLimit && isNearLimit && (
-              <Alert variant="warning" className="mt-2 p-2 bg-amber-50 border-amber-200 text-amber-800">
+              <Alert className="mt-2 p-2 bg-amber-50 border-amber-200 text-amber-800">
                 <AlertDescription className="text-xs">
                   You're approaching your product limit. Consider upgrading your plan soon.
                 </AlertDescription>

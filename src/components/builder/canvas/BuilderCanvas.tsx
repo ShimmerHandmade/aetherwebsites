@@ -1,6 +1,6 @@
 
 import React from "react";
-import { useBuilder } from "@/contexts/builder";
+import { useBuilder } from "@/contexts/builder/BuilderProvider";
 import CanvasDragDropHandler from "./CanvasDragDropHandler";
 import PageCanvas from "./PageCanvas";
 import EmptyCanvasPlaceholder from "./EmptyCanvasPlaceholder";
@@ -10,11 +10,11 @@ interface BuilderCanvasProps {
 }
 
 const BuilderCanvas: React.FC<BuilderCanvasProps> = ({ isPreviewMode = false }) => {
-  const { elements, selectElement, selectedElementId } = useBuilder();
+  const { elements, setSelectedElementId, selectedElementId } = useBuilder();
 
   const handleCanvasClick = (e: React.MouseEvent) => {
     if (e.currentTarget === e.target && !isPreviewMode) {
-      selectElement(null);
+      setSelectedElementId(null);
     }
   };
 

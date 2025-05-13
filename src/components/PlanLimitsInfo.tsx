@@ -1,10 +1,10 @@
-
 import React from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { usePlan } from "@/contexts/PlanContext";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface PlanLimitsInfoProps {
   productCount?: number;
@@ -70,8 +70,7 @@ const PlanLimitsInfo: React.FC<PlanLimitsInfoProps> = ({
           </div>
           <Progress 
             value={productPercentage} 
-            className={`h-2 ${productPercentage > 80 ? 'bg-amber-100' : ''}`}
-            indicatorClassName={productPercentage > 80 ? 'bg-amber-500' : undefined}
+            className={cn("h-2", productPercentage > 80 ? "bg-amber-100" : "")}
           />
         </div>
         
@@ -86,8 +85,7 @@ const PlanLimitsInfo: React.FC<PlanLimitsInfoProps> = ({
           </div>
           <Progress 
             value={pagePercentage}
-            className={`h-2 ${pagePercentage > 80 ? 'bg-amber-100' : ''}`}
-            indicatorClassName={pagePercentage > 80 ? 'bg-amber-500' : undefined}
+            className={cn("h-2", pagePercentage > 80 ? "bg-amber-100" : "")}
           />
         </div>
 
