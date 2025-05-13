@@ -1,7 +1,7 @@
 
 import { toast as sonerToast } from "sonner";
 
-type ToastProps = {
+export type ToastProps = {
   title?: string;
   description?: string;
   variant?: "default" | "destructive";

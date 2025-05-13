@@ -7,7 +7,7 @@ import { RichTextEditorProps } from "./types";
 import { useToast } from "@/hooks/use-toast";
 
 export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
-  ({ value, onChange, className, id, ...props }, ref) => {
+  ({ value, onChange, className, id, noToast = false, ...props }, ref) => {
     const [activeFormat, setActiveFormat] = React.useState<string[]>([]);
     const [headingLevel, setHeadingLevel] = React.useState<string>("paragraph");
     const editorRef = React.useRef<HTMLTextAreaElement>(null);
@@ -26,10 +26,9 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
       } else {
         setActiveFormat([...activeFormat, format]);
         // Give feedback when format is applied
-        if (!props.noToast) {
+        if (!noToast) {
           toast({
-            description: `${format.charAt(0).toUpperCase() + format.slice(1)} formatting applied`,
-            duration: 1500,
+            description: `${format.charAt(0).toUpperCase() + format.slice(1)} formatting applied`
           });
         }
       }
@@ -37,10 +36,9 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
 
     const setHeading = (level: string) => {
       setHeadingLevel(level);
-      if (!props.noToast) {
+      if (!noToast) {
         toast({
-          description: `Heading set to ${level}`,
-          duration: 1500,
+          description: `Heading set to ${level}`
         });
       }
     };

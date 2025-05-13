@@ -4,6 +4,7 @@ export interface RichTextEditorProps {
   onChange: (value: string) => void;
   className?: string;
   id?: string;
+  noToast?: boolean;
 }
 
 export interface ToolbarButtonProps {
