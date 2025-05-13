@@ -98,8 +98,17 @@ serve(async (req) => {
         .eq("id", user.id);
     }
 
-    // Create subscription price
-    const price = billing_type === 'monthly' ? plan.monthly_price : plan.annual_price;
+    // Calculate price in cents for Stripe
+    // Convert decimal price (like 9.99) to cents integer (999)
+    const rawPrice = billing_type === 'monthly' ? plan.monthly_price : plan.annual_price;
+    const priceInCents = Math.round(Number(rawPrice) * 100);
+    
+    if (isNaN(priceInCents)) {
+      throw new Error(`Invalid price format: ${rawPrice}`);
+    }
+    
+    logStep("Price calculated", { rawPrice, priceInCents });
+    
     const priceId = billing_type === 'monthly' ? 
       plan.stripe_monthly_price_id : 
       plan.stripe_annual_price_id;
@@ -120,7 +129,7 @@ serve(async (req) => {
                 name: `${plan.name} Plan (${billing_type === 'monthly' ? 'Monthly' : 'Annual'})`,
                 description: plan.description || `${plan.name} subscription plan`,
               },
-              unit_amount: price,
+              unit_amount: priceInCents, // Use the converted price in cents
               recurring: {
                 interval: billing_type === 'monthly' ? 'month' : 'year',
               },
