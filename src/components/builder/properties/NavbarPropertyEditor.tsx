@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Plus, X } from "lucide-react";
 import ContentPropertyEditor from "./ContentPropertyEditor";
+import { Switch } from "@/components/ui/switch";
 
 const NavbarPropertyEditor: React.FC<PropertyEditorProps> = ({
   element,
@@ -14,6 +15,7 @@ const NavbarPropertyEditor: React.FC<PropertyEditorProps> = ({
   onContentChange,
 }) => {
   const links = element.props?.links || [];
+  const showCartButton = element.props?.showCartButton !== false;
   
   const handleAddLink = () => {
     const newLinks = [...links, { text: "New Link", url: "#" }];
@@ -33,6 +35,10 @@ const NavbarPropertyEditor: React.FC<PropertyEditorProps> = ({
   const handleRemoveLink = (index: number) => {
     const newLinks = links.filter((_, i) => i !== index);
     onPropertyChange("links", newLinks);
+  };
+
+  const handleShowCartButtonChange = (checked: boolean) => {
+    onPropertyChange("showCartButton", checked);
   };
 
   return (
@@ -74,6 +80,15 @@ const NavbarPropertyEditor: React.FC<PropertyEditorProps> = ({
             <SelectItem value="dark">Dark</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <Switch
+          id="showCartButton"
+          checked={showCartButton}
+          onCheckedChange={handleShowCartButtonChange}
+        />
+        <Label htmlFor="showCartButton">Show Cart Button</Label>
       </div>
 
       <div className="space-y-2">

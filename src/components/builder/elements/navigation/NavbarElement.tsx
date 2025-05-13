@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { BuilderElement } from "@/contexts/BuilderContext";
 import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
+import CartButton from "@/components/CartButton";
 
 interface ElementProps {
   element: BuilderElement;
@@ -11,6 +12,7 @@ interface ElementProps {
 const NavbarElement: React.FC<ElementProps> = ({ element }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const siteName = element.props?.siteName || "Your Website";
+  const showCartButton = element.props?.showCartButton !== false;
   
   // Use the logo from element props, or fall back to the global site settings if available
   const logo = element.props?.logo || 
@@ -87,19 +89,23 @@ const NavbarElement: React.FC<ElementProps> = ({ element }) => {
             </ul>
           </nav>
           
-          <div className="md:hidden">
-            <button 
-              className={cn(
-                "p-2 rounded-md transition-colors",
-                variant === 'dark' || variant === 'primary' || variant === 'accent' ? 
-                  'text-white/80 hover:bg-white/10 hover:text-white' : 
-                  'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-              )}
-              aria-label="Menu"
-              onClick={toggleMobileMenu}
-            >
-              <Menu className="h-6 w-6" />
-            </button>
+          <div className="flex items-center space-x-2">
+            {showCartButton && <CartButton variant={variant === 'dark' || variant === 'primary' || variant === 'accent' ? "ghost" : "outline"} size="icon" className="text-inherit" />}
+            
+            <div className="md:hidden">
+              <button 
+                className={cn(
+                  "p-2 rounded-md transition-colors",
+                  variant === 'dark' || variant === 'primary' || variant === 'accent' ? 
+                    'text-white/80 hover:bg-white/10 hover:text-white' : 
+                    'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                )}
+                aria-label="Menu"
+                onClick={toggleMobileMenu}
+              >
+                <Menu className="h-6 w-6" />
+              </button>
+            </div>
           </div>
         </div>
 
