@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useBuilder } from "@/contexts/builder/BuilderProvider";
 import BuilderElement from "../BuilderElement";
@@ -82,7 +81,8 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
             variant: "default"
           }
         };
-        addElement(navbarElement, 0); // Add at the beginning
+        // Changed from passing a number (0) to passing null as parentId with 0 as the index
+        addElement(navbarElement, null);
       }
 
       // Add footer if missing

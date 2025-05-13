@@ -1,7 +1,6 @@
 
 export * from './types';
-export * from './BuilderProvider'; // This already exports useBuilder
+export * from './BuilderProvider'; // This exports useBuilder and BuilderProvider
 export * from './elementUtils';
 
-// Re-export the renamed hook for backward compatibility
-export { useBuilderContext } from './useBuilder';
+// No need to re-export useBuilderContext since useBuilder is already exported from BuilderProvider

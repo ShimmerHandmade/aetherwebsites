@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { BuilderElement, PageSettings } from './types';
 import { isPremiumElement, isEnterpriseElement } from './elementUtils';
@@ -16,10 +15,20 @@ interface BuilderContextType {
   setHoveredElementId: (id: string | null) => void;
   setIsDraggingOver: (isDragging: boolean) => void;
   setPageSettings: (settings: PageSettings) => void;
-  addElement: (element: BuilderElement, parentId?: string | null) => void;
+  addElement: (element: BuilderElement, indexOrParentId?: number | string | null, containerId?: string) => void;
   updateElement: (id: string, updates: Partial<BuilderElement>) => void;
   deleteElement: (id: string) => void;
   canAddElement: (elementType: string) => boolean;
+  
+  // Add the missing methods that components are using
+  findElementById: (id: string) => BuilderElement | null;
+  removeElement: (id: string) => void;
+  selectElement: (id: string | null) => void;
+  duplicateElement: (id: string) => void;
+  moveElement: (sourceIndex: number, destinationIndex: number, parentId?: string) => void;
+  moveElementUp: (id: string) => void;
+  moveElementDown: (id: string) => void;
+  updatePageSettings: (settings: Partial<PageSettings>) => void;
 }
 
 export const BuilderContext = createContext<BuilderContextType | null>(null);
@@ -59,7 +68,39 @@ export const BuilderProvider = ({
     };
   }, [elements, pageSettings, onSave]);
 
-  const addElement = (element: BuilderElement, parentId: string | null = null) => {
+  // Helper to find an element by its ID anywhere in the element tree
+  const findElementById = (id: string): BuilderElement | null => {
+    // Check top level elements
+    const topLevelElement = elements.find(el => el.id === id);
+    if (topLevelElement) return topLevelElement;
+
+    // Recursively search through nested elements
+    const searchNestedElements = (elementsArray: BuilderElement[]): BuilderElement | null => {
+      for (const element of elementsArray) {
+        if (element.id === id) return element;
+        if (element.children && element.children.length > 0) {
+          const found = searchNestedElements(element.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    return searchNestedElements(elements);
+  };
+
+  // For backward compatibility
+  const selectElement = (id: string | null) => {
+    setSelectedElementId(id);
+  };
+
+  // For backward compatibility
+  const removeElement = (id: string) => {
+    deleteElement(id);
+  };
+
+  // Add element with support for both index and parent ID
+  const addElement = (element: BuilderElement, indexOrParentId: number | string | null = null, containerId?: string) => {
     // Check if this is a premium element that the user doesn't have access to
     if ((isPremiumElement(element.type) && !isPremium) || 
         (isEnterpriseElement(element.type) && !isEnterprise)) {
@@ -69,7 +110,20 @@ export const BuilderProvider = ({
       });
       return;
     }
+
+    // If it's a number, treat it as an index for inserting at that position
+    if (typeof indexOrParentId === 'number') {
+      setElements(prevElements => {
+        const newElements = [...prevElements];
+        newElements.splice(indexOrParentId, 0, element);
+        return newElements;
+      });
+      return;
+    }
   
+    // Otherwise, treat it as a parentId
+    const parentId = indexOrParentId as string | null;
+    
     if (parentId) {
       // Add as a child of the specified parent
       setElements(prevElements =>
@@ -175,6 +229,180 @@ export const BuilderProvider = ({
     }
   };
 
+  // Move element from one position to another
+  const moveElement = (sourceIndex: number, destinationIndex: number, parentId?: string) => {
+    // Handle top-level elements if no parentId specified
+    if (!parentId) {
+      setElements(prevElements => {
+        const newElements = [...prevElements];
+        const [removed] = newElements.splice(sourceIndex, 1);
+        newElements.splice(destinationIndex, 0, removed);
+        return newElements;
+      });
+      return;
+    }
+    
+    // Handle movement within a container
+    setElements(prevElements => 
+      prevElements.map(el => {
+        if (el.id === parentId && el.children) {
+          const newChildren = [...el.children];
+          const [removed] = newChildren.splice(sourceIndex, 1);
+          newChildren.splice(destinationIndex, 0, removed);
+          return { ...el, children: newChildren };
+        } else if (el.children) {
+          // Search recursively
+          const findAndMove = (children: BuilderElement[]): BuilderElement[] => {
+            return children.map(child => {
+              if (child.id === parentId && child.children) {
+                const newChildren = [...child.children];
+                const [removed] = newChildren.splice(sourceIndex, 1);
+                newChildren.splice(destinationIndex, 0, removed);
+                return { ...child, children: newChildren };
+              } else if (child.children) {
+                return { ...child, children: findAndMove(child.children) };
+              }
+              return child;
+            });
+          };
+          return { ...el, children: findAndMove(el.children) };
+        }
+        return el;
+      })
+    );
+  };
+
+  // Move element up in its container
+  const moveElementUp = (id: string) => {
+    // Find the element and its parent
+    let parentId: string | null = null;
+    let index = -1;
+    
+    // Check if it's a top-level element
+    index = elements.findIndex(el => el.id === id);
+    if (index > 0) {
+      // Move up in the top-level array
+      moveElement(index, index - 1);
+      return;
+    }
+    
+    // It's a nested element, find its parent and position
+    const findElementPosition = (elementsArray: BuilderElement[], parent: string | null = null): [number, string | null] | null => {
+      for (let i = 0; i < elementsArray.length; i++) {
+        if (elementsArray[i].id === id) {
+          return [i, parent];
+        }
+        if (elementsArray[i].children && elementsArray[i].children.length > 0) {
+          const result = findElementPosition(elementsArray[i].children, elementsArray[i].id);
+          if (result) return result;
+        }
+      }
+      return null;
+    };
+    
+    const position = findElementPosition(elements);
+    if (position && position[0] > 0) {
+      // Move up within its parent container
+      moveElement(position[0], position[0] - 1, position[1]);
+    }
+  };
+  
+  // Move element down in its container
+  const moveElementDown = (id: string) => {
+    // Find the element and its parent
+    let parentId: string | null = null;
+    let index = -1;
+    
+    // Check if it's a top-level element
+    index = elements.findIndex(el => el.id === id);
+    if (index !== -1 && index < elements.length - 1) {
+      // Move down in the top-level array
+      moveElement(index, index + 1);
+      return;
+    }
+    
+    // It's a nested element, find its parent and position
+    const findElementPosition = (elementsArray: BuilderElement[], parent: string | null = null): [number, string | null, number] | null => {
+      for (let i = 0; i < elementsArray.length; i++) {
+        if (elementsArray[i].id === id) {
+          return [i, parent, elementsArray.length];
+        }
+        if (elementsArray[i].children && elementsArray[i].children.length > 0) {
+          const result = findElementPosition(elementsArray[i].children, elementsArray[i].id);
+          if (result) return result;
+        }
+      }
+      return null;
+    };
+    
+    const position = findElementPosition(elements);
+    if (position && position[0] < position[2] - 1) {
+      // Move down within its parent container
+      moveElement(position[0], position[0] + 1, position[1]);
+    }
+  };
+
+  // Duplicate an element
+  const duplicateElement = (id: string) => {
+    const element = findElementById(id);
+    if (!element) return;
+    
+    // Create a deep copy with new IDs
+    const createCopyWithNewIds = (el: BuilderElement): BuilderElement => {
+      const newId = `${el.id}-copy-${Math.random().toString(36).substr(2, 9)}`;
+      const copy = { ...el, id: newId };
+      
+      if (el.children && el.children.length > 0) {
+        copy.children = el.children.map(createCopyWithNewIds);
+      }
+      
+      return copy;
+    };
+    
+    const duplicated = createCopyWithNewIds(element);
+    
+    // Find where to insert the duplicate
+    const findElementPosition = (elementsArray: BuilderElement[], parent: string | null = null): [number, string | null] | null => {
+      for (let i = 0; i < elementsArray.length; i++) {
+        if (elementsArray[i].id === id) {
+          return [i, parent];
+        }
+        if (elementsArray[i].children && elementsArray[i].children.length > 0) {
+          const result = findElementPosition(elementsArray[i].children, elementsArray[i].id);
+          if (result) return result;
+        }
+      }
+      return null;
+    };
+    
+    const position = findElementPosition(elements);
+    if (position) {
+      // Add the duplicate right after the original
+      if (position[1]) {
+        addElement(duplicated, position[0] + 1, position[1]);
+      } else {
+        // It's a top-level element
+        setElements(prevElements => {
+          const newElements = [...prevElements];
+          newElements.splice(position[0] + 1, 0, duplicated);
+          return newElements;
+        });
+      }
+    }
+  };
+
+  // Update page settings
+  const updatePageSettings = (settings: Partial<PageSettings>) => {
+    setPageSettings(prev => ({
+      ...prev,
+      ...settings,
+      meta: {
+        ...(prev.meta || {}),
+        ...(settings.meta || {})
+      }
+    }));
+  };
+
   // Function to check if a user can add an element based on their plan
   const canAddElement = (elementType: string): boolean => {
     if (isPremiumElement(elementType) && !isPremium) {
@@ -204,7 +432,16 @@ export const BuilderProvider = ({
         addElement,
         updateElement,
         deleteElement,
-        canAddElement
+        canAddElement,
+        // Additional methods
+        findElementById,
+        removeElement,
+        selectElement,
+        duplicateElement,
+        moveElement,
+        moveElementUp,
+        moveElementDown,
+        updatePageSettings
       }}
     >
       {children}
