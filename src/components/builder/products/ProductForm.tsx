@@ -69,7 +69,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
             
             <div className="space-y-2">
               <Label htmlFor="product-description">Description</Label>
-              <TextArea
+              <Textarea
                 id="product-description"
                 value={product.description || ''}
                 onChange={(e) => onProductChange({...product, description: e.target.value})}

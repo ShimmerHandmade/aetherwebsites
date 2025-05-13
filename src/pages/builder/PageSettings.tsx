@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -170,7 +169,7 @@ const BuilderPageSettings = () => {
                   
                   <div className="space-y-2">
                     <Label htmlFor="page-description" className="text-sm font-medium">Meta Description</Label>
-                    <TextArea 
+                    <Textarea 
                       id="page-description" 
                       placeholder="A brief description of this page for search engines"
                       rows={3}
@@ -256,7 +255,7 @@ const BuilderPageSettings = () => {
                   
                   <div className="space-y-2">
                     <Label htmlFor="og-description" className="text-sm font-medium">Social Description</Label>
-                    <TextArea 
+                    <Textarea 
                       id="og-description" 
                       placeholder="Description for social media sharing"
                       rows={3}
