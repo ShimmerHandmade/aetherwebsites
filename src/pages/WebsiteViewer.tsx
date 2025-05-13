@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
 import BuilderContent from "@/components/builder/BuilderContent";
 import { useWebsite } from "@/hooks/useWebsite";
@@ -9,6 +9,8 @@ import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
 const WebsiteViewer = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  
   const { 
     website, 
     isLoading, 
@@ -20,20 +22,41 @@ const WebsiteViewer = () => {
   const [currentPageElements, setCurrentPageElements] = useState<BuilderElement[]>([]);
   const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
 
-  // Set current page to home page by default
+  // Get the current path to determine which page to show
+  const currentPath = location.pathname.replace(`/site/${id}`, '') || '/';
+
+  // Set current page based on the URL path
   useEffect(() => {
     if (website?.settings?.pages) {
-      // Default to home page
-      const homePage = website.settings.pages.find(page => page.isHomePage);
-      if (homePage) {
-        setCurrentPageId(homePage.id);
-        console.log("Home page found:", homePage);
-      } else if (website.settings.pages.length > 0) {
-        setCurrentPageId(website.settings.pages[0].id);
-        console.log("No home page found, using first page:", website.settings.pages[0]);
+      // If it's the root path, find the home page
+      if (currentPath === '/') {
+        const homePage = website.settings.pages.find(page => page.isHomePage);
+        if (homePage) {
+          setCurrentPageId(homePage.id);
+          console.log("Home page found:", homePage);
+        } else if (website.settings.pages.length > 0) {
+          setCurrentPageId(website.settings.pages[0].id);
+          console.log("No home page found, using first page:", website.settings.pages[0]);
+        }
+      } else {
+        // Find the page that matches the current path
+        const matchingPage = website.settings.pages.find(page => page.slug === currentPath);
+        if (matchingPage) {
+          setCurrentPageId(matchingPage.id);
+          console.log("Matched page by slug:", matchingPage);
+        } else {
+          // If no matching page, default to home
+          const homePage = website.settings.pages.find(page => page.isHomePage);
+          if (homePage) {
+            setCurrentPageId(homePage.id);
+            console.log("No matching page found, using home page instead");
+          } else if (website.settings.pages.length > 0) {
+            setCurrentPageId(website.settings.pages[0].id);
+          }
+        }
       }
     }
-  }, [website]);
+  }, [website, currentPath]);
 
   // Load page content when currentPageId changes
   useEffect(() => {
