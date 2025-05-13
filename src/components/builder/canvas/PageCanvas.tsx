@@ -115,31 +115,33 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
   }, [elements.length]); // Only run when elements array length changes
 
   return (
-    <div className="w-full h-full bg-white">
-      {elements.length > 0 ? (
-        <div className="page-content">
-          {elements.map((element, index) => (
-            <BuilderElement
-              key={`${element.id}-${index}`} // Adding index to key to force re-render when switching pages
-              element={element}
-              index={index}
-              selected={element.id === selectedElementId}
-              isPreviewMode={isPreviewMode}
-              canUseAnimations={canUseAnimations}
-              canUseEnterpriseAnimations={canUseEnterpriseAnimations}
-            />
-          ))}
-        </div>
-      ) : (
-        <EmptyCanvasPlaceholder isPreviewMode={isPreviewMode} />
-      )}
-      
-      {/* Add hover indicators for sections when not in preview mode */}
-      {!isPreviewMode && elements.length > 0 && (
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="section-indicators"></div>
-        </div>
-      )}
+    <div className="w-full h-full bg-white overflow-auto">
+      <div className="mx-auto max-w-[1400px]">
+        {elements.length > 0 ? (
+          <div className="page-content">
+            {elements.map((element, index) => (
+              <BuilderElement
+                key={`${element.id}-${index}`} // Adding index to key to force re-render when switching pages
+                element={element}
+                index={index}
+                selected={element.id === selectedElementId}
+                isPreviewMode={isPreviewMode}
+                canUseAnimations={canUseAnimations}
+                canUseEnterpriseAnimations={canUseEnterpriseAnimations}
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptyCanvasPlaceholder isPreviewMode={isPreviewMode} />
+        )}
+        
+        {/* Add hover indicators for sections when not in preview mode */}
+        {!isPreviewMode && elements.length > 0 && (
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="section-indicators"></div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

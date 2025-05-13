@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -28,6 +27,7 @@ const BuilderShop = () => {
   const [isPreviewMode, setIsPreviewMode] = React.useState(false);
   const [shopPageElements, setShopPageElements] = React.useState<BuilderElement[]>([]);
   const [shopPageSettings, setShopPageSettings] = React.useState<PageSettings | null>(null);
+  const [unsavedChanges, setUnsavedChanges] = React.useState(false);
 
   // Initialize shop page elements
   useEffect(() => {
@@ -170,7 +170,7 @@ const BuilderShop = () => {
   const handleBackToBuilder = () => {
     // If there are unsaved changes, ask for confirmation
     if (unsavedChanges) {
-      const confirmed = confirm("You have unsaved changes. Would you like to save before leaving?");
+      const confirmed = window.confirm("You have unsaved changes. Would you like to save before leaving?");
       if (confirmed) {
         // Save first, then navigate
         handleSave();
@@ -186,9 +186,6 @@ const BuilderShop = () => {
   };
 
   // Track unsaved changes
-  const [unsavedChanges, setUnsavedChanges] = React.useState(false);
-  
-  // Listen for changes that should mark the page as having unsaved changes
   useEffect(() => {
     const markAsUnsaved = () => setUnsavedChanges(true);
     const markAsSaved = () => setUnsavedChanges(false);
@@ -276,7 +273,9 @@ const BuilderShop = () => {
             onShopLinkClick={() => {}}
             onReturnToDashboard={handleReturnToDashboard}
           />
-          <BuilderContent isPreviewMode={isPreviewMode} />
+          <div className="mx-auto max-w-[1400px] px-4">
+            <BuilderContent isPreviewMode={isPreviewMode} />
+          </div>
         </BuilderLayout>
       </BuilderProvider>
     </div>
