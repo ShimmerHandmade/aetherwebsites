@@ -8,6 +8,7 @@ export interface BuilderElementProps {
   isPreviewMode: boolean;
   canUseAnimations?: boolean;
   canUseEnterpriseAnimations?: boolean;
+  parentId?: string;
 }
 
 export { ElementWrapper };

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from "react";
 import { useBuilder } from "@/contexts/builder";
 import { usePlan } from "@/contexts/PlanContext";
@@ -12,6 +11,8 @@ interface BuilderElementProps {
   selected: boolean;
   isPreviewMode?: boolean;
   parentId?: string;
+  canUseAnimations?: boolean;
+  canUseEnterpriseAnimations?: boolean;
 }
 
 export const ElementWrapper: React.FC<BuilderElementProps> = ({
@@ -20,6 +21,8 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   selected,
   isPreviewMode = false,
   parentId,
+  canUseAnimations,
+  canUseEnterpriseAnimations,
 }) => {
   const { selectElement, removeElement, duplicateElement, moveElementUp, moveElementDown } = useBuilder();
   const { isPremium, isEnterprise } = usePlan();
@@ -28,11 +31,13 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
 
   // Check if this is a premium animation element
   const isPremiumAnimationElement = element.props?.hasAnimation && (element.props?.animationType === 'premium' || element.props?.animationType === 'enterprise');
-  const canUseAnimations = isPremium || isEnterprise;
+  
+  // Use the props if provided, otherwise fallback to plan context
+  const canUseAnimationsProp = canUseAnimations !== undefined ? canUseAnimations : (isPremium || isEnterprise);
   
   // Check if this is an enterprise-only animation element
   const isEnterpriseAnimationElement = element.props?.hasAnimation && element.props?.animationType === 'enterprise';
-  const canUseEnterpriseAnimations = isEnterprise;
+  const canUseEnterpriseAnimationsProp = canUseEnterpriseAnimations !== undefined ? canUseEnterpriseAnimations : isEnterprise;
 
   const handleElementClick = (e: React.MouseEvent) => {
     if (!isPreviewMode) {
@@ -125,8 +130,8 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
     // Add premium animations if available
     if (isPreviewMode) {
       if (element.props?.hasAnimation) {
-        if ((element.props.animationType === 'premium' && canUseAnimations) || 
-            (element.props.animationType === 'enterprise' && canUseEnterpriseAnimations) || 
+        if ((element.props.animationType === 'premium' && canUseAnimationsProp) || 
+            (element.props.animationType === 'enterprise' && canUseEnterpriseAnimationsProp) || 
             element.props.animationType === 'basic') {
           switch (element.props.animationEffect) {
             case 'fade-in':
