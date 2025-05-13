@@ -43,14 +43,17 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Get user profile with Stripe customer ID
+    // Get user profile with Stripe customer ID - using eq() and maybeSingle() to avoid the error
     const { data: profile, error: profileError } = await supabaseClient
       .from("profiles")
       .select("stripe_customer_id")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
     
-    if (profileError) throw new Error(`Failed to get profile: ${profileError.message}`);
+    if (profileError) {
+      logStep("Error fetching profile", { error: profileError.message });
+      throw new Error(`Failed to get profile: ${profileError.message}`);
+    }
     
     const customerId = profile?.stripe_customer_id;
     if (!customerId) {
