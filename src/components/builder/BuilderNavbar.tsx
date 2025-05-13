@@ -48,7 +48,8 @@ interface BuilderNavbarProps {
   onChangePage: (pageId: string) => void;
   onShopLinkClick?: () => void;
   onReturnToDashboard?: () => void;
-  viewSiteUrl?: string; // Added this property to fix the type error
+  viewSiteUrl?: string;
+  saveStatus?: string; // Added save status prop
 }
 
 const BuilderNavbar = ({
@@ -66,7 +67,8 @@ const BuilderNavbar = ({
   onChangePage,
   onShopLinkClick,
   onReturnToDashboard,
-  viewSiteUrl // Added this prop to accept the viewSiteUrl value
+  viewSiteUrl,
+  saveStatus = ''
 }: BuilderNavbarProps) => {
   const [activeTab, setActiveTab] = React.useState("edit");
   const navigate = useNavigate();
@@ -177,6 +179,13 @@ const BuilderNavbar = ({
               Shop
             </Button>
           )}
+          
+          {/* Save status indicator */}
+          {saveStatus && (
+            <span className="text-xs text-gray-500 ml-2">
+              {saveStatus}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center space-x-2">
@@ -212,6 +221,8 @@ const BuilderNavbar = ({
             onClick={onSave}
             disabled={isSaving}
             className="flex items-center gap-1"
+            aria-label="Save website manually"
+            title={isSaving ? "Saving in progress..." : "Save website manually (changes are also auto-saved)"}
           >
             <Save className="h-4 w-4" />
             {isSaving ? "Saving..." : "Save"}

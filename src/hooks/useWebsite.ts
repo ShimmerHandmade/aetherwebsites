@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { NavigateFunction } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -32,7 +32,16 @@ interface WebsiteSettings {
   [key: string]: any;
 }
 
-export const useWebsite = (id: string | undefined, navigate: NavigateFunction) => {
+interface UseWebsiteOptions {
+  autoSave?: boolean;
+  autoSaveInterval?: number; // in milliseconds
+}
+
+export const useWebsite = (
+  id: string | undefined, 
+  navigate: NavigateFunction,
+  options?: UseWebsiteOptions
+) => {
   const [website, setWebsite] = useState<WebsiteData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -41,6 +50,17 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
   const [elements, setElements] = useState<BuilderElement[]>([]);
   const [pageSettings, setPageSettings] = useState<PageSettings | null>(null);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [autoSaveEnabled] = useState(options?.autoSave ?? false);
+  const autoSaveIntervalRef = useRef<number | null>(null);
+  const pendingSaveRef = useRef<boolean>(false);
+  
+  // Track whether we have content to save
+  const contentToSaveRef = useRef<{
+    elements?: BuilderElement[];
+    pageSettings?: PageSettings;
+    additionalSettings?: any;
+  } | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -103,6 +123,7 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
       
       // Reset unsaved changes flag after fetching fresh data
       setUnsavedChanges(false);
+      setLastSaved(new Date());
     } catch (error) {
       console.error("Error in fetchWebsite:", error);
       toast.error("Error loading website");
@@ -111,7 +132,7 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
     }
   };
 
-  const saveWebsite = async (
+  const saveWebsite = useCallback(async (
     updatedElements?: BuilderElement[], 
     updatedPageSettings?: PageSettings,
     additionalSettings?: any
@@ -119,7 +140,19 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
     try {
       if (!id || !website) {
         toast.error("No website to save");
-        return;
+        return false;
+      }
+      
+      // If we're already saving, store this save for later
+      if (isSaving) {
+        console.log("Save already in progress, queuing this save");
+        contentToSaveRef.current = {
+          elements: updatedElements,
+          pageSettings: updatedPageSettings,
+          additionalSettings
+        };
+        pendingSaveRef.current = true;
+        return false;
       }
       
       setIsSaving(true);
@@ -138,21 +171,21 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
       };
       
       console.log("Saving website with settings:", updatedSettings);
-      console.log("Content being saved:", contentToSave);
       
       const { error } = await supabase
         .from("websites")
         .update({ 
           name: websiteName,
           content: contentToSave as unknown as Json,
-          settings: updatedSettings as unknown as Json
+          settings: updatedSettings as unknown as Json,
+          updated_at: new Date().toISOString()
         })
         .eq("id", id);
       
       if (error) {
         toast.error("Failed to save website");
         console.error("Error saving website:", error);
-        return;
+        return false;
       }
       
       // Update local state with the saved data to ensure consistency
@@ -168,15 +201,37 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
       
       // Reset unsaved changes flag
       setUnsavedChanges(false);
+      setLastSaved(new Date());
       
-      toast.success("Website saved successfully");
+      // Only show manual save toast (not for auto-saves)
+      if (!options?.autoSave) {
+        toast.success("Website saved successfully");
+      }
+      
+      // Dispatch an event for any listeners
+      document.dispatchEvent(new CustomEvent('save-complete'));
+      
+      return true;
     } catch (error) {
       console.error("Error in saveWebsite:", error);
-      toast.error("An unexpected error occurred");
+      toast.error("An unexpected error occurred while saving");
+      return false;
     } finally {
       setIsSaving(false);
+      
+      // Process any pending saves that came in while we were saving
+      if (pendingSaveRef.current && contentToSaveRef.current) {
+        pendingSaveRef.current = false;
+        const { elements, pageSettings, additionalSettings } = contentToSaveRef.current;
+        contentToSaveRef.current = null;
+        
+        // Small delay before attempting the next save
+        setTimeout(() => {
+          saveWebsite(elements, pageSettings, additionalSettings);
+        }, 500);
+      }
     }
-  };
+  }, [id, website, isSaving, elements, pageSettings, websiteName]);
 
   const publishWebsite = async () => {
     try {
@@ -211,6 +266,36 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
     }
   };
 
+  // Set up auto save
+  useEffect(() => {
+    if (!autoSaveEnabled || !options?.autoSaveInterval) return;
+    
+    // Function to check if we need to auto-save
+    const checkAndAutoSave = () => {
+      if (unsavedChanges && !isSaving && id && website) {
+        console.log("Auto-saving website...");
+        saveWebsite();
+      }
+    };
+
+    // Clear any existing interval
+    if (autoSaveIntervalRef.current) {
+      window.clearInterval(autoSaveIntervalRef.current);
+    }
+    
+    // Set up new interval
+    autoSaveIntervalRef.current = window.setInterval(
+      checkAndAutoSave, 
+      options.autoSaveInterval
+    );
+
+    return () => {
+      if (autoSaveIntervalRef.current) {
+        window.clearInterval(autoSaveIntervalRef.current);
+      }
+    };
+  }, [autoSaveEnabled, options?.autoSaveInterval, unsavedChanges, isSaving, id, website, saveWebsite]);
+
   const updateElements = (newElements: BuilderElement[]) => {
     setElements(newElements);
     setUnsavedChanges(true);
@@ -239,6 +324,8 @@ export const useWebsite = (id: string | undefined, navigate: NavigateFunction) =
     publishWebsite,
     updateElements,
     hasUnsavedChanges,
-    refreshWebsite: fetchWebsite
+    refreshWebsite: fetchWebsite,
+    lastSaved,
+    unsavedChanges
   };
 };

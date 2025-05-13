@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -20,14 +21,61 @@ const BuilderShop = () => {
     isPublishing,
     websiteName, 
     saveWebsite,
-    refreshWebsite
-  } = useWebsite(id, navigate);
+    refreshWebsite,
+    lastSaved,
+    unsavedChanges
+  } = useWebsite(id, navigate, {
+    autoSave: true,
+    autoSaveInterval: 30000 // Auto-save every 30 seconds
+  });
   
   // Use state hooks from the Builder component
   const [isPreviewMode, setIsPreviewMode] = React.useState(false);
   const [shopPageElements, setShopPageElements] = React.useState<BuilderElement[]>([]);
   const [shopPageSettings, setShopPageSettings] = React.useState<PageSettings | null>(null);
-  const [unsavedChanges, setUnsavedChanges] = React.useState(false);
+  const [saveStatus, setSaveStatus] = React.useState<string>('');
+
+  // Format the last saved time
+  useEffect(() => {
+    if (!lastSaved) return;
+    
+    const updateSaveStatus = () => {
+      if (lastSaved) {
+        const now = new Date();
+        const diffInSeconds = Math.floor((now.getTime() - lastSaved.getTime()) / 1000);
+        
+        if (diffInSeconds < 60) {
+          setSaveStatus(`Saved ${diffInSeconds} seconds ago`);
+        } else if (diffInSeconds < 3600) {
+          const minutes = Math.floor(diffInSeconds / 60);
+          setSaveStatus(`Saved ${minutes} minute${minutes > 1 ? 's' : ''} ago`);
+        } else {
+          const formattedTime = lastSaved.toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          });
+          setSaveStatus(`Saved at ${formattedTime}`);
+        }
+      } else {
+        setSaveStatus('');
+      }
+    };
+    
+    updateSaveStatus();
+    
+    // Update the status every minute
+    const interval = setInterval(updateSaveStatus, 60000);
+    return () => clearInterval(interval);
+  }, [lastSaved]);
+
+  // Update save status when saving state changes
+  useEffect(() => {
+    if (isSaving) {
+      setSaveStatus('Saving...');
+    } else if (unsavedChanges) {
+      setSaveStatus('Unsaved changes');
+    }
+  }, [isSaving, unsavedChanges]);
 
   // Initialize shop page elements
   useEffect(() => {
@@ -135,6 +183,7 @@ const BuilderShop = () => {
   const handleSave = async () => {
     // Dispatch custom event to get latest elements from builder context
     document.dispatchEvent(new CustomEvent('save-website'));
+    setSaveStatus('Saving...');
   };
 
   const handleSaveComplete = async (elements: BuilderElement[], pageSettings: PageSettings) => {
@@ -154,7 +203,7 @@ const BuilderShop = () => {
     pagesSettings[shopPage.id] = pageSettings;
     
     // Save to database
-    await saveWebsite(
+    const success = await saveWebsite(
       website.content, 
       pageSettings, 
       {
@@ -162,6 +211,12 @@ const BuilderShop = () => {
         pagesSettings
       }
     );
+    
+    if (success) {
+      setSaveStatus(`Saved just now`);
+    } else {
+      setSaveStatus('Save failed');
+    }
     
     // Refresh website data after save
     refreshWebsite();
@@ -182,13 +237,30 @@ const BuilderShop = () => {
   };
   
   const handleReturnToDashboard = () => {
+    // If there are unsaved changes, ask for confirmation
+    if (unsavedChanges) {
+      const confirmed = window.confirm("You have unsaved changes. Would you like to save before leaving?");
+      if (confirmed) {
+        // Save first, then navigate
+        handleSave();
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 500);
+        return;
+      }
+    }
+    
     navigate('/dashboard');
   };
 
   // Track unsaved changes
   useEffect(() => {
-    const markAsUnsaved = () => setUnsavedChanges(true);
-    const markAsSaved = () => setUnsavedChanges(false);
+    const markAsUnsaved = () => {
+      setSaveStatus('Unsaved changes');
+    };
+    const markAsSaved = () => {
+      setSaveStatus('Saved just now');
+    };
     
     document.addEventListener('builder-content-changed', markAsUnsaved);
     document.addEventListener('save-complete', markAsSaved);
@@ -232,6 +304,14 @@ const BuilderShop = () => {
           Back to Builder
         </Button>
         <h2 className="text-lg font-medium">Shop Page Editor</h2>
+        
+        {/* Save status indicator */}
+        {saveStatus && (
+          <span className="text-xs text-gray-500 ml-4">
+            {saveStatus}
+          </span>
+        )}
+        
         <div className="ml-auto">
           <Button 
             variant="outline" 
@@ -272,6 +352,7 @@ const BuilderShop = () => {
             onChangePage={() => {}}
             onShopLinkClick={() => {}}
             onReturnToDashboard={handleReturnToDashboard}
+            saveStatus={saveStatus}
           />
           <div className="mx-auto max-w-[1400px] px-4">
             <BuilderContent isPreviewMode={isPreviewMode} />

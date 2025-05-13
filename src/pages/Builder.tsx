@@ -34,14 +34,62 @@ const Builder = () => {
     saveWebsite, 
     publishWebsite,
     updateElements,
-    refreshWebsite
-  } = useWebsite(id, navigate);
+    refreshWebsite,
+    lastSaved,
+    unsavedChanges
+  } = useWebsite(id, navigate, {
+    autoSave: true,
+    autoSaveInterval: 30000, // Auto-save every 30 seconds
+  });
   
   // Track preview mode state at this level
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [currentPageId, setCurrentPageId] = useState<string | null>(null);
   const [currentPageElements, setCurrentPageElements] = useState<BuilderElement[]>([]);
   const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
+  const [saveStatus, setSaveStatus] = useState<string>('');
+
+  // Format the last saved time
+  useEffect(() => {
+    if (!lastSaved) return;
+    
+    const updateSaveStatus = () => {
+      if (lastSaved) {
+        const now = new Date();
+        const diffInSeconds = Math.floor((now.getTime() - lastSaved.getTime()) / 1000);
+        
+        if (diffInSeconds < 60) {
+          setSaveStatus(`Saved ${diffInSeconds} seconds ago`);
+        } else if (diffInSeconds < 3600) {
+          const minutes = Math.floor(diffInSeconds / 60);
+          setSaveStatus(`Saved ${minutes} minute${minutes > 1 ? 's' : ''} ago`);
+        } else {
+          const formattedTime = lastSaved.toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          });
+          setSaveStatus(`Saved at ${formattedTime}`);
+        }
+      } else {
+        setSaveStatus('');
+      }
+    };
+    
+    updateSaveStatus();
+    
+    // Update the status every minute
+    const interval = setInterval(updateSaveStatus, 60000);
+    return () => clearInterval(interval);
+  }, [lastSaved]);
+
+  // Update save status when saving state changes
+  useEffect(() => {
+    if (isSaving) {
+      setSaveStatus('Saving...');
+    } else if (unsavedChanges) {
+      setSaveStatus('Unsaved changes');
+    }
+  }, [isSaving, unsavedChanges]);
 
   // Check URL params for preview mode
   useEffect(() => {
@@ -177,6 +225,7 @@ const Builder = () => {
     
     // Get the current elements from the builder context
     document.dispatchEvent(new CustomEvent('save-website'));
+    setSaveStatus('Saving...');
   };
 
   const handleSaveComplete = async (updatedElements: BuilderElement[], updatedPageSettings: PageSettings) => {
@@ -195,7 +244,7 @@ const Builder = () => {
     console.log("Saving content for page:", currentPageId, updatedElements);
     
     // Save to database
-    await saveWebsite(
+    const success = await saveWebsite(
       currentPageId === website.settings.pages?.find(p => p.isHomePage)?.id ? updatedElements : website.content, 
       updatedPageSettings, 
       {
@@ -203,6 +252,12 @@ const Builder = () => {
         pagesSettings
       }
     );
+    
+    if (success) {
+      setSaveStatus(`Saved just now`);
+    } else {
+      setSaveStatus('Save failed');
+    }
     
     // Refresh website data after save to ensure consistency
     refreshWebsite();
@@ -298,7 +353,8 @@ const Builder = () => {
           onChangePage={handleChangePage}
           onShopLinkClick={handleShopLinkClick}
           onReturnToDashboard={handleReturnToDashboard}
-          viewSiteUrl={`/site/${id}`} // This now matches the updated interface
+          viewSiteUrl={`/site/${id}`}
+          saveStatus={saveStatus}
         />
         <BuilderContent isPreviewMode={isPreviewMode} />
       </BuilderLayout>

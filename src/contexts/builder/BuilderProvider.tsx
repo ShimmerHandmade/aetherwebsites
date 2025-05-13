@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { BuilderElement, PageSettings } from './types';
 import { isPremiumElement, isEnterpriseElement } from './elementUtils';
@@ -55,6 +56,7 @@ export const BuilderProvider = ({
   // Get plan information
   const { isPremium, isEnterprise } = usePlan();
 
+  // Listen for save requests
   useEffect(() => {
     const handleSave = () => {
       if (onSave) {
@@ -67,6 +69,11 @@ export const BuilderProvider = ({
       document.removeEventListener('save-website', handleSave);
     };
   }, [elements, pageSettings, onSave]);
+
+  // Notify content changes for auto-save
+  const notifyContentChanged = () => {
+    document.dispatchEvent(new CustomEvent('builder-content-changed'));
+  };
 
   // Helper to find an element by its ID anywhere in the element tree
   const findElementById = (id: string): BuilderElement | null => {
@@ -116,6 +123,7 @@ export const BuilderProvider = ({
       setElements(prevElements => {
         const newElements = [...prevElements];
         newElements.splice(indexOrParentId, 0, element);
+        notifyContentChanged();
         return newElements;
       });
       return;
@@ -126,8 +134,8 @@ export const BuilderProvider = ({
     
     if (parentId) {
       // Add as a child of the specified parent
-      setElements(prevElements =>
-        prevElements.map(el => {
+      setElements(prevElements => {
+        const updatedElements = prevElements.map(el => {
           if (el.id === parentId) {
             return {
               ...el,
@@ -157,17 +165,23 @@ export const BuilderProvider = ({
             };
           }
           return el;
-        })
-      );
+        });
+        notifyContentChanged();
+        return updatedElements;
+      });
     } else {
       // Add as a top-level element
-      setElements(prevElements => [...prevElements, element]);
+      setElements(prevElements => {
+        const updatedElements = [...prevElements, element];
+        notifyContentChanged();
+        return updatedElements;
+      });
     }
   };
 
   const updateElement = (id: string, updates: Partial<BuilderElement>) => {
-    setElements(prevElements =>
-      prevElements.map(el => {
+    setElements(prevElements => {
+      const updatedElements = prevElements.map(el => {
         if (el.id === id) {
           return { ...el, ...updates };
         } else if (el.children && el.children.length > 0) {
@@ -191,37 +205,55 @@ export const BuilderProvider = ({
           };
         }
         return el;
-      })
-    );
+      });
+      notifyContentChanged();
+      return updatedElements;
+    });
   };
 
   const deleteElement = (id: string) => {
     // Handle deletion of top-level elements
-    setElements(prevElements => prevElements.filter(el => el.id !== id));
+    setElements(prevElements => {
+      const filteredElements = prevElements.filter(el => el.id !== id);
+      if (filteredElements.length !== prevElements.length) {
+        notifyContentChanged();
+        return filteredElements;
+      }
+      return prevElements;
+    });
 
     // Handle deletion of nested elements
-    setElements(prevElements =>
-      prevElements.map(el => {
-        if (el.children && el.children.length > 0) {
-          // Recursively search for the element to delete in the children
-          const findAndDeleteElement = (children: BuilderElement[]): BuilderElement[] => {
-            return children.filter(child => {
-              if (child.id === id) {
-                return false;
-              } else if (child.children && child.children.length > 0) {
-                child.children = findAndDeleteElement(child.children);
-              }
-              return true;
-            });
-          };
-          return {
-            ...el,
-            children: findAndDeleteElement(el.children)
-          };
-        }
-        return el;
-      })
-    );
+    setElements(prevElements => {
+      let hasChanged = false;
+      
+      const processElements = (elements: BuilderElement[]): BuilderElement[] => {
+        return elements.map(el => {
+          if (el.children && el.children.length > 0) {
+            const filteredChildren = el.children.filter(child => child.id !== id);
+            if (filteredChildren.length !== el.children.length) {
+              hasChanged = true;
+              return {
+                ...el,
+                children: filteredChildren
+              };
+            }
+            return {
+              ...el,
+              children: processElements(el.children)
+            };
+          }
+          return el;
+        });
+      };
+      
+      const updatedElements = processElements(prevElements);
+      
+      if (hasChanged) {
+        notifyContentChanged();
+        return updatedElements;
+      }
+      return prevElements;
+    });
 
     // Clear selection if the deleted element was selected
     if (selectedElementId === id) {
@@ -237,39 +269,61 @@ export const BuilderProvider = ({
         const newElements = [...prevElements];
         const [removed] = newElements.splice(sourceIndex, 1);
         newElements.splice(destinationIndex, 0, removed);
+        notifyContentChanged();
         return newElements;
       });
       return;
     }
     
     // Handle movement within a container
-    setElements(prevElements => 
-      prevElements.map(el => {
+    setElements(prevElements => {
+      let hasChanged = false;
+      
+      const updatedElements = prevElements.map(el => {
         if (el.id === parentId && el.children) {
+          hasChanged = true;
           const newChildren = [...el.children];
           const [removed] = newChildren.splice(sourceIndex, 1);
           newChildren.splice(destinationIndex, 0, removed);
           return { ...el, children: newChildren };
         } else if (el.children) {
           // Search recursively
-          const findAndMove = (children: BuilderElement[]): BuilderElement[] => {
-            return children.map(child => {
+          const findAndMove = (children: BuilderElement[]): [BuilderElement[], boolean] => {
+            let updated = false;
+            const updatedChildren = children.map(child => {
               if (child.id === parentId && child.children) {
+                updated = true;
                 const newChildren = [...child.children];
                 const [removed] = newChildren.splice(sourceIndex, 1);
                 newChildren.splice(destinationIndex, 0, removed);
                 return { ...child, children: newChildren };
               } else if (child.children) {
-                return { ...child, children: findAndMove(child.children) };
+                const [newChildren, childUpdated] = findAndMove(child.children);
+                if (childUpdated) {
+                  updated = true;
+                  return { ...child, children: newChildren };
+                }
               }
               return child;
             });
+            return [updatedChildren, updated];
           };
-          return { ...el, children: findAndMove(el.children) };
+          
+          const [newChildren, updated] = findAndMove(el.children);
+          if (updated) {
+            hasChanged = true;
+            return { ...el, children: newChildren };
+          }
         }
         return el;
-      })
-    );
+      });
+      
+      if (hasChanged) {
+        notifyContentChanged();
+        return updatedElements;
+      }
+      return prevElements;
+    });
   };
 
   // Move element up in its container
@@ -393,14 +447,18 @@ export const BuilderProvider = ({
 
   // Update page settings
   const updatePageSettings = (settings: Partial<PageSettings>) => {
-    setPageSettings(prev => ({
-      ...prev,
-      ...settings,
-      meta: {
-        ...(prev.meta || {}),
-        ...(settings.meta || {})
-      }
-    }));
+    setPageSettings(prev => {
+      const updatedSettings = {
+        ...prev,
+        ...settings,
+        meta: {
+          ...(prev.meta || {}),
+          ...(settings.meta || {})
+        }
+      };
+      notifyContentChanged();
+      return updatedSettings;
+    });
   };
 
   // Function to check if a user can add an element based on their plan
