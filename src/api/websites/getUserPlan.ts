@@ -49,7 +49,7 @@ export const getUserPlan = async (): Promise<{
     
     // Handle the case where planData might be null or not have the expected structure
     let planName: string | null = null;
-    if (planData && typeof planData === 'object' && planData !== null && 'name' in planData) {
+    if (planData && typeof planData === 'object' && 'name' in planData) {
       planName = planData.name;
     }
     
