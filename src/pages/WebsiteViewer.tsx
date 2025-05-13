@@ -1,10 +1,11 @@
 
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate, useLocation, Routes, Route } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
 import BuilderContent from "@/components/builder/BuilderContent";
 import { useWebsite } from "@/hooks/useWebsite";
 import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
+import Cart from "@/pages/Cart";
 
 const WebsiteViewer = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,8 +26,16 @@ const WebsiteViewer = () => {
   // Get the current path to determine which page to show
   const currentPath = location.pathname.replace(`/site/${id}`, '') || '/';
 
+  // Check if we're on the cart page
+  const isCartPage = currentPath === '/cart';
+
   // Set current page based on the URL path
   useEffect(() => {
+    if (isCartPage) {
+      // Don't need to set current page ID for cart page
+      return;
+    }
+
     if (website?.settings?.pages) {
       // If it's the root path, find the home page
       if (currentPath === '/') {
@@ -56,11 +65,11 @@ const WebsiteViewer = () => {
         }
       }
     }
-  }, [website, currentPath]);
+  }, [website, currentPath, isCartPage]);
 
   // Load page content when currentPageId changes
   useEffect(() => {
-    if (!website || !currentPageId) return;
+    if (!website || !currentPageId || isCartPage) return;
     
     // Get content for current page
     const pagesContent = website.settings.pagesContent || {};
@@ -87,7 +96,7 @@ const WebsiteViewer = () => {
     }
     
     setCurrentPageSettings(pageSettings);
-  }, [currentPageId, website, elements, websiteName]);
+  }, [currentPageId, website, elements, websiteName, isCartPage]);
 
   // Set global site settings for components to access
   useEffect(() => {
@@ -95,10 +104,11 @@ const WebsiteViewer = () => {
       // Make site settings available globally for components
       window.__SITE_SETTINGS__ = {
         logoUrl: website.settings.logoUrl,
+        siteId: id, // Add site ID to settings for cart routes
         // Add other global settings here as needed
       };
     }
-  }, [website?.settings]);
+  }, [website?.settings, id]);
 
   if (isLoading) {
     return (
@@ -117,6 +127,17 @@ const WebsiteViewer = () => {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-700 mb-2">Website not found</h2>
           <p className="text-gray-600 mb-6">The website you're looking for doesn't exist or you don't have permission to access it.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Render cart page when on the cart route
+  if (isCartPage) {
+    return (
+      <div className="w-full min-h-screen">
+        <div className="mx-auto max-w-[1920px]">
+          <Cart siteName={websiteName} siteId={id} />
         </div>
       </div>
     );

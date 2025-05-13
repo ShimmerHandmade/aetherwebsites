@@ -51,6 +51,20 @@ const NavbarElement: React.FC<ElementProps> = ({ element }) => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
+  // Get the current site URL to build site-specific cart URL
+  const getSiteCartUrl = () => {
+    // When in the website viewer, we use relative path
+    // The route structure is /site/:id/* so we want to maintain that base
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/site/')) {
+      // Extract the base site path (e.g., /site/123)
+      const baseSitePath = currentPath.split('/').slice(0, 3).join('/');
+      return `${baseSitePath}/cart`;
+    }
+    // Fallback to regular cart path
+    return '/cart';
+  };
+
   return (
     <header className={navbarStyles[variant as keyof typeof navbarStyles]}>
       <div className="container mx-auto p-4">
@@ -90,7 +104,14 @@ const NavbarElement: React.FC<ElementProps> = ({ element }) => {
           </nav>
           
           <div className="flex items-center space-x-2">
-            {showCartButton && <CartButton variant={variant === 'dark' || variant === 'primary' || variant === 'accent' ? "ghost" : "outline"} size="icon" className="text-inherit" />}
+            {showCartButton && (
+              <CartButton 
+                variant={variant === 'dark' || variant === 'primary' || variant === 'accent' ? "ghost" : "outline"} 
+                size="icon" 
+                className="text-inherit" 
+                siteCartUrl={getSiteCartUrl()}
+              />
+            )}
             
             <div className="md:hidden">
               <button 

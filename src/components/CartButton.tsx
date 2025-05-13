@@ -9,21 +9,34 @@ interface CartButtonProps {
   variant?: "default" | "outline" | "secondary" | "ghost" | "link";
   size?: "default" | "sm" | "lg" | "icon";
   className?: string;
+  siteCartUrl?: string; // New prop for site-specific cart URL
 }
 
 const CartButton: React.FC<CartButtonProps> = ({ 
   variant = "outline",
   size = "icon",
-  className = ""
+  className = "",
+  siteCartUrl
 }) => {
   const navigate = useNavigate();
   const { totalItems } = useCart();
+
+  const handleClick = () => {
+    if (siteCartUrl) {
+      // For site-specific cart URLs, we use window.location 
+      // because they might be in a different router context
+      window.location.href = siteCartUrl;
+    } else {
+      // For regular cart navigation within the main app
+      navigate('/cart');
+    }
+  };
 
   return (
     <Button 
       variant={variant} 
       size={size} 
-      onClick={() => navigate('/cart')}
+      onClick={handleClick}
       className={`relative ${className}`}
     >
       <ShoppingCart className="h-[1.2rem] w-[1.2rem]" />

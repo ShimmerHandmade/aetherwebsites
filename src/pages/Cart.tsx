@@ -3,14 +3,36 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Trash2 } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { CartItem } from "@/components/CartItem";
 import { Separator } from "@/components/ui/separator";
 
-const Cart = () => {
+interface CartProps {
+  siteName?: string;
+  siteId?: string;
+}
+
+const Cart: React.FC<CartProps> = ({ siteName, siteId }) => {
   const { items, clearCart, totalItems, subtotal } = useCart();
   const navigate = useNavigate();
+  
+  // Determine if this is a site-specific cart (viewed in WebsiteViewer)
+  const isSiteSpecificCart = !!siteId;
+
+  // Handle navigation back
+  const handleBackNavigation = () => {
+    if (isSiteSpecificCart) {
+      // Go back to the site home
+      window.location.href = `/site/${siteId}`;
+    } else {
+      // Go to main app home
+      navigate('/');
+    }
+  };
+
+  // Get display name - either from prop or default
+  const displayName = siteName || "ModernBuilder Store";
 
   return (
     <div className="min-h-screen bg-white">
@@ -18,10 +40,10 @@ const Cart = () => {
       <header className="bg-white shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold">ModernBuilder Store</h1>
+            <h1 className="text-xl font-semibold">{displayName}</h1>
             <Button 
               variant="ghost" 
-              onClick={() => navigate('/')}
+              onClick={handleBackNavigation}
             >
               Continue Shopping
             </Button>
@@ -40,7 +62,7 @@ const Cart = () => {
             <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-3" />
             <h3 className="text-xl font-medium text-gray-700 mb-2">Your cart is empty</h3>
             <p className="text-gray-500 mb-4">Looks like you haven't added any products to your cart yet.</p>
-            <Button onClick={() => navigate('/')}>Continue Shopping</Button>
+            <Button onClick={handleBackNavigation}>Continue Shopping</Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -60,7 +82,7 @@ const Cart = () => {
                 <div className="p-4 flex justify-between">
                   <Button 
                     variant="outline" 
-                    onClick={() => navigate('/')}
+                    onClick={handleBackNavigation}
                     className="flex items-center"
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -130,7 +152,7 @@ const Cart = () => {
       
       <footer className="bg-gray-100 mt-16">
         <div className="container mx-auto px-4 py-8">
-          <p className="text-center text-gray-600">© {new Date().getFullYear()} ModernBuilder. All rights reserved.</p>
+          <p className="text-center text-gray-600">© {new Date().getFullYear()} {displayName}. All rights reserved.</p>
         </div>
       </footer>
     </div>
