@@ -46,8 +46,9 @@ export const getUserPlan = async (): Promise<{
     
     // Extract plan info from the profile
     const planData = profile.plans;
+    // Handle the case where planData might be null
     const planName = planData && typeof planData === 'object' && 'name' in planData 
-      ? (planData as any).name 
+      ? planData.name 
       : null;
     const planId = profile.plan_id;
     
