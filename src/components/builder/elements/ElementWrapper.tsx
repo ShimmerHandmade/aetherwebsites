@@ -121,6 +121,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
     return style;
   };
 
+  // Render the element using the renderElement function
   const renderedElement = renderElement(element);
   
   // Some elements can't or shouldn't be draggable/editable
@@ -135,6 +136,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       data-element-id={element.id}
+      data-element-type={element.type}
     >
       {renderedElement}
       
