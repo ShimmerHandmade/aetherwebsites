@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ const Profile = () => {
   const [productCount, setProductCount] = useState(0);
   const [pageCount, setPageCount] = useState(0);
   const [planInfo, setPlanInfo] = useState<any>(null);
-  const [dataFetched, setDataFetched] = useState(false); // Flag to prevent multiple fetches
+  const isFetchingRef = useRef(false);
   const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof profileSchema>>({
@@ -47,24 +47,33 @@ const Profile = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        toast.error("Please log in to view your profile");
-        navigate("/auth");
-        return;
-      }
-      
-      if (!dataFetched) {
-        setDataFetched(true);
-        fetchUserData();
-        fetchStatsData();
-        fetchPlanData();
+      try {
+        if (isFetchingRef.current) return;
+        isFetchingRef.current = true;
+        
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          toast.error("Please log in to view your profile");
+          navigate("/auth");
+          return;
+        }
+        
+        await Promise.all([
+          fetchUserData(),
+          fetchStatsData(),
+          fetchPlanData()
+        ]);
+      } catch (error) {
+        console.error("Auth check error:", error);
+        toast.error("Authentication error");
+      } finally {
+        isFetchingRef.current = false;
       }
     };
 
     checkAuth();
-  }, [navigate, dataFetched]);
+  }, [navigate]);
 
   const fetchPlanData = async () => {
     try {

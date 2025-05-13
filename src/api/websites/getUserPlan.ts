@@ -19,17 +19,16 @@ export const getUserPlan = async (): Promise<{
     // Check for authenticated user
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      console.log("getUserPlan: No authenticated user found");
       return {
         data: null,
         error: "No authenticated user"
       };
     }
 
-    // Get user profile without joining plans table
+    // Get user profile
     const { data: profile, error } = await supabase
       .from("profiles")
-      .select("*")
+      .select("is_subscribed, subscription_end, plan_id")
       .eq("id", user.id)
       .single();
     
@@ -41,34 +40,33 @@ export const getUserPlan = async (): Promise<{
       };
     }
     
+    // If no plan_id, return early with default values
+    if (!profile.plan_id) {
+      return {
+        data: {
+          id: null,
+          name: null,
+          isSubscribed: false,
+          subscriptionEnd: null
+        }
+      };
+    }
+    
+    // Get plan details directly - using a separate query to avoid join issues
+    const { data: planData } = await supabase
+      .from("plans")
+      .select("name")
+      .eq("id", profile.plan_id)
+      .single();
+    
     // Check if subscription is active
     const isSubscribed = profile.is_subscribed && 
       (!profile.subscription_end || new Date(profile.subscription_end) > new Date());
     
-    // Get plan details if we have a plan_id
-    let planName = null;
-    const planId = profile.plan_id;
-    
-    if (planId) {
-      // Get the plan details directly
-      const { data: planData } = await supabase
-        .from("plans")
-        .select("name")
-        .eq("id", planId)
-        .maybeSingle();
-      
-      if (planData) {
-        planName = planData.name;
-        console.log("Retrieved plan name directly:", planName);
-      }
-    }
-    
-    console.log("User plan data:", { planId, planName, isSubscribed });
-    
     return {
       data: {
-        id: planId,
-        name: planName,
+        id: profile.plan_id,
+        name: planData?.name || null,
         isSubscribed,
         subscriptionEnd: profile.subscription_end
       }
