@@ -5,7 +5,11 @@ import EmptyCanvasPlaceholder from './EmptyCanvasPlaceholder';
 import PageCanvas from './PageCanvas';
 import { usePlan } from '@/contexts/PlanContext';
 
-const BuilderCanvas = () => {
+interface BuilderCanvasProps {
+  isPreviewMode?: boolean;
+}
+
+const BuilderCanvas: React.FC<BuilderCanvasProps> = ({ isPreviewMode = false }) => {
   const { elements, selectedElementId } = useBuilder();
   const { isPremium, isEnterprise } = usePlan();
 
@@ -18,9 +22,10 @@ const BuilderCanvas = () => {
   return (
     <div className="flex-1 bg-gray-100 overflow-auto">
       {isEmpty ? (
-        <EmptyCanvasPlaceholder />
+        <EmptyCanvasPlaceholder isPreviewMode={isPreviewMode} />
       ) : (
         <PageCanvas 
+          isPreviewMode={isPreviewMode}
           canUseAnimations={canUseAnimations}
           canUseEnterpriseAnimations={canUseEnterpriseAnimations}
         />

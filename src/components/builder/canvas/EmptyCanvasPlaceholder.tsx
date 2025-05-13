@@ -2,7 +2,7 @@
 import React from "react";
 import { BookOpen, Layout } from "lucide-react";
 
-interface EmptyCanvasPlaceholderProps {
+export interface EmptyCanvasPlaceholderProps {
   isPreviewMode: boolean;
 }
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -16,6 +15,7 @@ import {
 import { getPlans } from "@/api/websites";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, CreditCard, CheckCircle2, ShoppingCart, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface SubscriptionManagerProps {
   profile: Profile | null;
@@ -39,6 +39,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
     plan: any;
     subscription_end: string | null;
   } | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (profile) {

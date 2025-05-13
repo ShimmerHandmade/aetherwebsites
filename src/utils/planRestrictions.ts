@@ -149,9 +149,9 @@ export async function checkProductLimit(currentCount: number): Promise<boolean> 
   
   if (!belowLimit) {
     toast({
-      variant: "destructive",
       title: `You've reached your plan's limit of ${restrictions.maxProducts} products`, 
-      description: "Upgrade your plan to add more products"
+      description: "Upgrade your plan to add more products",
+      variant: "destructive"
     });
   }
   

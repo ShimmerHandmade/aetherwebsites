@@ -1,14 +1,21 @@
+
 import React, { useEffect } from "react";
 import { useBuilder } from "@/contexts/builder/BuilderProvider";
 import BuilderElement from "../BuilderElement";
 import EmptyCanvasPlaceholder from "./EmptyCanvasPlaceholder";
 import { v4 as uuidv4 } from "@/lib/uuid";
 
-interface PageCanvasProps {
+export interface PageCanvasProps {
   isPreviewMode: boolean;
+  canUseAnimations?: boolean;
+  canUseEnterpriseAnimations?: boolean;
 }
 
-const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
+const PageCanvas: React.FC<PageCanvasProps> = ({ 
+  isPreviewMode, 
+  canUseAnimations = false, 
+  canUseEnterpriseAnimations = false 
+}) => {
   const { elements, selectedElementId, addElement, setElements } = useBuilder();
 
   // Effect to ensure every page has a header and footer
@@ -118,6 +125,8 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ isPreviewMode }) => {
               index={index}
               selected={element.id === selectedElementId}
               isPreviewMode={isPreviewMode}
+              canUseAnimations={canUseAnimations}
+              canUseEnterpriseAnimations={canUseEnterpriseAnimations}
             />
           ))}
         </div>
