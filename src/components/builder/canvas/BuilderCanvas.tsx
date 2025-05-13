@@ -1,35 +1,22 @@
 
-import React from 'react';
-import { useBuilder } from '@/contexts/builder';
-import EmptyCanvasPlaceholder from './EmptyCanvasPlaceholder';
-import PageCanvas from './PageCanvas';
-import { usePlan } from '@/contexts/PlanContext';
+import React from "react";
+import { usePlan } from "@/contexts/PlanContext";
+import PageCanvas from "./PageCanvas";
 
-interface BuilderCanvasProps {
-  isPreviewMode?: boolean;
-}
-
-const BuilderCanvas: React.FC<BuilderCanvasProps> = ({ isPreviewMode = false }) => {
-  const { elements, selectedElementId } = useBuilder();
+const BuilderCanvas: React.FC<{isPreviewMode: boolean}> = ({ isPreviewMode }) => {
   const { isPremium, isEnterprise } = usePlan();
-
-  const isEmpty = elements.length === 0;
-
-  // Check if premium animations are allowed based on the user's plan
+  
+  // Pass animation flags based on the user's plan
   const canUseAnimations = isPremium || isEnterprise;
   const canUseEnterpriseAnimations = isEnterprise;
-
+  
   return (
-    <div className="flex-1 bg-gray-100 overflow-auto">
-      {isEmpty ? (
-        <EmptyCanvasPlaceholder isPreviewMode={isPreviewMode} />
-      ) : (
-        <PageCanvas 
-          isPreviewMode={isPreviewMode}
-          canUseAnimations={canUseAnimations}
-          canUseEnterpriseAnimations={canUseEnterpriseAnimations}
-        />
-      )}
+    <div className="builder-canvas w-full h-full overflow-auto bg-white">
+      <PageCanvas 
+        isPreviewMode={isPreviewMode}
+        canUseAnimations={canUseAnimations}
+        canUseEnterpriseAnimations={canUseEnterpriseAnimations}
+      />
     </div>
   );
 };
