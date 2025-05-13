@@ -12,7 +12,7 @@ export const checkSubscription = async (): Promise<{
   error?: string;
 }> => {
   try {
-    // Call the edge function to check subscription status
+    // Call the edge function to check subscription status with explicit GET method
     const { data, error } = await supabase.functions.invoke("check-subscription", {
       method: "GET"
     });
@@ -31,7 +31,8 @@ export const checkSubscription = async (): Promise<{
     return {
       success: true,
       subscribed: data.subscribed,
-      plan: data.plan
+      plan: data.plan,
+      error: undefined
     };
   } catch (err) {
     console.error("Error in checkSubscription:", err);

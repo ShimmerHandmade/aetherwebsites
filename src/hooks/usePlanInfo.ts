@@ -1,7 +1,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { getUserPlanRestrictions, PlanRestriction } from "@/utils/planRestrictions";
-import { supabase } from "@/integrations/supabase/client";
 import { getUserPlan } from "@/api/websites/getUserPlan";
 
 export interface PlanInfo {
@@ -27,33 +26,15 @@ export const usePlanInfo = () => {
   });
   
   const isMounted = useRef(true);
-  const isLoadingData = useRef(false);
   const initialLoadComplete = useRef(false);
 
   // Single useEffect to handle data loading
   useEffect(() => {
     const loadPlanInfo = async () => {
-      // Prevent concurrent loading or reloading after initial load
-      if (isLoadingData.current || initialLoadComplete.current) return;
-      
-      isLoadingData.current = true;
+      // Prevent reloading after initial load
+      if (initialLoadComplete.current) return;
       
       try {
-        // Check for authenticated user
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          if (isMounted.current) {
-            setPlanInfo(prev => ({
-              ...prev,
-              loading: false,
-              error: "Not authenticated"
-            }));
-          }
-          initialLoadComplete.current = true;
-          return;
-        }
-        
         // Get user's plan
         const { data: planData, error: planError } = await getUserPlan();
         
@@ -111,8 +92,6 @@ export const usePlanInfo = () => {
           }));
         }
         initialLoadComplete.current = true;
-      } finally {
-        isLoadingData.current = false;
       }
     };
 
