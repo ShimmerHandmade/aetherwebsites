@@ -49,11 +49,12 @@ export const getUserPlan = async (): Promise<{
     
     // Handle the case where planData might be null or not have the expected structure
     let planName: string | null = null;
-    if (planData && typeof planData === 'object' && 'name' in planData) {
-      planName = planData.name;
-    }
+    let planId = profile.plan_id;
     
-    const planId = profile.plan_id;
+    // Explicitly check if planData is not null before accessing properties
+    if (planData !== null && typeof planData === 'object' && 'name' in planData) {
+      planName = planData.name as string;
+    }
     
     console.log("User plan data:", { planId, planName, isSubscribed });
     
