@@ -118,6 +118,12 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
             const insertIndex = dropTarget.top ? targetIndex : targetIndex + 1;
             addElement(newElement, insertIndex, containerId);
             console.log("Added new element at position:", insertIndex);
+            
+            toast({
+              title: "Element Added",
+              description: `Added new ${elementData.type} element`
+            });
+            
             return;
           }
         }
@@ -208,8 +214,7 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
       console.error("Error handling drop:", error);
       toast({
         title: "Error",
-        description: "Error adding element. Please try again.",
-        variant: "destructive"
+        description: "Error adding element. Please try again."
       });
     }
   };

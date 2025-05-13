@@ -89,7 +89,7 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
           }
         };
         // Changed from passing a number (0) to passing null as parentId with 0 as the index
-        addElement(navbarElement, null);
+        addElement(navbarElement, 0);
       }
 
       // Add footer if missing
