@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useProductManager } from "@/hooks/useProductManager";
 import ProductHeader from "./products/ProductHeader";
@@ -19,62 +19,64 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
   const { id: websiteIdParam } = useParams<{ id: string }>();
   const effectiveWebsiteId = websiteId || websiteIdParam;
   
-  // Add manual loading state for initial data fetch
+  // States for data management
   const [initialLoading, setInitialLoading] = useState(true);
   const [initialLoadError, setInitialLoadError] = useState<string | null>(null);
   const [rawProducts, setRawProducts] = useState<Product[]>([]);
   const [rawCategories, setRawCategories] = useState<UniqueCategory[]>([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
-  // Improve debug logs
-  console.log("ProductManager mounted with websiteId:", websiteId);
-  console.log("URL param websiteId:", websiteIdParam);
-  console.log("Effective websiteId:", effectiveWebsiteId);
+  // Improved logging
+  console.log("ProductManager mounted/updated with:", {
+    websiteId,
+    websiteIdParam,
+    effectiveWebsiteId,
+    productsCount: rawProducts.length
+  });
   
-  // Fetch products directly when component mounts
-  useEffect(() => {
-    const loadProducts = async () => {
-      if (!effectiveWebsiteId) {
-        console.error("No website ID available");
-        setInitialLoading(false);
-        setInitialLoadError("Website ID is missing");
-        return;
-      }
+  // Enhanced data loading function
+  const loadProducts = useCallback(async () => {
+    if (!effectiveWebsiteId) {
+      console.error("No website ID available");
+      setInitialLoading(false);
+      setInitialLoadError("Website ID is missing");
+      return;
+    }
+    
+    try {
+      console.log(`Starting to load products for website: ${effectiveWebsiteId}`);
+      setInitialLoading(true);
       
-      try {
-        console.log(`Starting to load products for website: ${effectiveWebsiteId}`);
-        setInitialLoading(true);
-        
-        const result = await fetchProducts(effectiveWebsiteId);
-        
-        if (result.error) {
-          console.error("Error loading products:", result.error);
-          setInitialLoadError(result.error);
-          toast.error("Failed to load products", {
-            description: result.error
-          });
-        } else {
-          console.log(`Successfully loaded ${result.products.length} products and ${result.categories.length} categories`);
-          setRawProducts(result.products);
-          setRawCategories(result.categories);
-          setInitialLoadError(null);
-          
-          if (result.products.length === 0) {
-            console.log("No products found for this website");
-          }
-        }
-      } catch (error) {
-        console.error("Exception loading products:", error);
-        setInitialLoadError("An unexpected error occurred");
-        toast.error("Failed to load products");
-      } finally {
-        setInitialLoading(false);
+      const result = await fetchProducts(effectiveWebsiteId);
+      
+      if (result.error) {
+        console.error("Error loading products:", result.error);
+        setInitialLoadError(result.error);
+        toast.error("Failed to load products", {
+          description: result.error
+        });
+      } else {
+        console.log(`Successfully loaded ${result.products.length} products and ${result.categories.length} categories`);
+        // Important: Set state with the new data
+        setRawProducts(result.products);
+        setRawCategories(result.categories);
+        setInitialLoadError(null);
       }
-    };
-
-    console.log("Running loadProducts effect");
-    loadProducts();
+    } catch (error) {
+      console.error("Exception loading products:", error);
+      setInitialLoadError("An unexpected error occurred");
+      toast.error("Failed to load products");
+    } finally {
+      setInitialLoading(false);
+    }
   }, [effectiveWebsiteId]);
+
+  // Load products on mount and when refreshTrigger changes
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts, refreshTrigger]);
   
+  // Product manager hook with enhanced data passing
   const {
     products,
     editingProduct,
@@ -97,14 +99,13 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
     handleEdit,
     handleImageChange,
     handleAddCategory,
-    handleSave,
+    handleSave: internalHandleSave,
     handleCancel,
-    handleDelete,
+    handleDelete: internalHandleDelete,
     handleDeleteCategory,
     handleClearImage,
     setProducts,
     setCategories,
-    refreshData
   } = useProductManager(effectiveWebsiteId, rawProducts, rawCategories);
 
   // Set the products and categories once they're loaded
@@ -117,40 +118,30 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
     }
   }, [rawProducts, rawCategories, setProducts, setCategories]);
   
-  // Reload data after save/delete operations
-  const handleSuccessfulSave = async () => {
-    if (effectiveWebsiteId) {
-      console.log("Reloading products after save/delete operation");
-      const result = await fetchProducts(effectiveWebsiteId);
-      if (!result.error) {
-        console.log(`Reloaded ${result.products.length} products after operation`);
-        setRawProducts(result.products);
-        setRawCategories(result.categories);
-      } else {
-        console.error("Failed to reload products after operation:", result.error);
-      }
-    }
+  // Enhanced handlers with forced reload
+  const handleSuccessfulOperation = async () => {
+    console.log("Operation successful - triggering data refresh");
+    setRefreshTrigger(prev => prev + 1);
   };
   
-  const wrappedHandleSave = async () => {
-    const saveResult = await handleSave();
+  const handleSave = async () => {
+    const saveResult = await internalHandleSave();
     if (saveResult?.success) {
-      await handleSuccessfulSave();
+      await handleSuccessfulOperation();
     }
     return saveResult;
   };
   
-  const wrappedHandleDelete = async (id: string) => {
-    const deleteResult = await handleDelete(id);
+  const handleDelete = async (id: string) => {
+    const deleteResult = await internalHandleDelete(id);
     if (deleteResult?.success) {
-      await handleSuccessfulSave();
+      await handleSuccessfulOperation();
     }
     return deleteResult;
   };
   
   const handleBackToBuilder = () => {
     if (editingProduct) {
-      // If editing, ask for confirmation before navigating away
       if (confirm("You have unsaved product changes. Are you sure you want to go back without saving?")) {
         setEditingProduct(null);
         if (onBackToBuilder) onBackToBuilder();
@@ -158,16 +149,15 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
       return;
     }
     
-    // Navigate back to builder if not editing and callback exists
     if (onBackToBuilder) {
       onBackToBuilder();
     }
   };
 
-  // Show loading state from either source
+  // Determine if we should show loading state
   const showLoading = initialLoading || isLoading;
   
-  // Log current state
+  // Debug current state
   console.log("Current product manager state:", {
     initialLoading,
     isLoading,
@@ -222,10 +212,10 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
         newCategory={newCategory}
         imagePreview={imagePreview}
         onProductChange={setEditingProduct}
-        onSave={wrappedHandleSave}
+        onSave={handleSave}
         onCancel={handleCancel}
         onEdit={handleEdit}
-        onDelete={wrappedHandleDelete}
+        onDelete={handleDelete}
         onImageChange={handleImageChange}
         onClearImage={handleClearImage}
         onNewCategoryChange={setNewCategory}

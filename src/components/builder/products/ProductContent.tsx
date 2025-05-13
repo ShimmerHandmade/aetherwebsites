@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, AlertTriangle, RefreshCcw } from "lucide-react";
 import { Product } from "@/types/product";
@@ -51,13 +51,12 @@ const ProductContent: React.FC<ProductContentProps> = ({
   onNewCategoryChange,
   onAddCategory
 }) => {
-  console.log("ProductContent rendering with:", {
-    isLoading,
-    hasError: !!loadingError,
-    isEditing: !!editingProduct,
-    productCount: filteredProducts.length,
-    view: currentView
-  });
+  // Debug logs to track component rendering and props
+  useEffect(() => {
+    console.log("ProductContent rendering with products:", filteredProducts);
+    console.log("Current loading state:", isLoading);
+    console.log("Error state:", loadingError);
+  }, [filteredProducts, isLoading, loadingError]);
 
   if (isLoading) {
     return (
@@ -113,7 +112,7 @@ const ProductContent: React.FC<ProductContentProps> = ({
 
   return (
     <ScrollArea className="flex-1 h-[calc(100%-100px)]">
-      {filteredProducts.length > 0 ? (
+      {filteredProducts && filteredProducts.length > 0 ? (
         currentView === "grid" ? (
           <ProductGrid 
             products={filteredProducts}
@@ -131,14 +130,14 @@ const ProductContent: React.FC<ProductContentProps> = ({
         <div className="text-center py-8 text-gray-500">
           <p className="mb-2">No products found.</p>
           <p className="text-sm mb-4">
-            {filteredProducts.length === 0 ? (
+            {!filteredProducts || filteredProducts.length === 0 ? (
               <>You haven't added any products yet. Click "Add Product" to create your first product.</>
             ) : (
               <>Try a different search or add a new product.</>
             )}
           </p>
           <pre className="bg-gray-100 p-2 mt-4 rounded text-xs text-left overflow-auto max-h-32 mx-auto max-w-md">
-            Total products available: {filteredProducts.length}
+            Total products available: {filteredProducts ? filteredProducts.length : 0}
           </pre>
         </div>
       )}
