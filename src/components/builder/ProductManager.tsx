@@ -6,6 +6,9 @@ import ProductHeader from "./products/ProductHeader";
 import ProductSearch from "./products/ProductSearch";
 import ProductContent from "./products/ProductContent";
 import PlanLimitsInfo from "@/components/PlanLimitsInfo";
+import { toast } from "sonner";
+import { fetchProducts } from "@/api/products";
+import { Product, UniqueCategory } from "@/types/product";
 
 interface ProductManagerProps {
   websiteId?: string;
@@ -15,6 +18,49 @@ interface ProductManagerProps {
 const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuilder }) => {
   const { id: websiteIdParam } = useParams<{ id: string }>();
   const effectiveWebsiteId = websiteId || websiteIdParam;
+  
+  // Add manual loading state for initial data fetch
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [initialLoadError, setInitialLoadError] = useState<string | null>(null);
+  const [rawProducts, setRawProducts] = useState<Product[]>([]);
+  const [rawCategories, setRawCategories] = useState<UniqueCategory[]>([]);
+  
+  // Fetch products directly when component mounts
+  useEffect(() => {
+    const loadProducts = async () => {
+      if (!effectiveWebsiteId) {
+        setInitialLoading(false);
+        setInitialLoadError("Website ID is missing");
+        return;
+      }
+      
+      try {
+        setInitialLoading(true);
+        const result = await fetchProducts(effectiveWebsiteId);
+        
+        if (result.error) {
+          console.error("Error loading products:", result.error);
+          setInitialLoadError(result.error);
+          toast.error("Failed to load products", {
+            description: result.error
+          });
+        } else {
+          console.log(`Loaded ${result.products.length} products and ${result.categories.length} categories`);
+          setRawProducts(result.products);
+          setRawCategories(result.categories);
+          setInitialLoadError(null);
+        }
+      } catch (error) {
+        console.error("Exception loading products:", error);
+        setInitialLoadError("An unexpected error occurred");
+        toast.error("Failed to load products");
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, [effectiveWebsiteId]);
   
   const {
     products,
@@ -42,9 +88,19 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
     handleCancel,
     handleDelete,
     handleDeleteCategory,
-    handleClearImage
-  } = useProductManager(effectiveWebsiteId);
+    handleClearImage,
+    setProducts,
+    setCategories
+  } = useProductManager(effectiveWebsiteId, rawProducts, rawCategories);
 
+  // Set the products and categories once they're loaded
+  useEffect(() => {
+    if (rawProducts.length > 0 || rawCategories.length > 0) {
+      setProducts(rawProducts);
+      setCategories(rawCategories);
+    }
+  }, [rawProducts, rawCategories, setProducts, setCategories]);
+  
   const handleBackToBuilder = () => {
     if (editingProduct) {
       // If editing, ask for confirmation before navigating away
@@ -60,6 +116,9 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
       onBackToBuilder();
     }
   };
+
+  // Show loading state from either source
+  const showLoading = initialLoading || isLoading;
 
   return (
     <div className="h-full flex flex-col">
@@ -94,7 +153,8 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
       )}
 
       <ProductContent
-        isLoading={isLoading}
+        isLoading={showLoading}
+        loadingError={initialLoadError}
         editingProduct={editingProduct}
         filteredProducts={filteredProducts}
         currentView={currentView}

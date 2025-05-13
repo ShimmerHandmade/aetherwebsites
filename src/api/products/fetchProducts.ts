@@ -13,6 +13,7 @@ export const fetchProducts = async (websiteId: string): Promise<{
   try {
     const { data: session } = await supabase.auth.getSession();
     if (!session.session) {
+      console.log("No active session found when fetching products");
       return { 
         products: [], 
         categories: [],
@@ -20,6 +21,8 @@ export const fetchProducts = async (websiteId: string): Promise<{
       };
     }
 
+    console.log(`Fetching products for website ID: ${websiteId}`);
+    
     const { data, error } = await supabase
       .from("products")
       .select("*")
@@ -34,7 +37,9 @@ export const fetchProducts = async (websiteId: string): Promise<{
       };
     }
 
-    // Extract unique categories
+    console.log(`Fetched ${data?.length || 0} products`);
+    
+    // Extract unique categories - only include non-null categories
     const uniqueCategories = Array.from(
       new Set(
         data
@@ -42,6 +47,8 @@ export const fetchProducts = async (websiteId: string): Promise<{
           .map(product => product.category)
       )
     ).map(name => ({ name: name as string }));
+    
+    console.log(`Extracted ${uniqueCategories.length} unique categories`);
     
     return { 
       products: data || [], 

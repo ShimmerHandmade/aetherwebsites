@@ -1,14 +1,16 @@
 
 import React from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 import { Product } from "@/types/product";
 import ProductGrid from "./ProductGrid";
 import ProductList from "./ProductList";
 import ProductForm from "./ProductForm";
+import { Button } from "@/components/ui/button";
 
 interface ProductContentProps {
   isLoading: boolean;
+  loadingError?: string | null;
   editingProduct: Product | null;
   filteredProducts: Product[];
   currentView: "grid" | "list";
@@ -30,6 +32,7 @@ interface ProductContentProps {
 
 const ProductContent: React.FC<ProductContentProps> = ({
   isLoading,
+  loadingError,
   editingProduct,
   filteredProducts,
   currentView,
@@ -53,6 +56,17 @@ const ProductContent: React.FC<ProductContentProps> = ({
       <div className="h-full flex flex-col items-center justify-center">
         <Loader2 className="h-8 w-8 text-gray-400 animate-spin mb-2" />
         <p className="text-gray-500">Loading products...</p>
+      </div>
+    );
+  }
+
+  if (loadingError) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center p-6 text-center">
+        <AlertTriangle className="h-10 w-10 text-amber-500 mb-4" />
+        <h3 className="text-lg font-semibold mb-2">Error Loading Products</h3>
+        <p className="text-gray-600 mb-6">{loadingError}</p>
+        <Button onClick={() => window.location.reload()}>Try Again</Button>
       </div>
     );
   }

@@ -1,43 +1,26 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Product, UniqueCategory } from "@/types/product";
-import { fetchProducts, saveProduct, deleteProduct } from "@/api/products";
+import { saveProduct, deleteProduct } from "@/api/products";
 import { checkProductLimit } from "@/utils/planRestrictions";
 
-export function useProductManager(websiteId: string | undefined) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<UniqueCategory[]>([]);
+export function useProductManager(
+  websiteId: string | undefined,
+  initialProducts: Product[] = [],
+  initialCategories: UniqueCategory[] = []
+) {
+  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [categories, setCategories] = useState<UniqueCategory[]>(initialCategories);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
   const [newCategory, setNewCategory] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<"grid" | "list">("grid");
-
-  // Fetch products
-  useEffect(() => {
-    if (!websiteId) return;
-    
-    const loadProducts = async () => {
-      setIsLoading(true);
-      const result = await fetchProducts(websiteId);
-      
-      if (result.error) {
-        toast.error(result.error);
-      } else {
-        setProducts(result.products);
-        setCategories(result.categories);
-      }
-      
-      setIsLoading(false);
-    };
-
-    loadProducts();
-  }, [websiteId]);
 
   // Filter products based on search term and active tab
   const filteredProducts = products.filter(product => {
@@ -277,6 +260,8 @@ export function useProductManager(websiteId: string | undefined) {
     handleDelete,
     handleDeleteCategory,
     handleClearImage,
-    refreshCategoriesList
+    refreshCategoriesList,
+    setProducts,
+    setCategories
   };
 }
