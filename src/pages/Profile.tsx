@@ -83,9 +83,10 @@ const Profile = () => {
       
       if (!user) return;
       
+      // Modified query to avoid joining with plans table directly
       const { data, error } = await supabase
         .from("profiles")
-        .select("*, plans:plan_id(*)")
+        .select("*")
         .eq("id", user.id)
         .single();
       

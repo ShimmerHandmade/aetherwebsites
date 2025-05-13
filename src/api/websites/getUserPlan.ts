@@ -26,18 +26,18 @@ export const getUserPlan = async (): Promise<{
       };
     }
 
-    // Get user profile with plan information
+    // Get user profile without joining plans table
     const { data: profile, error } = await supabase
       .from("profiles")
-      .select("*, plans(*)")
+      .select("*")
       .eq("id", user.id)
       .single();
     
     if (error) {
-      console.error("Error fetching user plan:", error);
+      console.error("Error fetching user profile:", error);
       return {
         data: null,
-        error: "Failed to fetch user plan information"
+        error: "Failed to fetch user profile information"
       };
     }
     
@@ -45,27 +45,20 @@ export const getUserPlan = async (): Promise<{
     const isSubscribed = profile.is_subscribed && 
       (!profile.subscription_end || new Date(profile.subscription_end) > new Date());
     
-    // Extract plan info from the profile - with careful null handling
-    const planData = profile.plans;
+    // Get plan details if we have a plan_id
+    let planName = null;
+    const planId = profile.plan_id;
     
-    // Safely determine plan information with enhanced null checking
-    let planName: string | null = null;
-    let planId: string | null = profile.plan_id;
-    
-    // Only try to access planData properties if it's a non-null object with a name property
-    if (planData !== null && typeof planData === 'object' && planData && 'name' in planData) {
-      planName = (planData as any).name as string;
-    } else if (planId) {
-      // If planData is not available but we have a planId, try to get the plan name directly
-      // This helps with plans purchased before the feature was implemented
-      const { data: directPlan } = await supabase
+    if (planId) {
+      // Get the plan details directly
+      const { data: planData } = await supabase
         .from("plans")
         .select("name")
         .eq("id", planId)
         .maybeSingle();
       
-      if (directPlan) {
-        planName = directPlan.name;
+      if (planData) {
+        planName = planData.name;
         console.log("Retrieved plan name directly:", planName);
       }
     }
