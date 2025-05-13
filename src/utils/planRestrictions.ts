@@ -13,50 +13,55 @@ export interface PlanRestriction {
   maxPages: number;
   allowPremiumTemplates: boolean;
   allowPremiumElements: boolean;
+  allowPremiumAnimations: boolean;
 }
 
-// Define restrictions for each plan tier
+// Define restrictions for each plan tier with more fair features
 const planRestrictions: Record<string, PlanRestriction> = {
   "Basic": {
-    maxProducts: 20,
+    maxProducts: 30,
+    allowCoupons: true,
+    allowDiscounts: false,
+    allowAdvancedAnalytics: false,
+    allowCustomDomain: false,
+    maxPages: 10,
+    allowPremiumTemplates: false,
+    allowPremiumElements: false,
+    allowPremiumAnimations: false
+  },
+  "Professional": {
+    maxProducts: 150,
+    allowCoupons: true,
+    allowDiscounts: true,
+    allowAdvancedAnalytics: true,
+    allowCustomDomain: true,
+    maxPages: 30,
+    allowPremiumTemplates: true,
+    allowPremiumElements: true,
+    allowPremiumAnimations: false
+  },
+  "Enterprise": {
+    maxProducts: 1500,
+    allowCoupons: true,
+    allowDiscounts: true,
+    allowAdvancedAnalytics: true,
+    allowCustomDomain: true,
+    maxPages: 150,
+    allowPremiumTemplates: true,
+    allowPremiumElements: true,
+    allowPremiumAnimations: true
+  },
+  // Default restrictions for users without a plan
+  "default": {
+    maxProducts: 15,
     allowCoupons: false,
     allowDiscounts: false,
     allowAdvancedAnalytics: false,
     allowCustomDomain: false,
     maxPages: 5,
     allowPremiumTemplates: false,
-    allowPremiumElements: false
-  },
-  "Professional": {
-    maxProducts: 100,
-    allowCoupons: true,
-    allowDiscounts: false,
-    allowAdvancedAnalytics: true,
-    allowCustomDomain: true,
-    maxPages: 20,
-    allowPremiumTemplates: true,
-    allowPremiumElements: false
-  },
-  "Enterprise": {
-    maxProducts: 1000,
-    allowCoupons: true,
-    allowDiscounts: true,
-    allowAdvancedAnalytics: true,
-    allowCustomDomain: true,
-    maxPages: 100,
-    allowPremiumTemplates: true,
-    allowPremiumElements: true
-  },
-  // Default restrictions for users without a plan
-  "default": {
-    maxProducts: 10,
-    allowCoupons: false,
-    allowDiscounts: false,
-    allowAdvancedAnalytics: false,
-    allowCustomDomain: false,
-    maxPages: 3,
-    allowPremiumTemplates: false,
-    allowPremiumElements: false
+    allowPremiumElements: false,
+    allowPremiumAnimations: false
   }
 };
 
@@ -88,7 +93,7 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
     const planData = profile.plans;
     
     // If no plan data but we have a plan_id, try to get the plan directly
-    if ((!planData || typeof planData !== 'object') && profile.plan_id) {
+    if ((planData === null || typeof planData !== 'object') && profile.plan_id) {
       console.log("No plan data in profile relation, trying direct query with plan_id:", profile.plan_id);
       const { data: directPlan, error: directPlanError } = await supabase
         .from("plans")
@@ -112,7 +117,7 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
     // Get the plan name with additional safeguards
     let planName = 'default';
     if (planData !== null && typeof planData === 'object' && 'name' in planData) {
-      planName = (planData.name as string) || 'default';
+      planName = ((planData as any).name as string) || 'default';
     }
     
     console.log("Plan name:", planName);
@@ -188,7 +193,7 @@ export async function getUserPlanName(): Promise<string | null> {
     // First try from the plans join
     const planData = profile.plans;
     if (planData !== null && typeof planData === 'object' && 'name' in planData) {
-      planName = planData.name as string;
+      planName = (planData as any).name as string;
       console.log("Got plan name from joined data:", planName);
     }
     

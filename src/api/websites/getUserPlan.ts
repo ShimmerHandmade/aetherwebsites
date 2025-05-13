@@ -54,7 +54,7 @@ export const getUserPlan = async (): Promise<{
     
     // Only try to access planData properties if it's a non-null object with a name property
     if (planData !== null && typeof planData === 'object' && 'name' in planData) {
-      planName = planData.name as string;
+      planName = (planData as any).name as string;
     } else if (planId) {
       // If planData is not available but we have a planId, try to get the plan name directly
       // This helps with plans purchased before the feature was implemented

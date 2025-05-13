@@ -15,7 +15,13 @@ export const isPremiumElement = (elementType: string): boolean => {
     'TestimonialsCarouselElement',
     'AdvancedGalleryElement',
     'TeamMembersElement',
-    'StatisticsElement'
+    'StatisticsElement',
+    'AnimatedCounterElement',
+    'ParallaxSectionElement',
+    'InteractiveCardsElement',
+    'AnimatedTimelineElement',
+    'FloatingShapesElement',
+    'GradientBackgroundElement'
   ];
   
   return premiumElements.includes(elementType);
@@ -27,7 +33,14 @@ export const isEnterpriseElement = (elementType: string): boolean => {
     'CustomFormElement',
     '3DModelElement',
     'DataVisualizationElement',
-    'InteractiveMapElement'
+    'InteractiveMapElement',
+    'AnimatedParticlesElement',
+    'WebGLBackgroundElement',
+    'LottieAnimationElement',
+    'AdvancedChartElement',
+    'VideoBackgroundElement',
+    'SVGAnimationElement',
+    'ScrollTriggeredElement'
   ];
   
   return enterpriseElements.includes(elementType);
