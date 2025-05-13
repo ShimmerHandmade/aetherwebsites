@@ -19,6 +19,7 @@ export const getUserPlan = async (): Promise<{
     // Check for authenticated user
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
+      console.log("getUserPlan: No authenticated user found");
       return {
         data: null,
         error: "No authenticated user"

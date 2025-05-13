@@ -64,14 +64,17 @@ const planRestrictions: Record<string, PlanRestriction> = {
 export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return planRestrictions.default;
+    if (!user) {
+      console.log("getUserPlanRestrictions: No authenticated user found");
+      return planRestrictions.default;
+    }
 
     // Get the user profile first
     const { data: profile, error } = await supabase
       .from("profiles")
       .select("*, plans(*)")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
     
     console.log("Profile data from DB:", profile);
     
@@ -107,9 +110,10 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
     }
     
     // Get the plan name with additional safeguards
-    const planName = planData && typeof planData === 'object' && 'name' in planData 
-      ? (planData as any).name as string 
-      : 'default';
+    let planName = 'default';
+    if (planData !== null && typeof planData === 'object' && 'name' in planData) {
+      planName = (planData.name as string) || 'default';
+    }
     
     console.log("Plan name:", planName);
     
@@ -163,7 +167,7 @@ export async function getUserPlanName(): Promise<string | null> {
       .from("profiles")
       .select("*, plans(*)")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
     
     console.log("Profile data for plan name:", profile);
     
@@ -183,7 +187,7 @@ export async function getUserPlanName(): Promise<string | null> {
     
     // First try from the plans join
     const planData = profile.plans;
-    if (planData && typeof planData === 'object' && 'name' in planData) {
+    if (planData !== null && typeof planData === 'object' && 'name' in planData) {
       planName = planData.name as string;
       console.log("Got plan name from joined data:", planName);
     }
