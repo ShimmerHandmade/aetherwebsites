@@ -49,12 +49,12 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Get user profile with stripe customer ID
-    const { data: profile, error: profileError } = await supabaseClient
+    // Get user profile with stripe customer ID - use maybeSingle() instead of single()
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
       .select("stripe_customer_id")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
       
     if (profileError) {
       logStep("Error fetching profile", { error: profileError.message });
@@ -121,16 +121,20 @@ serve(async (req) => {
       logStep("No active subscription found");
     }
 
-    // Get plan details
+    // Get plan details if plan ID exists
     let plan = null;
     if (planId) {
-      const { data: planData } = await supabaseClient
+      const { data: planData, error: planError } = await supabaseAdmin
         .from("plans")
         .select("*")
         .eq("id", planId)
-        .single();
+        .maybeSingle();
         
-      plan = planData;
+      if (planError) {
+        logStep("Error fetching plan", { error: planError.message });
+      } else {
+        plan = planData;
+      }
     }
 
     // Update the user profile
