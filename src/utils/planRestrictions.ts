@@ -38,7 +38,7 @@ const planRestrictions: Record<string, PlanRestriction> = {
     maxPages: 30,
     allowPremiumTemplates: true,
     allowPremiumElements: true,
-    allowPremiumAnimations: false
+    allowPremiumAnimations: true
   },
   "Enterprise": {
     maxProducts: 1500,

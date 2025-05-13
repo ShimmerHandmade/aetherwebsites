@@ -1,9 +1,10 @@
 
 import React, { useState, useRef } from "react";
 import { useBuilder } from "@/contexts/builder";
+import { usePlan } from "@/contexts/PlanContext";
 import { renderElement } from "./renderElement";
 import { Button } from "@/components/ui/button";
-import { Pencil, Copy, Trash, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
+import { Pencil, Copy, Trash, GripVertical, ArrowUp, ArrowDown, Sparkles } from "lucide-react";
 
 interface BuilderElementProps {
   element: any;
@@ -21,8 +22,17 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   parentId,
 }) => {
   const { selectElement, removeElement, duplicateElement, moveElementUp, moveElementDown } = useBuilder();
+  const { isPremium, isEnterprise } = usePlan();
   const [isDragging, setIsDragging] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
+
+  // Check if this is a premium animation element
+  const isPremiumAnimationElement = element.props?.hasAnimation && (element.props?.animationType === 'premium' || element.props?.animationType === 'enterprise');
+  const canUseAnimations = isPremium || isEnterprise;
+  
+  // Check if this is an enterprise-only animation element
+  const isEnterpriseAnimationElement = element.props?.hasAnimation && element.props?.animationType === 'enterprise';
+  const canUseEnterpriseAnimations = isEnterprise;
 
   const handleElementClick = (e: React.MouseEvent) => {
     if (!isPreviewMode) {
@@ -94,11 +104,12 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
     }
   };
 
-  // Add different styling based on element type
+  // Add different styling based on element type and animation status
   const getElementStyle = () => {
     // Basic style for all elements
     let style = "transition-all duration-150 relative";
     
+    // Add animation classes if available for this plan
     if (!isPreviewMode) {
       style += " hover:outline hover:outline-2 hover:outline-blue-300 hover:outline-offset-2";
       
@@ -108,6 +119,29 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
       
       if (isDragging) {
         style += " opacity-50";
+      }
+    }
+
+    // Add premium animations if available
+    if (isPreviewMode) {
+      if (element.props?.hasAnimation) {
+        if ((element.props.animationType === 'premium' && canUseAnimations) || 
+            (element.props.animationType === 'enterprise' && canUseEnterpriseAnimations) || 
+            element.props.animationType === 'basic') {
+          switch (element.props.animationEffect) {
+            case 'fade-in':
+              style += " animate-fade-in";
+              break;
+            case 'scale-in':
+              style += " animate-scale-in";
+              break;
+            case 'slide-in':
+              style += " animate-slide-in-right";
+              break;
+            default:
+              // No animation
+          }
+        }
       }
     }
     
@@ -138,6 +172,14 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
       data-element-id={element.id}
       data-element-type={element.type}
     >
+      {/* Show premium badge if it's a premium animation element */}
+      {isPremiumAnimationElement && !isPreviewMode && (
+        <div className="absolute top-0 left-0 z-10 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs px-2 py-1 rounded-br flex items-center gap-1">
+          <Sparkles className="h-3 w-3" /> 
+          {isEnterpriseAnimationElement ? "Enterprise" : "Premium"}
+        </div>
+      )}
+
       {renderedElement}
       
       {!isPreviewMode && selected && (

@@ -65,3 +65,32 @@ export const findElementById = (elements: BuilderElement[], id: string): Builder
   
   return null;
 };
+
+/**
+ * Check if element has premium animations
+ */
+export const hasPremiumAnimations = (element: BuilderElement): boolean => {
+  return !!(element.props?.hasAnimation && element.props?.animationType === 'premium');
+};
+
+/**
+ * Check if element has enterprise animations
+ */
+export const hasEnterpriseAnimations = (element: BuilderElement): boolean => {
+  return !!(element.props?.hasAnimation && element.props?.animationType === 'enterprise');
+};
+
+/**
+ * Add animation property to element
+ */
+export const addAnimationToElement = (element: BuilderElement, animationType: 'basic' | 'premium' | 'enterprise', animationEffect: string): BuilderElement => {
+  return {
+    ...element,
+    props: {
+      ...element.props,
+      hasAnimation: true,
+      animationType,
+      animationEffect
+    }
+  };
+};

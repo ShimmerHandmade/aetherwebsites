@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   LayoutDashboard,
@@ -137,6 +136,19 @@ const elementCategories: ElementCategory[] = [
           style: "solid",
         },
       },
+      {
+        type: "animatedSection",
+        name: "Animated Section",
+        icon: "layout",
+        description: "A section with premium animations (Premium)",
+        defaultProps: {
+          padding: "medium",
+          hasAnimation: true,
+          animationType: "premium",
+          animationEffect: "fade-in",
+          backgroundColor: "bg-white"
+        },
+      },
     ],
   },
   {
@@ -190,6 +202,18 @@ const elementCategories: ElementCategory[] = [
           style: "unordered",
         },
       },
+      {
+        type: "animatedHeading",
+        name: "Animated Heading",
+        icon: "heading",
+        description: "A heading with entrance animation (Premium)",
+        defaultProps: {
+          level: "h2",
+          hasAnimation: true,
+          animationType: "premium",
+          animationEffect: "fade-in"
+        },
+      },
     ],
   },
   {
@@ -202,6 +226,72 @@ const elementCategories: ElementCategory[] = [
         description: "A form for user input",
         defaultProps: {
           fields: ["Name", "Email", "Message"],
+        },
+      },
+    ],
+  },
+  {
+    name: "Animations",
+    elements: [
+      {
+        type: "fadeInElement",
+        name: "Fade In",
+        icon: "star",
+        description: "Element that fades in on page load (Premium)",
+        defaultProps: {
+          hasAnimation: true,
+          animationType: "premium",
+          animationEffect: "fade-in",
+          content: "This content will fade in"
+        },
+      },
+      {
+        type: "slideInElement",
+        name: "Slide In",
+        icon: "star",
+        description: "Element that slides in from the side (Premium)",
+        defaultProps: {
+          hasAnimation: true,
+          animationType: "premium",
+          animationEffect: "slide-in-right",
+          content: "This content will slide in"
+        },
+      },
+      {
+        type: "scaleInElement",
+        name: "Scale In",
+        icon: "star",
+        description: "Element that scales in on page load (Premium)",
+        defaultProps: {
+          hasAnimation: true,
+          animationType: "premium",
+          animationEffect: "scale-in",
+          content: "This content will scale in"
+        },
+      },
+      {
+        type: "particlesBackground",
+        name: "Particles Background",
+        icon: "sparkle",
+        description: "Interactive particle animation background (Enterprise)",
+        defaultProps: {
+          hasAnimation: true,
+          animationType: "enterprise",
+          animationEffect: "particles",
+          particleColor: "#4f46e5",
+          particleCount: 50
+        },
+      },
+      {
+        type: "scrollReveal",
+        name: "Scroll Reveal",
+        icon: "sparkle",
+        description: "Element that reveals on scroll (Enterprise)",
+        defaultProps: {
+          hasAnimation: true,
+          animationType: "enterprise",
+          animationEffect: "scroll-reveal",
+          content: "This content will reveal on scroll"
         },
       },
     ],
@@ -352,6 +442,12 @@ const ElementPaletteComponent: React.FC = () => {
       props: element.defaultProps || {},
       content: ""
     };
+    
+    // Check for premium elements and add visual indication
+    if (element.defaultProps?.animationType === 'premium' || element.defaultProps?.animationType === 'enterprise') {
+      // The actual check for permissions happens in the BuilderProvider when dropped
+      console.log("Dragging premium element:", element.name);
+    }
     
     // Set the drag data as JSON
     event.dataTransfer.setData("application/json", JSON.stringify(elementData));
