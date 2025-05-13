@@ -128,7 +128,8 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
         
         // Show toast notification for successful drop
         toast({
-          description: `Added new ${elementData.type} element`,
+          title: "Element Added",
+          description: `Added new ${elementData.type} element`
         });
         
         return;
@@ -206,6 +207,7 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
     } catch (error) {
       console.error("Error handling drop:", error);
       toast({
+        title: "Error",
         description: "Error adding element. Please try again.",
         variant: "destructive"
       });
