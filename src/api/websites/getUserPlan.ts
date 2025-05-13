@@ -52,8 +52,11 @@ export const getUserPlan = async (): Promise<{
     let planId = profile.plan_id;
     
     // Explicitly check if planData is not null before accessing properties
-    if (planData !== null && typeof planData === 'object' && 'name' in planData) {
-      planName = planData.name as string;
+    if (planData !== null) {
+      // Only try to access name property if planData is an object
+      if (typeof planData === 'object' && 'name' in planData) {
+        planName = planData.name as string;
+      }
     }
     
     console.log("User plan data:", { planId, planName, isSubscribed });
