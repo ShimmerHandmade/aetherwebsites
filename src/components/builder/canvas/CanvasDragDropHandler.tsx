@@ -2,6 +2,7 @@
 import React, { useState, useRef } from "react";
 import { useBuilder } from "@/contexts/builder/BuilderProvider";
 import { v4 as uuidv4 } from "@/lib/uuid";
+import { toast } from "@/components/ui/use-toast";
 
 interface CanvasDragDropHandlerProps {
   children: React.ReactNode;
@@ -122,8 +123,14 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
         }
         
         // Add to container or root if no specific position
-        addElement(newElement, containerId);
+        addElement(newElement, containerId ? containerId : null);
         console.log("Added new element to container:", containerId, newElement);
+        
+        // Show toast notification for successful drop
+        toast({
+          description: `Added new ${elementData.type} element`,
+        });
+        
         return;
       }
       
@@ -184,7 +191,7 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
           }
         } else {
           // Add to the end of the new container
-          addElement(elementCopy, containerId);
+          addElement(elementCopy, containerId || null);
           console.log("Added element to new container at the end");
         }
         
@@ -198,6 +205,10 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
       }
     } catch (error) {
       console.error("Error handling drop:", error);
+      toast({
+        description: "Error adding element. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
