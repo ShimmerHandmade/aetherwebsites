@@ -1,25 +1,26 @@
 
 import React from "react";
 import { BuilderElement } from "@/contexts/BuilderContext";
-import ContainerPropertyEditor from "./ContainerPropertyEditor";
+import PropertyEditor from "./PropertyEditor";
+import TextPropertyEditor from "./TextPropertyEditor";
 import HeadingPropertyEditor from "./HeadingPropertyEditor";
 import ImagePropertyEditor from "./ImagePropertyEditor";
-import VideoPropertyEditor from "./VideoPropertyEditor";
 import ButtonPropertyEditor from "./ButtonPropertyEditor";
+import ContainerPropertyEditor from "./ContainerPropertyEditor";
+import HeroPropertyEditor from "./HeroPropertyEditor";
+import GridPropertyEditor from "./GridPropertyEditor";
+import FlexPropertyEditor from "./FlexPropertyEditor";
+import NavbarPropertyEditor from "./NavbarPropertyEditor";
+import FooterPropertyEditor from "./FooterPropertyEditor";
+import ListPropertyEditor from "./ListPropertyEditor";
+import FormPropertyEditor from "./FormPropertyEditor";
 import FeaturePropertyEditor from "./FeaturePropertyEditor";
 import TestimonialPropertyEditor from "./TestimonialPropertyEditor";
 import PricingPropertyEditor from "./PricingPropertyEditor";
-import ContentPropertyEditor from "./ContentPropertyEditor";
-import TextPropertyEditor from "./TextPropertyEditor";
-import FormPropertyEditor from "./FormPropertyEditor";
-import ListPropertyEditor from "./ListPropertyEditor";
 import CardPropertyEditor from "./CardPropertyEditor";
-import NavbarPropertyEditor from "./NavbarPropertyEditor";
-import FooterPropertyEditor from "./FooterPropertyEditor";
-import FlexPropertyEditor from "./FlexPropertyEditor";
-import GridPropertyEditor from "./GridPropertyEditor";
-import HeroPropertyEditor from "./HeroPropertyEditor";
+import VideoPropertyEditor from "./VideoPropertyEditor";
 import ProductsListPropertyEditor from "./ProductsListPropertyEditor";
+import AnimationPropertyEditor from "./AnimationPropertyEditor";
 
 interface PropertyEditorManagerProps {
   element: BuilderElement;
@@ -27,193 +28,60 @@ interface PropertyEditorManagerProps {
   onContentChange: (content: string) => void;
 }
 
-const PropertyEditorManager: React.FC<PropertyEditorManagerProps> = ({
+const PropertyEditorManager = ({
   element,
   onPropertyChange,
   onContentChange,
-}) => {
-  // Return the appropriate property editor based on element type
+}: PropertyEditorManagerProps) => {
+  // Return the appropriate property editor based on the element type
   switch (element.type) {
-    case "container":
-    case "section":
-      return (
-        <ContainerPropertyEditor
-          element={element}
-          onPropertyChange={onPropertyChange}
-          onContentChange={onContentChange}
-        />
-      );
-
-    case "flex":
-      return (
-        <FlexPropertyEditor
-          element={element}
-          onPropertyChange={onPropertyChange}
-          onContentChange={onContentChange}
-        />
-      );
-
-    case "grid":
-      return (
-        <GridPropertyEditor
-          element={element}
-          onPropertyChange={onPropertyChange}
-          onContentChange={onContentChange}
-        />
-      );
-      
-    case "hero":
-      return (
-        <HeroPropertyEditor
-          element={element}
-          onPropertyChange={onPropertyChange}
-          onContentChange={onContentChange}
-        />
-      );
-
-    case "heading":
-      return (
-        <HeadingPropertyEditor
-          element={element}
-          onPropertyChange={onPropertyChange}
-          onContentChange={onContentChange}
-        />
-      );
-
     case "text":
-      return (
-        <TextPropertyEditor
-          element={element}
-          onPropertyChange={onPropertyChange}
-          onContentChange={onContentChange}
-        />
-      );
-
+      return <TextPropertyEditor element={element} onPropertyChange={onPropertyChange} onContentChange={onContentChange} />;
+    case "heading":
+    case "animatedHeading":
+      return <HeadingPropertyEditor element={element} onPropertyChange={onPropertyChange} onContentChange={onContentChange} />;
     case "image":
-      return (
-        <ImagePropertyEditor
-          element={element}
-          onPropertyChange={onPropertyChange}
-          onContentChange={onContentChange}
-        />
-      );
-
-    case "video":
-      return (
-        <VideoPropertyEditor
-          element={element}
-          onPropertyChange={onPropertyChange}
-          onContentChange={onContentChange}
-        />
-      );
-
+      return <ImagePropertyEditor element={element} onPropertyChange={onPropertyChange} />;
     case "button":
-      return (
-        <ButtonPropertyEditor
-          element={element}
-          onPropertyChange={onPropertyChange}
-          onContentChange={onContentChange}
-        />
-      );
-      
-    case "list":
-      return (
-        <ListPropertyEditor
-          element={element}
-          onPropertyChange={onPropertyChange}
-          onContentChange={onContentChange}
-        />
-      );
-      
-    case "form":
-      return (
-        <FormPropertyEditor
-          element={element}
-          onPropertyChange={onPropertyChange}
-          onContentChange={onContentChange}
-        />
-      );
-      
-    case "card":
-      return (
-        <CardPropertyEditor
-          element={element}
-          onPropertyChange={onPropertyChange}
-          onContentChange={onContentChange}
-        />
-      );
-      
-    case "productsList":
-      return (
-        <ProductsListPropertyEditor
-          element={element}
-          onPropertyChange={onPropertyChange}
-          onContentChange={onContentChange}
-        />
-      );
-
-    case "feature":
-      return (
-        <FeaturePropertyEditor
-          element={element}
-          onPropertyChange={onPropertyChange}
-          onContentChange={onContentChange}
-        />
-      );
-
-    case "testimonial":
-      return (
-        <TestimonialPropertyEditor
-          element={element}
-          onPropertyChange={onPropertyChange}
-          onContentChange={onContentChange}
-        />
-      );
-
-    case "pricing":
-      return (
-        <PricingPropertyEditor
-          element={element}
-          onPropertyChange={onPropertyChange}
-          onContentChange={onContentChange}
-        />
-      );
-      
+      return <ButtonPropertyEditor element={element} onPropertyChange={onPropertyChange} />;
+    case "container":
+      return <ContainerPropertyEditor element={element} onPropertyChange={onPropertyChange} />;
+    case "hero":
+      return <HeroPropertyEditor element={element} onPropertyChange={onPropertyChange} />;
+    case "grid":
+      return <GridPropertyEditor element={element} onPropertyChange={onPropertyChange} />;
+    case "flex":
+      return <FlexPropertyEditor element={element} onPropertyChange={onPropertyChange} />;
     case "navbar":
-      return (
-        <NavbarPropertyEditor
-          element={element}
-          onPropertyChange={onPropertyChange}
-          onContentChange={onContentChange}
-        />
-      );
-      
+      return <NavbarPropertyEditor element={element} onPropertyChange={onPropertyChange} />;
     case "footer":
-      return (
-        <FooterPropertyEditor
-          element={element}
-          onPropertyChange={onPropertyChange}
-          onContentChange={onContentChange}
-        />
-      );
-
-    // Default case - just show content editor for simple elements
+      return <FooterPropertyEditor element={element} onPropertyChange={onPropertyChange} />;
+    case "list":
+      return <ListPropertyEditor element={element} onPropertyChange={onPropertyChange} />;
+    case "form":
+      return <FormPropertyEditor element={element} onPropertyChange={onPropertyChange} />;
+    case "feature":
+      return <FeaturePropertyEditor element={element} onPropertyChange={onPropertyChange} />;
+    case "testimonial":
+      return <TestimonialPropertyEditor element={element} onPropertyChange={onPropertyChange} />;
+    case "pricing":
+      return <PricingPropertyEditor element={element} onPropertyChange={onPropertyChange} />;
+    case "card":
+      return <CardPropertyEditor element={element} onPropertyChange={onPropertyChange} onContentChange={onContentChange} />;
+    case "video":
+      return <VideoPropertyEditor element={element} onPropertyChange={onPropertyChange} />;
+    case "productsList":
+      return <ProductsListPropertyEditor element={element} onPropertyChange={onPropertyChange} />;
+    // Animation elements
+    case "fadeInElement":
+    case "slideInElement":
+    case "scaleInElement":
+    case "particlesBackground":
+    case "scrollReveal":
+    case "animatedSection":
+      return <AnimationPropertyEditor element={element} onPropertyChange={onPropertyChange} onContentChange={onContentChange} />;
     default:
-      return (
-        <div className="space-y-4">
-          <ContentPropertyEditor 
-            content={element.content} 
-            onContentChange={onContentChange} 
-          />
-          <div className="p-4 bg-gray-50 rounded-md">
-            <h4 className="text-sm font-medium mb-2 text-gray-600">Properties</h4>
-            <p className="text-xs text-gray-500">
-              No specific property editor for this element type yet.
-              Basic content editing is available.
-            </p>
-          </div>
-        </div>
-      );
+      return <PropertyEditor element={element} onPropertyChange={onPropertyChange} onContentChange={onContentChange} />;
   }
 };
 

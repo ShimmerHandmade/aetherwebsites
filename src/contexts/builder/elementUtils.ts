@@ -21,7 +21,12 @@ export const isPremiumElement = (elementType: string): boolean => {
     'InteractiveCardsElement',
     'AnimatedTimelineElement',
     'FloatingShapesElement',
-    'GradientBackgroundElement'
+    'GradientBackgroundElement',
+    'fadeInElement',
+    'slideInElement',
+    'scaleInElement',
+    'animatedHeading',
+    'animatedSection'
   ];
   
   return premiumElements.includes(elementType);
@@ -40,7 +45,9 @@ export const isEnterpriseElement = (elementType: string): boolean => {
     'AdvancedChartElement',
     'VideoBackgroundElement',
     'SVGAnimationElement',
-    'ScrollTriggeredElement'
+    'ScrollTriggeredElement',
+    'particlesBackground',
+    'scrollReveal'
   ];
   
   return enterpriseElements.includes(elementType);

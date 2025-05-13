@@ -9,6 +9,7 @@ import {
   renderMediaElement,
   renderNavigationElement
 } from "./index";
+import { renderAnimationElement } from "./animation";
 
 export const renderElement = (element: BuilderElement): React.ReactNode => {
   try {
@@ -40,6 +41,11 @@ export const renderElement = (element: BuilderElement): React.ReactNode => {
     // Navigation Elements
     if (['navbar', 'menu', 'footer', 'breadcrumbs'].includes(element.type)) {
       return renderNavigationElement(element);
+    }
+    
+    // Animation Elements
+    if (['fadeInElement', 'slideInElement', 'scaleInElement', 'particlesBackground', 'scrollReveal'].includes(element.type)) {
+      return renderAnimationElement(element);
     }
     
     // Default case
