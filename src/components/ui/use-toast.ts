@@ -5,4 +5,3 @@ import { useToast as useToastHook, toast as toastFunction } from "@/hooks/use-to
 export const useToast = useToastHook;
 export const toast = toastFunction;
 export type { ToastProps } from "@/hooks/use-toast";
-
