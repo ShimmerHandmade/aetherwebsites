@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Product } from "@/types/product";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast"; // Updated import path
 import { uploadProductImage } from "./uploadImage";
 
 /**
