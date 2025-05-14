@@ -1,10 +1,10 @@
-
 import React, { useState, useRef } from "react";
 import { useBuilder } from "@/contexts/builder/useBuilder";
 import { usePlan } from "@/contexts/PlanContext";
 import { renderElement } from "./renderElement";
 import { Button } from "@/components/ui/button";
 import { Pencil, Copy, Trash, GripVertical, ArrowUp, ArrowDown, Sparkles } from "lucide-react";
+import ResizableWrapper from "./ResizableWrapper";
 
 interface BuilderElementProps {
   element: any;
@@ -39,6 +39,9 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   // Check if this is an enterprise-only animation element
   const isEnterpriseAnimationElement = element.props?.hasAnimation && element.props?.animationType === 'enterprise';
   const canUseEnterpriseAnimationsProp = canUseEnterpriseAnimations !== undefined ? canUseEnterpriseAnimations : isEnterprise;
+
+  // Check if the element is resizable
+  const isResizable = ["image", "video", "container", "section", "hero", "card", "feature"].includes(element.type);
 
   const handleElementClick = (e: React.MouseEvent) => {
     if (!isPreviewMode) {
@@ -167,7 +170,8 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   // Some elements can't or shouldn't be draggable/editable
   const isDraggable = !isPreviewMode && !["navbar", "footer"].includes(element.type);
 
-  return (
+  // Use the ResizableWrapper for resizable elements
+  const content = (
     <div
       ref={elementRef}
       className={getElementStyle()}
@@ -246,6 +250,22 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
       )}
     </div>
   );
+
+  // If the element is resizable and not in preview mode, wrap it in ResizableWrapper
+  if (isResizable && !isPreviewMode) {
+    return (
+      <ResizableWrapper
+        elementId={element.id}
+        isSelected={selected}
+        isPreviewMode={isPreviewMode}
+      >
+        {content}
+      </ResizableWrapper>
+    );
+  }
+
+  // Otherwise, return the content directly
+  return content;
 };
 
 // Also export as default for backward compatibility
