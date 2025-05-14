@@ -22,7 +22,13 @@ import PropertyEditor from "./PropertyEditor";
 import ContentPropertyEditor from "./ContentPropertyEditor";
 import ResizablePropertyEditor from "./ResizablePropertyEditor";
 
-const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) => {
+interface PropertyEditorManagerProps {
+  element: any;
+  onPropertyChange: (property: string, value: any) => void;
+  onContentChange: (content: string) => void;
+}
+
+const PropertyEditorManager: React.FC<PropertyEditorManagerProps> = ({ element, onPropertyChange, onContentChange }) => {
   // If no element is selected, don't render anything
   if (!element) return null;
   
@@ -37,7 +43,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
       {/* Content editor for elements with content */}
       {element.content !== undefined && (
         <ContentPropertyEditor
-          element={element}
+          content={element.content}
           onContentChange={onContentChange}
         />
       )}
@@ -47,6 +53,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
         <TextPropertyEditor 
           element={element} 
           onPropertyChange={onPropertyChange} 
+          onContentChange={onContentChange}
         />
       )}
       
@@ -54,6 +61,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
         <HeadingPropertyEditor 
           element={element} 
           onPropertyChange={onPropertyChange} 
+          onContentChange={onContentChange}
         />
       )}
       
@@ -61,6 +69,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
         <ImagePropertyEditor 
           element={element} 
           onPropertyChange={onPropertyChange} 
+          onContentChange={onContentChange}
         />
       )}
       
@@ -68,6 +77,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
         <ButtonPropertyEditor 
           element={element} 
           onPropertyChange={onPropertyChange} 
+          onContentChange={onContentChange}
         />
       )}
       
@@ -75,6 +85,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
         <ContainerPropertyEditor 
           element={element} 
           onPropertyChange={onPropertyChange} 
+          onContentChange={onContentChange}
         />
       )}
       
@@ -82,6 +93,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
         <FlexPropertyEditor 
           element={element} 
           onPropertyChange={onPropertyChange} 
+          onContentChange={onContentChange}
         />
       )}
       
@@ -89,6 +101,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
         <GridPropertyEditor 
           element={element} 
           onPropertyChange={onPropertyChange} 
+          onContentChange={onContentChange}
         />
       )}
       
@@ -96,6 +109,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
         <NavbarPropertyEditor 
           element={element} 
           onPropertyChange={onPropertyChange} 
+          onContentChange={onContentChange}
         />
       )}
       
@@ -103,6 +117,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
         <FooterPropertyEditor 
           element={element} 
           onPropertyChange={onPropertyChange} 
+          onContentChange={onContentChange}
         />
       )}
       
@@ -110,6 +125,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
         <HeroPropertyEditor 
           element={element} 
           onPropertyChange={onPropertyChange} 
+          onContentChange={onContentChange}
         />
       )}
       
@@ -117,6 +133,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
         <FeaturePropertyEditor 
           element={element} 
           onPropertyChange={onPropertyChange} 
+          onContentChange={onContentChange}
         />
       )}
       
@@ -124,6 +141,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
         <TestimonialPropertyEditor 
           element={element} 
           onPropertyChange={onPropertyChange} 
+          onContentChange={onContentChange}
         />
       )}
       
@@ -131,6 +149,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
         <PricingPropertyEditor 
           element={element} 
           onPropertyChange={onPropertyChange} 
+          onContentChange={onContentChange}
         />
       )}
       
@@ -138,6 +157,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
         <ListPropertyEditor 
           element={element} 
           onPropertyChange={onPropertyChange} 
+          onContentChange={onContentChange}
         />
       )}
       
@@ -145,6 +165,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
         <VideoPropertyEditor 
           element={element} 
           onPropertyChange={onPropertyChange} 
+          onContentChange={onContentChange}
         />
       )}
       
@@ -152,6 +173,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
         <CardPropertyEditor 
           element={element} 
           onPropertyChange={onPropertyChange} 
+          onContentChange={onContentChange}
         />
       )}
       
@@ -159,6 +181,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
         <FormPropertyEditor 
           element={element} 
           onPropertyChange={onPropertyChange} 
+          onContentChange={onContentChange}
         />
       )}
       
@@ -166,6 +189,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
         <ProductsListPropertyEditor 
           element={element} 
           onPropertyChange={onPropertyChange} 
+          onContentChange={onContentChange}
         />
       )}
       
@@ -181,6 +205,7 @@ const PropertyEditorManager = ({ element, onPropertyChange, onContentChange }) =
       <PropertyEditor 
         element={element} 
         onPropertyChange={onPropertyChange} 
+        onContentChange={onContentChange}
       />
     </div>
   );
