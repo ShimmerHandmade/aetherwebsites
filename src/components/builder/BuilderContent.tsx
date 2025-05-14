@@ -6,14 +6,72 @@ import { PreviewModeProps } from "./BuilderLayout";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { Edit } from "lucide-react";
+import { useBuilder } from "@/contexts/builder/BuilderProvider";
+import { v4 as uuidv4 } from "@/lib/uuid";
 
 const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const { elements, addElement } = useBuilder();
   
   // Always check if we're on the /site/:id route to ensure we're in full preview mode
   const isSiteRoute = window.location.pathname.includes('/site/');
   const isFullPreview = isPreviewMode && (isSiteRoute || new URLSearchParams(window.location.search).get('preview') === 'true');
+
+  // Ensure layout has header and footer if not already present
+  React.useEffect(() => {
+    if (isPreviewMode) return; // Don't modify structure in preview mode
+    
+    // Check if there's already a navbar/header at the top
+    const hasNavbar = elements.some(el => el.type === 'navbar');
+    
+    // Check if there's already a footer at the bottom
+    const hasFooter = elements.some(el => el.type === 'footer');
+    
+    // Add navbar if missing (at the top)
+    if (!hasNavbar) {
+      const navbar = {
+        id: uuidv4(),
+        type: 'navbar',
+        content: '',
+        props: {
+          siteName: "Your Website",
+          variant: "default",
+          links: [
+            { text: "Home", url: "#" },
+            { text: "About", url: "#" },
+            { text: "Services", url: "#" },
+            { text: "Contact", url: "#" }
+          ]
+        }
+      };
+      
+      // Add at the beginning (index 0)
+      addElement(navbar, 0);
+    }
+    
+    // Add footer if missing (at the end)
+    if (!hasFooter) {
+      const footer = {
+        id: uuidv4(),
+        type: 'footer',
+        content: '',
+        props: {
+          siteName: "Your Website",
+          variant: "dark",
+          links: [
+            { text: "Home", url: "#" },
+            { text: "About", url: "#" },
+            { text: "Services", url: "#" },
+            { text: "Contact", url: "#" }
+          ]
+        }
+      };
+      
+      // Add at the end
+      addElement(footer);
+    }
+  }, []);
 
   // For full preview mode, render just the canvas without any UI controls
   if (isFullPreview || isSiteRoute) {
