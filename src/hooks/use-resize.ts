@@ -67,13 +67,18 @@ export function useResize({
     // Add document listeners
     document.addEventListener('mousemove', handleResize);
     document.addEventListener('mouseup', handleResizeEnd);
-    document.addEventListener('touchmove', handleResize);
+    document.addEventListener('touchmove', handleResize, { passive: false });
     document.addEventListener('touchend', handleResizeEnd);
   };
   
   // Handle resize movement
   const handleResize = (e: MouseEvent | TouchEvent) => {
     if (!resizingRef.current || !direction) return;
+    
+    // Prevent default behavior to avoid scrolling while resizing
+    if (e.cancelable) {
+      e.preventDefault();
+    }
     
     // Get client position
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;

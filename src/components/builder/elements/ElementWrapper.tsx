@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from "react";
 import { useBuilder } from "@/contexts/builder/useBuilder";
 import { usePlan } from "@/contexts/PlanContext";
@@ -265,6 +266,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
         minWidth={50}
         minHeight={50}
         showHandles={true}
+        className="resize-wrapper"
       >
         {content}
       </ResizableWrapper>
