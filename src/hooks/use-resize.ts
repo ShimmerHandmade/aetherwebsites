@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { BuilderElement } from '@/contexts/builder/types';
 import { useBuilder } from '@/contexts/builder';
@@ -95,30 +94,37 @@ export function useResize({
     let newWidth = width;
     let newHeight = height;
     
-    if (['right', 'topRight', 'bottomRight'].includes(direction)) {
-      newWidth = Math.max(width + deltaX, minWidth);
-    }
-    
-    if (['left', 'topLeft', 'bottomLeft'].includes(direction)) {
-      newWidth = Math.max(width - deltaX, minWidth);
-    }
-    
-    if (['bottom', 'bottomLeft', 'bottomRight'].includes(direction)) {
-      newHeight = Math.max(height + deltaY, minHeight);
-    }
-    
-    if (['top', 'topLeft', 'topRight'].includes(direction)) {
-      newHeight = Math.max(height - deltaY, minHeight);
+    switch(direction) {
+      case 'right':
+        newWidth = Math.max(width + deltaX, minWidth);
+        break;
+      case 'bottom':
+        newHeight = Math.max(height + deltaY, minHeight);
+        break;
+      case 'bottomRight':
+        newWidth = Math.max(width + deltaX, minWidth);
+        newHeight = Math.max(height + deltaY, minHeight);
+        break;
+      default:
+        // Other directions are simplified in this version
+        break;
     }
     
     // Maintain aspect ratio if needed
-    if (aspectRatio && height > 0) {
+    if (aspectRatio && width > 0 && height > 0) {
       const originalRatio = width / height;
       
-      if (newWidth / newHeight > originalRatio) {
-        newWidth = newHeight * originalRatio;
-      } else {
+      if (direction === 'right') {
         newHeight = newWidth / originalRatio;
+      } else if (direction === 'bottom') {
+        newWidth = newHeight * originalRatio;
+      } else if (direction === 'bottomRight') {
+        // Let the user choose which dimension to prioritize in diagonal resizing
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          newHeight = newWidth / originalRatio;
+        } else {
+          newWidth = newHeight * originalRatio;
+        }
       }
     }
     

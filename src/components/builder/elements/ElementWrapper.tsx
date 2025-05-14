@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from "react";
 import { useBuilder } from "@/contexts/builder/useBuilder";
 import { usePlan } from "@/contexts/PlanContext";
@@ -174,7 +173,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   // Some elements can't or shouldn't be draggable/editable
   const isDraggable = !isPreviewMode && !["navbar", "footer"].includes(element.type);
 
-  // Use the ResizableWrapper for resizable elements
+  // Create the element content
   const content = (
     <div
       ref={elementRef}
@@ -185,6 +184,10 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
       onDragEnd={handleDragEnd}
       data-element-id={element.id}
       data-element-type={element.type}
+      style={{
+        maxWidth: '100%',
+        maxHeight: '100%'
+      }}
     >
       {/* Show premium badge if it's a premium animation element */}
       {isPremiumAnimationElement && !isPreviewMode && (
@@ -195,86 +198,95 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
       )}
 
       {renderedElement}
-      
-      {!isPreviewMode && selected && (
-        <div className="absolute top-0 right-0 -mt-10 flex space-x-1 bg-white p-1 rounded shadow-sm z-10">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={handleMoveUpClick}
-            title="Move element up"
-          >
-            <ArrowUp className="h-4 w-4" />
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={handleMoveDownClick}
-            title="Move element down"
-          >
-            <ArrowDown className="h-4 w-4" />
-          </Button>
-          
-          {isDraggable && (
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8 cursor-grab"
-              title="Drag to reposition"
-            >
-              <GripVertical className="h-4 w-4" />
-            </Button>
-          )}
-          
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={handleDuplicateClick}
-            title="Duplicate element"
-          >
-            <Copy className="h-4 w-4" />
-          </Button>
-          
-          {!["navbar", "footer"].includes(element.type) && (
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={handleDeleteClick}
-              title="Remove element"
-            >
-              <Trash className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      )}
     </div>
   );
+
+  // Always show element controls for selected elements
+  const controlsBar = !isPreviewMode && selected ? (
+    <div className="absolute top-0 right-0 -mt-10 flex space-x-1 bg-white p-1 rounded shadow-sm z-50">
+      <Button
+        variant="outline"
+        size="icon"
+        className="h-8 w-8"
+        onClick={handleMoveUpClick}
+        title="Move element up"
+      >
+        <ArrowUp className="h-4 w-4" />
+      </Button>
+      
+      <Button
+        variant="outline"
+        size="icon"
+        className="h-8 w-8"
+        onClick={handleMoveDownClick}
+        title="Move element down"
+      >
+        <ArrowDown className="h-4 w-4" />
+      </Button>
+      
+      {isDraggable && (
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 cursor-grab"
+          title="Drag to reposition"
+        >
+          <GripVertical className="h-4 w-4" />
+        </Button>
+      )}
+      
+      <Button
+        variant="outline"
+        size="icon"
+        className="h-8 w-8"
+        onClick={handleDuplicateClick}
+        title="Duplicate element"
+      >
+        <Copy className="h-4 w-4" />
+      </Button>
+      
+      {!["navbar", "footer"].includes(element.type) && (
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
+          onClick={handleDeleteClick}
+          title="Remove element"
+        >
+          <Trash className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
+  ) : null;
 
   // If the element is resizable and not in preview mode, wrap it in ResizableWrapper
   if (isResizable && !isPreviewMode) {
     return (
-      <ResizableWrapper
-        elementId={element.id}
-        isSelected={selected}
-        isPreviewMode={isPreviewMode}
-        maintainAspectRatio={maintainAspectRatio}
-        minWidth={50}
-        minHeight={50}
-        showHandles={true}
-        className="resize-wrapper"
-      >
-        {content}
-      </ResizableWrapper>
+      <div className="relative">
+        {controlsBar}
+        <ResizableWrapper
+          elementId={element.id}
+          isSelected={selected}
+          isPreviewMode={isPreviewMode}
+          maintainAspectRatio={maintainAspectRatio}
+          minWidth={50}
+          minHeight={50}
+          showHandles={selected}
+          className="resize-wrapper"
+        >
+          {content}
+        </ResizableWrapper>
+      </div>
     );
   }
 
-  // Otherwise, return the content directly
-  return content;
+  // Otherwise, return the content directly with controls
+  return (
+    <div className="relative">
+      {controlsBar}
+      {content}
+    </div>
+  );
 };
 
 // Also export as default for backward compatibility
