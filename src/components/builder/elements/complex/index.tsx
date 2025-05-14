@@ -1,5 +1,6 @@
+
 import React from "react";
-import { BuilderElement } from "@/contexts/BuilderContext";
+import { BuilderElement } from "@/contexts/builder/types";
 import FeatureElement from "./FeatureElement";
 import TestimonialElement from "./TestimonialElement";
 import ContactElement from "./ContactElement";
@@ -39,3 +40,4 @@ export * from "./PricingElement";
 export * from "./CtaElement";
 export * from "./CardElement";
 export * from "./FaqElement";
+export { default as ProductsList } from './ProductsList';
