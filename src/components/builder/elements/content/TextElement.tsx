@@ -16,6 +16,7 @@ const TextElement: React.FC<ElementProps> = ({ element }) => {
     fontWeight = "normal", 
     textAlign = "left", 
     textColor = "default",
+    customTextColor,
     whitespacePreLine 
   } = element.props || {};
   
@@ -45,19 +46,30 @@ const TextElement: React.FC<ElementProps> = ({ element }) => {
       "text-right": textAlign === "right",
       "text-justify": textAlign === "justify",
     },
-    // Text color classes
+    // Text color classes - only used if no custom color is provided
     {
-      "text-gray-800": textColor === "default",
-      "text-primary": textColor === "primary",
-      "text-secondary": textColor === "secondary",
-      "text-gray-500": textColor === "muted",
+      "text-gray-800": textColor === "default" && !customTextColor,
+      "text-primary": textColor === "primary" && !customTextColor,
+      "text-secondary": textColor === "secondary" && !customTextColor,
+      "text-gray-500": textColor === "muted" && !customTextColor,
+      "text-black": textColor === "black" && !customTextColor,
+      "text-white": textColor === "white" && !customTextColor,
+      "text-red-500": textColor === "red" && !customTextColor,
+      "text-blue-500": textColor === "blue" && !customTextColor,
+      "text-green-500": textColor === "green" && !customTextColor,
+      "text-yellow-500": textColor === "yellow" && !customTextColor,
+      "text-purple-500": textColor === "purple" && !customTextColor,
+      "text-pink-500": textColor === "pink" && !customTextColor,
     },
     // Add any custom classes
     element.props?.className || ""
   );
   
   // Support for whitespace-pre-line if specified in props
-  const textStyle = whitespacePreLine ? { whiteSpace: "pre-line" as const } : {};
+  const textStyle = {
+    ...(whitespacePreLine ? { whiteSpace: "pre-line" as const } : {}),
+    ...(customTextColor ? { color: customTextColor } : {})
+  };
   
   return (
     <p className={className} style={textStyle}>

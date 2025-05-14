@@ -14,7 +14,8 @@ const HeadingElement: React.FC<ElementProps> = ({ element }) => {
   // Extract styling properties from props
   const { 
     textAlign = "left", 
-    textColor = "default"
+    textColor = "default",
+    customTextColor
   } = element.props || {};
   
   // Build the base class name based on properties
@@ -25,12 +26,20 @@ const HeadingElement: React.FC<ElementProps> = ({ element }) => {
       "text-center": textAlign === "center",
       "text-right": textAlign === "right",
     },
-    // Text color classes
+    // Text color classes - only used if no custom color is provided
     {
-      "text-gray-900": textColor === "default",
-      "text-primary": textColor === "primary",
-      "text-secondary": textColor === "secondary",
-      "text-gray-600": textColor === "muted",
+      "text-gray-900": textColor === "default" && !customTextColor,
+      "text-primary": textColor === "primary" && !customTextColor,
+      "text-secondary": textColor === "secondary" && !customTextColor,
+      "text-gray-600": textColor === "muted" && !customTextColor,
+      "text-black": textColor === "black" && !customTextColor,
+      "text-white": textColor === "white" && !customTextColor,
+      "text-red-500": textColor === "red" && !customTextColor,
+      "text-blue-500": textColor === "blue" && !customTextColor,
+      "text-green-500": textColor === "green" && !customTextColor,
+      "text-yellow-500": textColor === "yellow" && !customTextColor,
+      "text-purple-500": textColor === "purple" && !customTextColor,
+      "text-pink-500": textColor === "pink" && !customTextColor,
     },
     // Add any custom classes
     element.props?.className || ""
@@ -51,21 +60,24 @@ const HeadingElement: React.FC<ElementProps> = ({ element }) => {
   
   const className = getHeadingClassName(baseClassName, level);
   
+  // Support for custom text color
+  const textStyle = customTextColor ? { color: customTextColor } : {};
+  
   const renderHeading = () => {
     switch(level) {
       case "h1":
-        return <h1 className={className}>{content}</h1>;
+        return <h1 className={className} style={textStyle}>{content}</h1>;
       case "h3":
-        return <h3 className={className}>{content}</h3>;
+        return <h3 className={className} style={textStyle}>{content}</h3>;
       case "h4":
-        return <h4 className={className}>{content}</h4>;
+        return <h4 className={className} style={textStyle}>{content}</h4>;
       case "h5":
-        return <h5 className={className}>{content}</h5>;
+        return <h5 className={className} style={textStyle}>{content}</h5>;
       case "h6":
-        return <h6 className={className}>{content}</h6>;
+        return <h6 className={className} style={textStyle}>{content}</h6>;
       case "h2":
       default:
-        return <h2 className={className}>{content}</h2>;
+        return <h2 className={className} style={textStyle}>{content}</h2>;
     }
   };
 
