@@ -7,6 +7,7 @@ import { updateWebsiteTemplate } from "@/api/websites";
 import { Badge } from "@/components/ui/badge";
 import { usePlan } from "@/contexts/PlanContext";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Template definitions with improved store types
 const templates = [
@@ -62,6 +63,7 @@ interface TemplateSelectionProps {
 const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) => {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [imageLoading, setImageLoading] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
   const { isPremium } = usePlan();
 
@@ -103,49 +105,76 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
     onComplete();
   };
 
+  const handleImageLoad = (templateId: string) => {
+    setImageLoading(prev => ({
+      ...prev,
+      [templateId]: false
+    }));
+  };
+
+  const handleImageError = (templateId: string) => {
+    setImageLoading(prev => ({
+      ...prev,
+      [templateId]: false
+    }));
+  };
+
   return (
-    <div className="py-8 max-w-5xl mx-auto">
-      <h2 className="text-3xl font-bold text-center mb-2">Choose Your Store Template</h2>
-      <p className="text-gray-600 text-center mb-8">
-        Select a template that matches your store's style or skip to start from scratch.
+    <div className="py-8 px-4 max-w-6xl mx-auto">
+      <h2 className="text-4xl font-bold text-center mb-3">Choose Your Store Template</h2>
+      <p className="text-gray-600 text-center text-lg mb-10 max-w-3xl mx-auto">
+        Select a template that matches your business needs. Each template is fully customizable after selection.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
         {templates.map((template) => (
           <div 
             key={template.id}
-            className={`border rounded-lg overflow-hidden cursor-pointer transition-all 
+            className={`rounded-xl overflow-hidden cursor-pointer transition-all duration-300
               ${selectedTemplate === template.id 
-                ? 'ring-2 ring-indigo-500 border-indigo-500 transform scale-[1.02] shadow-lg' 
-                : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                ? 'ring-4 ring-indigo-500 border-indigo-500 transform scale-[1.02] shadow-xl' 
+                : 'border border-gray-200 shadow-md hover:shadow-lg hover:transform hover:scale-[1.01]'
               }
-              ${template.isPremium && !isPremium ? 'opacity-80' : ''}
+              ${template.isPremium && !isPremium ? 'opacity-85' : ''}
             `}
-            onClick={() => setSelectedTemplate(template.id)}
+            onClick={() => !isLoading && setSelectedTemplate(template.id)}
           >
             <div className="relative">
-              <AspectRatio ratio={16/9} className="bg-gray-100">
+              <AspectRatio ratio={16/10} className="bg-gray-100">
+                {(imageLoading[template.id] !== false) && (
+                  <Skeleton className="absolute inset-0 z-10" />
+                )}
                 <img 
                   src={template.image} 
                   alt={template.name} 
-                  className="w-full h-full object-cover rounded-t-lg"
-                  onError={(e) => {
-                    // Fallback if image doesn't load
-                    e.currentTarget.src = "/placeholder.svg";
-                  }}
+                  className="w-full h-full object-cover"
+                  onLoad={() => handleImageLoad(template.id)}
+                  onError={() => handleImageError(template.id)}
                 />
               </AspectRatio>
               {template.isPremium && (
-                <Badge className="absolute top-2 right-2 bg-gradient-to-r from-amber-500 to-amber-700 hover:from-amber-600 hover:to-amber-800">
-                  Premium
-                </Badge>
+                <div className="absolute top-0 right-0 m-3">
+                  <Badge className="bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white shadow-sm px-3 py-1 font-medium text-xs">
+                    Premium
+                  </Badge>
+                </div>
+              )}
+              {selectedTemplate === template.id && (
+                <div className="absolute top-3 left-3">
+                  <Badge className="bg-indigo-500 text-white shadow-sm px-3 py-1">
+                    Selected
+                  </Badge>
+                </div>
               )}
             </div>
-            <div className="p-4">
-              <h3 className="font-medium text-lg">{template.name}</h3>
-              <p className="text-sm text-gray-600">{template.description}</p>
+            <div className="p-5 bg-white">
+              <h3 className="font-semibold text-lg">{template.name}</h3>
+              <p className="text-gray-600 mt-1">{template.description}</p>
               {template.isPremium && !isPremium && (
-                <p className="text-xs text-amber-600 mt-2 font-medium">
+                <p className="text-xs text-amber-600 mt-2 font-medium flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
                   Requires Premium Plan
                 </p>
               )}
@@ -154,20 +183,30 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
         ))}
       </div>
 
-      <div className="flex justify-center space-x-4">
+      <div className="flex justify-center space-x-4 pt-4">
         <Button 
           variant="outline" 
           onClick={handleSkip}
           disabled={isLoading}
+          className="px-6 py-2"
         >
           Skip, Start from Scratch
         </Button>
         <Button 
-          className="bg-gradient-to-r from-indigo-600 to-purple-600"
+          className={`bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-8 py-2 ${!selectedTemplate ? 'opacity-70' : ''}`}
           onClick={handleSelectTemplate}
           disabled={isLoading || !selectedTemplate}
         >
-          {isLoading ? "Applying..." : "Use This Template"}
+          {isLoading ? 
+            <span className="flex items-center">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Applying...
+            </span> : 
+            "Use This Template"
+          }
         </Button>
       </div>
     </div>
