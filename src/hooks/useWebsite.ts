@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { NavigateFunction } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
-import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
+import { toast } from "@/hooks/use-toast";
+import { BuilderElement, PageSettings } from "@/contexts/builder/types";
 import { Json } from "@/integrations/supabase/types";
 import { v4 as uuidv4 } from "@/lib/uuid";
 

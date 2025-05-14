@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { ArrowLeft, Plus, File, Trash, Edit, ChevronRight, Home } from "lucide-r
 import { useWebsite } from "@/hooks/useWebsite";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "@/lib/uuid";
 import { 
   Dialog,
@@ -14,7 +13,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";

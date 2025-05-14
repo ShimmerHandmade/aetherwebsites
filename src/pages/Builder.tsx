@@ -7,7 +7,7 @@ import { useWebsite } from "@/hooks/useWebsite";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { v4 as uuidv4 } from "@/lib/uuid";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 // Declare global site settings interface for window
 declare global {
@@ -244,11 +244,7 @@ const Builder = () => {
   // This function triggers the save event and gets the current builder elements
   const handleSave = async () => {
     if (!currentPageId || !website) {
-      toast({
-        title: "Error",
-        description: "Cannot save: No page selected",
-        variant: "destructive"
-      });
+      toast.error("Cannot save: No page selected");
       return;
     }
     
@@ -261,11 +257,7 @@ const Builder = () => {
   // This is called when the BuilderProvider's onSave is triggered
   const handleSaveComplete = async (updatedElements: BuilderElement[], updatedPageSettings: PageSettings) => {
     if (!currentPageId || !website) {
-      toast({
-        title: "Error",
-        description: "Cannot save: Missing page or website data",
-        variant: "destructive"
-      });
+      toast.error("Cannot save: Missing page or website data");
       return;
     }
 
@@ -297,17 +289,10 @@ const Builder = () => {
     
     if (success) {
       setSaveStatus(`Saved just now`);
-      toast({
-        title: "Success",
-        description: "Website saved successfully"
-      });
+      toast.success("Website saved successfully");
     } else {
       setSaveStatus('Save failed');
-      toast({
-        title: "Error",
-        description: "Failed to save website",
-        variant: "destructive"
-      });
+      toast.error("Failed to save website");
     }
   };
   
