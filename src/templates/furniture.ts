@@ -30,7 +30,7 @@ export const furnitureTemplate = {
           buttonText: "Shop Collection",
           buttonLink: "#products",
           alignment: "center",
-          imageUrl: "/templates/furniture-hero.jpg",
+          imageUrl: "https://images.unsplash.com/photo-1634712282287-14ed57b9cc89?q=80&w=1406&auto=format&fit=crop",
           overlay: true,
           height: "large",
           backgroundColor: "bg-stone-900"
@@ -69,7 +69,7 @@ export const furnitureTemplate = {
               {
                 id: uuidv4(),
                 type: "text",
-                content: "Our furniture combines traditional craftsmanship with contemporary design to create pieces that last a lifetime. Each item is carefully constructed using sustainable materials and ethical practices.",
+                content: "Our furniture combines traditional craftsmanship with contemporary design to create pieces that last a lifetime. Each item is carefully constructed using sustainable materials and ethical practices, ensuring both beauty and durability. Our artisans bring decades of experience to every piece they create.",
                 props: {
                   className: "text-gray-600 text-lg"
                 }
@@ -92,7 +92,7 @@ export const furnitureTemplate = {
                 props: {
                   title: "Living Room",
                   description: "Elegant sofas and accent pieces",
-                  image: "/templates/furniture-living.jpg",
+                  image: "https://images.unsplash.com/photo-1560448204-603b3fc33ddc?q=80&w=1470&auto=format&fit=crop",
                   className: "overflow-hidden"
                 }
               },
@@ -103,7 +103,7 @@ export const furnitureTemplate = {
                 props: {
                   title: "Bedroom",
                   description: "Serene and comfortable designs",
-                  image: "/templates/furniture-bedroom.jpg",
+                  image: "https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=1457&auto=format&fit=crop",
                   className: "overflow-hidden"
                 }
               },
@@ -114,7 +114,7 @@ export const furnitureTemplate = {
                 props: {
                   title: "Dining",
                   description: "Tables that bring people together",
-                  image: "/templates/furniture-dining.jpg",
+                  image: "https://images.unsplash.com/photo-1615876232449-5b5389e7195f?q=80&w=1480&auto=format&fit=crop",
                   className: "overflow-hidden"
                 }
               }
@@ -146,7 +146,7 @@ export const furnitureTemplate = {
                 type: "image",
                 content: "",
                 props: {
-                  src: "/templates/furniture-feature.jpg",
+                  src: "https://images.unsplash.com/photo-1600585152220-90363fe7e115?q=80&w=1470&auto=format&fit=crop",
                   alt: "Featured collection",
                   className: "w-full h-[600px] object-cover"
                 }
@@ -182,7 +182,7 @@ export const furnitureTemplate = {
                   {
                     id: uuidv4(),
                     type: "text",
-                    content: "Inspired by Nordic design principles, this collection combines functionality with minimalist aesthetics. Each piece is crafted from sustainable oak with clean lines and organic forms.",
+                    content: "Inspired by Nordic design principles, this collection combines functionality with minimalist aesthetics. Each piece is crafted from sustainable oak with clean lines and organic forms. The natural finishes enhance the beauty of the wood grain, creating furniture that's both timeless and contemporary.",
                     props: {
                       className: "text-gray-600 mb-8"
                     }
@@ -294,9 +294,9 @@ export const furnitureTemplate = {
                 type: "feature",
                 content: "",
                 props: {
-                  icon: "package",
+                  icon: "shopping-cart",
                   title: "Free Delivery",
-                  description: "Free shipping on all orders over $500 within the mainland."
+                  description: "Free shipping on all orders over $500 within the mainland. White glove delivery service ensures your furniture arrives in perfect condition."
                 }
               },
               {
@@ -304,9 +304,9 @@ export const furnitureTemplate = {
                 type: "feature",
                 content: "",
                 props: {
-                  icon: "star",
+                  icon: "layout-grid",
                   title: "Interior Design Consultation",
-                  description: "Book a consultation with our professional interior designers."
+                  description: "Book a consultation with our professional interior designers who will help you create the perfect space tailored to your lifestyle."
                 }
               },
               {
@@ -314,9 +314,9 @@ export const furnitureTemplate = {
                 type: "feature",
                 content: "",
                 props: {
-                  icon: "package",
+                  icon: "tag",
                   title: "10-Year Warranty",
-                  description: "All our furniture comes with a 10-year warranty for peace of mind."
+                  description: "All our furniture comes with a 10-year warranty for peace of mind. We stand behind the quality and craftsmanship of every piece we sell."
                 }
               }
             ]
@@ -356,10 +356,10 @@ export const furnitureTemplate = {
                 type: "testimonial",
                 content: "",
                 props: {
-                  quote: "The quality of our new dining table is exceptional. It's become the center of our family gatherings.",
+                  quote: "The quality of our new dining table is exceptional. It's become the center of our family gatherings. The craftsmanship is evident in every detail, and the customer service was outstanding from order to delivery.",
                   author: "Emily Thompson",
                   role: "New York, NY",
-                  avatar: "/placeholder.svg"
+                  avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=1470&auto=format&fit=crop"
                 }
               },
               {
@@ -367,10 +367,10 @@ export const furnitureTemplate = {
                 type: "testimonial",
                 content: "",
                 props: {
-                  quote: "The interior design service helped me transform my living room into a space I truly love.",
+                  quote: "The interior design service helped me transform my living room into a space I truly love. The designer understood my style and budget constraints, and created a plan that exceeded my expectations.",
                   author: "Marcus Johnson",
                   role: "Chicago, IL",
-                  avatar: "/placeholder.svg"
+                  avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1287&auto=format&fit=crop"
                 }
               },
               {
@@ -378,10 +378,10 @@ export const furnitureTemplate = {
                 type: "testimonial",
                 content: "",
                 props: {
-                  quote: "Five years in, and our Modern Living sofa still looks as good as the day we bought it.",
+                  quote: "Five years in, and our Modern Living sofa still looks as good as the day we bought it. The fabric has held up beautifully despite daily use, and the frame is as solid as ever. Worth every penny.",
                   author: "Sophia Rodriguez",
                   role: "Austin, TX",
-                  avatar: "/placeholder.svg"
+                  avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1376&auto=format&fit=crop"
                 }
               }
             ]

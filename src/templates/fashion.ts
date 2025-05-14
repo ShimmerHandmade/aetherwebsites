@@ -30,7 +30,7 @@ export const fashionTemplate = {
           buttonText: "Shop Now",
           buttonLink: "#products",
           alignment: "center",
-          imageUrl: "/templates/fashion-hero.jpg",
+          imageUrl: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=1470&auto=format&fit=crop",
           overlay: true,
           height: "large",
           backgroundColor: "bg-stone-50"
@@ -115,7 +115,7 @@ export const fashionTemplate = {
                 type: "image",
                 content: "",
                 props: {
-                  src: "/templates/fashion-category-1.jpg",
+                  src: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1470&auto=format&fit=crop",
                   alt: "Women's Collection",
                   className: "w-full h-96 object-cover"
                 }
@@ -143,7 +143,7 @@ export const fashionTemplate = {
                   {
                     id: uuidv4(),
                     type: "text",
-                    content: "Discover our curated collection of contemporary women's fashion designed for the modern, confident woman. Featuring sustainably sourced materials and timeless designs.",
+                    content: "Discover our curated collection of contemporary women's fashion designed for the modern, confident woman. Featuring sustainably sourced materials and timeless designs that transition effortlessly from day to night. Our premium fabrics ensure comfort without compromising on style.",
                     props: {
                       className: "text-gray-600 mb-6"
                     }
@@ -197,7 +197,7 @@ export const fashionTemplate = {
                 type: "image",
                 content: "",
                 props: {
-                  src: "/templates/fashion-insta-1.jpg",
+                  src: "https://images.unsplash.com/photo-1548549557-dbe9946621da?q=80&w=1374&auto=format&fit=crop",
                   alt: "Instagram post 1",
                   className: "w-full aspect-square object-cover"
                 }
@@ -207,7 +207,7 @@ export const fashionTemplate = {
                 type: "image",
                 content: "",
                 props: {
-                  src: "/templates/fashion-insta-2.jpg",
+                  src: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1440&auto=format&fit=crop",
                   alt: "Instagram post 2",
                   className: "w-full aspect-square object-cover"
                 }
@@ -217,7 +217,7 @@ export const fashionTemplate = {
                 type: "image",
                 content: "",
                 props: {
-                  src: "/templates/fashion-insta-3.jpg",
+                  src: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1374&auto=format&fit=crop",
                   alt: "Instagram post 3",
                   className: "w-full aspect-square object-cover"
                 }
@@ -227,7 +227,7 @@ export const fashionTemplate = {
                 type: "image",
                 content: "",
                 props: {
-                  src: "/templates/fashion-insta-4.jpg",
+                  src: "https://images.unsplash.com/photo-1581044777550-4cfa60707c03?q=80&w=1472&auto=format&fit=crop",
                   alt: "Instagram post 4",
                   className: "w-full aspect-square object-cover"
                 }
@@ -237,7 +237,7 @@ export const fashionTemplate = {
                 type: "image",
                 content: "",
                 props: {
-                  src: "/templates/fashion-insta-5.jpg",
+                  src: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?q=80&w=1473&auto=format&fit=crop",
                   alt: "Instagram post 5",
                   className: "w-full aspect-square object-cover"
                 }

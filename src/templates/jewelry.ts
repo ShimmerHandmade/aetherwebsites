@@ -30,7 +30,7 @@ export const jewelryTemplate = {
           buttonText: "Explore Collections",
           buttonLink: "#collections",
           alignment: "center",
-          imageUrl: "/templates/jewelry-hero.jpg",
+          imageUrl: "https://images.unsplash.com/photo-1581252517866-6c03232384a4?q=80&w=1471&auto=format&fit=crop",
           overlay: true,
           height: "large",
           backgroundColor: "bg-gray-900"
@@ -77,7 +77,7 @@ export const jewelryTemplate = {
               {
                 id: uuidv4(),
                 type: "text",
-                content: "Each piece is meticulously handcrafted by our master artisans using ethically sourced materials and time-honored techniques passed down through generations.",
+                content: "Each piece is meticulously handcrafted by our master artisans using ethically sourced materials and time-honored techniques passed down through generations. We combine traditional craftsmanship with innovative design to create jewelry that becomes part of your life story.",
                 props: {
                   className: "text-gray-600"
                 }
@@ -100,7 +100,7 @@ export const jewelryTemplate = {
                 props: {
                   icon: "star",
                   title: "Ethically Sourced",
-                  description: "We ensure all our gemstones and precious metals are responsibly and ethically sourced."
+                  description: "We ensure all our gemstones and precious metals are responsibly and ethically sourced from trusted mines and suppliers that meet our rigorous standards."
                 }
               },
               {
@@ -108,9 +108,9 @@ export const jewelryTemplate = {
                 type: "feature",
                 content: "",
                 props: {
-                  icon: "package",
+                  icon: "tag",
                   title: "Artisan Crafted",
-                  description: "Each piece is handcrafted by skilled artisans with decades of experience."
+                  description: "Each piece is handcrafted by skilled artisans with decades of experience. No machine mass production, only careful hands creating wearable art."
                 }
               },
               {
@@ -118,9 +118,9 @@ export const jewelryTemplate = {
                 type: "feature",
                 content: "",
                 props: {
-                  icon: "star",
+                  icon: "shopping-bag",
                   title: "Lifetime Warranty",
-                  description: "We stand behind our craftsmanship with a lifetime warranty on all pieces."
+                  description: "We stand behind our craftsmanship with a lifetime warranty on all pieces. Our jewelry is made to last generations, not seasons."
                 }
               }
             ]
@@ -151,7 +151,7 @@ export const jewelryTemplate = {
                 type: "image",
                 content: "",
                 props: {
-                  src: "/templates/jewelry-collection.jpg",
+                  src: "https://images.unsplash.com/photo-1531995811006-35cb42e1a022?q=80&w=1470&auto=format&fit=crop",
                   alt: "Signature collection",
                   className: "w-full h-[600px] object-cover"
                 }
@@ -187,7 +187,7 @@ export const jewelryTemplate = {
                   {
                     id: uuidv4(),
                     type: "text",
-                    content: "Inspired by the night sky, our Celestial Dreams collection features stars, moons, and cosmic elements transformed into wearable art. Each piece incorporates ethically sourced diamonds and sapphires set in 18k gold.",
+                    content: "Inspired by the night sky, our Celestial Dreams collection features stars, moons, and cosmic elements transformed into wearable art. Each piece incorporates ethically sourced diamonds and sapphires set in 18k gold. The collection balances bold statement pieces with delicate everyday jewelry that catches the light with every movement.",
                     props: {
                       className: "text-gray-600 mb-8"
                     }
@@ -309,7 +309,7 @@ export const jewelryTemplate = {
                 props: {
                   title: "Consultation",
                   description: "Meet with our designers to discuss your vision",
-                  image: "/templates/jewelry-bespoke-1.jpg",
+                  image: "https://images.unsplash.com/photo-1544376798-76d0bf5a6f9a?q=80&w=1374&auto=format&fit=crop",
                   className: "bg-gray-800 border-gray-700 text-white"
                 }
               },
@@ -320,7 +320,7 @@ export const jewelryTemplate = {
                 props: {
                   title: "Design",
                   description: "Collaborate on sketches and 3D renderings",
-                  image: "/templates/jewelry-bespoke-2.jpg",
+                  image: "https://images.unsplash.com/photo-1551721434-8b94ddff0e6d?q=80&w=1365&auto=format&fit=crop",
                   className: "bg-gray-800 border-gray-700 text-white"
                 }
               },
@@ -331,7 +331,7 @@ export const jewelryTemplate = {
                 props: {
                   title: "Creation",
                   description: "Watch as your piece is crafted by our artisans",
-                  image: "/templates/jewelry-bespoke-3.jpg",
+                  image: "https://images.unsplash.com/photo-1618403088890-3d9ff6f4c8b1?q=80&w=1374&auto=format&fit=crop",
                   className: "bg-gray-800 border-gray-700 text-white"
                 }
               }
@@ -394,10 +394,10 @@ export const jewelryTemplate = {
                 type: "testimonial",
                 content: "",
                 props: {
-                  quote: "My engagement ring from Luxe Gems is breathtaking. The attention to detail and quality of craftsmanship exceeds every expectation.",
+                  quote: "My engagement ring from Luxe Gems is breathtaking. The attention to detail and quality of craftsmanship exceeds every expectation. Five years later, it still sparkles like the day we picked it out.",
                   author: "Rebecca Anderson",
                   role: "New York, NY",
-                  avatar: "/placeholder.svg"
+                  avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1376&auto=format&fit=crop"
                 }
               },
               {
@@ -405,10 +405,10 @@ export const jewelryTemplate = {
                 type: "testimonial",
                 content: "",
                 props: {
-                  quote: "Working with the design team on a custom anniversary piece was a wonderful experience. The result is a masterpiece we'll cherish forever.",
+                  quote: "Working with the design team on a custom anniversary piece was a wonderful experience. The result is a masterpiece we'll cherish forever. They captured our vision perfectly while adding their artistic expertise.",
                   author: "Thomas & Claire Harris",
                   role: "London, UK",
-                  avatar: "/placeholder.svg"
+                  avatar: "https://images.unsplash.com/photo-1623082574085-157d955f1d35?q=80&w=1364&auto=format&fit=crop"
                 }
               },
               {
@@ -416,10 +416,10 @@ export const jewelryTemplate = {
                 type: "testimonial",
                 content: "",
                 props: {
-                  quote: "The heirloom quality of Luxe Gems jewelry is unmatched. These aren't just accessories, they're future family treasures.",
+                  quote: "The heirloom quality of Luxe Gems jewelry is unmatched. These aren't just accessories, they're future family treasures. The compliments I receive on my necklace are endless - it truly makes every outfit special.",
                   author: "Elena Miyazaki",
                   role: "Tokyo, Japan",
-                  avatar: "/placeholder.svg"
+                  avatar: "https://images.unsplash.com/photo-1534751516642-a1af1ef26a56?q=80&w=1374&auto=format&fit=crop"
                 }
               }
             ]

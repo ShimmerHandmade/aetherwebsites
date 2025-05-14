@@ -30,7 +30,7 @@ export const foodTemplate = {
           buttonText: "Shop Now",
           buttonLink: "#products",
           alignment: "center",
-          imageUrl: "/templates/food-hero.jpg",
+          imageUrl: "https://images.unsplash.com/photo-1526470498-9ae73c665de8?q=80&w=1298&auto=format&fit=crop",
           overlay: true,
           height: "large",
           backgroundColor: "bg-amber-900"
@@ -71,7 +71,7 @@ export const foodTemplate = {
                 props: {
                   title: "Olive Oils",
                   description: "Premium cold-pressed varieties",
-                  image: "/templates/food-oils.jpg"
+                  image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?q=80&w=1470&auto=format&fit=crop"
                 }
               },
               {
@@ -81,7 +81,7 @@ export const foodTemplate = {
                 props: {
                   title: "Spices & Herbs",
                   description: "From around the world",
-                  image: "/templates/food-spices.jpg"
+                  image: "https://images.unsplash.com/photo-1532336414038-cf19250c5757?q=80&w=1374&auto=format&fit=crop"
                 }
               },
               {
@@ -91,7 +91,7 @@ export const foodTemplate = {
                 props: {
                   title: "Artisanal Pastas",
                   description: "Traditional Italian methods",
-                  image: "/templates/food-pasta.jpg"
+                  image: "https://images.unsplash.com/photo-1551462147-ff29053bfc14?q=80&w=1374&auto=format&fit=crop"
                 }
               },
               {
@@ -101,7 +101,7 @@ export const foodTemplate = {
                 props: {
                   title: "Specialty Preserves",
                   description: "Small-batch jams and pickles",
-                  image: "/templates/food-preserves.jpg"
+                  image: "https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?q=80&w=1374&auto=format&fit=crop"
                 }
               }
             ]
@@ -206,7 +206,7 @@ export const foodTemplate = {
                   {
                     id: uuidv4(),
                     type: "text",
-                    content: "Gourmet Market was founded in 2010 by food enthusiasts who wanted to bring unique, high-quality ingredients to home cooks everywhere. We travel the world to source authentic products from small producers who use traditional methods and prioritize quality over quantity.",
+                    content: "Gourmet Market was founded in 2010 by food enthusiasts who wanted to bring unique, high-quality ingredients to home cooks everywhere. We travel the world to source authentic products from small producers who use traditional methods and prioritize quality over quantity. Our team includes chefs and culinary experts who personally test and select each item in our collection.",
                     props: {
                       className: "mb-4 text-gray-600"
                     }
@@ -214,7 +214,7 @@ export const foodTemplate = {
                   {
                     id: uuidv4(),
                     type: "text",
-                    content: "Our mission is to support sustainable agriculture while connecting you with exceptional products that elevate your cooking and eating experience.",
+                    content: "Our mission is to support sustainable agriculture while connecting you with exceptional products that elevate your cooking and eating experience. We believe that great ingredients are the foundation of great meals.",
                     props: {
                       className: "mb-8 text-gray-600"
                     }
@@ -237,7 +237,7 @@ export const foodTemplate = {
                 type: "image",
                 content: "",
                 props: {
-                  src: "/templates/food-story.jpg",
+                  src: "https://images.unsplash.com/photo-1556911220-bff31c812dba?q=80&w=1368&auto=format&fit=crop",
                   alt: "Our story",
                   className: "w-full h-96 object-cover rounded-lg"
                 }
@@ -279,7 +279,7 @@ export const foodTemplate = {
                 type: "image",
                 content: "",
                 props: {
-                  src: "/templates/food-recipe.jpg",
+                  src: "https://images.unsplash.com/photo-1607330289024-1535acc6014a?q=80&w=1374&auto=format&fit=crop",
                   alt: "Recipe of the month",
                   className: "w-full h-96 object-cover rounded-lg"
                 }
@@ -307,7 +307,7 @@ export const foodTemplate = {
                   {
                     id: uuidv4(),
                     type: "text",
-                    content: "A rich, creamy risotto infused with the earthy flavors of truffles and wild mushrooms. This luxurious dish is perfect for special occasions or whenever you want to impress dinner guests.",
+                    content: "A rich, creamy risotto infused with the earthy flavors of truffles and wild mushrooms. This luxurious dish is perfect for special occasions or whenever you want to impress dinner guests. The secret is in the slow cooking process and using the highest quality ingredients for maximum flavor.",
                     props: {
                       className: "mb-6 text-amber-100"
                     }
@@ -315,7 +315,7 @@ export const foodTemplate = {
                   {
                     id: uuidv4(),
                     type: "text",
-                    content: "Made with our premium Carnaroli rice, black truffle oil, and dried porcini mushrooms - all available in our store.",
+                    content: "Made with our premium Carnaroli rice, black truffle oil, and dried porcini mushrooms - all available in our store. Pair with a full-bodied white wine for a truly memorable dining experience.",
                     props: {
                       className: "mb-8 text-amber-100"
                     }
@@ -370,10 +370,10 @@ export const foodTemplate = {
                 type: "testimonial",
                 content: "",
                 props: {
-                  quote: "The olive oil is exceptional - better than anything I've tasted outside of Italy. It's become a kitchen staple.",
+                  quote: "The olive oil is exceptional - better than anything I've tasted outside of Italy. It's become a kitchen staple, and I use it for everything from salads to finishing dishes. It elevates even the simplest recipes.",
                   author: "Anna Martinez",
                   role: "Home Chef",
-                  avatar: "/placeholder.svg"
+                  avatar: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?q=80&w=1471&auto=format&fit=crop"
                 }
               },
               {
@@ -381,10 +381,10 @@ export const foodTemplate = {
                 type: "testimonial",
                 content: "",
                 props: {
-                  quote: "The spice blends are incredible and have transformed my cooking. Fast shipping and beautiful packaging too!",
+                  quote: "The spice blends are incredible and have transformed my cooking. Fast shipping and beautiful packaging too! I especially love the Moroccan blend - it's perfectly balanced and authentic.",
                   author: "James Wilson",
                   role: "Food Blogger",
-                  avatar: "/placeholder.svg"
+                  avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?q=80&w=1448&auto=format&fit=crop"
                 }
               },
               {
@@ -392,10 +392,10 @@ export const foodTemplate = {
                 type: "testimonial",
                 content: "",
                 props: {
-                  quote: "I'm impressed with the quality and authenticity of every product I've ordered. The customer service is also outstanding.",
+                  quote: "I'm impressed with the quality and authenticity of every product I've ordered. The customer service is also outstanding. They helped me select the perfect gifts for clients who still rave about them.",
                   author: "Michelle Chen",
                   role: "Professional Chef",
-                  avatar: "/placeholder.svg"
+                  avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1528&auto=format&fit=crop"
                 }
               }
             ]

@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from "@/lib/uuid";
 
 export const ecommerceTemplate = {
   pages: {
-    // The home page content will be assigned dynamically by updateWebsiteTemplate based on the pages structure
     homepage: [
       {
         id: uuidv4(),
@@ -30,7 +29,7 @@ export const ecommerceTemplate = {
           buttonText: "Shop Now",
           buttonLink: "#products",
           alignment: "center",
-          imageUrl: "/templates/ecommerce-hero.jpg",
+          imageUrl: "https://images.unsplash.com/photo-1607082350899-7e105aa886ae?q=80&w=1470&auto=format&fit=crop",
           overlay: true,
           height: "large",
           backgroundColor: "bg-slate-900"
@@ -123,9 +122,9 @@ export const ecommerceTemplate = {
                 type: "feature",
                 content: "",
                 props: {
-                  icon: "ShoppingBag",
+                  icon: "shopping-bag",
                   title: "Quality Products",
-                  description: "All our products are carefully selected to ensure the highest quality."
+                  description: "All our products are carefully selected to ensure the highest quality and durability. We work with trusted suppliers who share our commitment to excellence."
                 }
               },
               {
@@ -133,9 +132,9 @@ export const ecommerceTemplate = {
                 type: "feature",
                 content: "",
                 props: {
-                  icon: "Truck",
+                  icon: "shopping-cart",
                   title: "Fast Shipping",
-                  description: "Get your products delivered to your doorstep within days."
+                  description: "Get your products delivered to your doorstep within days. We offer express shipping options and free delivery on orders above $50."
                 }
               },
               {
@@ -143,9 +142,9 @@ export const ecommerceTemplate = {
                 type: "feature",
                 content: "",
                 props: {
-                  icon: "HeadsetHelp",
+                  icon: "tag",
                   title: "24/7 Support",
-                  description: "Our customer service team is always ready to help you."
+                  description: "Our customer service team is always ready to help you with any questions or concerns. We're committed to ensuring your complete satisfaction."
                 }
               }
             ]
@@ -185,10 +184,10 @@ export const ecommerceTemplate = {
                 type: "testimonial",
                 content: "",
                 props: {
-                  quote: "I love their products! Fast shipping and great customer service.",
+                  quote: "I love their products! The quality is exceptional and the shipping was faster than expected. Their customer service team was also very helpful when I had questions about my order.",
                   author: "Jane Doe",
                   role: "Regular Customer",
-                  avatar: "/placeholder.svg"
+                  avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1287&auto=format&fit=crop"
                 }
               },
               {
@@ -196,10 +195,10 @@ export const ecommerceTemplate = {
                 type: "testimonial",
                 content: "",
                 props: {
-                  quote: "Best online shopping experience I've ever had. Will definitely order again!",
+                  quote: "Best online shopping experience I've ever had. The website is easy to navigate, the checkout process is smooth, and the products arrived in perfect condition. Will definitely order again!",
                   author: "John Smith",
                   role: "First-time Customer",
-                  avatar: "/placeholder.svg"
+                  avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1287&auto=format&fit=crop"
                 }
               }
             ]
