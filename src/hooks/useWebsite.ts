@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { NavigateFunction } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -119,7 +120,6 @@ export const useWebsite = (
       if (forcedRefreshRef.current || forceRefresh || !elements.length) {
         // Load elements from content if available
         if (data.content && Array.isArray(data.content) && data.content.length > 0) {
-          // Use a proper type assertion with unknown as intermediate step
           setElements(data.content as unknown as BuilderElement[]);
           console.log("Loaded elements from database", data.content);
         }
@@ -164,12 +164,14 @@ export const useWebsite = (
       }
       
       setIsSaving(true);
+      console.log("Starting website save...");
       
-      const contentToSave = updatedElements || elements;
-      const settingsToSave = updatedPageSettings || pageSettings;
+      // Use provided values or fall back to current state
+      const contentToSave = updatedElements !== undefined ? updatedElements : elements;
+      const settingsToSave = updatedPageSettings !== undefined ? updatedPageSettings : pageSettings;
       
       // Make a deep copy of the current website settings to avoid mutation issues
-      const currentSettings = JSON.parse(JSON.stringify(website.settings || {}));
+      const currentSettings = website.settings ? JSON.parse(JSON.stringify(website.settings)) : {};
       
       // Store page settings and additional settings within the settings object
       const updatedSettings: WebsiteSettings = {
@@ -208,14 +210,16 @@ export const useWebsite = (
       
       setWebsite(updatedWebsite);
       setElements(contentToSave);
-      setPageSettings(settingsToSave);
+      if (settingsToSave) {
+        setPageSettings(settingsToSave);
+      }
       
       // Reset unsaved changes flag
       setUnsavedChanges(false);
       setLastSaved(new Date());
       
       // Only show manual save toast (not for auto-saves)
-      if (!options?.autoSave) {
+      if (!autoSaveEnabled) {
         toast.success("Website saved successfully");
       }
       
@@ -242,7 +246,7 @@ export const useWebsite = (
         }, 500);
       }
     }
-  }, [id, website, isSaving, elements, pageSettings, websiteName, options?.autoSave]);
+  }, [id, website, isSaving, elements, pageSettings, websiteName, autoSaveEnabled]);
 
   const publishWebsite = async () => {
     try {

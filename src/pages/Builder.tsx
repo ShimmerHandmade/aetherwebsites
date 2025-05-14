@@ -8,6 +8,7 @@ import { useWebsite } from "@/hooks/useWebsite";
 import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { v4 as uuidv4 } from "@/lib/uuid";
+import { toast } from "sonner";
 
 // Declare global site settings interface for window
 declare global {
@@ -235,23 +236,30 @@ const Builder = () => {
 
   // This function triggers the save event and gets the current builder elements
   const handleSave = async () => {
-    if (!currentPageId || !website) return;
+    if (!currentPageId || !website) {
+      toast.error("Cannot save: No page selected");
+      return;
+    }
     
-    // Get the current elements from the builder context
+    // Dispatch event to trigger save in builder context
     document.dispatchEvent(new CustomEvent('save-website'));
     setSaveStatus('Saving...');
+    console.log("Manual save triggered");
   };
 
   // This is called when the BuilderProvider's onSave is triggered
   const handleSaveComplete = async (updatedElements: BuilderElement[], updatedPageSettings: PageSettings) => {
-    if (!currentPageId || !website) return;
+    if (!currentPageId || !website) {
+      toast.error("Cannot save: Missing page or website data");
+      return;
+    }
 
     console.log("Saving page content:", updatedElements);
     latestElementsRef.current = updatedElements;
     
     // Create deep copies of objects to avoid mutation issues
-    const pagesContent = JSON.parse(JSON.stringify(website.settings.pagesContent || {}));
-    const pagesSettings = JSON.parse(JSON.stringify(website.settings.pagesSettings || {}));
+    const pagesContent = website.settings.pagesContent ? JSON.parse(JSON.stringify(website.settings.pagesContent)) : {};
+    const pagesSettings = website.settings.pagesSettings ? JSON.parse(JSON.stringify(website.settings.pagesSettings)) : {};
     
     // Update content and settings for current page
     pagesContent[currentPageId] = updatedElements;
@@ -259,9 +267,12 @@ const Builder = () => {
     
     console.log("Saving content for page:", currentPageId, updatedElements);
     
-    // Save to database
+    // Check if this is the home page
+    const isHomePage = website.settings.pages?.find(p => p.isHomePage)?.id === currentPageId;
+    
+    // Save to database - if this is the home page, update the main content as well
     const success = await saveWebsite(
-      currentPageId === website.settings.pages?.find(p => p.isHomePage)?.id ? updatedElements : website.content, 
+      isHomePage ? updatedElements : website.content, 
       updatedPageSettings, 
       {
         pagesContent,
@@ -271,13 +282,11 @@ const Builder = () => {
     
     if (success) {
       setSaveStatus(`Saved just now`);
+      toast.success("Website saved successfully");
     } else {
       setSaveStatus('Save failed');
+      toast.error("Failed to save website");
     }
-    
-    // Refresh website data after save to ensure consistency
-    // Changed to false to avoid overwriting the changes we just made
-    // refreshWebsite();
   };
   
   const handleChangePage = (pageId: string) => {
