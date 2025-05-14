@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
 import BuilderLayout from "@/components/builder/BuilderLayout";
@@ -8,7 +7,7 @@ import { useWebsite } from "@/hooks/useWebsite";
 import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { v4 as uuidv4 } from "@/lib/uuid";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 
 // Declare global site settings interface for window
 declare global {
@@ -104,32 +103,40 @@ const Builder = () => {
   // Set current page to home page by default or from URL param
   useEffect(() => {
     if (website?.settings?.pages) {
-      const pageId = new URLSearchParams(window.location.search).get('pageId');
+      const urlParams = new URLSearchParams(window.location.search);
+      const pageId = urlParams.get('pageId');
       
-      // If pageId is specified in URL, use it
+      // If pageId is specified in URL, try to use it
       if (pageId) {
         const page = website.settings.pages.find(page => page.id === pageId);
         if (page) {
           setCurrentPageId(pageId);
-        } else {
-          // If specified pageId doesn't exist, default to home
-          const homePage = website.settings.pages.find(page => page.isHomePage);
-          setCurrentPageId(homePage?.id || website.settings.pages[0]?.id || null);
+          return;
         }
-      } else {
-        // Default to home page
-        const homePage = website.settings.pages.find(page => page.isHomePage);
-        if (homePage) {
-          setCurrentPageId(homePage.id);
-        } else if (website.settings.pages.length > 0) {
-          setCurrentPageId(website.settings.pages[0].id);
+      }
+      
+      // If no pageId in URL or the specified page doesn't exist,
+      // default to home page or first page
+      const homePage = website.settings.pages.find(page => page.isHomePage);
+      if (homePage) {
+        setCurrentPageId(homePage.id);
+        // Update URL to include the home page ID for consistency
+        if (!pageId) {
+          navigate(`/builder/${id}?pageId=${homePage.id}`, { replace: true });
+        }
+      } else if (website.settings.pages.length > 0) {
+        // If no home page exists, use the first page
+        setCurrentPageId(website.settings.pages[0].id);
+        // Update URL to include the first page ID for consistency
+        if (!pageId) {
+          navigate(`/builder/${id}?pageId=${website.settings.pages[0].id}`, { replace: true });
         }
       }
 
       // Ensure we have at least a home page, shop page, and about page
       ensureRequiredPages();
     }
-  }, [website]);
+  }, [website, navigate, id]);
 
   // Set global site settings for components to access
   useEffect(() => {
@@ -237,7 +244,11 @@ const Builder = () => {
   // This function triggers the save event and gets the current builder elements
   const handleSave = async () => {
     if (!currentPageId || !website) {
-      toast.error("Cannot save: No page selected");
+      toast({
+        title: "Error",
+        description: "Cannot save: No page selected",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -250,7 +261,11 @@ const Builder = () => {
   // This is called when the BuilderProvider's onSave is triggered
   const handleSaveComplete = async (updatedElements: BuilderElement[], updatedPageSettings: PageSettings) => {
     if (!currentPageId || !website) {
-      toast.error("Cannot save: Missing page or website data");
+      toast({
+        title: "Error",
+        description: "Cannot save: Missing page or website data",
+        variant: "destructive"
+      });
       return;
     }
 

@@ -6,7 +6,7 @@ import { ArrowLeft, Plus, File, Trash, Edit, ChevronRight, Home } from "lucide-r
 import { useWebsite } from "@/hooks/useWebsite";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 import { v4 as uuidv4 } from "@/lib/uuid";
 import { 
   Dialog,

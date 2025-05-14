@@ -1,10 +1,10 @@
-
 import { useState, useEffect, useCallback, useRef } from "react";
 import { NavigateFunction } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
 import { Json } from "@/integrations/supabase/types";
+import { v4 as uuidv4 } from "@/lib/uuid";
 
 export interface WebsiteData {
   id: string;
@@ -91,7 +91,11 @@ export const useWebsite = (
       
       if (error) {
         console.error("Error fetching website:", error);
-        toast.error("Error loading website");
+        toast({
+          title: "Error",
+          description: "Error loading website",
+          variant: "destructive"
+        });
         navigate("/dashboard");
         return;
       }
@@ -100,6 +104,42 @@ export const useWebsite = (
       const parsedSettings: WebsiteSettings = typeof data.settings === 'string' 
         ? JSON.parse(data.settings as string)
         : (data.settings as unknown as WebsiteSettings) || {};
+      
+      // Ensure we have pages array
+      if (!parsedSettings.pages || !Array.isArray(parsedSettings.pages)) {
+        parsedSettings.pages = [];
+      }
+      
+      // If no pages exist, create a default home page
+      if (parsedSettings.pages.length === 0) {
+        const homePageId = uuidv4();
+        parsedSettings.pages = [{
+          id: homePageId,
+          title: 'Home',
+          slug: '/',
+          isHomePage: true
+        }];
+        
+        // Create empty content for this page
+        if (!parsedSettings.pagesContent) {
+          parsedSettings.pagesContent = {};
+        }
+        parsedSettings.pagesContent[homePageId] = [];
+        
+        // Save this new structure back to the database
+        const { error: updateError } = await supabase
+          .from("websites")
+          .update({ 
+            settings: parsedSettings as unknown as Json
+          })
+          .eq("id", id);
+          
+        if (updateError) {
+          console.error("Error updating website with default home page:", updateError);
+        } else {
+          console.log("Created default home page for website");
+        }
+      }
       
       // Convert the database response to the correct type
       const websiteData: WebsiteData = {
@@ -134,7 +174,11 @@ export const useWebsite = (
       forcedRefreshRef.current = false;
     } catch (error) {
       console.error("Error in fetchWebsite:", error);
-      toast.error("Error loading website");
+      toast({
+        title: "Error",
+        description: "Error loading website",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
