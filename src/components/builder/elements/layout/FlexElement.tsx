@@ -10,7 +10,7 @@ interface ElementProps {
 }
 
 const FlexElement: React.FC<ElementProps> = ({ element }) => {
-  const { selectedElementId } = useBuilder();
+  const { selectedElementId, selectElement } = useBuilder();
   const direction = element.props?.direction === 'column' ? 'flex-col' : 'flex-row';
   const justify = element.props?.justify === 'between' ? 'justify-between' : 
                 element.props?.justify === 'around' ? 'justify-around' :
@@ -23,8 +23,17 @@ const FlexElement: React.FC<ElementProps> = ({ element }) => {
   const gap = element.props?.gap === 'large' ? 'gap-6' : 
               element.props?.gap === 'small' ? 'gap-2' : 'gap-4';
   
+  // Handle click on the flex container
+  const handleFlexClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    selectElement(element.id);
+  };
+  
   return (
-    <div className={`flex ${direction} ${justify} ${align} ${wrap} ${gap} p-4 border border-dashed border-gray-300 hover:border-blue-300 transition-colors rounded-md relative min-h-[100px]`}>
+    <div 
+      className={`flex ${direction} ${justify} ${align} ${wrap} ${gap} p-4 border border-dashed border-gray-300 hover:border-blue-300 transition-colors rounded-md relative min-h-[100px]`}
+      onClick={handleFlexClick}
+    >
       <CanvasDragDropHandler
         isPreviewMode={false}
         onCanvasClick={(e) => e.stopPropagation()}
