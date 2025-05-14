@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { BuilderElement } from '@/contexts/builder/types';
-import { useBuilder } from '@/contexts/builder/BuilderProvider';
+import { useBuilder } from '@/contexts/builder';
 
 type ResizeDirection = 'top' | 'right' | 'bottom' | 'left' | 'topLeft' | 'topRight' | 'bottomRight' | 'bottomLeft';
 
@@ -34,13 +34,20 @@ export function useResize({
     e.stopPropagation();
     e.preventDefault();
     
+    console.log(`Starting resize operation in direction: ${resizeDirection}`);
+    
     // Get the element
     const element = findElementById(elementId);
-    if (!element) return;
+    if (!element) {
+      console.error(`Element with ID ${elementId} not found`);
+      return;
+    }
     
-    // Get current size
-    const width = element.props?.width || 100;
+    // Get current size (with defaults if not set)
+    const width = element.props?.width || 200;
     const height = element.props?.height || 100;
+    
+    console.log(`Initial size: ${width}x${height}`);
     
     // Store initial values
     initialSizeRef.current = { width, height };
@@ -100,7 +107,7 @@ export function useResize({
     }
     
     // Maintain aspect ratio if needed
-    if (aspectRatio) {
+    if (aspectRatio && height > 0) {
       const originalRatio = width / height;
       
       if (newWidth / newHeight > originalRatio) {
@@ -110,10 +117,11 @@ export function useResize({
       }
     }
     
+    console.log(`Resizing to: ${Math.round(newWidth)}x${Math.round(newHeight)}`);
+    
     // Update element props
     updateElement(elementId, {
       props: {
-        ...findElementById(elementId)?.props,
         width: Math.round(newWidth),
         height: Math.round(newHeight)
       }
@@ -123,6 +131,8 @@ export function useResize({
   // End resize
   const handleResizeEnd = () => {
     if (!resizingRef.current) return;
+    
+    console.log('Resize operation ended');
     
     resizingRef.current = false;
     setIsResizing(false);

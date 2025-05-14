@@ -2,6 +2,7 @@
 import React from 'react';
 import { useResize } from '@/hooks/use-resize';
 import { cn } from '@/lib/utils';
+import { useBuilder } from '@/contexts/builder/useBuilder';
 
 interface ResizableWrapperProps {
   elementId: string;
@@ -26,6 +27,9 @@ const ResizableWrapper: React.FC<ResizableWrapperProps> = ({
   isSelected = false,
   isPreviewMode = false,
 }) => {
+  const { findElementById } = useBuilder();
+  const element = findElementById(elementId);
+  
   const { isResizing, handleResizeStart, resizableProps } = useResize({
     elementId,
     minWidth,
@@ -33,9 +37,13 @@ const ResizableWrapper: React.FC<ResizableWrapperProps> = ({
     aspectRatio: maintainAspectRatio,
   });
 
+  // Get element dimensions from props
+  const width = element?.props?.width;
+  const height = element?.props?.height;
+  
   // Don't show resize handles in preview mode
   if (isPreviewMode) {
-    return <div className={className}>{children}</div>;
+    return <div className={className} style={{ width: width ? `${width}px` : 'auto', height: height ? `${height}px` : 'auto' }}>{children}</div>;
   }
 
   return (
@@ -45,6 +53,10 @@ const ResizableWrapper: React.FC<ResizableWrapperProps> = ({
         isResizing && 'select-none',
         className
       )}
+      style={{ 
+        width: width ? `${width}px` : 'auto', 
+        height: height ? `${height}px` : 'auto' 
+      }}
     >
       {children}
 

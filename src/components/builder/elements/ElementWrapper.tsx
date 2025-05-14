@@ -41,7 +41,10 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   const canUseEnterpriseAnimationsProp = canUseEnterpriseAnimations !== undefined ? canUseEnterpriseAnimations : isEnterprise;
 
   // Check if the element is resizable
-  const isResizable = ["image", "video", "container", "section", "hero", "card", "feature"].includes(element.type);
+  const isResizable = ["image", "video", "container", "section", "hero", "card", "feature", "gallery", "carousel", "testimonial"].includes(element.type);
+  
+  // Get resizable properties
+  const maintainAspectRatio = element.props?.maintainAspectRatio || false;
 
   const handleElementClick = (e: React.MouseEvent) => {
     if (!isPreviewMode) {
@@ -258,6 +261,10 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
         elementId={element.id}
         isSelected={selected}
         isPreviewMode={isPreviewMode}
+        maintainAspectRatio={maintainAspectRatio}
+        minWidth={50}
+        minHeight={50}
+        showHandles={true}
       >
         {content}
       </ResizableWrapper>
