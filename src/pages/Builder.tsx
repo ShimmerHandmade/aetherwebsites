@@ -1,13 +1,13 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { BuilderProvider } from "@/contexts/BuilderContext";
+import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import BuilderLayout from "@/components/builder/BuilderLayout";
 import BuilderNavbar from "@/components/builder/BuilderNavbar";
 import BuilderContent from "@/components/builder/BuilderContent";
 import { useWebsite } from "@/hooks/useWebsite";
-import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
+import { BuilderElement, PageSettings } from "@/contexts/builder/types";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { v4 as uuidv4 } from "@/lib/uuid";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 // Declare global site settings interface for window
 declare global {
@@ -297,10 +297,17 @@ const Builder = () => {
     
     if (success) {
       setSaveStatus(`Saved just now`);
-      toast.success("Website saved successfully");
+      toast({
+        title: "Success",
+        description: "Website saved successfully"
+      });
     } else {
       setSaveStatus('Save failed');
-      toast.error("Failed to save website");
+      toast({
+        title: "Error",
+        description: "Failed to save website",
+        variant: "destructive"
+      });
     }
   };
   

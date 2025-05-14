@@ -1,5 +1,6 @@
+
 import React, { useState, useRef } from "react";
-import { useBuilder } from "@/contexts/builder";
+import { useBuilder } from "@/contexts/builder/useBuilder";
 import { usePlan } from "@/contexts/PlanContext";
 import { renderElement } from "./renderElement";
 import { Button } from "@/components/ui/button";
