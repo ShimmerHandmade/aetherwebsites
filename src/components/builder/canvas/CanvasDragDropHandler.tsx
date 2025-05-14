@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from "react";
 import { useBuilder } from "@/contexts/builder/BuilderProvider";
 import { v4 as uuidv4 } from "@/lib/uuid";
@@ -116,8 +115,8 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
           const targetIndex = findElementIndex(dropTarget.element, containerId);
           if (targetIndex !== -1) {
             const insertIndex = dropTarget.top ? targetIndex : targetIndex + 1;
+            console.log(`Adding new element to container ${containerId} at position ${insertIndex}`);
             addElement(newElement, insertIndex, containerId);
-            console.log("Added new element at position:", insertIndex, "in container:", containerId);
             
             toast({
               title: "Element Added",
@@ -130,13 +129,20 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
         
         // Add to container or root if no specific position
         if (containerId) {
-          // Always add to the end of the container if no specific index
+          // Find the container
           const container = findElementById(containerId);
-          const childrenCount = container?.children?.length || 0;
-          addElement(newElement, childrenCount, containerId);
-          console.log("Added new element to container at end position:", containerId, newElement);
+          
+          if (container) {
+            // Always add to the end of the container if no specific index
+            const childrenCount = container.children?.length || 0;
+            console.log(`Adding new element to container ${containerId} at end position (${childrenCount})`);
+            addElement(newElement, containerId);
+          } else {
+            console.log("Container not found:", containerId);
+          }
         } else {
           // Add to root
+          console.log("Adding new element to root");
           addElement(newElement, null);
         }
         

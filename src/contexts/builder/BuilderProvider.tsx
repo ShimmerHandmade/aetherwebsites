@@ -123,6 +123,12 @@ export const BuilderProvider = ({
 
   // Add element with support for both index and parent ID
   const addElement = (element: BuilderElement, indexOrParentId: number | string | null = null, containerId?: string) => {
+    console.log(`Adding element ${element.type} with ID ${element.id}`, {
+      indexOrParentId,
+      containerId,
+      element
+    });
+
     // Check if this is a premium element that the user doesn't have access to
     if ((isPremiumElement(element.type) && !isPremium) || 
         (isEnterpriseElement(element.type) && !isEnterprise)) {
@@ -133,7 +139,51 @@ export const BuilderProvider = ({
       return;
     }
 
-    // If it's a number, treat it as an index for inserting at that position
+    // If containerId is specified, use it to find the parent
+    if (containerId) {
+      setElements(prevElements => {
+        const updateChildrenRecursively = (elements: BuilderElement[]): BuilderElement[] => {
+          return elements.map(el => {
+            if (el.id === containerId) {
+              // If indexOrParentId is a number, use it as insert index
+              if (typeof indexOrParentId === 'number') {
+                const newChildren = [...(el.children || [])];
+                newChildren.splice(indexOrParentId, 0, element);
+                console.log(`Inserting element at index ${indexOrParentId} in container ${containerId}`);
+                return {
+                  ...el,
+                  children: newChildren
+                };
+              } else {
+                // Otherwise just append to the end
+                console.log(`Appending element to end of container ${containerId}`);
+                return {
+                  ...el,
+                  children: [...(el.children || []), element]
+                };
+              }
+            }
+            
+            // Recursively search for the container in children
+            if (el.children && el.children.length > 0) {
+              return {
+                ...el,
+                children: updateChildrenRecursively(el.children)
+              };
+            }
+            
+            return el;
+          });
+        };
+        
+        const updated = updateChildrenRecursively(prevElements);
+        notifyContentChanged();
+        return updated;
+      });
+      return;
+    }
+
+    // If it's a number, treat it as an index for inserting at that position in root elements
     if (typeof indexOrParentId === 'number') {
       setElements(prevElements => {
         const newElements = [...prevElements];
@@ -144,7 +194,7 @@ export const BuilderProvider = ({
       return;
     }
   
-    // Otherwise, treat it as a parentId
+    // Otherwise, treat it as a parentId for legacy support
     const parentId = indexOrParentId as string | null;
     
     if (parentId) {

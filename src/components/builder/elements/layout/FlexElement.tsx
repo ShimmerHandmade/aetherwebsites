@@ -33,6 +33,7 @@ const FlexElement: React.FC<ElementProps> = ({ element }) => {
     <div 
       className={`flex ${direction} ${justify} ${align} ${wrap} ${gap} p-4 border border-dashed border-gray-300 hover:border-blue-300 transition-colors rounded-md relative min-h-[100px]`}
       onClick={handleFlexClick}
+      data-element-id={element.id}
     >
       <CanvasDragDropHandler
         isPreviewMode={false}
