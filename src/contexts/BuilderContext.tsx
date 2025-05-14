@@ -3,3 +3,4 @@
 // This maintains backward compatibility while we migrate to the new structure
 export * from './builder';
 export { useBuilder } from './builder/useBuilder';
+export { hasRequiredStructure, getContentInsertionIndex, ensureElementsOrder } from './builder/pageStructureUtils';

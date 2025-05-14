@@ -4,6 +4,7 @@ import { useBuilder } from "@/contexts/builder/BuilderProvider";
 import BuilderElement from "../BuilderElement";
 import EmptyCanvasPlaceholder from "./EmptyCanvasPlaceholder";
 import { v4 as uuidv4 } from "@/lib/uuid";
+import { hasRequiredStructure, ensureElementsOrder } from "@/contexts/builder/pageStructureUtils";
 
 export interface PageCanvasProps {
   isPreviewMode: boolean;
@@ -16,7 +17,7 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
   canUseAnimations = false, 
   canUseEnterpriseAnimations = false 
 }) => {
-  const { elements, selectedElementId, addElement, setElements } = useBuilder();
+  const { elements, selectedElementId, setElements } = useBuilder();
 
   // Effect to ensure every page has a header and footer
   useEffect(() => {
@@ -66,13 +67,19 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
       ];
 
       setElements(defaultElements);
-    } else {
-      // Check if header and footer exist
-      const hasNavbar = elements.some(el => el.type === "navbar");
-      const hasFooter = elements.some(el => el.type === "footer");
+      return;
+    }
 
+    // Check if we need to add header/footer and ensure proper order
+    const { hasHeader, hasFooter } = hasRequiredStructure(elements);
+    
+    // Only update the elements if we need to add header/footer
+    if (!hasHeader || !hasFooter) {
+      // Create a new array with the elements we need to add
+      let updatedElements = [...elements];
+      
       // Add navbar if missing
-      if (!hasNavbar) {
+      if (!hasHeader) {
         const navbarElement = {
           id: uuidv4(),
           type: "navbar",
@@ -88,8 +95,7 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
             variant: "default"
           }
         };
-        // Changed from passing a number (0) to passing null as parentId with 0 as the index
-        addElement(navbarElement, 0);
+        updatedElements.push(navbarElement);
       }
 
       // Add footer if missing
@@ -109,10 +115,16 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
             variant: "dark"
           }
         };
-        addElement(footerElement); // Add at the end
+        updatedElements.push(footerElement);
       }
+      
+      // Order the elements properly
+      updatedElements = ensureElementsOrder(updatedElements);
+      
+      // Update the elements in the builder context
+      setElements(updatedElements);
     }
-  }, [elements.length]); // Only run when elements array length changes
+  }, []); // Only run once on component mount
 
   return (
     <div className="w-full h-full bg-white overflow-auto">
