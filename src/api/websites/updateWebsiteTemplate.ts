@@ -1,8 +1,14 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
+import { BuilderElement, PageSettings } from "@/contexts/builder/types";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "@/lib/uuid";
+import { fashionTemplate } from "@/templates/fashion";
+import { electronicsTemplate } from "@/templates/electronics";
+import { beautyTemplate } from "@/templates/beauty";
+import { furnitureTemplate } from "@/templates/furniture";
+import { foodTemplate } from "@/templates/food";
+import { jewelryTemplate } from "@/templates/jewelry";
 import { ecommerceTemplate } from "@/templates/ecommerce";
 import { portfolioTemplate } from "@/templates/portfolio";
 import { blogTemplate } from "@/templates/blog";
@@ -117,6 +123,18 @@ export const updateWebsiteTemplate = async (
 // Helper function to get template content
 const getTemplateContent = (templateId: string) => {
   switch(templateId) {
+    case 'fashion':
+      return fashionTemplate;
+    case 'electronics':
+      return electronicsTemplate;
+    case 'beauty':
+      return beautyTemplate;
+    case 'furniture':
+      return furnitureTemplate;
+    case 'food':
+      return foodTemplate;
+    case 'jewelry':
+      return jewelryTemplate;
     case 'ecommerce':
       return ecommerceTemplate;
     case 'portfolio':
@@ -160,7 +178,158 @@ const getTemplateSettings = (templateId: string) => {
     }
   };
   
+  // Template-specific settings
   switch(templateId) {
+    case 'fashion':
+      return {
+        ...baseSettings,
+        pages: [
+          ...baseSettings.pages,
+          {
+            id: "shop",
+            title: "Shop",
+            slug: "/shop",
+            isHomePage: false
+          },
+          {
+            id: "collections",
+            title: "Collections",
+            slug: "/collections",
+            isHomePage: false
+          }
+        ],
+        pageSettings: {
+          ...baseSettings.pageSettings,
+          title: "CHIC BOUTIQUE - Fashion Store"
+        }
+      };
+    case 'electronics':
+      return {
+        ...baseSettings,
+        pages: [
+          ...baseSettings.pages,
+          {
+            id: "shop",
+            title: "Shop",
+            slug: "/shop",
+            isHomePage: false
+          },
+          {
+            id: "support",
+            title: "Support",
+            slug: "/support",
+            isHomePage: false
+          }
+        ],
+        pageSettings: {
+          ...baseSettings.pageSettings,
+          title: "TECH HUB - Electronics Store"
+        }
+      };
+    case 'beauty':
+      return {
+        ...baseSettings,
+        pages: [
+          ...baseSettings.pages,
+          {
+            id: "shop",
+            title: "Shop",
+            slug: "/shop",
+            isHomePage: false
+          },
+          {
+            id: "skincare",
+            title: "Skincare Guide",
+            slug: "/skincare",
+            isHomePage: false
+          }
+        ],
+        pageSettings: {
+          ...baseSettings.pageSettings,
+          title: "GLOW ESSENTIALS - Beauty & Cosmetics"
+        }
+      };
+    case 'furniture':
+      return {
+        ...baseSettings,
+        pages: [
+          ...baseSettings.pages,
+          {
+            id: "shop",
+            title: "Shop",
+            slug: "/shop",
+            isHomePage: false
+          },
+          {
+            id: "collections",
+            title: "Collections",
+            slug: "/collections",
+            isHomePage: false
+          },
+          {
+            id: "design",
+            title: "Design Ideas",
+            slug: "/design",
+            isHomePage: false
+          }
+        ],
+        pageSettings: {
+          ...baseSettings.pageSettings,
+          title: "MODERN LIVING - Home & Furniture"
+        }
+      };
+    case 'food':
+      return {
+        ...baseSettings,
+        pages: [
+          ...baseSettings.pages,
+          {
+            id: "shop",
+            title: "Shop",
+            slug: "/shop",
+            isHomePage: false
+          },
+          {
+            id: "recipes",
+            title: "Recipes",
+            slug: "/recipes",
+            isHomePage: false
+          }
+        ],
+        pageSettings: {
+          ...baseSettings.pageSettings,
+          title: "GOURMET MARKET - Specialty Foods"
+        }
+      };
+    case 'jewelry':
+      return {
+        ...baseSettings,
+        pages: [
+          ...baseSettings.pages,
+          {
+            id: "shop",
+            title: "Shop",
+            slug: "/shop",
+            isHomePage: false
+          },
+          {
+            id: "collections",
+            title: "Collections",
+            slug: "/collections",
+            isHomePage: false
+          },
+          {
+            id: "bespoke",
+            title: "Bespoke",
+            slug: "/bespoke",
+            isHomePage: false
+          }
+        ],
+        pageSettings: {
+          ...baseSettings.pageSettings,
+          title: "LUXE GEMS - Luxury Jewelry"
+        }
+      };
     case 'ecommerce':
       return {
         ...baseSettings,
