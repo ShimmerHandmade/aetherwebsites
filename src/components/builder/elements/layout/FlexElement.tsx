@@ -14,7 +14,8 @@ const FlexElement: React.FC<ElementProps> = ({ element }) => {
   const direction = element.props?.direction === 'column' ? 'flex-col' : 'flex-row';
   const justify = element.props?.justify === 'between' ? 'justify-between' : 
                 element.props?.justify === 'around' ? 'justify-around' :
-                element.props?.justify === 'end' ? 'justify-end' : 'justify-center';
+                element.props?.justify === 'end' ? 'justify-end' : 
+                element.props?.justify === 'start' ? 'justify-start' : 'justify-center';
   const align = element.props?.align === 'start' ? 'items-start' :
               element.props?.align === 'end' ? 'items-end' :
               element.props?.align === 'stretch' ? 'items-stretch' : 'items-center';
@@ -27,7 +28,7 @@ const FlexElement: React.FC<ElementProps> = ({ element }) => {
       <CanvasDragDropHandler
         isPreviewMode={false}
         onCanvasClick={(e) => e.stopPropagation()}
-        className="min-h-[80px] w-full flex"
+        className="min-h-[80px] w-full"
         containerId={element.id}
       >
         {element.children && element.children.length > 0 ? (
@@ -44,17 +45,8 @@ const FlexElement: React.FC<ElementProps> = ({ element }) => {
             ))}
           </div>
         ) : (
-          <div className="flex gap-4 w-full">
-            <div className="bg-gray-100 p-4 flex-1 rounded-md shadow-sm">
-              <div className="aspect-video flex items-center justify-center text-gray-400">
-                Flex Item 1
-              </div>
-            </div>
-            <div className="bg-gray-100 p-4 flex-1 rounded-md shadow-sm">
-              <div className="aspect-video flex items-center justify-center text-gray-400">
-                Flex Item 2
-              </div>
-            </div>
+          <div className="flex justify-center items-center w-full h-full p-4 text-gray-400">
+            <p>Drop elements here</p>
           </div>
         )}
       </CanvasDragDropHandler>

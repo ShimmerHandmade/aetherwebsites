@@ -112,12 +112,12 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
         }
 
         // If we have a target element, insert relative to it
-        if (dropTarget.element) {
+        if (dropTarget.element && containerId) {
           const targetIndex = findElementIndex(dropTarget.element, containerId);
           if (targetIndex !== -1) {
             const insertIndex = dropTarget.top ? targetIndex : targetIndex + 1;
             addElement(newElement, insertIndex, containerId);
-            console.log("Added new element at position:", insertIndex);
+            console.log("Added new element at position:", insertIndex, "in container:", containerId);
             
             toast({
               title: "Element Added",
@@ -129,8 +129,16 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
         }
         
         // Add to container or root if no specific position
-        addElement(newElement, containerId ? containerId : null);
-        console.log("Added new element to container:", containerId, newElement);
+        if (containerId) {
+          // Always add to the end of the container if no specific index
+          const container = findElementById(containerId);
+          const childrenCount = container?.children?.length || 0;
+          addElement(newElement, childrenCount, containerId);
+          console.log("Added new element to container at end position:", containerId, newElement);
+        } else {
+          // Add to root
+          addElement(newElement, null);
+        }
         
         // Show toast notification for successful drop
         toast({
