@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 /**
  * Opens the Stripe Customer Portal for subscription management
@@ -17,11 +17,7 @@ export const openCustomerPortal = async (): Promise<{
     
     if (error) {
       console.error("Error accessing customer portal:", error);
-      toast({
-        title: "Error",
-        description: "Failed to access subscription management portal",
-        variant: "destructive",
-      });
+      toast.error("Failed to access subscription management portal");
       return {
         url: null,
         error: error.message,
@@ -30,11 +26,7 @@ export const openCustomerPortal = async (): Promise<{
     
     if (!data || !data.url) {
       console.error("No URL returned from customer portal");
-      toast({
-        title: "Error",
-        description: "Unable to generate subscription portal link",
-        variant: "destructive",
-      });
+      toast.error("Unable to generate subscription portal link");
       return {
         url: null,
         error: "No URL returned from customer portal"
@@ -47,11 +39,7 @@ export const openCustomerPortal = async (): Promise<{
     };
   } catch (err) {
     console.error("Error in openCustomerPortal:", err);
-    toast({
-      title: "Error",
-      description: "An unexpected error occurred",
-      variant: "destructive",
-    });
+    toast.error("An unexpected error occurred");
     return {
       url: null,
       error: String(err)
