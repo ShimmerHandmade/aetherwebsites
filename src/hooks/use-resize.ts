@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { BuilderElement } from '@/contexts/builder/types';
 import { useBuilder } from '@/contexts/builder';
@@ -128,13 +129,17 @@ export function useResize({
       }
     }
     
-    console.log(`Resizing to: ${Math.round(newWidth)}x${Math.round(newHeight)}`);
+    // Round the values to avoid decimal dimensions that might cause layout issues
+    const roundedWidth = Math.round(newWidth);
+    const roundedHeight = Math.round(newHeight);
+    
+    console.log(`Resizing to: ${roundedWidth}x${roundedHeight}`);
     
     // Update element props
     updateElement(elementId, {
       props: {
-        width: Math.round(newWidth),
-        height: Math.round(newHeight)
+        width: roundedWidth,
+        height: roundedHeight
       }
     });
   };
@@ -165,6 +170,12 @@ export function useResize({
         );
       }
     }
+    
+    // Trigger any necessary layout recalculations
+    requestAnimationFrame(() => {
+      // This forces a reflow which can help fix spacing issues
+      document.dispatchEvent(new CustomEvent('builder-content-changed'));
+    });
   };
   
   // Clean up event listeners on unmount

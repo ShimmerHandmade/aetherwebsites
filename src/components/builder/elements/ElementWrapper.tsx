@@ -263,7 +263,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   // If the element is resizable and not in preview mode, wrap it in ResizableWrapper
   if (isResizable && !isPreviewMode) {
     return (
-      <div className="relative mt-12"> {/* Added mt-12 to ensure room for controls */}
+      <div className="relative mt-12 mb-4"> {/* Added mb-4 to create proper spacing between elements */}
         {controlsBar}
         <ResizableWrapper
           elementId={element.id}
@@ -283,7 +283,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
 
   // Otherwise, return the content directly with controls
   return (
-    <div className="relative mt-12"> {/* Added mt-12 to ensure room for controls */}
+    <div className="relative mt-12 mb-4"> {/* Added mb-4 for consistent spacing */}
       {controlsBar}
       {content}
     </div>

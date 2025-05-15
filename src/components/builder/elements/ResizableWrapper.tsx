@@ -66,7 +66,9 @@ const ResizableWrapper: React.FC<ResizableWrapperProps> = ({
       style={{ 
         width: width ? `${width}px` : 'auto', 
         height: height ? `${height}px` : 'auto',
-        overflow: 'hidden', // Changed from 'auto' to 'hidden' to contain content
+        overflow: 'hidden', // Contain content
+        marginBottom: '0', // Explicitly remove any bottom margin
+        display: 'block', // Ensure proper block display
       }}
     >
       {children}
