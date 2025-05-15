@@ -24,7 +24,7 @@ const planRestrictions: Record<string, PlanRestriction> = {
     allowDiscounts: false,
     allowAdvancedAnalytics: false,
     allowCustomDomain: false,
-    maxPages: 10,
+    maxPages: 1, // Updated: Basic plan allows 1 website
     allowPremiumTemplates: false,
     allowPremiumElements: false,
     allowPremiumAnimations: false
@@ -35,7 +35,7 @@ const planRestrictions: Record<string, PlanRestriction> = {
     allowDiscounts: true,
     allowAdvancedAnalytics: true,
     allowCustomDomain: true,
-    maxPages: 30,
+    maxPages: 3, // Updated: Professional plan allows 3 websites
     allowPremiumTemplates: true,
     allowPremiumElements: true,
     allowPremiumAnimations: true
@@ -46,7 +46,7 @@ const planRestrictions: Record<string, PlanRestriction> = {
     allowDiscounts: true,
     allowAdvancedAnalytics: true,
     allowCustomDomain: true,
-    maxPages: 150,
+    maxPages: 5, // Updated: Enterprise plan allows 5 websites
     allowPremiumTemplates: true,
     allowPremiumElements: true,
     allowPremiumAnimations: true
@@ -58,7 +58,7 @@ const planRestrictions: Record<string, PlanRestriction> = {
     allowDiscounts: false,
     allowAdvancedAnalytics: false,
     allowCustomDomain: false,
-    maxPages: 5,
+    maxPages: 1, // Updated: Default users can have 1 website
     allowPremiumTemplates: false,
     allowPremiumElements: false,
     allowPremiumAnimations: false
