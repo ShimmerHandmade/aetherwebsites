@@ -25,7 +25,7 @@ const SectionElement: React.FC<ElementProps> = ({ element }) => {
   const additionalClasses = element.props?.className || '';
   
   return (
-    <div id={element.props?.id} className={`px-4 ${backgroundColor} ${padding} ${additionalClasses}`}>
+    <div id={element.props?.id} className={`px-4 ${backgroundColor} ${padding} ${additionalClasses} w-full`}>
       {title && <h2 className={`text-2xl font-bold mb-6 text-center ${textColor}`}>{title}</h2>}
       
       {/* If there are children, they'll be rendered by the BuilderContent component */}

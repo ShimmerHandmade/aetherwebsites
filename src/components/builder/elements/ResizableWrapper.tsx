@@ -66,7 +66,7 @@ const ResizableWrapper: React.FC<ResizableWrapperProps> = ({
       style={{ 
         width: width ? `${width}px` : 'auto', 
         height: height ? `${height}px` : 'auto',
-        overflow: 'auto', // Allow scrolling if content is larger than container
+        overflow: 'hidden', // Changed from 'auto' to 'hidden' to contain content
       }}
     >
       {children}

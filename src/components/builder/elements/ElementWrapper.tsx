@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from "react";
 import { useBuilder } from "@/contexts/builder/useBuilder";
 import { usePlan } from "@/contexts/PlanContext";
@@ -173,37 +174,9 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   // Some elements can't or shouldn't be draggable/editable
   const isDraggable = !isPreviewMode && !["navbar", "footer"].includes(element.type);
 
-  // Create the element content
-  const content = (
-    <div
-      ref={elementRef}
-      className={getElementStyle()}
-      onClick={handleElementClick}
-      draggable={isDraggable}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      data-element-id={element.id}
-      data-element-type={element.type}
-      style={{
-        maxWidth: '100%',
-        maxHeight: '100%'
-      }}
-    >
-      {/* Show premium badge if it's a premium animation element */}
-      {isPremiumAnimationElement && !isPreviewMode && (
-        <div className="absolute top-0 left-0 z-10 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs px-2 py-1 rounded-br flex items-center gap-1">
-          <Sparkles className="h-3 w-3" /> 
-          {isEnterpriseAnimationElement ? "Enterprise" : "Premium"}
-        </div>
-      )}
-
-      {renderedElement}
-    </div>
-  );
-
   // Always show element controls for selected elements
   const controlsBar = !isPreviewMode && selected ? (
-    <div className="absolute top-0 right-0 -mt-10 flex space-x-1 bg-white p-1 rounded shadow-sm z-50">
+    <div className="absolute -top-10 right-0 flex space-x-1 bg-white p-1 rounded shadow-sm z-50">
       <Button
         variant="outline"
         size="icon"
@@ -259,10 +232,38 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
     </div>
   ) : null;
 
+  // Create the element content
+  const content = (
+    <div
+      ref={elementRef}
+      className={getElementStyle()}
+      onClick={handleElementClick}
+      draggable={isDraggable}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      data-element-id={element.id}
+      data-element-type={element.type}
+      style={{
+        maxWidth: '100%',
+        maxHeight: '100%'
+      }}
+    >
+      {/* Show premium badge if it's a premium animation element */}
+      {isPremiumAnimationElement && !isPreviewMode && (
+        <div className="absolute top-0 left-0 z-10 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs px-2 py-1 rounded-br flex items-center gap-1">
+          <Sparkles className="h-3 w-3" /> 
+          {isEnterpriseAnimationElement ? "Enterprise" : "Premium"}
+        </div>
+      )}
+
+      {renderedElement}
+    </div>
+  );
+
   // If the element is resizable and not in preview mode, wrap it in ResizableWrapper
   if (isResizable && !isPreviewMode) {
     return (
-      <div className="relative">
+      <div className="relative mt-12"> {/* Added mt-12 to ensure room for controls */}
         {controlsBar}
         <ResizableWrapper
           elementId={element.id}
@@ -282,7 +283,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
 
   // Otherwise, return the content directly with controls
   return (
-    <div className="relative">
+    <div className="relative mt-12"> {/* Added mt-12 to ensure room for controls */}
       {controlsBar}
       {content}
     </div>
