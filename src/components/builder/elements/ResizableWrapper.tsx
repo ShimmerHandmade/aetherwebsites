@@ -23,7 +23,7 @@ const ResizableWrapper: React.FC<ResizableWrapperProps> = ({
   minWidth = 50,
   minHeight = 50,
   maintainAspectRatio = false,
-  showHandles = true,
+  showHandles = false, // Changed default to false
   isSelected = false,
   isPreviewMode = false,
 }) => {
@@ -73,7 +73,7 @@ const ResizableWrapper: React.FC<ResizableWrapperProps> = ({
     >
       {children}
 
-      {/* Only show resize handles when selected */}
+      {/* Only show resize handles when selected and explicitly enabled */}
       {isSelected && showHandles && (
         <>
           {/* Right handle */}

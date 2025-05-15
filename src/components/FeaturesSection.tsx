@@ -34,7 +34,7 @@ const features = [
   },
   {
     title: "Multiple Websites",
-    description: "Create one website on Basic, three on Professional, or five on Enterprise plans.",
+    description: "Create 1 website on Basic, 3 on Professional, or 5 on Enterprise plans.",
     icon: <Layers className="w-6 h-6 text-brand-600" />
   },
   {

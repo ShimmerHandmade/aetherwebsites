@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   LayoutDashboard,
@@ -8,10 +7,12 @@ import {
   ImageIcon,
   Package,
   Layout,
-  Image as ImageIconComponent,
-  Video as VideoIcon,
+  Layers,
+  Shield,
+  ImageIconComponent,
+  VideoIcon,
   FormInput,
-  List as ListIcon,
+  ListIcon,
   CreditCard,
   MessageSquare,
   Star,
@@ -23,10 +24,14 @@ import {
   Copyright,
   ChevronDown,
   ChevronRight,
+  Sparkles,
+  Lock,
 } from "lucide-react";
 import { v4 as uuidv4 } from "@/lib/uuid";
 import { BuilderElement } from "@/contexts/BuilderContext";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { usePlan } from "@/contexts/PlanContext";
+import { toast } from "sonner";
 
 export interface ElementCategory {
   name: string;
@@ -426,6 +431,9 @@ const ElementPaletteComponent: React.FC = () => {
       return acc;
     }, {} as Record<string, boolean>);
   });
+  
+  // Get plan info to check premium access
+  const { isPremium, isEnterprise } = usePlan();
 
   // Toggle a category's open state
   const toggleCategory = (categoryName: string) => {
@@ -435,20 +443,40 @@ const ElementPaletteComponent: React.FC = () => {
     }));
   };
 
+  // Check if an element is premium/enterprise
+  const isElementPremium = (element: ElementDefinition) => {
+    return element.defaultProps?.animationType === 'premium' || element.type.includes('animated');
+  };
+
+  const isElementEnterprise = (element: ElementDefinition) => {
+    return element.defaultProps?.animationType === 'enterprise';
+  };
+
   // Handle drag start for an element
   const handleDragStart = (event: React.DragEvent<HTMLButtonElement>, element: ElementDefinition) => {
+    // Check plan restrictions
+    if (isElementPremium(element) && !isPremium) {
+      event.preventDefault();
+      toast.error("Premium feature not available", {
+        description: "Upgrade to Professional or Enterprise plan to use this element"
+      });
+      return false;
+    }
+
+    if (isElementEnterprise(element) && !isEnterprise) {
+      event.preventDefault();
+      toast.error("Enterprise feature not available", {
+        description: "Upgrade to Enterprise plan to use this element"
+      });
+      return false;
+    }
+    
     // Create the data to transfer
     const elementData = {
       type: element.type,
       props: element.defaultProps || {},
       content: ""
     };
-    
-    // Check for premium elements and add visual indication
-    if (element.defaultProps?.animationType === 'premium' || element.defaultProps?.animationType === 'enterprise') {
-      // The actual check for permissions happens in the BuilderProvider when dropped
-      console.log("Dragging premium element:", element.name);
-    }
     
     // Set the drag data as JSON
     event.dataTransfer.setData("application/json", JSON.stringify(elementData));
@@ -475,15 +503,34 @@ const ElementPaletteComponent: React.FC = () => {
             <div className="grid grid-cols-2 gap-2 p-3 bg-white">
               {category.elements.map((element) => {
                 const IconComponent = LucideIcons[element.icon];
+                const isPremiumElement = isElementPremium(element);
+                const isEnterpriseElement = isElementEnterprise(element);
+                const isLocked = (isPremiumElement && !isPremium) || (isEnterpriseElement && !isEnterprise);
+                
                 return (
                   <button
                     key={element.type}
-                    className="flex flex-col items-center justify-center p-3 text-center bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition-colors"
-                    title={element.description}
-                    draggable
+                    className={`relative flex flex-col items-center justify-center p-3 text-center bg-white border border-gray-200 rounded-lg ${isLocked ? 'opacity-75 cursor-not-allowed' : 'hover:bg-blue-50 hover:border-blue-200'} transition-colors`}
+                    title={`${element.description}${isLocked ? ' - Requires upgrade' : ''}`}
+                    draggable={!isLocked}
                     onDragStart={(e) => handleDragStart(e, element)}
+                    onClick={() => {
+                      if (isLocked) {
+                        toast.error(`${isEnterpriseElement ? 'Enterprise' : 'Premium'} feature not available`, {
+                          description: `Upgrade to ${isEnterpriseElement ? 'Enterprise' : 'Professional or Enterprise'} plan to use this element`
+                        });
+                      }
+                    }}
                   >
-                    {IconComponent && <IconComponent className="h-5 w-5 mb-1 text-blue-600" />}
+                    {/* Premium badge */}
+                    {(isPremiumElement || isEnterpriseElement) && (
+                      <div className="absolute -top-1 -right-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+                        {isLocked ? <Lock className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
+                        <span>{isEnterpriseElement ? "Enterprise" : "Premium"}</span>
+                      </div>
+                    )}
+                    
+                    {IconComponent && <IconComponent className={`h-5 w-5 mb-1 ${isLocked ? 'text-gray-400' : 'text-blue-600'}`} />}
                     <span className="text-xs mt-1">{element.name}</span>
                   </button>
                 );

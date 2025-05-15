@@ -4,7 +4,7 @@ import { useBuilder } from "@/contexts/builder/useBuilder";
 import { usePlan } from "@/contexts/PlanContext";
 import { renderElement } from "./renderElement";
 import { Button } from "@/components/ui/button";
-import { Pencil, Copy, Trash, GripVertical, ArrowUp, ArrowDown, Sparkles } from "lucide-react";
+import { Pencil, Copy, Trash, GripVertical, ArrowUp, ArrowDown, Sparkles, Lock } from "lucide-react";
 import ResizableWrapper from "./ResizableWrapper";
 
 interface BuilderElementProps {
@@ -41,6 +41,10 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   const isEnterpriseAnimationElement = element.props?.hasAnimation && element.props?.animationType === 'enterprise';
   const canUseEnterpriseAnimationsProp = canUseEnterpriseAnimations !== undefined ? canUseEnterpriseAnimations : isEnterprise;
 
+  // Is the element locked due to plan restrictions
+  const isElementLocked = (isPremiumAnimationElement && !canUseAnimationsProp) || 
+                          (isEnterpriseAnimationElement && !canUseEnterpriseAnimationsProp);
+
   // Check if the element is resizable
   const isResizable = ["image", "video", "container", "section", "hero", "card", "feature", "gallery", "carousel", "testimonial"].includes(element.type);
   
@@ -75,7 +79,10 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   };
 
   const handleDragStart = (e: React.DragEvent) => {
-    if (isPreviewMode) return;
+    if (isPreviewMode || isElementLocked) {
+      e.preventDefault();
+      return false;
+    }
     
     setIsDragging(true);
     e.dataTransfer.effectAllowed = "move";
@@ -133,6 +140,10 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
       if (isDragging) {
         style += " opacity-50";
       }
+      
+      if (isElementLocked) {
+        style += " opacity-75";
+      }
     }
 
     // Add premium animations if available
@@ -172,7 +183,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   const renderedElement = renderElement(element);
   
   // Some elements can't or shouldn't be draggable/editable
-  const isDraggable = !isPreviewMode && !["navbar", "footer"].includes(element.type);
+  const isDraggable = !isPreviewMode && !["navbar", "footer"].includes(element.type) && !isElementLocked;
 
   // Always show element controls for selected elements
   const controlsBar = !isPreviewMode && selected ? (
@@ -248,11 +259,21 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
         maxHeight: '100%'
       }}
     >
-      {/* Show premium badge if it's a premium animation element */}
+      {/* Show premium badge with improved styling */}
       {isPremiumAnimationElement && !isPreviewMode && (
-        <div className="absolute top-0 left-0 z-10 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs px-2 py-1 rounded-br flex items-center gap-1">
-          <Sparkles className="h-3 w-3" /> 
-          {isEnterpriseAnimationElement ? "Enterprise" : "Premium"}
+        <div className="absolute top-0 left-0 z-10 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs px-2 py-1 rounded-br flex items-center gap-1 shadow-sm">
+          {isElementLocked ? <Lock className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
+          <span>{isEnterpriseAnimationElement ? "Enterprise" : "Premium"}</span>
+        </div>
+      )}
+
+      {/* Show an overlay for locked elements */}
+      {isElementLocked && !isPreviewMode && (
+        <div className="absolute inset-0 bg-gray-900 bg-opacity-30 flex items-center justify-center z-20 rounded">
+          <div className="bg-white p-2 rounded-lg shadow-lg flex items-center gap-2">
+            <Lock className="h-4 w-4 text-indigo-600" />
+            <span className="text-sm font-medium">Upgrade to unlock</span>
+          </div>
         </div>
       )}
 
@@ -272,7 +293,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
           maintainAspectRatio={maintainAspectRatio}
           minWidth={50}
           minHeight={50}
-          showHandles={selected}
+          showHandles={false} // Set to false to hide resize dots
           className="resize-wrapper"
         >
           {content}
