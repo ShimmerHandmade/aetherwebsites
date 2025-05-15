@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   LayoutDashboard,
@@ -9,7 +10,6 @@ import {
   Layout,
   Layers,
   Shield,
-  ImageIconComponent,
   VideoIcon,
   FormInput,
   ListIcon,
@@ -56,7 +56,7 @@ const LucideIcons = {
   "button": LayoutDashboard,
   package: Package,
   layout: Layout,
-  image: ImageIconComponent,
+  image: ImageIcon, // Changed from ImageIconComponent to ImageIcon
   video: VideoIcon,
   form: FormInput,
   "list-icon": ListIcon,
