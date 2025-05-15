@@ -206,7 +206,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
           <div className="lg:col-span-1">
             <PlanLimitsInfo 
               productCount={products.length} 
-              pageCount={0}
+              websiteCount={0} // Changed from pageCount to websiteCount
             />
           </div>
         </div>

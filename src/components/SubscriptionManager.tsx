@@ -21,7 +21,7 @@ import { useNavigate } from "react-router-dom";
 interface SubscriptionManagerProps {
   profile: Profile | null;
   productCount?: number;
-  pageCount?: number;
+  websiteCount?: number; // Changed from pageCount to websiteCount
   onSubscriptionUpdated?: () => void;
   subscriptionStatus?: {
     subscribed: boolean;
@@ -34,7 +34,7 @@ interface SubscriptionManagerProps {
 const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ 
   profile,
   productCount = 0,
-  pageCount = 0,
+  websiteCount = 0, // Changed from pageCount to websiteCount
   onSubscriptionUpdated,
   subscriptionStatus: initialSubscriptionStatus,
   isLoading: initialIsLoading = false
@@ -199,7 +199,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
             <div className="mb-6">
               <PlanLimitsInfo 
                 productCount={productCount} 
-                pageCount={pageCount}
+                websiteCount={websiteCount} // Changed from pageCount to websiteCount
               />
             </div>
             

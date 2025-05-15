@@ -32,7 +32,7 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [productCount, setProductCount] = useState(0);
-  const [pageCount, setPageCount] = useState(0);
+  const [websiteCount, setWebsiteCount] = useState(0);
   const [planInfo, setPlanInfo] = useState<any>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [subscriptionInfo, setSubscriptionInfo] = useState<{
@@ -153,14 +153,14 @@ const Profile = () => {
         setProductCount(productsCount || 0);
       }
       
-      // Count pages (simplified)
+      // Count websites (simplified)
       const { data: websites, error: websitesError } = await supabase
         .from("websites")
         .select("id")
         .eq("owner_id", user.id);
       
       if (!websitesError) {
-        setPageCount(websites?.length || 0);
+        setWebsiteCount(websites?.length || 0);
       }
       
       return { productsCount, websitesCount: websites?.length || 0 };
@@ -326,7 +326,7 @@ const Profile = () => {
                 <div className="mt-6">
                   <PlanLimitsInfo 
                     productCount={productCount}
-                    pageCount={pageCount}
+                    websiteCount={websiteCount}
                   />
                 </div>
               )}
