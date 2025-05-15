@@ -1,5 +1,5 @@
 
-import { ShoppingCart, Calendar, CreditCard, User, Tag, Layout } from "lucide-react";
+import { ShoppingCart, Calendar, CreditCard, User, Tag, Layout, Layers, Shield } from "lucide-react";
 
 const features = [
   {
@@ -9,8 +9,8 @@ const features = [
   },
   {
     title: "Beautiful Templates",
-    description: "Choose from hundreds of professionally designed templates for any industry.",
-    icon: <Layout className="w-6 h-6 text-brand-600" />
+    description: "Choose from professionally designed templates for any industry.",
+    icon: <Layers className="w-6 h-6 text-brand-600" />
   },
   {
     title: "Product Management",
@@ -32,6 +32,16 @@ const features = [
     description: "Create coupons and promotions to drive sales and reward your customers.",
     icon: <Tag className="w-6 h-6 text-brand-600" />
   },
+  {
+    title: "Multiple Websites",
+    description: "Create one website on Basic, three on Professional, or five on Enterprise plans.",
+    icon: <Layers className="w-6 h-6 text-brand-600" />
+  },
+  {
+    title: "Enhanced Security",
+    description: "Keep your customer data and business information safe with enterprise security.",
+    icon: <Shield className="w-6 h-6 text-brand-600" />
+  },
 ];
 
 const FeaturesSection = () => {
@@ -47,13 +57,13 @@ const FeaturesSection = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feature, index) => (
             <div 
               key={index} 
               className="bg-white p-8 rounded-xl shadow-md transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             >
-              <div className="w-12 h-12 bg-brand-100 rounded-lg flex items-center justify-center mb-6">
+              <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-6">
                 {feature.icon}
               </div>
               <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>

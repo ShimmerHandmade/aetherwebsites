@@ -109,8 +109,8 @@ const Dashboard = () => {
   const createNewWebsite = async () => {
     try {
       // Check if we've reached the website limit
-      if (restrictions && websites.length >= restrictions.maxWebsites) { // Changed from maxPages to maxWebsites
-        toast.error(`You've reached your plan's limit of ${restrictions.maxWebsites} websites`, { // Changed from maxPages to maxWebsites
+      if (restrictions && websites.length >= restrictions.maxWebsites) {
+        toast.error(`You've reached your plan's limit of ${restrictions.maxWebsites} websites`, {
           description: `Upgrade your plan to create more websites`
         });
         return;
@@ -194,7 +194,7 @@ const Dashboard = () => {
                 <Button 
                   onClick={createNewWebsite}
                   className="bg-gradient-to-r from-indigo-600 to-purple-600"
-                  disabled={restrictions && websites.length >= restrictions.maxWebsites} // Changed from maxPages to maxWebsites
+                  disabled={restrictions && websites.length >= restrictions.maxWebsites}
                 >
                   <Plus className="mr-2 h-4 w-4" /> New Website
                 </Button>
@@ -202,13 +202,13 @@ const Dashboard = () => {
             </div>
 
             {/* Website limit warning */}
-            {restrictions && websites.length > 0 && websites.length >= (restrictions.maxWebsites * 0.8) && ( // Changed from maxPages to maxWebsites
+            {restrictions && websites.length > 0 && websites.length >= (restrictions.maxWebsites * 0.8) && (
               <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-6">
                 <p className="text-amber-800 text-sm">
-                  {websites.length >= restrictions.maxWebsites ? ( // Changed from maxPages to maxWebsites
-                    <>You've reached your plan's limit of {restrictions.maxWebsites} websites. Upgrade to add more.</> // Changed from maxPages to maxWebsites
+                  {websites.length >= restrictions.maxWebsites ? (
+                    <>You've reached your plan's limit of {restrictions.maxWebsites} websites. Upgrade to add more.</>
                   ) : (
-                    <>You're approaching your plan's limit of {restrictions.maxWebsites} websites ({websites.length}/{restrictions.maxWebsites}).</> // Changed from maxPages to maxWebsites
+                    <>You're approaching your plan's limit of {restrictions.maxWebsites} websites ({websites.length}/{restrictions.maxWebsites}).</>
                   )}
                 </p>
               </div>

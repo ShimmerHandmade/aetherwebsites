@@ -9,7 +9,7 @@ const Footer = () => {
           <div className="lg:col-span-2">
             <h2 className="text-2xl font-bold mb-4">ModernBuilder</h2>
             <p className="text-gray-400 mb-6">
-              Build beautiful e-commerce websites without any coding. Start your free trial today and grow your business online.
+              Build beautiful e-commerce websites without any coding. Create one website on Basic, three on Professional, or five on Enterprise plans.
             </p>
             <div className="flex space-x-4">
               <a href="#" className="text-gray-400 hover:text-white transition-colors duration-300">

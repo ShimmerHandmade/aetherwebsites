@@ -11,7 +11,6 @@ const HeroSection = () => {
   
   const handleWatchDemo = () => {
     // This could open a modal or navigate to a demo page
-    // For now, let's just log it
     console.log('Watch demo clicked');
   };
   
@@ -27,10 +26,10 @@ const HeroSection = () => {
         <div className="flex flex-col lg:flex-row items-center">
           <div className="lg:w-1/2 mb-12 lg:mb-0">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 animate-fade-up">
-              Create your <span className="gradient-text">e-commerce</span> website in minutes
+              Build <span className="gradient-text">e-commerce</span> websites effortlessly
             </h1>
             <p className="text-xl text-gray-600 mb-8 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-              Build a beautiful online store without any coding skills. ModernBuilder gives you everything you need to launch and grow your business online.
+              Create beautiful online stores without coding skills. One website on Basic, three on Professional, and five on Enterprise plans.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 animate-fade-up" style={{ animationDelay: "0.2s" }}>
               <Button 

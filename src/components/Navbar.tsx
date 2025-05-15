@@ -77,7 +77,7 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* Mobile Menu Button (without Cart Button) */}
+        {/* Mobile Menu Button */}
         <div className="md:hidden">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
