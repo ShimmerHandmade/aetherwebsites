@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
@@ -8,12 +9,12 @@ import { cn } from "@/lib/utils";
 
 interface PlanLimitsInfoProps {
   productCount?: number;
-  pageCount?: number;
+  websiteCount?: number; // Changed from pageCount to websiteCount
 }
 
 const PlanLimitsInfo: React.FC<PlanLimitsInfoProps> = ({ 
   productCount = 0, 
-  pageCount = 0 
+  websiteCount = 0 // Changed from pageCount to websiteCount
 }) => {
   const { planName, restrictions, loading, error, isPremium, isEnterprise } = usePlan();
 
@@ -43,7 +44,7 @@ const PlanLimitsInfo: React.FC<PlanLimitsInfoProps> = ({
   }
 
   const productPercentage = (productCount / restrictions.maxProducts) * 100;
-  const pagePercentage = (pageCount / restrictions.maxPages) * 100;
+  const websitePercentage = (websiteCount / restrictions.maxWebsites) * 100; // Changed from maxPages to maxWebsites
 
   return (
     <div className="bg-white p-4 rounded-lg border shadow-sm">
@@ -77,15 +78,15 @@ const PlanLimitsInfo: React.FC<PlanLimitsInfoProps> = ({
         <div>
           <div className="flex items-center justify-between mb-1">
             <span className="text-sm text-gray-600">
-              Pages: {pageCount} / {restrictions.maxPages}
+              Websites: {websiteCount} / {restrictions.maxWebsites}
             </span>
             <span className="text-xs font-medium">
-              {Math.round(pagePercentage)}%
+              {Math.round(websitePercentage)}%
             </span>
           </div>
           <Progress 
-            value={pagePercentage}
-            className={cn("h-2", pagePercentage > 80 ? "bg-amber-100" : "")}
+            value={websitePercentage}
+            className={cn("h-2", websitePercentage > 80 ? "bg-amber-100" : "")}
           />
         </div>
 

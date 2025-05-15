@@ -6,11 +6,11 @@ import { toast } from "@/components/ui/use-toast";
 
 export interface PlanRestriction {
   maxProducts: number;
+  maxWebsites: number; // Changed from maxPages to maxWebsites
   allowCoupons: boolean;
   allowDiscounts: boolean;
   allowAdvancedAnalytics: boolean;
   allowCustomDomain: boolean;
-  maxPages: number;
   allowPremiumTemplates: boolean;
   allowPremiumElements: boolean;
   allowPremiumAnimations: boolean;
@@ -20,33 +20,33 @@ export interface PlanRestriction {
 const planRestrictions: Record<string, PlanRestriction> = {
   "Basic": {
     maxProducts: 30,
+    maxWebsites: 1, // One website for Basic plan
     allowCoupons: true,
     allowDiscounts: false,
     allowAdvancedAnalytics: false,
     allowCustomDomain: false,
-    maxPages: 1, // Updated: Basic plan allows 1 website
     allowPremiumTemplates: false,
     allowPremiumElements: false,
     allowPremiumAnimations: false
   },
   "Professional": {
     maxProducts: 150,
+    maxWebsites: 3, // Three websites for Professional plan
     allowCoupons: true,
     allowDiscounts: true,
     allowAdvancedAnalytics: true,
     allowCustomDomain: true,
-    maxPages: 3, // Updated: Professional plan allows 3 websites
     allowPremiumTemplates: true,
     allowPremiumElements: true,
     allowPremiumAnimations: true
   },
   "Enterprise": {
     maxProducts: 1500,
+    maxWebsites: 5, // Five websites for Enterprise plan
     allowCoupons: true,
     allowDiscounts: true,
     allowAdvancedAnalytics: true,
     allowCustomDomain: true,
-    maxPages: 5, // Updated: Enterprise plan allows 5 websites
     allowPremiumTemplates: true,
     allowPremiumElements: true,
     allowPremiumAnimations: true
@@ -54,11 +54,11 @@ const planRestrictions: Record<string, PlanRestriction> = {
   // Default restrictions for users without a plan
   "default": {
     maxProducts: 15,
+    maxWebsites: 1, // One website for default plan
     allowCoupons: false,
     allowDiscounts: false,
     allowAdvancedAnalytics: false,
     allowCustomDomain: false,
-    maxPages: 1, // Updated: Default users can have 1 website
     allowPremiumTemplates: false,
     allowPremiumElements: false,
     allowPremiumAnimations: false
@@ -151,6 +151,22 @@ export async function checkProductLimit(currentCount: number): Promise<boolean> 
     toast({
       title: "Plan Limit Reached",
       description: `You've reached your plan's limit of ${restrictions.maxProducts} products. Upgrade your plan to add more products.`,
+      variant: "destructive"
+    });
+  }
+  
+  return belowLimit;
+}
+
+// New function to check website limits
+export async function checkWebsiteLimit(currentCount: number): Promise<boolean> {
+  const restrictions = await getUserPlanRestrictions();
+  const belowLimit = currentCount < restrictions.maxWebsites;
+  
+  if (!belowLimit) {
+    toast({
+      title: "Website Limit Reached",
+      description: `You've reached your plan's limit of ${restrictions.maxWebsites} websites. Upgrade your plan to add more websites.`,
       variant: "destructive"
     });
   }
