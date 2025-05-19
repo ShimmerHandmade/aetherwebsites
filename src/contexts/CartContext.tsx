@@ -1,9 +1,7 @@
-
-import React, { createContext, useEffect, useState } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import { Product } from '@/types/product';
-import { toast } from 'sonner';
 
-interface CartItem {
+export interface CartItem {
   product: Product;
   quantity: number;
 }
@@ -18,90 +16,81 @@ interface CartContextType {
   subtotal: number;
 }
 
-export const CartContext = createContext<CartContextType>({
-  items: [],
-  addToCart: () => {},
-  removeFromCart: () => {},
-  updateQuantity: () => {},
-  clearCart: () => {},
-  totalItems: 0,
-  subtotal: 0,
-});
+export const CartContext = createContext<CartContextType | undefined>(undefined);
 
-interface CartProviderProps {
-  children: React.ReactNode;
-}
-
-export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
+export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   
   // Load cart from localStorage on initial render
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      try {
+    try {
+      const savedCart = localStorage.getItem('cart');
+      if (savedCart) {
         setItems(JSON.parse(savedCart));
-      } catch (error) {
-        console.error('Failed to parse cart from localStorage:', error);
-        // If there's an error parsing, just start with an empty cart
-        localStorage.removeItem('cart');
       }
+    } catch (error) {
+      console.error("Failed to load cart from localStorage:", error);
     }
   }, []);
   
   // Save cart to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(items));
+    try {
+      localStorage.setItem('cart', JSON.stringify(items));
+    } catch (error) {
+      console.error("Failed to save cart to localStorage:", error);
+    }
   }, [items]);
   
-  const addToCart = (product: Product, quantity: number = 1) => {
+  // Calculate total items
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  
+  // Calculate subtotal
+  const subtotal = items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  
+  // Add item to cart
+  const addToCart = (product: Product, quantity = 1) => {
     setItems(currentItems => {
-      // Check if product already exists in cart
       const existingItemIndex = currentItems.findIndex(item => item.product.id === product.id);
       
-      if (existingItemIndex > -1) {
-        // Update quantity if product exists
+      if (existingItemIndex >= 0) {
+        // If product already exists in cart, increase quantity
         const updatedItems = [...currentItems];
-        updatedItems[existingItemIndex].quantity += quantity;
+        updatedItems[existingItemIndex] = {
+          ...updatedItems[existingItemIndex],
+          quantity: updatedItems[existingItemIndex].quantity + quantity
+        };
         return updatedItems;
       } else {
-        // Add new item if product doesn't exist in cart
+        // Otherwise add new item to cart
         return [...currentItems, { product, quantity }];
       }
     });
   };
   
+  // Remove item from cart
   const removeFromCart = (productId: string) => {
     setItems(currentItems => currentItems.filter(item => item.product.id !== productId));
-    toast.success('Item removed from cart');
   };
   
+  // Update quantity of an item
   const updateQuantity = (productId: string, quantity: number) => {
-    if (quantity < 1) {
+    if (quantity <= 0) {
       removeFromCart(productId);
       return;
     }
     
-    setItems(currentItems => 
-      currentItems.map(item => 
-        item.product.id === productId 
-          ? { ...item, quantity } 
-          : item
-      )
-    );
+    setItems(currentItems => {
+      return currentItems.map(item => 
+        item.product.id === productId ? { ...item, quantity } : item
+      );
+    });
   };
   
+  // Clear the entire cart
   const clearCart = () => {
     setItems([]);
-    toast.success('Cart cleared');
   };
-  
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  
-  const subtotal = items.reduce(
-    (sum, item) => sum + (item.product.price * item.quantity), 
-    0
-  );
   
   return (
     <CartContext.Provider

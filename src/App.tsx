@@ -1,52 +1,46 @@
 
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import Index from "@/pages/Index";
-import Auth from "@/pages/Auth";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Home from "@/pages/Home";
 import Dashboard from "@/pages/Dashboard";
-import Profile from "@/pages/Profile";
-import Builder from "@/pages/Builder";
-import WebsiteViewer from "@/pages/WebsiteViewer";
-import Shop from "@/pages/builder/Shop";
-import Products from "@/pages/builder/Products";
-import Pages from "@/pages/builder/Pages";
-import PageSettings from "@/pages/builder/PageSettings";
-import SiteSettings from "@/pages/builder/SiteSettings";
-import NotFound from "@/pages/NotFound";
-import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
-import ProductDetails from "@/pages/ProductDetails";
+import Editor from "@/pages/Editor";
+import Builder from "@/pages/builder/Builder";
+import BuilderShop from "@/pages/builder/Shop";
+import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/providers/theme";
+import { Suspense, lazy } from "react";
 import Cart from "@/pages/Cart";
-import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/toaster";
+import ProductDetails from "@/pages/ProductDetails";
 import { CartProvider } from "@/contexts/CartContext";
 
-function App() {
+// Lazy-loaded components
+const Settings = lazy(() => import("@/pages/Settings"));
+
+export default function App() {
   return (
-    <ThemeProvider defaultTheme="system" storageKey="vite-react-theme">
+    <ThemeProvider>
       <CartProvider>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/builder/:id" element={<Builder />} />
-          <Route path="/site/:id" element={<WebsiteViewer />} />
-          <Route path="/site/:id/cart" element={<WebsiteViewer />} />
-          <Route path="/site/:id/*" element={<WebsiteViewer />} /> {/* Catch-all route for site pages */}
-          <Route path="/builder/:id/shop" element={<Shop />} />
-          <Route path="/builder/:id/products" element={<Products />} />
-          <Route path="/builder/:id/pages" element={<Pages />} />
-          <Route path="/builder/:id/page-settings" element={<PageSettings />} />
-          <Route path="/builder/:id/settings" element={<SiteSettings />} />
-          <Route path="/subscription-success" element={<SubscriptionSuccess />} />
-          <Route path="/product/:id" element={<ProductDetails />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/editor/:id" element={<Editor />} />
+            <Route path="/builder/:id" element={<Builder />} />
+            <Route path="/builder/:id/products" element={<Builder />} />
+            <Route path="/builder/:id/shop" element={<BuilderShop />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/product/:id" element={<ProductDetails />} />
+            <Route
+              path="/settings"
+              element={
+                <Suspense fallback={<div>Loading...</div>}>
+                  <Settings />
+                </Suspense>
+              }
+            />
+          </Routes>
+        </BrowserRouter>
         <Toaster />
       </CartProvider>
     </ThemeProvider>
   );
 }
-
-export default App;
