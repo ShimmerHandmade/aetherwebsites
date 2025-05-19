@@ -32,8 +32,8 @@ const tutorialSteps = [
     image: "/tutorial/products.png"
   },
   {
-    title: "Publish Your Site",
-    description: "When you're ready, publish your site to make it live and accessible to everyone.",
+    title: "Save and Publish",
+    description: "When you're ready, save your changes and publish your site to make it live.",
     image: "/tutorial/publish.png"
   }
 ];
@@ -69,6 +69,19 @@ const BuilderTutorial = ({ websiteId, onComplete }: BuilderTutorialProps) => {
 
   const currentTutorial = tutorialSteps[currentStep];
   const isLastStep = currentStep === tutorialSteps.length - 1;
+  
+  // Set fallback images for each step based on the uploaded screenshots
+  const getFallbackImage = (index: number) => {
+    const fallbacks = [
+      "/lovable-uploads/c2c54c16-7e32-4056-82d5-62bc1abfa1a0.png", // Welcome/Layout
+      "/lovable-uploads/90c55252-fdd4-4bc8-af96-0bd1592aff3f.png", // Elements
+      "/lovable-uploads/42b74c45-537a-4595-82fd-841da999757c.png", // Properties
+      "/lovable-uploads/8651b24a-ac81-4797-b125-7a5f9976aaf2.png", // Pages tab
+      "/lovable-uploads/9117d25c-a891-453e-9e57-2a7a2452fec2.png", // Products tab
+      "/lovable-uploads/a71dcd29-4d11-4f44-b0c7-9b3cb7b4f21f.png"  // Save/Publish
+    ];
+    return fallbacks[index] || "/placeholder.svg";
+  };
 
   return (
     <div className="max-w-3xl mx-auto p-6">
@@ -94,12 +107,18 @@ const BuilderTutorial = ({ websiteId, onComplete }: BuilderTutorialProps) => {
           
           <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden mb-6">
             <img
-              src={currentTutorial.image}
+              src={getFallbackImage(currentStep)} 
               alt={currentTutorial.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain border border-gray-200"
               onError={(e) => {
-                // Fallback if image doesn't load
-                e.currentTarget.src = "/placeholder.svg";
+                // If tutorial image fails, use our uploaded fallback
+                const target = e.target as HTMLImageElement;
+                if (!target.src.includes('lovable-uploads')) {
+                  target.src = getFallbackImage(currentStep);
+                } else {
+                  // If even the fallback fails, use placeholder
+                  target.src = "/placeholder.svg";
+                }
               }}
             />
           </div>
