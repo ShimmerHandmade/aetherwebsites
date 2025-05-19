@@ -9,6 +9,7 @@ export interface BuilderElementProps {
   canUseAnimations?: boolean;
   canUseEnterpriseAnimations?: boolean;
   parentId?: string;
+  isLiveSite?: boolean;
 }
 
 export { ElementWrapper };

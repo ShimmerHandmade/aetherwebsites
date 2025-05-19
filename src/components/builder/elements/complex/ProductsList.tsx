@@ -34,9 +34,15 @@ interface Product {
 
 interface ProductsListProps {
   element: BuilderElement;
+  isPreviewMode?: boolean;
+  isLiveSite?: boolean;
 }
 
-const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
+const ProductsList: React.FC<ProductsListProps> = ({ 
+  element, 
+  isPreviewMode = false, 
+  isLiveSite = false 
+}) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +58,28 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
   const sortOrder = element.props?.sortOrder || "desc";
   const categoryFilter = element.props?.categoryFilter || "all";
 
+  // Only fetch real data in preview or live site mode
   useEffect(() => {
+    if (!isPreviewMode && !isLiveSite) {
+      // In builder mode, use mock data
+      const mockProducts: Product[] = Array(8).fill(null).map((_, i) => ({
+        id: `mock-${i}`,
+        name: `Product ${i + 1}`,
+        description: 'This is a sample product description.',
+        price: 19.99 + i,
+        stock: 10 + i,
+        image_url: null,
+        category: i % 2 === 0 ? 'Category A' : 'Category B',
+        is_featured: i % 4 === 0,
+        is_sale: i % 3 === 0,
+        is_new: i % 5 === 0,
+        sku: `SKU-00${i}`
+      }));
+      setProducts(mockProducts);
+      setIsLoading(false);
+      return;
+    }
+
     const fetchProducts = async () => {
       setIsLoading(true);
       setError(null);
@@ -95,9 +122,12 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
     };
 
     fetchProducts();
-  }, [categoryFilter, sortBy, sortOrder]);
+  }, [categoryFilter, sortBy, sortOrder, isPreviewMode, isLiveSite]);
 
   const handleAddToCart = (product: Product) => {
+    // Only allow adding to cart in live site mode
+    if (!isLiveSite) return;
+    
     addToCart(product);
     toast.success(`${product.name} added to cart`);
   };
@@ -170,17 +200,33 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
           <Card key={product.id} className={`${getCardClass()} transition-all overflow-hidden flex flex-col h-full`}>
             <div className="relative aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
               {product.image_url ? (
-                <Link to={`/product/${product.id}`} className="block w-full h-full">
-                  <img 
-                    src={product.image_url} 
-                    alt={product.name} 
-                    className="w-full h-full object-cover hover:scale-105 transition-transform" 
-                  />
-                </Link>
+                isLiveSite ? (
+                  <Link to={`/product/${product.id}`} className="block w-full h-full">
+                    <img 
+                      src={product.image_url} 
+                      alt={product.name} 
+                      className="w-full h-full object-cover hover:scale-105 transition-transform" 
+                    />
+                  </Link>
+                ) : (
+                  <div className="block w-full h-full">
+                    <img 
+                      src={product.image_url} 
+                      alt={product.name} 
+                      className="w-full h-full object-cover" 
+                    />
+                  </div>
+                )
               ) : (
-                <Link to={`/product/${product.id}`} className="block w-full h-full flex items-center justify-center">
-                  <Package className="h-16 w-16 text-gray-400" />
-                </Link>
+                isLiveSite ? (
+                  <Link to={`/product/${product.id}`} className="block w-full h-full flex items-center justify-center">
+                    <Package className="h-16 w-16 text-gray-400" />
+                  </Link>
+                ) : (
+                  <div className="block w-full h-full flex items-center justify-center">
+                    <Package className="h-16 w-16 text-gray-400" />
+                  </div>
+                )
               )}
               
               {/* Product badges */}
@@ -198,9 +244,13 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
             </div>
             
             <CardContent className="flex-grow pt-4">
-              <Link to={`/product/${product.id}`} className="block hover:text-blue-600">
+              {isLiveSite ? (
+                <Link to={`/product/${product.id}`} className="block hover:text-blue-600">
+                  <h3 className="font-medium truncate mb-1">{product.name}</h3>
+                </Link>
+              ) : (
                 <h3 className="font-medium truncate mb-1">{product.name}</h3>
-              </Link>
+              )}
               
               <div className="flex items-center text-sm text-gray-500 mb-2">
                 {product.category && (
@@ -229,7 +279,7 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
             <CardFooter className="pt-0">
               <Button 
                 onClick={() => handleAddToCart(product)} 
-                disabled={product.stock === 0}
+                disabled={product.stock === 0 || !isLiveSite}
                 className="w-full"
                 size="sm"
               >
@@ -247,8 +297,8 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
             <PaginationItem>
               <Button 
                 variant="ghost"
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
+                onClick={() => isLiveSite && setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1 || !isLiveSite}
                 className="flex items-center gap-1"
               >
                 <span>Previous</span>
@@ -259,7 +309,8 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
               <PaginationItem key={i}>
                 <Button
                   variant={currentPage === i + 1 ? "outline" : "ghost"}
-                  onClick={() => setCurrentPage(i + 1)}
+                  onClick={() => isLiveSite && setCurrentPage(i + 1)}
+                  disabled={!isLiveSite}
                   className="w-10"
                 >
                   {i + 1}
@@ -270,8 +321,8 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
             <PaginationItem>
               <Button
                 variant="ghost"
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
+                onClick={() => isLiveSite && setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages || !isLiveSite}
                 className="flex items-center gap-1"
               >
                 <span>Next</span>

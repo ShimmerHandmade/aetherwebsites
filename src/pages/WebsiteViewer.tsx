@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate, useLocation, Routes, Route } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
 import BuilderContent from "@/components/builder/BuilderContent";
 import { useWebsite } from "@/hooks/useWebsite";
@@ -105,6 +105,7 @@ const WebsiteViewer = () => {
       window.__SITE_SETTINGS__ = {
         logoUrl: website.settings.logoUrl,
         siteId: id, // Add site ID to settings for cart routes
+        isLiveSite: true, // Indicate this is a live site
         // Add other global settings here as needed
       };
     }
@@ -151,7 +152,7 @@ const WebsiteViewer = () => {
     >
       <div className="w-full min-h-screen">
         <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
-          <BuilderContent isPreviewMode={true} />
+          <BuilderContent isPreviewMode={true} isLiveSite={true} />
         </div>
       </div>
     </BuilderProvider>

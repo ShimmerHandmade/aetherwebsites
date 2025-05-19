@@ -15,6 +15,7 @@ interface BuilderElementProps {
   parentId?: string;
   canUseAnimations?: boolean;
   canUseEnterpriseAnimations?: boolean;
+  isLiveSite?: boolean;
 }
 
 export const ElementWrapper: React.FC<BuilderElementProps> = ({
@@ -25,6 +26,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   parentId,
   canUseAnimations,
   canUseEnterpriseAnimations,
+  isLiveSite = false,
 }) => {
   const { selectElement, removeElement, duplicateElement, moveElementUp, moveElementDown } = useBuilder();
   const { isPremium, isEnterprise } = usePlan();
@@ -52,7 +54,8 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   const maintainAspectRatio = element.props?.maintainAspectRatio || false;
 
   const handleElementClick = (e: React.MouseEvent) => {
-    if (!isPreviewMode) {
+    // Only allow selecting elements in builder mode, not in preview or live site
+    if (!isPreviewMode && !isLiveSite) {
       e.stopPropagation();
       selectElement(element.id);
     }
@@ -79,7 +82,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   };
 
   const handleDragStart = (e: React.DragEvent) => {
-    if (isPreviewMode || isElementLocked) {
+    if (isPreviewMode || isElementLocked || isLiveSite) {
       e.preventDefault();
       return false;
     }
@@ -130,7 +133,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
     let style = "transition-all duration-150 relative";
     
     // Add animation classes if available for this plan
-    if (!isPreviewMode) {
+    if (!isPreviewMode && !isLiveSite) {
       style += " hover:outline hover:outline-2 hover:outline-blue-300 hover:outline-offset-2";
       
       if (selected) {
@@ -147,7 +150,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
     }
 
     // Add premium animations if available
-    if (isPreviewMode) {
+    if (isPreviewMode || isLiveSite) {
       if (element.props?.hasAnimation) {
         if ((element.props.animationType === 'premium' && canUseAnimationsProp) || 
             (element.props.animationType === 'enterprise' && canUseEnterpriseAnimationsProp) || 
@@ -179,14 +182,22 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
     return style;
   };
 
+  // Add a class to prevent interactions in builder mode for certain elements
+  const getPreventInteractionClass = () => {
+    if (!isPreviewMode && !isLiveSite) {
+      return "pointer-events-none";
+    }
+    return "";
+  };
+
   // Render the element using the renderElement function
-  const renderedElement = renderElement(element);
+  const renderedElement = renderElement(element, isPreviewMode, isLiveSite);
   
   // Some elements can't or shouldn't be draggable/editable
-  const isDraggable = !isPreviewMode && !["navbar", "footer"].includes(element.type) && !isElementLocked;
+  const isDraggable = !isPreviewMode && !isLiveSite && !["navbar", "footer"].includes(element.type) && !isElementLocked;
 
-  // Always show element controls for selected elements
-  const controlsBar = !isPreviewMode && selected ? (
+  // Always show element controls for selected elements in builder mode
+  const controlsBar = !isPreviewMode && !isLiveSite && selected ? (
     <div className="absolute -top-10 right-0 flex space-x-1 bg-white p-1 rounded shadow-sm z-50">
       <Button
         variant="outline"
@@ -260,7 +271,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
       }}
     >
       {/* Show premium badge with improved styling */}
-      {isPremiumAnimationElement && !isPreviewMode && (
+      {isPremiumAnimationElement && !isPreviewMode && !isLiveSite && (
         <div className="absolute top-0 left-0 z-10 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs px-2 py-1 rounded-br flex items-center gap-1 shadow-sm">
           {isElementLocked ? <Lock className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
           <span>{isEnterpriseAnimationElement ? "Enterprise" : "Premium"}</span>
@@ -268,7 +279,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
       )}
 
       {/* Show an overlay for locked elements */}
-      {isElementLocked && !isPreviewMode && (
+      {isElementLocked && !isPreviewMode && !isLiveSite && (
         <div className="absolute inset-0 bg-gray-900 bg-opacity-30 flex items-center justify-center z-20 rounded">
           <div className="bg-white p-2 rounded-lg shadow-lg flex items-center gap-2">
             <Lock className="h-4 w-4 text-indigo-600" />
@@ -277,12 +288,15 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
         </div>
       )}
 
-      {renderedElement}
+      {/* Apply pointer-events-none to children in builder to prevent interactions */}
+      <div className={!isPreviewMode && !isLiveSite ? "pointer-events-none" : ""}>
+        {renderedElement}
+      </div>
     </div>
   );
 
-  // If the element is resizable and not in preview mode, wrap it in ResizableWrapper
-  if (isResizable && !isPreviewMode) {
+  // If the element is resizable and not in preview or live site mode, wrap it in ResizableWrapper
+  if (isResizable && !isPreviewMode && !isLiveSite) {
     return (
       <div className="relative mt-12 mb-4"> {/* Added mb-4 to create proper spacing between elements */}
         {controlsBar}
@@ -304,7 +318,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
 
   // Otherwise, return the content directly with controls
   return (
-    <div className="relative mt-12 mb-4"> {/* Added mb-4 for consistent spacing */}
+    <div className={`relative ${!isPreviewMode && !isLiveSite ? "mt-12" : ""} mb-4`}> {/* Added mb-4 for consistent spacing */}
       {controlsBar}
       {content}
     </div>
