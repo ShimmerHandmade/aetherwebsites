@@ -8,6 +8,11 @@ import Dashboard from "@/pages/Dashboard";
 import Cart from "@/pages/Cart";
 import ProductDetails from "@/pages/ProductDetails";
 import NotFound from "@/pages/NotFound";
+import Builder from "@/pages/Builder";
+import BuilderShop from "@/pages/builder/Shop";
+import BuilderPages from "@/pages/builder/Pages";
+import BuilderProducts from "@/pages/builder/Products";
+import WebsiteViewer from "@/pages/WebsiteViewer";
 
 // Lazy-loaded components
 const Settings = lazy(() => import("@/pages/Profile"));
@@ -20,6 +25,11 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/product/:id" element={<ProductDetails />} />
+        <Route path="/builder/:id" element={<Builder />} />
+        <Route path="/builder/:id/shop" element={<BuilderShop />} />
+        <Route path="/builder/:id/pages" element={<BuilderPages />} />
+        <Route path="/builder/:id/products" element={<BuilderProducts />} />
+        <Route path="/site/:id/*" element={<WebsiteViewer />} />
         <Route
           path="/settings"
           element={
