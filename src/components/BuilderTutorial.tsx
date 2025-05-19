@@ -9,32 +9,38 @@ const tutorialSteps = [
   {
     title: "Welcome to the builder",
     description: "Let's walk through how to build your website step by step.",
-    image: "/tutorial/welcome.png"
+    image: "/tutorial/welcome.png",
+    fallbackImage: "/lovable-uploads/c2c54c16-7e32-4056-82d5-62bc1abfa1a0.png"
   },
   {
     title: "Add Elements",
     description: "Drag and drop elements from the left sidebar onto your page to build your layout.",
-    image: "/tutorial/elements.png"
+    image: "/tutorial/elements.png",
+    fallbackImage: "/lovable-uploads/90c55252-fdd4-4bc8-af96-0bd1592aff3f.png"
   },
   {
     title: "Edit Properties",
     description: "Click on any element to edit its properties in the right sidebar.",
-    image: "/tutorial/properties.png"
+    image: "/tutorial/properties.png",
+    fallbackImage: "/lovable-uploads/42b74c45-537a-4595-82fd-841da999757c.png"
   },
   {
     title: "Manage Pages",
     description: "Create and manage multiple pages for your website from the Pages tab.",
-    image: "/tutorial/pages.png"
+    image: "/tutorial/pages.png",
+    fallbackImage: "/lovable-uploads/8651b24a-ac81-4797-b125-7a5f9976aaf2.png"
   },
   {
     title: "Add Products",
     description: "Add and manage your products from the Products tab in the builder.",
-    image: "/tutorial/products.png"
+    image: "/tutorial/products.png",
+    fallbackImage: "/lovable-uploads/9117d25c-a891-453e-9e57-2a7a2452fec2.png"
   },
   {
     title: "Save and Publish",
     description: "When you're ready, save your changes and publish your site to make it live.",
-    image: "/tutorial/publish.png"
+    image: "/tutorial/publish.png",
+    fallbackImage: "/lovable-uploads/a71dcd29-4d11-4f44-b0c7-9b3cb7b4f21f.png"
   }
 ];
 
@@ -69,19 +75,6 @@ const BuilderTutorial = ({ websiteId, onComplete }: BuilderTutorialProps) => {
 
   const currentTutorial = tutorialSteps[currentStep];
   const isLastStep = currentStep === tutorialSteps.length - 1;
-  
-  // Set fallback images for each step based on the uploaded screenshots
-  const getFallbackImage = (index: number) => {
-    const fallbacks = [
-      "/lovable-uploads/c2c54c16-7e32-4056-82d5-62bc1abfa1a0.png", // Welcome/Layout
-      "/lovable-uploads/90c55252-fdd4-4bc8-af96-0bd1592aff3f.png", // Elements
-      "/lovable-uploads/42b74c45-537a-4595-82fd-841da999757c.png", // Properties
-      "/lovable-uploads/8651b24a-ac81-4797-b125-7a5f9976aaf2.png", // Pages tab
-      "/lovable-uploads/9117d25c-a891-453e-9e57-2a7a2452fec2.png", // Products tab
-      "/lovable-uploads/a71dcd29-4d11-4f44-b0c7-9b3cb7b4f21f.png"  // Save/Publish
-    ];
-    return fallbacks[index] || "/placeholder.svg";
-  };
 
   return (
     <div className="max-w-3xl mx-auto p-6">
@@ -107,18 +100,13 @@ const BuilderTutorial = ({ websiteId, onComplete }: BuilderTutorialProps) => {
           
           <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden mb-6">
             <img
-              src={getFallbackImage(currentStep)} 
+              src={currentTutorial.fallbackImage} 
               alt={currentTutorial.title}
               className="w-full h-full object-contain border border-gray-200"
               onError={(e) => {
-                // If tutorial image fails, use our uploaded fallback
+                // If even the fallback fails, use placeholder
                 const target = e.target as HTMLImageElement;
-                if (!target.src.includes('lovable-uploads')) {
-                  target.src = getFallbackImage(currentStep);
-                } else {
-                  // If even the fallback fails, use placeholder
-                  target.src = "/placeholder.svg";
-                }
+                target.src = "/placeholder.svg";
               }}
             />
           </div>
