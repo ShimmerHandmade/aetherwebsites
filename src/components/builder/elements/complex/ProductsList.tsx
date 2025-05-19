@@ -1,15 +1,22 @@
 
 import React, { useState, useEffect } from 'react';
-import { Store, ChevronLeft, ChevronRight, Tag, Truck, AlertCircle, PercentCircle, Package, Loader2 } from "lucide-react";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Store, Package, Loader2, AlertCircle, Tag, Truck } from "lucide-react";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { BuilderElement } from "@/contexts/BuilderContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from "@/components/ui/pagination";
 
 interface Product {
   id: string;
@@ -238,28 +245,37 @@ const ProductsList: React.FC<ProductsListProps> = ({ element }) => {
         <Pagination className="justify-center">
           <PaginationContent>
             <PaginationItem>
-              <PaginationPrevious 
+              <Button 
+                variant="ghost"
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-              />
+                className="flex items-center gap-1"
+              >
+                <span>Previous</span>
+              </Button>
             </PaginationItem>
             
             {Array.from({ length: totalPages }).map((_, i) => (
               <PaginationItem key={i}>
-                <PaginationLink
-                  isActive={currentPage === i + 1}
+                <Button
+                  variant={currentPage === i + 1 ? "outline" : "ghost"}
                   onClick={() => setCurrentPage(i + 1)}
+                  className="w-10"
                 >
                   {i + 1}
-                </PaginationLink>
+                </Button>
               </PaginationItem>
             ))}
             
             <PaginationItem>
-              <PaginationNext
+              <Button
+                variant="ghost"
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-              />
+                className="flex items-center gap-1"
+              >
+                <span>Next</span>
+              </Button>
             </PaginationItem>
           </PaginationContent>
         </Pagination>
