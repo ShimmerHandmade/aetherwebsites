@@ -7,7 +7,11 @@ import TextareaElement from "./TextareaElement";
 import CheckboxElement from "./CheckboxElement";
 import SelectElement from "./SelectElement";
 
-export const renderInteractiveElement = (element: BuilderElement): React.ReactNode => {
+export const renderInteractiveElement = (
+  element: BuilderElement,
+  isPreviewMode: boolean = false,
+  isLiveSite: boolean = false
+): React.ReactNode => {
   switch (element.type) {
     case "form":
       return <FormElement element={element} />;

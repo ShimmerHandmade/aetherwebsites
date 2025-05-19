@@ -6,6 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 export interface PreviewModeProps {
   isPreviewMode?: boolean;
   setIsPreviewMode?: (value: boolean) => void;
+  isLiveSite?: boolean;
 }
 
 interface BuilderLayoutProps extends PreviewModeProps {
@@ -15,7 +16,8 @@ interface BuilderLayoutProps extends PreviewModeProps {
 const BuilderLayout: React.FC<BuilderLayoutProps> = ({ 
   children, 
   isPreviewMode = false, 
-  setIsPreviewMode = () => {} 
+  setIsPreviewMode = () => {},
+  isLiveSite = false
 }) => {
   // Clone each child and pass the preview mode props
   const childrenWithProps = React.Children.map(children, child => {
@@ -24,7 +26,8 @@ const BuilderLayout: React.FC<BuilderLayoutProps> = ({
       // Pass the preview mode props
       return React.cloneElement(child as React.ReactElement<any>, {
         isPreviewMode,
-        setIsPreviewMode
+        setIsPreviewMode,
+        isLiveSite
       });
     }
     return child;

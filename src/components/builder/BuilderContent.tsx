@@ -8,7 +8,15 @@ import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { Edit } from "lucide-react";
 import { useBuilder } from "@/contexts/builder/BuilderProvider";
 
-const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) => {
+// Extend the interface to include isLiveSite
+interface BuilderContentProps extends PreviewModeProps {
+  isLiveSite?: boolean;
+}
+
+const BuilderContent: React.FC<BuilderContentProps> = ({ 
+  isPreviewMode = false,
+  isLiveSite = false
+}) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { elements } = useBuilder();
@@ -21,7 +29,7 @@ const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) =
   if (isFullPreview || isSiteRoute) {
     return (
       <div className="flex-1 min-h-screen">
-        <BuilderCanvas isPreviewMode={true} />
+        <BuilderCanvas isPreviewMode={true} isLiveSite={isLiveSite} />
       </div>
     );
   }
@@ -30,7 +38,7 @@ const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) =
   if (isPreviewMode) {
     return (
       <div className="flex-1 bg-slate-100 overflow-auto">
-        <BuilderCanvas isPreviewMode={true} />
+        <BuilderCanvas isPreviewMode={true} isLiveSite={isLiveSite} />
       </div>
     );
   }
@@ -45,7 +53,7 @@ const BuilderContent: React.FC<PreviewModeProps> = ({ isPreviewMode = false }) =
 
       {/* Main content area */}
       <div className="flex-1 bg-slate-100 overflow-auto relative">
-        <BuilderCanvas isPreviewMode={false} />
+        <BuilderCanvas isPreviewMode={false} isLiveSite={isLiveSite} />
         
         {/* Mobile view: Bottom Drawer trigger */}
         <Drawer open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>

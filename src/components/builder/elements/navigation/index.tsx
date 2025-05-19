@@ -6,7 +6,11 @@ import MenuElement from "./MenuElement";
 import FooterElement from "./FooterElement";
 import BreadcrumbsElement from "./BreadcrumbsElement";
 
-export const renderNavigationElement = (element: BuilderElement): React.ReactNode => {
+export const renderNavigationElement = (
+  element: BuilderElement,
+  isPreviewMode: boolean = false,
+  isLiveSite: boolean = false
+): React.ReactNode => {
   switch (element.type) {
     case "navbar":
       return <NavbarElement element={element} />;

@@ -6,7 +6,11 @@ import AudioElement from "./AudioElement";
 import CarouselElement from "./CarouselElement";
 import GalleryElement from "./GalleryElement";
 
-export const renderMediaElement = (element: BuilderElement): React.ReactNode => {
+export const renderMediaElement = (
+  element: BuilderElement,
+  isPreviewMode: boolean = false,
+  isLiveSite: boolean = false
+): React.ReactNode => {
   switch (element.type) {
     case "video":
       return <VideoElement element={element} />;

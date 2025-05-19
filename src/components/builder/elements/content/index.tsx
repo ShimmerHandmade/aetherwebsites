@@ -8,7 +8,11 @@ import ButtonElement from "./ButtonElement";
 import ListElement from "./ListElement";
 import IconElement from "./IconElement";
 
-export const renderContentElement = (element: BuilderElement): React.ReactNode => {
+export const renderContentElement = (
+  element: BuilderElement,
+  isPreviewMode: boolean = false,
+  isLiveSite: boolean = false
+): React.ReactNode => {
   switch (element.type) {
     case "text":
       return <TextElement element={element} />;

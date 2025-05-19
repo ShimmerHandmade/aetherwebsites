@@ -10,7 +10,11 @@ import CardElement from "./CardElement";
 import FaqElement from "./FaqElement";
 import ProductsList from './ProductsList';
 
-export const renderComplexElement = (element: BuilderElement): React.ReactNode => {
+export const renderComplexElement = (
+  element: BuilderElement,
+  isPreviewMode: boolean = false,
+  isLiveSite: boolean = false
+): React.ReactNode => {
   switch (element.type) {
     case "feature":
       return <FeatureElement element={element} />;

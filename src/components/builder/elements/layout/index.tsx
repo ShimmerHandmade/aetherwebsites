@@ -10,7 +10,11 @@ import FlexElement from "./FlexElement";
 import SpacerElement from "./SpacerElement";
 import DividerElement from "./DividerElement";
 
-export const renderLayoutElement = (element: BuilderElement): React.ReactNode => {
+export const renderLayoutElement = (
+  element: BuilderElement,
+  isPreviewMode: boolean = false,
+  isLiveSite: boolean = false
+): React.ReactNode => {
   switch (element.type) {
     case "header":
       return <HeaderElement element={element} />;
