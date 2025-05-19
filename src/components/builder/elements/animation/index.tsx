@@ -7,7 +7,11 @@ import SlideInElement from "./SlideInElement";
 import ScrollRevealElement from "./ScrollRevealElement";
 import ParticlesBackground from "./ParticlesBackground";
 
-export const renderAnimationElement = (element: BuilderElement): React.ReactNode => {
+export const renderAnimationElement = (
+  element: BuilderElement,
+  isPreviewMode: boolean = false,
+  isLiveSite: boolean = false
+): React.ReactNode => {
   switch (element.type) {
     case "fadeInElement":
       return <FadeInElement element={element} />;
