@@ -64,7 +64,7 @@ const DashboardNavbar = ({ profile }: DashboardNavbarProps) => {
                   <p className="text-xs text-gray-500 truncate">{profile?.email}</p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/profile")}>
+                <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/settings")}>
                   <User className="mr-2 h-4 w-4" />
                   Profile
                 </DropdownMenuItem>
@@ -100,7 +100,7 @@ const DashboardNavbar = ({ profile }: DashboardNavbarProps) => {
                 Dashboard
               </a>
               <a
-                href="/profile"
+                href="/settings"
                 className="text-gray-600 hover:text-indigo-600 transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
