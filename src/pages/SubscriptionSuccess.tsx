@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { LoaderCircle, CheckCircle2, ArrowRight, RefreshCw, AlertTriangle } from "lucide-react";
+import { RefreshSubscriptionButton } from "@/components/RefreshSubscriptionButton";
 
 const SubscriptionSuccess = () => {
   const [loading, setLoading] = useState(true);
@@ -30,7 +31,9 @@ const SubscriptionSuccess = () => {
       console.log("Checking subscription with endpoint:", endpoint);
       
       // Call check-subscription with session ID if available
-      const { data, error } = await supabase.functions.invoke(endpoint);
+      const { data, error } = await supabase.functions.invoke(endpoint, {
+        method: "GET",
+      });
       
       console.log("Subscription check response:", data, error);
       
@@ -40,11 +43,11 @@ const SubscriptionSuccess = () => {
         return false;
       }
       
-      if (data.subscribed && data.plan) {
+      if (data && data.subscribed && data.plan) {
         setPlanName(data.plan.name);
         toast.success(`Successfully subscribed to ${data.plan.name} plan!`);
         return true;
-      } else if (data.error) {
+      } else if (data && data.error) {
         setError(data.error);
         return false;
       } else {
@@ -95,26 +98,16 @@ const SubscriptionSuccess = () => {
   // Setup retry mechanism
   useEffect(() => {
     // Only trigger retries if we've manually refreshed or have session ID
-    if ((manualRefresh || sessionId) && retryCount > 0 && retryCount < 6 && !planName && loading) {
+    if ((manualRefresh || sessionId) && retryCount < 5 && !planName && error) {
       const timer = setTimeout(() => {
-        console.log(`Retry attempt ${retryCount}/5...`);
+        console.log(`Retry attempt ${retryCount + 1}/5...`);
+        setRetryCount(prev => prev + 1);
         verifySubscription();
       }, 3000); // Retry every 3 seconds
       
       return () => clearTimeout(timer);
     }
-  }, [retryCount, manualRefresh, sessionId, planName, loading]);
-  
-  // Increment retry counter if verification fails
-  useEffect(() => {
-    if (!loading && !planName && error && retryCount < 5) {
-      const timer = setTimeout(() => {
-        setRetryCount(prev => prev + 1);
-      }, 3000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [loading, planName, error, retryCount]);
+  }, [retryCount, manualRefresh, sessionId, planName, error]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-4">
@@ -124,7 +117,7 @@ const SubscriptionSuccess = () => {
             <LoaderCircle className="h-16 w-16 text-indigo-600 animate-spin mb-4" />
             <h2 className="text-2xl font-bold mb-2">Verifying subscription...</h2>
             <p className="text-gray-500 mb-4">
-              {retryCount > 0 ? `Attempt ${retryCount + 1}/6...` : "Just a moment while we confirm your subscription status."}
+              {retryCount > 0 ? `Attempt ${retryCount + 1}/5...` : "Just a moment while we confirm your subscription status."}
             </p>
             {retryCount >= 3 && (
               <p className="text-amber-600 text-sm">
