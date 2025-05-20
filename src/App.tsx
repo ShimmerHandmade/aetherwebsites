@@ -5,6 +5,7 @@ import { Suspense, lazy } from "react";
 import { CartProvider } from "@/contexts/CartContext";
 import Index from "@/pages/Index";
 import Dashboard from "@/pages/Dashboard";
+import Auth from "@/pages/Auth"; // Added this import
 import Cart from "@/pages/Cart";
 import ProductDetails from "@/pages/ProductDetails";
 import NotFound from "@/pages/NotFound";
