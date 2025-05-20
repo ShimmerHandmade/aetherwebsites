@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Store, Package, Loader2, AlertCircle, Tag, Truck } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -138,12 +139,14 @@ const ProductsList: React.FC<ProductsListProps> = ({
   }, [websiteId, categoryFilter, sortBy, sortOrder]);
 
   const handleAddToCart = (e: React.MouseEvent, product: Product) => {
-    e.preventDefault(); // Prevent navigation when clicking the add to cart button
-    e.stopPropagation(); // Prevent event bubbling
+    // Always prevent default and stop propagation for the Add to Cart button
+    e.preventDefault();
+    e.stopPropagation();
     
-    // Only allow adding to cart in live site mode
+    // Only add to cart in live site mode
     if (!isLiveSite) return;
     
+    console.log("Adding to cart:", product.name);
     addToCart(product);
     toast.success(`${product.name} added to cart`);
   };
@@ -151,6 +154,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
   const handleProductClick = (product: Product) => {
     if (!isLiveSite) return; // Only navigate in live site mode
     
+    console.log("Navigating to product:", product.id);
     navigate(`/product/${product.id}`);
   };
 
@@ -224,8 +228,10 @@ const ProductsList: React.FC<ProductsListProps> = ({
         {currentProducts.map((product) => (
           <Card 
             key={product.id} 
-            className={`${getCardClass()} transition-all overflow-hidden flex flex-col h-full ${isLiveSite ? 'cursor-pointer' : ''}`}
+            className={`${getCardClass()} transition-all overflow-hidden flex flex-col h-full ${isLiveSite ? 'cursor-pointer hover:brightness-95' : ''}`}
             onClick={isLiveSite ? () => handleProductClick(product) : undefined}
+            role={isLiveSite ? "link" : undefined}
+            aria-label={isLiveSite ? `View details for ${product.name}` : undefined}
           >
             <div className="relative aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
               {product.image_url ? (
@@ -283,8 +289,9 @@ const ProductsList: React.FC<ProductsListProps> = ({
               <Button 
                 onClick={(e) => handleAddToCart(e, product)} 
                 disabled={product.stock === 0 || !isLiveSite}
-                className="w-full"
+                className={`w-full ${isLiveSite ? 'pointer-events-auto' : ''}`}
                 size="sm"
+                data-testid="add-to-cart-button"
               >
                 <Store className="h-4 w-4 mr-2" />
                 Add to Cart
