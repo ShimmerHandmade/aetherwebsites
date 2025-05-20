@@ -13,6 +13,22 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
+// Define product IDs for each plan and billing cycle
+const PRODUCT_IDS = {
+  "Basic": {
+    monthly: "prod_SLNsjzNF2IhXhB",
+    annual: "prod_SLNujUWZgDPqtC"
+  },
+  "Professional": {
+    monthly: "prod_SLNtoNxtVMm2vT",
+    annual: "prod_SLNvdzWJ0ssD0x"
+  },
+  "Enterprise": {
+    monthly: "prod_SLNtYor22zUoRc",
+    annual: "prod_SLNwD9JWy92Bj8"
+  }
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -98,8 +114,16 @@ serve(async (req) => {
         .eq("id", user.id);
     }
 
-    // Calculate price in cents for Stripe
-    // Convert decimal price (like 9.99) to cents integer (999)
+    // Get the product ID for the selected plan and billing type
+    const productId = PRODUCT_IDS[plan.name]?.[billing_type === 'monthly' ? 'monthly' : 'annual'];
+    
+    if (!productId) {
+      throw new Error(`Product ID not found for plan: ${plan.name} with billing type: ${billing_type}`);
+    }
+    
+    logStep("Using product ID", { productId, planName: plan.name, billingType: billing_type });
+    
+    // Calculate price in cents for Stripe (in case we need to create a price)
     const rawPrice = billing_type === 'monthly' ? plan.monthly_price : plan.annual_price;
     const priceInCents = Math.round(Number(rawPrice) * 100);
     
@@ -108,34 +132,44 @@ serve(async (req) => {
     }
     
     logStep("Price calculated", { rawPrice, priceInCents });
-    
-    const priceId = billing_type === 'monthly' ? 
-      plan.stripe_monthly_price_id : 
-      plan.stripe_annual_price_id;
 
     // Create a checkout session
     const origin = req.headers.get("origin") || "http://localhost:3000";
+
+    // First, get the prices for this product
+    const { data: prices } = await stripe.prices.list({
+      product: productId,
+      active: true,
+      limit: 1,
+    });
+    
+    let priceId: string | null = null;
+    
+    if (prices && prices.length > 0) {
+      priceId = prices[0].id;
+      logStep("Found existing price", { priceId });
+    } else {
+      // If no price found, create one
+      const newPrice = await stripe.prices.create({
+        product: productId,
+        unit_amount: priceInCents,
+        currency: 'usd',
+        recurring: {
+          interval: billing_type === 'monthly' ? 'month' : 'year',
+        },
+      });
+      priceId = newPrice.id;
+      logStep("Created new price", { priceId });
+    }
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ["card"],
       line_items: [
-        priceId ?
-          { price: priceId, quantity: 1 } :
-          {
-            price_data: {
-              currency: "usd",
-              product_data: {
-                name: `${plan.name} Plan (${billing_type === 'monthly' ? 'Monthly' : 'Annual'})`,
-                description: plan.description || `${plan.name} subscription plan`,
-              },
-              unit_amount: priceInCents, // Use the converted price in cents
-              recurring: {
-                interval: billing_type === 'monthly' ? 'month' : 'year',
-              },
-            },
-            quantity: 1,
-          },
+        {
+          price: priceId,
+          quantity: 1,
+        }
       ],
       mode: "subscription",
       subscription_data: {
