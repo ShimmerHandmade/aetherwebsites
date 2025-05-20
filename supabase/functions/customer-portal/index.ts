@@ -46,7 +46,7 @@ serve(async (req) => {
     // Get user profile with Stripe customer ID
     const { data: profile, error: profileError } = await supabaseClient
       .from("profiles")
-      .select("stripe_customer_id")
+      .select("stripe_customer_id, full_name")
       .eq("id", user.id)
       .maybeSingle();
     
@@ -95,17 +95,41 @@ serve(async (req) => {
     logStep("Using Stripe customer ID", { customerId: customerToUse });
     
     const origin = req.headers.get("origin") || "http://localhost:3000";
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: customerToUse,
-      return_url: `${origin}/dashboard`,
-    });
-    
-    logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
 
-    return new Response(JSON.stringify({ url: portalSession.url }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    try {
+      // Try to create the portal session with extra logging
+      logStep("Creating customer portal session", { customer: customerToUse, returnUrl: `${origin}/dashboard` });
+      
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: customerToUse,
+        return_url: `${origin}/dashboard`,
+      });
+      
+      logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
+  
+      return new Response(JSON.stringify({ url: portalSession.url }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    } catch (stripeError) {
+      // Handle Stripe-specific errors
+      const errorMessage = stripeError instanceof Error ? stripeError.message : String(stripeError);
+      logStep("ERROR creating Stripe portal session", { message: errorMessage });
+      
+      // If this is related to customer portal configuration
+      if (errorMessage.includes("configuration") || errorMessage.includes("portal")) {
+        return new Response(JSON.stringify({ 
+          error: "Stripe customer portal not configured correctly. Please set up your customer portal in the Stripe dashboard.", 
+          details: errorMessage,
+          stripeCustomerId: customerToUse
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+      
+      throw stripeError;
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in customer-portal", { message: errorMessage });

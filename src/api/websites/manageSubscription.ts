@@ -24,7 +24,32 @@ export const openCustomerPortal = async (): Promise<{
       };
     }
     
-    if (!data || !data.url) {
+    if (!data) {
+      console.error("No data returned from customer portal");
+      toast.error("Unable to generate subscription portal link");
+      return {
+        url: null,
+        error: "No data returned from customer portal"
+      };
+    }
+    
+    if (data.error) {
+      console.error("Error from customer portal function:", data.error);
+      
+      // Show a more helpful error message if it's a configuration issue
+      if (data.error.includes("configuration") || data.error.includes("portal")) {
+        toast.error("The subscription management portal is not configured in Stripe. Please set it up in your Stripe dashboard.");
+      } else {
+        toast.error(data.error);
+      }
+      
+      return {
+        url: null,
+        error: data.error
+      };
+    }
+    
+    if (!data.url) {
       console.error("No URL returned from customer portal");
       toast.error("Unable to generate subscription portal link");
       return {
