@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,24 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAnnual, setIsAnnual] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Check authentication status when component mounts
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+    
+    checkAuth();
+    
+    // Subscribe to auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+    });
+    
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -73,8 +92,13 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
 
   const handleSelectPlan = async (plan: Plan) => {
     try {
-      if (!profile) {
+      // Check authentication first
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
         toast.error("Please log in to select a plan");
+        // Redirect to auth page
+        window.location.href = '/auth';
         return;
       }
       

@@ -37,6 +37,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [newWebsiteId, setNewWebsiteId] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
   const { planName, restrictions } = usePlan();
 
@@ -49,19 +50,37 @@ const Dashboard = () => {
         return;
       }
       
+      setIsAuthenticated(true);
       fetchUserData();
       fetchWebsites();
     };
 
+    // Set up auth listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+      
+      if (!session && event === 'SIGNED_OUT') {
+        navigate("/auth");
+      }
+    });
+
+    // Then check current auth state
     checkAuth();
+    
+    // Clean up subscription
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const fetchUserData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user) return;
+      if (!user) {
+        console.log("No authenticated user found");
+        return;
+      }
       
+      console.log("Fetching profile for user:", user.id);
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
@@ -73,6 +92,7 @@ const Dashboard = () => {
         return;
       }
       
+      console.log("Profile data received:", data);
       setProfile(data);
     } catch (error) {
       console.error("Error in fetchUserData:", error);
@@ -158,6 +178,19 @@ const Dashboard = () => {
         websiteId={newWebsiteId} 
         onComplete={completeOnboarding} 
       />
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Please log in to access your dashboard</h1>
+          <Button onClick={() => navigate("/auth")} className="bg-gradient-to-r from-indigo-600 to-purple-600">
+            Log In
+          </Button>
+        </div>
+      </div>
     );
   }
 
