@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Store, Package, Loader2, AlertCircle, Tag, Truck } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -19,21 +18,7 @@ import {
   PaginationPrevious 
 } from "@/components/ui/pagination";
 import { fetchProducts } from "@/api/products";
-
-interface Product {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  stock: number;
-  image_url: string | null;
-  category: string | null;
-  is_featured: boolean;
-  is_sale: boolean;
-  is_new: boolean;
-  sku: string | null;
-  website_id: string;
-}
+import { Product } from "@/types/product"; // Import the proper Product type
 
 interface ProductsListProps {
   element: BuilderElement;
