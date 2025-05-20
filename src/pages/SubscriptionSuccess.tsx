@@ -27,8 +27,12 @@ const SubscriptionSuccess = () => {
         endpoint = `check-subscription?session_id=${sessionId}`;
       }
       
+      console.log("Checking subscription with endpoint:", endpoint);
+      
       // Call check-subscription with session ID if available
       const { data, error } = await supabase.functions.invoke(endpoint);
+      
+      console.log("Subscription check response:", data, error);
       
       if (error) {
         console.error("Error checking subscription:", error);
@@ -44,7 +48,8 @@ const SubscriptionSuccess = () => {
         setError(data.error);
         return false;
       } else {
-        // If not yet subscribed, return false to trigger a retry
+        // Handle case where we have a successful API response but subscription isn't active yet
+        setError("Your subscription is still processing. Please wait a moment and try refreshing.");
         return false;
       }
     } catch (err) {
@@ -76,29 +81,40 @@ const SubscriptionSuccess = () => {
           setLoading(false);
           return;
         }
+        
+        // If authenticated but no session ID, proceed with verification
+        verifySubscription();
       };
       checkAuth();
+    } else {
+      // Initial verification with session ID
+      verifySubscription();
     }
-    
-    // Initial verification
-    const checkSubscription = async () => {
-      const success = await verifySubscription();
+  }, [sessionId]); // Only run on first mount or if sessionId changes
+  
+  // Setup retry mechanism
+  useEffect(() => {
+    // Only trigger retries if we've manually refreshed or have session ID
+    if ((manualRefresh || sessionId) && retryCount > 0 && retryCount < 6 && !planName && loading) {
+      const timer = setTimeout(() => {
+        console.log(`Retry attempt ${retryCount}/5...`);
+        verifySubscription();
+      }, 3000); // Retry every 3 seconds
       
-      // If not successful and we have retries left, try again after a delay
-      if (!success && retryCount < 5) {
-        const timer = setTimeout(() => {
-          setRetryCount(prev => prev + 1);
-        }, 3000); // Retry every 3 seconds
-        
-        return () => clearTimeout(timer);
-      } else if (!success && retryCount >= 5) {
-        // After 5 retries, show error if still not verified
-        setError("Your subscription could not be verified after multiple attempts. This can happen if Stripe is still processing your payment. Please try refreshing in a few minutes or contact support if the problem persists.");
-      }
-    };
-    
-    checkSubscription();
-  }, [retryCount, manualRefresh, sessionId]);
+      return () => clearTimeout(timer);
+    }
+  }, [retryCount, manualRefresh, sessionId, planName, loading]);
+  
+  // Increment retry counter if verification fails
+  useEffect(() => {
+    if (!loading && !planName && error && retryCount < 5) {
+      const timer = setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [loading, planName, error, retryCount]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-4">

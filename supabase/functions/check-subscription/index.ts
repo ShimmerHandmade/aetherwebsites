@@ -109,7 +109,7 @@ serve(async (req) => {
     // Get user profile to check for existing subscription info
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("*, plans(*)")
+      .select("*")
       .eq("id", userId)
       .single();
       
@@ -147,7 +147,20 @@ serve(async (req) => {
                 .eq("id", planId)
                 .single();
                 
-              if (!planError && plan) {
+              if (planError) {
+                logStep("Error fetching plan", { error: planError.message });
+                return new Response(JSON.stringify({ 
+                  success: false,
+                  subscribed: true,
+                  plan: null,
+                  error: "Subscription active but plan details unavailable" 
+                }), {
+                  headers: { ...corsHeaders, "Content-Type": "application/json" },
+                  status: 200,
+                });
+              }
+                
+              if (plan) {
                 // Update profile with subscription status
                 const currentPeriodEnd = subscription.current_period_end 
                   ? new Date(subscription.current_period_end * 1000).toISOString() 
@@ -180,6 +193,17 @@ serve(async (req) => {
                   status: 200,
                 });
               }
+            } else {
+              logStep("No plan ID found in subscription metadata");
+              return new Response(JSON.stringify({ 
+                success: true,
+                subscribed: true,
+                plan: { name: "Unknown Plan" }, // Fallback plan name
+                error: "Plan details not found but subscription is active"
+              }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+                status: 200,
+              });
             }
           }
         } else {
@@ -198,15 +222,32 @@ serve(async (req) => {
     
     // Check for customer in Stripe
     if (!profile.stripe_customer_id) {
-      logStep("No Stripe customer ID found");
-      return new Response(JSON.stringify({ 
-        success: true,
-        subscribed: false,
-        plan: null
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
+      // Try to find customer by email
+      const customers = await stripe.customers.list({
+        email: userEmail,
+        limit: 1
       });
+      
+      if (customers.data.length > 0) {
+        // Update profile with customer ID
+        profile.stripe_customer_id = customers.data[0].id;
+        await supabaseAdmin
+          .from("profiles")
+          .update({ stripe_customer_id: profile.stripe_customer_id })
+          .eq("id", userId);
+        
+        logStep("Found and updated customer ID", { customerId: profile.stripe_customer_id });
+      } else {
+        logStep("No Stripe customer ID found");
+        return new Response(JSON.stringify({ 
+          success: true,
+          subscribed: false,
+          plan: null
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
     }
     
     // Check for active subscriptions
@@ -244,10 +285,22 @@ serve(async (req) => {
     
     if (!planId) {
       logStep("Subscription found but no plan ID in metadata");
+      
+      // Still update the profile as subscribed
+      await supabaseAdmin
+        .from("profiles")
+        .update({
+          is_subscribed: true,
+          subscription_id: subscription.id,
+          subscription_status: subscription.status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
+      
       return new Response(JSON.stringify({ 
         success: true,
         subscribed: true,
-        plan: null
+        plan: { name: "Premium Plan" } // Generic fallback name
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -263,14 +316,27 @@ serve(async (req) => {
     
     if (planError) {
       logStep("Error fetching plan", { error: planError.message });
+      
+      // Still update the profile as subscribed even if plan details are missing
+      await supabaseAdmin
+        .from("profiles")
+        .update({
+          is_subscribed: true,
+          plan_id: planId,
+          subscription_id: subscription.id,
+          subscription_status: subscription.status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
+      
       return new Response(JSON.stringify({ 
-        success: false,
+        success: true,
         subscribed: true,
-        plan: null,
-        error: "Failed to fetch plan details" 
+        plan: { name: "Premium Plan" }, // Generic fallback name
+        error: "Plan details unavailable but subscription is active"
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
+        status: 200,
       });
     }
     
