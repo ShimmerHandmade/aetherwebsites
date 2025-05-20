@@ -15,6 +15,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { fetchProducts } from "@/api/products";
 import { Input } from "@/components/ui/input";
 import { useParams } from "react-router-dom";
+import { toast } from "sonner";
 
 interface ProductsListPropertyEditorProps {
   element: BuilderElement;
@@ -28,6 +29,7 @@ const ProductsListPropertyEditor: React.FC<ProductsListPropertyEditorProps> = ({
 }) => {
   const { id: routeWebsiteId } = useParams<{ id: string }>();
   const [categories, setCategories] = useState<{name: string}[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   
   const columns = element.props?.columns || 4;
   const productsPerPage = element.props?.productsPerPage || 8;
@@ -41,15 +43,32 @@ const ProductsListPropertyEditor: React.FC<ProductsListPropertyEditorProps> = ({
   // Fetch available categories for the current website
   useEffect(() => {
     const loadCategories = async () => {
-      if (!websiteId) return;
+      if (!websiteId) {
+        console.warn("No website ID available to fetch categories");
+        return;
+      }
+      
+      setIsLoadingCategories(true);
       
       try {
-        const { categories } = await fetchProducts(websiteId);
+        const { categories, error } = await fetchProducts(websiteId);
+        
+        if (error) {
+          console.error("Failed to load categories:", error);
+          toast.error("Failed to load categories");
+          return;
+        }
+        
         if (categories && categories.length > 0) {
+          console.log(`Loaded ${categories.length} categories for website ${websiteId}:`, categories);
           setCategories(categories);
+        } else {
+          console.log(`No categories found for website ${websiteId}`);
         }
       } catch (error) {
-        console.error("Failed to load categories:", error);
+        console.error("Exception loading categories:", error);
+      } finally {
+        setIsLoadingCategories(false);
       }
     };
     
@@ -207,7 +226,7 @@ const ProductsListPropertyEditor: React.FC<ProductsListPropertyEditorProps> = ({
               onValueChange={handleCategoryFilterChange}
             >
               <SelectTrigger id="categoryFilter">
-                <SelectValue placeholder="Select category" />
+                <SelectValue placeholder={isLoadingCategories ? "Loading categories..." : "Select category"} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>

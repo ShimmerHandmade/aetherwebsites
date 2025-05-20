@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Store, Package, Loader2, AlertCircle, Tag, Truck } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -6,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
 import { useParams } from "react-router-dom";
 import { 
@@ -17,6 +18,7 @@ import {
   PaginationNext, 
   PaginationPrevious 
 } from "@/components/ui/pagination";
+import { fetchProducts } from "@/api/products";
 
 interface Product {
   id: string;
@@ -50,6 +52,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const { addToCart } = useCart();
   const { id: routeWebsiteId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   
   // Get website ID from element props or route params
   const websiteId = element.props?.websiteId || routeWebsiteId;
@@ -63,33 +66,27 @@ const ProductsList: React.FC<ProductsListProps> = ({
   const sortOrder = element.props?.sortOrder || "desc";
   const categoryFilter = element.props?.categoryFilter || "all";
 
-  // Only fetch real data in preview or live site mode
+  // Load products - in all cases fetch real data, just use mock data as fallback
   useEffect(() => {
-    if (!isPreviewMode && !isLiveSite) {
-      // In builder mode, use mock data
-      const mockProducts: Product[] = Array(8).fill(null).map((_, i) => ({
-        id: `mock-${i}`,
-        name: `Product ${i + 1}`,
-        description: 'This is a sample product description.',
-        price: 19.99 + i,
-        stock: 10 + i,
-        image_url: null,
-        category: i % 2 === 0 ? 'Category A' : 'Category B',
-        is_featured: i % 4 === 0,
-        is_sale: i % 3 === 0,
-        is_new: i % 5 === 0,
-        sku: `SKU-00${i}`,
-        website_id: 'mock-website-id'
-      }));
-      setProducts(mockProducts);
-      setIsLoading(false);
-      return;
-    }
-
-    const fetchProducts = async () => {
+    const loadProducts = async () => {
       if (!websiteId) {
         console.warn("No website ID available to fetch products");
-        setProducts([]);
+        // Create fallback mock data only if no website ID is available
+        const mockProducts: Product[] = Array(8).fill(null).map((_, i) => ({
+          id: `mock-${i}`,
+          name: `Sample Product ${i + 1}`,
+          description: 'This is a sample product description.',
+          price: 19.99 + i,
+          stock: 10 + i,
+          image_url: null,
+          category: i % 2 === 0 ? 'Category A' : 'Category B',
+          is_featured: i % 4 === 0,
+          is_sale: i % 3 === 0,
+          is_new: i % 5 === 0,
+          sku: `SKU-00${i}`,
+          website_id: 'mock-website-id'
+        }));
+        setProducts(mockProducts);
         setIsLoading(false);
         return;
       }
@@ -100,36 +97,50 @@ const ProductsList: React.FC<ProductsListProps> = ({
       console.log(`Fetching products for website: ${websiteId}`);
 
       try {
-        let query = supabase
-          .from("products")
-          .select("*")
-          .eq("website_id", websiteId); // Filter by website ID
+        // Use the fetchProducts API function for consistent data fetching
+        const result = await fetchProducts(websiteId);
         
-        // Apply category filter if specified
+        if (result.error) {
+          console.error("Error fetching products:", result.error);
+          setError(result.error);
+          return;
+        }
+        
+        // Filter and sort products based on element properties
+        let filteredProducts = [...result.products];
+        
+        // Apply category filter
         if (categoryFilter !== "all") {
           if (categoryFilter === "featured") {
-            query = query.eq("is_featured", true);
+            filteredProducts = filteredProducts.filter(p => p.is_featured);
           } else if (categoryFilter === "sale") {
-            query = query.eq("is_sale", true);
+            filteredProducts = filteredProducts.filter(p => p.is_sale);
           } else if (categoryFilter === "new") {
-            query = query.eq("is_new", true);
+            filteredProducts = filteredProducts.filter(p => p.is_new);
           } else {
-            query = query.eq("category", categoryFilter);
+            filteredProducts = filteredProducts.filter(p => p.category === categoryFilter);
           }
         }
         
         // Apply sorting
-        query = query.order(sortBy, { ascending: sortOrder === "asc" });
+        filteredProducts.sort((a, b) => {
+          // Handle numeric fields
+          if (sortBy === 'price' || sortBy === 'stock') {
+            const aValue = a[sortBy] || 0;
+            const bValue = b[sortBy] || 0;
+            return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+          }
+          
+          // Handle string fields
+          const aValue = String(a[sortBy] || '');
+          const bValue = String(b[sortBy] || '');
+          return sortOrder === 'asc' 
+            ? aValue.localeCompare(bValue)
+            : bValue.localeCompare(aValue);
+        });
         
-        const { data, error } = await query;
-        
-        if (error) {
-          console.error("Error fetching products:", error);
-          setError("Failed to load products");
-        } else {
-          console.log(`Fetched ${data?.length || 0} products for website ${websiteId}`);
-          setProducts(data || []);
-        }
+        console.log(`Fetched and processed ${filteredProducts.length} products for website ${websiteId}`);
+        setProducts(filteredProducts);
       } catch (err) {
         console.error("Exception fetching products:", err);
         setError("An unexpected error occurred");
@@ -138,15 +149,24 @@ const ProductsList: React.FC<ProductsListProps> = ({
       }
     };
 
-    fetchProducts();
-  }, [websiteId, categoryFilter, sortBy, sortOrder, isPreviewMode, isLiveSite]);
+    loadProducts();
+  }, [websiteId, categoryFilter, sortBy, sortOrder]);
 
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = (e: React.MouseEvent, product: Product) => {
+    e.preventDefault(); // Prevent navigation when clicking the add to cart button
+    e.stopPropagation(); // Prevent event bubbling
+    
     // Only allow adding to cart in live site mode
     if (!isLiveSite) return;
     
     addToCart(product);
     toast.success(`${product.name} added to cart`);
+  };
+  
+  const handleProductClick = (product: Product) => {
+    if (!isLiveSite) return; // Only navigate in live site mode
+    
+    navigate(`/product/${product.id}`);
   };
 
   // Calculate pagination
@@ -217,36 +237,20 @@ const ProductsList: React.FC<ProductsListProps> = ({
     <div className="w-full">
       <div className={`grid ${getColumnsClass()} gap-4 mb-6`}>
         {currentProducts.map((product) => (
-          <Card key={product.id} className={`${getCardClass()} transition-all overflow-hidden flex flex-col h-full`}>
+          <Card 
+            key={product.id} 
+            className={`${getCardClass()} transition-all overflow-hidden flex flex-col h-full ${isLiveSite ? 'cursor-pointer' : ''}`}
+            onClick={isLiveSite ? () => handleProductClick(product) : undefined}
+          >
             <div className="relative aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
               {product.image_url ? (
-                isLiveSite ? (
-                  <Link to={`/product/${product.id}`} className="block w-full h-full">
-                    <img 
-                      src={product.image_url} 
-                      alt={product.name} 
-                      className="w-full h-full object-cover hover:scale-105 transition-transform" 
-                    />
-                  </Link>
-                ) : (
-                  <div className="block w-full h-full">
-                    <img 
-                      src={product.image_url} 
-                      alt={product.name} 
-                      className="w-full h-full object-cover" 
-                    />
-                  </div>
-                )
+                <img 
+                  src={product.image_url} 
+                  alt={product.name} 
+                  className={`w-full h-full object-cover ${isLiveSite ? 'hover:scale-105 transition-transform' : ''}`}
+                />
               ) : (
-                isLiveSite ? (
-                  <Link to={`/product/${product.id}`} className="block w-full h-full flex items-center justify-center">
-                    <Package className="h-16 w-16 text-gray-400" />
-                  </Link>
-                ) : (
-                  <div className="block w-full h-full flex items-center justify-center">
-                    <Package className="h-16 w-16 text-gray-400" />
-                  </div>
-                )
+                <Package className="h-16 w-16 text-gray-400" />
               )}
               
               {/* Product badges */}
@@ -264,13 +268,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
             </div>
             
             <CardContent className="flex-grow pt-4">
-              {isLiveSite ? (
-                <Link to={`/product/${product.id}`} className="block hover:text-blue-600">
-                  <h3 className="font-medium truncate mb-1">{product.name}</h3>
-                </Link>
-              ) : (
-                <h3 className="font-medium truncate mb-1">{product.name}</h3>
-              )}
+              <h3 className={`font-medium truncate mb-1 ${isLiveSite ? 'hover:text-blue-600' : ''}`}>{product.name}</h3>
               
               <div className="flex items-center text-sm text-gray-500 mb-2">
                 {product.category && (
@@ -298,7 +296,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
             
             <CardFooter className="pt-0">
               <Button 
-                onClick={() => handleAddToCart(product)} 
+                onClick={(e) => handleAddToCart(e, product)} 
                 disabled={product.stock === 0 || !isLiveSite}
                 className="w-full"
                 size="sm"
