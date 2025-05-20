@@ -50,18 +50,27 @@ const LoginForm = ({ showPassword, setShowPassword }: LoginFormProps) => {
       }
       
       // Pass the correct structure to signInWithPassword
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password
       });
       
       if (error) {
+        console.error("Login error:", error);
         toast.error(error.message);
         return;
       }
       
-      toast.success("Successfully logged in");
-      navigate("/dashboard");
+      if (data && data.session) {
+        toast.success("Successfully logged in");
+        
+        // Wait a brief moment to ensure session is properly established
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 100);
+      } else {
+        toast.error("Unexpected error: No session returned");
+      }
     } catch (error) {
       console.error("Login error:", error);
       toast.error("An unexpected error occurred");

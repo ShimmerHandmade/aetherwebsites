@@ -11,6 +11,12 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // First set up the auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    // Then check for existing session
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setIsAuthenticated(!!session);
@@ -18,10 +24,7 @@ const Navbar = () => {
 
     checkAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsAuthenticated(!!session);
-    });
-
+    // Cleanup subscription
     return () => subscription.unsubscribe();
   }, []);
 

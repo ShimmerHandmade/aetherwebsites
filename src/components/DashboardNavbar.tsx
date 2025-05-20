@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -22,10 +22,15 @@ const DashboardNavbar = ({ profile }: DashboardNavbarProps) => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/");
+    try {
+      await supabase.auth.signOut();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
+  // Generate user initials correctly from profile
   const userInitials = profile?.full_name
     ? profile.full_name.split(" ").map((n) => n[0]).join("").toUpperCase()
     : profile?.email?.substring(0, 2).toUpperCase() || "MB";
@@ -60,7 +65,7 @@ const DashboardNavbar = ({ profile }: DashboardNavbarProps) => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium">{profile?.full_name || "User"}</p>
+                  <p className="text-sm font-medium">{profile?.full_name || profile?.email || "User"}</p>
                   <p className="text-xs text-gray-500 truncate">{profile?.email}</p>
                 </div>
                 <DropdownMenuSeparator />
