@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Store, Package, Loader2, AlertCircle, Tag, Truck } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -9,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
+import { useParams } from "react-router-dom";
 import { 
   Pagination, 
   PaginationContent, 
@@ -30,6 +30,7 @@ interface Product {
   is_sale: boolean;
   is_new: boolean;
   sku: string | null;
+  website_id: string;
 }
 
 interface ProductsListProps {
@@ -48,6 +49,10 @@ const ProductsList: React.FC<ProductsListProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const { addToCart } = useCart();
+  const { id: routeWebsiteId } = useParams<{ id: string }>();
+  
+  // Get website ID from element props or route params
+  const websiteId = element.props?.websiteId || routeWebsiteId;
 
   // Extract properties from element props
   const columns = element.props?.columns || 4;
@@ -73,7 +78,8 @@ const ProductsList: React.FC<ProductsListProps> = ({
         is_featured: i % 4 === 0,
         is_sale: i % 3 === 0,
         is_new: i % 5 === 0,
-        sku: `SKU-00${i}`
+        sku: `SKU-00${i}`,
+        website_id: 'mock-website-id'
       }));
       setProducts(mockProducts);
       setIsLoading(false);
@@ -81,13 +87,23 @@ const ProductsList: React.FC<ProductsListProps> = ({
     }
 
     const fetchProducts = async () => {
+      if (!websiteId) {
+        console.warn("No website ID available to fetch products");
+        setProducts([]);
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
       setError(null);
+      
+      console.log(`Fetching products for website: ${websiteId}`);
 
       try {
         let query = supabase
           .from("products")
-          .select("*");
+          .select("*")
+          .eq("website_id", websiteId); // Filter by website ID
         
         // Apply category filter if specified
         if (categoryFilter !== "all") {
@@ -111,6 +127,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
           console.error("Error fetching products:", error);
           setError("Failed to load products");
         } else {
+          console.log(`Fetched ${data?.length || 0} products for website ${websiteId}`);
           setProducts(data || []);
         }
       } catch (err) {
@@ -122,7 +139,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
     };
 
     fetchProducts();
-  }, [categoryFilter, sortBy, sortOrder, isPreviewMode, isLiveSite]);
+  }, [websiteId, categoryFilter, sortBy, sortOrder, isPreviewMode, isLiveSite]);
 
   const handleAddToCart = (product: Product) => {
     // Only allow adding to cart in live site mode
@@ -187,7 +204,10 @@ const ProductsList: React.FC<ProductsListProps> = ({
         <Package className="h-12 w-12 text-gray-300 mb-3" />
         <h3 className="text-lg font-medium text-gray-700">No products found</h3>
         <p className="text-gray-500 max-w-md mt-1">
-          There are no products available in this category. Check back later for new additions.
+          {websiteId ? 
+            "There are no products available in this category. Check back later for new additions." :
+            "No website ID found to fetch products. Please make sure you're in a valid website context."
+          }
         </p>
       </div>
     );

@@ -1,4 +1,5 @@
-import React from "react";
+
+import React, { useEffect, useState } from "react";
 import { BuilderElement } from "@/contexts/BuilderContext";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,9 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { fetchProducts } from "@/api/products";
+import { Input } from "@/components/ui/input";
+import { useParams } from "react-router-dom";
 
 interface ProductsListPropertyEditorProps {
   element: BuilderElement;
@@ -22,6 +26,9 @@ const ProductsListPropertyEditor: React.FC<ProductsListPropertyEditorProps> = ({
   element,
   onPropertyChange,
 }) => {
+  const { id: routeWebsiteId } = useParams<{ id: string }>();
+  const [categories, setCategories] = useState<{name: string}[]>([]);
+  
   const columns = element.props?.columns || 4;
   const productsPerPage = element.props?.productsPerPage || 8;
   const showPagination = element.props?.showPagination !== false;
@@ -29,6 +36,25 @@ const ProductsListPropertyEditor: React.FC<ProductsListPropertyEditorProps> = ({
   const sortBy = element.props?.sortBy || "created_at";
   const sortOrder = element.props?.sortOrder || "desc";
   const categoryFilter = element.props?.categoryFilter || "all";
+  const websiteId = element.props?.websiteId || routeWebsiteId;
+  
+  // Fetch available categories for the current website
+  useEffect(() => {
+    const loadCategories = async () => {
+      if (!websiteId) return;
+      
+      try {
+        const { categories } = await fetchProducts(websiteId);
+        if (categories && categories.length > 0) {
+          setCategories(categories);
+        }
+      } catch (error) {
+        console.error("Failed to load categories:", error);
+      }
+    };
+    
+    loadCategories();
+  }, [websiteId]);
 
   const handleColumnsChange = (value: number[]) => {
     onPropertyChange("columns", value[0]);
@@ -57,6 +83,10 @@ const ProductsListPropertyEditor: React.FC<ProductsListPropertyEditorProps> = ({
   const handleCategoryFilterChange = (value: string) => {
     onPropertyChange("categoryFilter", value);
   };
+  
+  const handleWebsiteIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onPropertyChange("websiteId", e.target.value);
+  };
 
   return (
     <div className="space-y-6">
@@ -64,6 +94,20 @@ const ProductsListPropertyEditor: React.FC<ProductsListPropertyEditorProps> = ({
         <h3 className="text-sm font-medium mb-3">Products List Properties</h3>
         
         <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="websiteId">Website ID (optional)</Label>
+            <Input
+              id="websiteId"
+              value={websiteId || ''}
+              onChange={handleWebsiteIdChange}
+              placeholder="Current website by default"
+              className="w-full"
+            />
+            <p className="text-xs text-gray-500">
+              Leave empty to use the current website ID
+            </p>
+          </div>
+        
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="columns">Columns: {columns}</Label>
@@ -170,6 +214,9 @@ const ProductsListPropertyEditor: React.FC<ProductsListPropertyEditorProps> = ({
                 <SelectItem value="featured">Featured Products</SelectItem>
                 <SelectItem value="sale">On Sale</SelectItem>
                 <SelectItem value="new">New Arrivals</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category.name} value={category.name}>{category.name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
