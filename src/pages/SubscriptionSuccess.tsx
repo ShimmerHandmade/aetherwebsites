@@ -1,11 +1,10 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { LoaderCircle, CheckCircle2, ArrowRight, RefreshCw, AlertTriangle } from "lucide-react";
-import { RefreshSubscriptionButton } from "@/components/RefreshSubscriptionButton";
+import RefreshSubscriptionButton from "@/components/RefreshSubscriptionButton";
 
 const SubscriptionSuccess = () => {
   const [loading, setLoading] = useState(true);
