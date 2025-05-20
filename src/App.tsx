@@ -1,48 +1,39 @@
 
-import { Routes, Route } from "react-router-dom";
-import { Toaster } from "@/components/ui/sonner";
-import { Suspense, lazy } from "react";
-import { CartProvider } from "@/contexts/CartContext";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "sonner";
+import { PlanProvider } from "@/contexts/PlanContext";
 import Index from "@/pages/Index";
+import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
-import Auth from "@/pages/Auth"; // Added this import
+import Builder from "@/pages/Builder";
+import WebsiteViewer from "@/pages/WebsiteViewer";
 import Cart from "@/pages/Cart";
 import ProductDetails from "@/pages/ProductDetails";
 import NotFound from "@/pages/NotFound";
-import Builder from "@/pages/Builder";
-import BuilderShop from "@/pages/builder/Shop";
-import BuilderPages from "@/pages/builder/Pages";
-import BuilderProducts from "@/pages/builder/Products";
-import WebsiteViewer from "@/pages/WebsiteViewer";
+import Profile from "@/pages/Profile";
+import SubscriptionSuccess from "@/pages/SubscriptionSuccess";  // Make sure this is imported
 
-// Lazy-loaded components
-const Settings = lazy(() => import("@/pages/Profile"));
-
-export default function App() {
+function App() {
   return (
-    <CartProvider>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/product/:id" element={<ProductDetails />} />
-        <Route path="/builder/:id" element={<Builder />} />
-        <Route path="/builder/:id/shop" element={<BuilderShop />} />
-        <Route path="/builder/:id/pages" element={<BuilderPages />} />
-        <Route path="/builder/:id/products" element={<BuilderProducts />} />
-        <Route path="/site/:id/*" element={<WebsiteViewer />} />
-        <Route
-          path="/settings"
-          element={
-            <Suspense fallback={<div>Loading...</div>}>
-              <Settings />
-            </Suspense>
-          }
-        />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <Toaster />
-    </CartProvider>
+    <BrowserRouter>
+      <PlanProvider>
+        <Toaster position="top-center" richColors />
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/builder/:id/*" element={<Builder />} />
+          <Route path="/view/:id/*" element={<WebsiteViewer />} />
+          <Route path="/store/:id/cart" element={<Cart />} />
+          <Route path="/store/:id/product/:productId" element={<ProductDetails />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/subscription-success" element={<SubscriptionSuccess />} />  {/* Ensure this route exists */}
+          <Route path="/404" element={<NotFound />} />
+          <Route path="*" element={<Navigate to="/404" replace />} />
+        </Routes>
+      </PlanProvider>
+    </BrowserRouter>
   );
 }
+
+export default App;

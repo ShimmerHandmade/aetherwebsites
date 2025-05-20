@@ -1,10 +1,10 @@
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { LoaderCircle, CheckCircle2, ArrowRight, RefreshCw } from "lucide-react";
+import { LoaderCircle, CheckCircle2, ArrowRight, RefreshCw, AlertTriangle } from "lucide-react";
 
 const SubscriptionSuccess = () => {
   const [loading, setLoading] = useState(true);
@@ -13,13 +13,22 @@ const SubscriptionSuccess = () => {
   const [retryCount, setRetryCount] = useState(0);
   const [manualRefresh, setManualRefresh] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sessionId = searchParams.get("session_id");
 
   const verifySubscription = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const { data, error } = await supabase.functions.invoke("check-subscription");
+      // Check if we have a session ID from the URL
+      let endpoint = "check-subscription";
+      if (sessionId) {
+        endpoint = `check-subscription?session_id=${sessionId}`;
+      }
+      
+      // Call check-subscription with session ID if available
+      const { data, error } = await supabase.functions.invoke(endpoint);
       
       if (error) {
         console.error("Error checking subscription:", error);
@@ -31,6 +40,9 @@ const SubscriptionSuccess = () => {
         setPlanName(data.plan.name);
         toast.success(`Successfully subscribed to ${data.plan.name} plan!`);
         return true;
+      } else if (data.error) {
+        setError(data.error);
+        return false;
       } else {
         // If not yet subscribed, return false to trigger a retry
         return false;
@@ -49,8 +61,25 @@ const SubscriptionSuccess = () => {
     setRetryCount(0);
     verifySubscription();
   };
+  
+  const goToDashboard = () => {
+    navigate("/dashboard");
+  };
 
   useEffect(() => {
+    // If there's no session ID in the URL, check auth status
+    if (!sessionId) {
+      const checkAuth = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          setError("You must be logged in to view your subscription status.");
+          setLoading(false);
+          return;
+        }
+      };
+      checkAuth();
+    }
+    
     // Initial verification
     const checkSubscription = async () => {
       const success = await verifySubscription();
@@ -64,12 +93,12 @@ const SubscriptionSuccess = () => {
         return () => clearTimeout(timer);
       } else if (!success && retryCount >= 5) {
         // After 5 retries, show error if still not verified
-        setError("Your subscription could not be verified after multiple attempts. Please try refreshing or contact support.");
+        setError("Your subscription could not be verified after multiple attempts. This can happen if Stripe is still processing your payment. Please try refreshing in a few minutes or contact support if the problem persists.");
       }
     };
     
     checkSubscription();
-  }, [retryCount, manualRefresh]);
+  }, [retryCount, manualRefresh, sessionId]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-4">
@@ -89,9 +118,16 @@ const SubscriptionSuccess = () => {
           </div>
         ) : error ? (
           <div className="flex flex-col items-center">
-            <div className="bg-red-100 text-red-800 p-4 rounded-lg mb-4">
+            <div className="bg-amber-100 p-3 rounded-full mb-4">
+              <AlertTriangle className="h-10 w-10 text-amber-600" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Verification Issue</h2>
+            <div className="bg-red-50 text-red-800 p-4 rounded-lg mb-4">
               <p>{error}</p>
             </div>
+            <p className="text-gray-600 mb-6">
+              If you've been charged but don't see your subscription active yet, don't worry! Stripe's payment processing can sometimes take a few minutes to finalize. Please check back shortly.
+            </p>
             <div className="flex flex-col md:flex-row gap-4">
               <Button 
                 onClick={handleManualRefresh}
@@ -101,7 +137,7 @@ const SubscriptionSuccess = () => {
                 <RefreshCw className="mr-2 h-4 w-4" /> Refresh Status
               </Button>
               <Button 
-                onClick={() => navigate("/dashboard")}
+                onClick={goToDashboard}
                 className="flex items-center"
               >
                 Return to Dashboard <ArrowRight className="ml-2 h-4 w-4" />
@@ -118,7 +154,7 @@ const SubscriptionSuccess = () => {
               Your {planName} plan is now active. You can now enjoy all the features of your new subscription.
             </p>
             <Button 
-              onClick={() => navigate("/dashboard")}
+              onClick={goToDashboard}
               className="bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center"
             >
               Go to Dashboard <ArrowRight className="ml-2 h-4 w-4" />

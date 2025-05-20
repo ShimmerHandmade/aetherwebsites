@@ -23,113 +23,96 @@ serve(async (req) => {
     logStep("Function started");
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
+    if (!stripeKey) {
+      logStep("ERROR: Missing Stripe key");
+      throw new Error("STRIPE_SECRET_KEY is not set");
+    }
     logStep("Stripe key verified");
 
-    // Initialize Supabase client
+    // Initialize Supabase client with the service role key
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
+    if (!authHeader) {
+      logStep("ERROR: No authorization header");
+      throw new Error("No authorization header provided");
+    }
     logStep("Authorization header found");
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
+    
+    if (userError) {
+      logStep("ERROR: Authentication error", { error: userError.message });
+      throw new Error(`Authentication error: ${userError.message}`);
+    }
+    
     const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
+    if (!user?.email) {
+      logStep("ERROR: User not authenticated");
+      throw new Error("User not authenticated or email not available");
+    }
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Get user profile with Stripe customer ID
+    // Get user profile to retrieve stripe_customer_id
     const { data: profile, error: profileError } = await supabaseClient
       .from("profiles")
-      .select("stripe_customer_id, full_name")
+      .select("stripe_customer_id")
       .eq("id", user.id)
-      .maybeSingle();
-    
+      .single();
+      
     if (profileError) {
-      logStep("Error fetching profile", { error: profileError.message });
-      throw new Error(`Failed to get profile: ${profileError.message}`);
+      logStep("ERROR: Failed to fetch profile", { error: profileError.message });
+      throw new Error(`Failed to fetch user profile: ${profileError.message}`);
     }
-    
-    const customerId = profile?.stripe_customer_id;
-    
-    // If no customer ID exists, create a Stripe customer for this user
-    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
-    let customerToUse = customerId;
-    
-    if (!customerToUse) {
-      logStep("No existing Stripe customer ID found, creating new customer");
-      
-      try {
-        const newCustomer = await stripe.customers.create({
-          email: user.email,
-          name: profile?.full_name || user.email,
-          metadata: {
-            supabase_user_id: user.id
-          }
-        });
-        
-        customerToUse = newCustomer.id;
-        
-        // Update profile with new Stripe customer ID
-        await supabaseClient
-          .from("profiles")
-          .update({ stripe_customer_id: customerToUse })
-          .eq("id", user.id);
-        
-        logStep("Created and saved new Stripe customer", { customerId: customerToUse });
-      } catch (err) {
-        logStep("Error creating Stripe customer", { error: String(err) });
-        throw new Error(`Failed to create Stripe customer: ${String(err)}`);
-      }
-    }
-    
-    if (!customerToUse) {
-      throw new Error("Could not find or create a Stripe customer for this user");
-    }
-    
-    logStep("Using Stripe customer ID", { customerId: customerToUse });
-    
-    const origin = req.headers.get("origin") || "http://localhost:3000";
 
-    try {
-      // Try to create the portal session with extra logging
-      logStep("Creating customer portal session", { customer: customerToUse, returnUrl: `${origin}/dashboard` });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+    
+    // Check if the profile has a stripe_customer_id
+    if (!profile.stripe_customer_id) {
+      // If not, check if a customer exists in Stripe
+      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
       
-      const portalSession = await stripe.billingPortal.sessions.create({
-        customer: customerToUse,
-        return_url: `${origin}/dashboard`,
-      });
-      
-      logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
-  
-      return new Response(JSON.stringify({ url: portalSession.url }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    } catch (stripeError) {
-      // Handle Stripe-specific errors
-      const errorMessage = stripeError instanceof Error ? stripeError.message : String(stripeError);
-      logStep("ERROR creating Stripe portal session", { message: errorMessage });
-      
-      // If this is related to customer portal configuration
-      if (errorMessage.includes("configuration") || errorMessage.includes("portal")) {
-        return new Response(JSON.stringify({ 
-          error: "Stripe customer portal not configured correctly. Please set up your customer portal in the Stripe dashboard.", 
-          details: errorMessage,
-          stripeCustomerId: customerToUse
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        });
+      if (customers.data.length === 0) {
+        logStep("ERROR: No Stripe customer found");
+        throw new Error("No Stripe customer found for this user. Please subscribe to a plan first.");
       }
       
-      throw stripeError;
+      // Use the existing customer
+      profile.stripe_customer_id = customers.data[0].id;
+      
+      // Update the profile with the customer ID
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        { auth: { persistSession: false } }
+      );
+      
+      await supabaseAdmin
+        .from("profiles")
+        .update({ stripe_customer_id: profile.stripe_customer_id })
+        .eq("id", user.id);
+        
+      logStep("Updated profile with Stripe customer ID", { customerId: profile.stripe_customer_id });
     }
+
+    const customerId = profile.stripe_customer_id;
+    logStep("Found Stripe customer", { customerId });
+
+    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${origin}/dashboard`,
+    });
+    logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
+
+    return new Response(JSON.stringify({ url: portalSession.url }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in customer-portal", { message: errorMessage });

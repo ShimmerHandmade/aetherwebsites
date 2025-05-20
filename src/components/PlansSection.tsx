@@ -121,6 +121,7 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
       
       // Redirect to Stripe checkout
       if (data?.url) {
+        toast.info("Redirecting to secure checkout...");
         window.location.href = data.url;
       }
     } catch (error) {
