@@ -23,6 +23,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/auth" element={<Auth />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/builder/:id" element={<Builder />} />
