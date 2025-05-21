@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import BuilderCanvas from "@/components/builder/canvas";
 import PageEditorSidebar from "./PageEditorSidebar";
 import { PreviewModeProps } from "./BuilderLayout";
@@ -20,22 +20,19 @@ const BuilderContent: React.FC<BuilderContentProps> = ({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { elements } = useBuilder();
-  const [isLoading, setIsLoading] = useState(true);
-  const [contentReady, setContentReady] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [contentLoaded, setContentLoaded] = useState(false);
   
-  // Simplified loading logic to prevent flickering
+  // Mount content once and avoid re-renders
   useEffect(() => {
-    // Set a single short delay to ensure components are mounted
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      // Add a small delay before showing content for smoother transition
-      setTimeout(() => {
-        setContentReady(true);
+    // Only set loaded state once to prevent flicker
+    if (!contentLoaded) {
+      const timer = setTimeout(() => {
+        setContentLoaded(true);
       }, 100);
-    }, 300);
-    
-    return () => clearTimeout(timer);
-  }, []);
+      return () => clearTimeout(timer);
+    }
+  }, [contentLoaded]);
 
   // Always check if we're on the /site/:id route to ensure we're in full preview mode
   const isSiteRoute = window.location.pathname.includes('/site/');
@@ -44,7 +41,7 @@ const BuilderContent: React.FC<BuilderContentProps> = ({
   // For full preview mode, render just the canvas without any UI controls
   if (isFullPreview || isSiteRoute) {
     return (
-      <div className="flex-1 min-h-screen">
+      <div className="flex-1 min-h-screen" ref={contentRef}>
         <BuilderCanvas isPreviewMode={true} isLiveSite={isLiveSite} />
       </div>
     );
@@ -53,14 +50,14 @@ const BuilderContent: React.FC<BuilderContentProps> = ({
   // Regular preview mode or edit mode
   if (isPreviewMode) {
     return (
-      <div className="flex-1 bg-slate-100 overflow-auto">
+      <div className="flex-1 bg-slate-100 overflow-auto" ref={contentRef}>
         <BuilderCanvas isPreviewMode={true} isLiveSite={isLiveSite} />
       </div>
     );
   }
 
-  // Simplified loading indicator
-  if (isLoading) {
+  // Render only when content is ready
+  if (!contentLoaded) {
     return (
       <div className="flex-1 flex items-center justify-center bg-slate-100">
         <div className="text-center">
@@ -72,7 +69,7 @@ const BuilderContent: React.FC<BuilderContentProps> = ({
   }
 
   return (
-    <div className={`flex-1 flex transition-opacity duration-300 ${contentReady ? 'opacity-100' : 'opacity-0'}`}>
+    <div className="flex-1 flex" ref={contentRef}>
       {/* Left sidebar - visible on desktop */}
       <div className="hidden md:block w-[220px] bg-white border-r border-slate-200">
         {/* This space is for the vertical sidebar managed by PageEditorSidebar */}
@@ -106,4 +103,4 @@ const BuilderContent: React.FC<BuilderContentProps> = ({
   );
 };
 
-export default BuilderContent;
+export default React.memo(BuilderContent);

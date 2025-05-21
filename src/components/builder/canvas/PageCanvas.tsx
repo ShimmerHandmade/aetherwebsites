@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, memo } from "react";
 import { useBuilder } from "@/contexts/builder/useBuilder";
 import { BuilderElement } from "@/contexts/builder/types";
 import { ElementWrapper } from "../elements";
@@ -12,7 +12,7 @@ interface PageCanvasProps {
   onError?: () => void;
 }
 
-const PageCanvas: React.FC<PageCanvasProps> = ({ 
+const PageCanvas: React.FC<PageCanvasProps> = memo(({ 
   elements, 
   isPreviewMode = false,
   isLiveSite = false,
@@ -20,16 +20,16 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
 }) => {
   const { selectedElementId } = useBuilder();
   const { isPremium, isEnterprise, loading: planLoading, error: planError } = usePlan();
-  const [isVisible, setIsVisible] = useState(false);
+  const [canvasVisible, setCanvasVisible] = useState(false);
   const [loadingFailed, setLoadingFailed] = useState(false);
-  const [elementsReady, setElementsReady] = useState<Record<string, boolean>>({});
+  const canvasRef = useRef<HTMLDivElement>(null);
   
-  // Simpler loading strategy - single transition after short delay
+  // Single effect for stable rendering
   useEffect(() => {
-    // Simple delay to ensure DOM is ready
+    // Set visible state once and don't change it to prevent flicker
     const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, 300);
+      setCanvasVisible(true);
+    }, 100);
     
     return () => clearTimeout(timer);
   }, []);
@@ -42,18 +42,10 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
     }
   }, [planError, onError]);
 
-  // Track readiness of elements
-  const handleElementReady = (elementId: string) => {
-    setElementsReady(prev => ({
-      ...prev,
-      [elementId]: true
-    }));
-  };
-
   // Handle error state
   if (loadingFailed) {
     return (
-      <div className="builder-canvas animate-fade-in">
+      <div className="builder-canvas">
         <div className="page-content">
           <div className="flex items-center justify-center min-h-[300px] p-4">
             <div className="text-center max-w-md">
@@ -79,8 +71,9 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
 
   return (
     <div 
-      className={`builder-canvas ${isPreviewMode ? 'preview-mode' : ''} transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
-      style={{ minHeight: '50vh' }}
+      className={`builder-canvas ${isPreviewMode ? 'preview-mode' : ''} ${canvasVisible ? 'opacity-100' : 'opacity-0'}`}
+      style={{ minHeight: '50vh', transition: 'opacity 0.2s ease-in-out' }}
+      ref={canvasRef}
     >
       <div className="page-content">
         {elements && elements.length > 0 ? (
@@ -94,11 +87,10 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
               canUseAnimations={isPremium || isEnterprise}
               canUseEnterpriseAnimations={isEnterprise}
               isLiveSite={isLiveSite}
-              onElementReady={() => handleElementReady(element.id)}
             />
           ))
         ) : (
-          <div className="flex items-center justify-center min-h-[300px] text-gray-400 p-4 animate-fade-in">
+          <div className="flex items-center justify-center min-h-[300px] text-gray-400 p-4">
             <div className="text-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -113,6 +105,9 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
       </div>
     </div>
   );
-};
+});
+
+// Add display name for React DevTools
+PageCanvas.displayName = 'PageCanvas';
 
 export default PageCanvas;

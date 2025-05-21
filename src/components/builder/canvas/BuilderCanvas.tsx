@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, memo } from "react";
 import PageCanvas from "./PageCanvas";
 import { useBuilder } from "@/contexts/builder/useBuilder";
 import EmptyCanvasPlaceholder from "./EmptyCanvasPlaceholder";
@@ -10,22 +10,21 @@ interface BuilderCanvasProps {
   isLiveSite?: boolean;
 }
 
-const BuilderCanvas: React.FC<BuilderCanvasProps> = ({ 
+const BuilderCanvas: React.FC<BuilderCanvasProps> = memo(({ 
   isPreviewMode = false,
   isLiveSite = false
 }) => {
   const { elements, selectElement } = useBuilder();
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [canvasReady, setCanvasReady] = useState(false);
+  const canvasRef = useRef<HTMLDivElement>(null);
   
-  // Simplified loading logic - single stable transition
+  // Single initialization to prevent flickering
   useEffect(() => {
-    // Use a short delay to allow component mounting
-    const timer = setTimeout(() => {
-      setIsLoaded(true);
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, []);
+    if (!canvasReady) {
+      // Set canvas ready once and don't change it
+      setCanvasReady(true);
+    }
+  }, [canvasReady]);
   
   const handleCanvasClick = (e: React.MouseEvent) => {
     // Only handle direct canvas clicks (not bubbled from elements)
@@ -37,8 +36,9 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
 
   return (
     <div 
-      className={`w-full min-h-screen pb-20 relative transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+      className={`w-full min-h-screen pb-20 relative ${canvasReady ? 'opacity-100' : 'opacity-0'}`}
       data-testid="builder-canvas"
+      ref={canvasRef}
     >
       {!isPreviewMode && (
         <CanvasDragDropHandler 
@@ -72,6 +72,9 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
       )}
     </div>
   );
-};
+});
+
+// Add display name for React DevTools
+BuilderCanvas.displayName = 'BuilderCanvas';
 
 export default BuilderCanvas;
