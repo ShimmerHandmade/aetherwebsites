@@ -257,7 +257,7 @@ serve(async (req) => {
                 return new Response(JSON.stringify({ 
                   success: true,
                   subscribed: true,
-                  plan: { name: "Unknown Plan" }, // Fallback plan name
+                  plan: { name: "Professional" }, // Default to Professional plan if not specified
                   error: "Plan details not found but subscription is active"
                 }), {
                   headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -366,11 +366,47 @@ serve(async (req) => {
       if (!planId) {
         logStep("Subscription found but no plan ID in metadata");
         
-        // Still update the profile as subscribed
+        // Assume Professional plan if no plan ID is provided
+        const { data: professionalPlan, error: planLookupError } = await supabaseAdmin
+          .from("plans")
+          .select("*")
+          .eq("name", "Professional")
+          .maybeSingle();
+          
+        if (planLookupError || !professionalPlan) {
+          logStep("Could not find Professional plan in database");
+          
+          // Still update the profile as subscribed
+          const { error: updateError } = await supabaseAdmin
+            .from("profiles")
+            .update({
+              is_subscribed: true,
+              subscription_id: subscription.id,
+              subscription_status: subscription.status,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", userId);
+            
+          if (updateError) {
+            logStep("Error updating profile with generic subscription", { error: updateError.message });
+          }
+          
+          return new Response(JSON.stringify({ 
+            success: true,
+            subscribed: true,
+            plan: { name: "Professional" } // Default to Professional
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          });
+        }
+        
+        // We found the Professional plan, use its ID
         const { error: updateError } = await supabaseAdmin
           .from("profiles")
           .update({
             is_subscribed: true,
+            plan_id: professionalPlan.id,
             subscription_id: subscription.id,
             subscription_status: subscription.status,
             updated_at: new Date().toISOString(),
@@ -378,20 +414,20 @@ serve(async (req) => {
           .eq("id", userId);
           
         if (updateError) {
-          logStep("Error updating profile with generic subscription", { error: updateError.message });
+          logStep("Error updating profile with Professional plan", { error: updateError.message });
         }
         
         return new Response(JSON.stringify({ 
           success: true,
           subscribed: true,
-          plan: { name: "Premium Plan" } // Generic fallback name
+          plan: professionalPlan
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
         });
       }
       
-      // Get plan details
+      // Get plan details for the specified plan ID
       const { data: plan, error: planError } = await supabaseAdmin
         .from("plans")
         .select("*")
@@ -420,7 +456,7 @@ serve(async (req) => {
         return new Response(JSON.stringify({ 
           success: true,
           subscribed: true,
-          plan: { name: "Premium Plan" }, // Generic fallback name
+          plan: { name: "Professional" }, // Default to Professional if the specific plan can't be found
           error: "Plan details unavailable but subscription is active"
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },

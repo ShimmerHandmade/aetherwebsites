@@ -2,11 +2,11 @@
 import { Plan } from "@/api/websites";
 import { Profile } from "@/pages/Dashboard";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 export interface PlanRestriction {
   maxProducts: number;
-  maxWebsites: number; // Changed from maxPages to maxWebsites
+  maxWebsites: number;
   allowCoupons: boolean;
   allowDiscounts: boolean;
   allowAdvancedAnalytics: boolean;
@@ -14,54 +14,59 @@ export interface PlanRestriction {
   allowPremiumTemplates: boolean;
   allowPremiumElements: boolean;
   allowPremiumAnimations: boolean;
+  allowedThemes: string[];
 }
 
 // Define restrictions for each plan tier with more fair features
 const planRestrictions: Record<string, PlanRestriction> = {
   "Basic": {
     maxProducts: 30,
-    maxWebsites: 1, // One website for Basic plan
+    maxWebsites: 1,
     allowCoupons: true,
     allowDiscounts: false,
     allowAdvancedAnalytics: false,
     allowCustomDomain: false,
     allowPremiumTemplates: false,
     allowPremiumElements: false,
-    allowPremiumAnimations: false
+    allowPremiumAnimations: false,
+    allowedThemes: ["business", "blog", "ecommerce"]
   },
   "Professional": {
     maxProducts: 150,
-    maxWebsites: 3, // Three websites for Professional plan
+    maxWebsites: 3,
     allowCoupons: true,
     allowDiscounts: true,
     allowAdvancedAnalytics: true,
     allowCustomDomain: true,
     allowPremiumTemplates: true,
     allowPremiumElements: true,
-    allowPremiumAnimations: true
+    allowPremiumAnimations: true,
+    allowedThemes: ["business", "blog", "ecommerce", "fashion", "electronics", "jewelry", "beauty", "food", "furniture", "portfolio"]
   },
   "Enterprise": {
     maxProducts: 1500,
-    maxWebsites: 5, // Five websites for Enterprise plan
+    maxWebsites: 5,
     allowCoupons: true,
     allowDiscounts: true,
     allowAdvancedAnalytics: true,
     allowCustomDomain: true,
     allowPremiumTemplates: true,
     allowPremiumElements: true,
-    allowPremiumAnimations: true
+    allowPremiumAnimations: true,
+    allowedThemes: ["business", "blog", "ecommerce", "fashion", "electronics", "jewelry", "beauty", "food", "furniture", "portfolio"]
   },
   // Default restrictions for users without a plan
   "default": {
     maxProducts: 15,
-    maxWebsites: 1, // One website for default plan
+    maxWebsites: 1,
     allowCoupons: false,
     allowDiscounts: false,
     allowAdvancedAnalytics: false,
     allowCustomDomain: false,
     allowPremiumTemplates: false,
     allowPremiumElements: false,
-    allowPremiumAnimations: false
+    allowPremiumAnimations: false,
+    allowedThemes: ["business", "blog", "ecommerce"]
   }
 };
 
@@ -142,6 +147,12 @@ export async function checkFeatureAccess(feature: keyof PlanRestriction): Promis
   return restrictions[feature] === true;
 }
 
+// Check if the specified theme is allowed for the current user's plan
+export async function checkThemeAccess(themeName: string): Promise<boolean> {
+  const restrictions = await getUserPlanRestrictions();
+  return restrictions.allowedThemes.includes(themeName);
+}
+
 // Check if adding another product would exceed the user's plan limit
 export async function checkProductLimit(currentCount: number): Promise<boolean> {
   const restrictions = await getUserPlanRestrictions();
@@ -151,14 +162,14 @@ export async function checkProductLimit(currentCount: number): Promise<boolean> 
     toast({
       title: "Plan Limit Reached",
       description: `You've reached your plan's limit of ${restrictions.maxProducts} products. Upgrade your plan to add more products.`,
-      variant: "destructive"
+      duration: 5000,
     });
   }
   
   return belowLimit;
 }
 
-// New function to check website limits
+// Check website limits
 export async function checkWebsiteLimit(currentCount: number): Promise<boolean> {
   const restrictions = await getUserPlanRestrictions();
   const belowLimit = currentCount < restrictions.maxWebsites;
@@ -167,7 +178,7 @@ export async function checkWebsiteLimit(currentCount: number): Promise<boolean> 
     toast({
       title: "Website Limit Reached",
       description: `You've reached your plan's limit of ${restrictions.maxWebsites} websites. Upgrade your plan to add more websites.`,
-      variant: "destructive"
+      duration: 5000,
     });
   }
   
@@ -234,4 +245,10 @@ export async function getUserPlanName(): Promise<string | null> {
     console.error("Error getting user plan:", error);
     return null;
   }
+}
+
+// Check if premium features are available
+export async function isPremiumPlan(): Promise<boolean> {
+  const planName = await getUserPlanName();
+  return planName === "Professional" || planName === "Enterprise";
 }

@@ -1,11 +1,13 @@
 
-import React, { createContext, useContext, ReactNode, useEffect } from "react";
+import React, { createContext, useContext, ReactNode, useEffect, useState } from "react";
 import { usePlanInfo, PlanInfo } from "@/hooks/usePlanInfo";
 import { toast } from "sonner";
+import { checkThemeAccess } from "@/utils/planRestrictions";
 
 // Create context with default values
 const PlanContext = createContext<PlanInfo & {
   checkUpgrade: (feature: string, isPremiumOnly?: boolean) => boolean;
+  isThemeAllowed: (themeName: string) => Promise<boolean>;
 }>({
   planName: null,
   restrictions: null,
@@ -13,7 +15,8 @@ const PlanContext = createContext<PlanInfo & {
   error: null,
   isPremium: false,
   isEnterprise: false,
-  checkUpgrade: () => false
+  checkUpgrade: () => false,
+  isThemeAllowed: async () => false
 });
 
 interface PlanProviderProps {
@@ -22,6 +25,7 @@ interface PlanProviderProps {
 
 export const PlanProvider = ({ children }: PlanProviderProps) => {
   const planInfo = usePlanInfo();
+  const [allowedThemes, setAllowedThemes] = useState<string[]>([]);
   
   // Helper function to check if user has access to a premium/enterprise feature
   // and show an upgrade toast if they don't
@@ -36,11 +40,37 @@ export const PlanProvider = ({ children }: PlanProviderProps) => {
     
     // Show upgrade toast
     const requiredPlan = isPremiumOnly ? "Professional" : "Enterprise";
-    toast.error(`${feature} requires an ${requiredPlan} plan`, {
-      description: `Upgrade your plan to access this feature`
+    toast.error(`${feature} requires a ${requiredPlan} plan`, {
+      description: `Upgrade your plan to access this feature`,
+      duration: 5000,
     });
     
     return false;
+  };
+  
+  // Check if a specific theme is allowed for the current plan
+  const isThemeAllowed = async (themeName: string): Promise<boolean> => {
+    try {
+      // Enterprise and Premium users have access to all themes
+      if (planInfo.isEnterprise || planInfo.isPremium) {
+        return true;
+      }
+      
+      // Use the utility function to check theme access
+      const hasAccess = await checkThemeAccess(themeName);
+      
+      if (!hasAccess) {
+        toast.error(`The ${themeName} theme requires a Professional plan`, {
+          description: "Upgrade to access premium themes",
+          duration: 5000,
+        });
+      }
+      
+      return hasAccess;
+    } catch (error) {
+      console.error("Error checking theme access:", error);
+      return false;
+    }
   };
   
   // Log plan information when it changes for debugging
@@ -58,7 +88,8 @@ export const PlanProvider = ({ children }: PlanProviderProps) => {
   return (
     <PlanContext.Provider value={{
       ...planInfo,
-      checkUpgrade
+      checkUpgrade,
+      isThemeAllowed
     }}>
       {children}
     </PlanContext.Provider>

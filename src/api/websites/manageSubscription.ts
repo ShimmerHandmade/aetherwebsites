@@ -38,7 +38,7 @@ export const openCustomerPortal = async (): Promise<{
       
       // Show a more helpful error message if it's a configuration issue
       if (data.error.includes("configuration") || data.error.includes("portal")) {
-        toast.error("The subscription management portal is not configured in Stripe. Please set it up in your Stripe dashboard.");
+        toast.error("The subscription management portal is not configured correctly. Please try again later.");
       } else {
         toast.error(data.error);
       }
@@ -58,7 +58,7 @@ export const openCustomerPortal = async (): Promise<{
       };
     }
     
-    console.log("Customer portal URL generated successfully");
+    console.log("Customer portal URL generated successfully:", data.url);
     return {
       url: data.url
     };

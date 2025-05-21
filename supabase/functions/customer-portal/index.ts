@@ -57,59 +57,11 @@ serve(async (req) => {
     }
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Get user profile to retrieve stripe_customer_id
-    const { data: profile, error: profileError } = await supabaseClient
-      .from("profiles")
-      .select("stripe_customer_id")
-      .eq("id", user.id)
-      .single();
-      
-    if (profileError) {
-      logStep("ERROR: Failed to fetch profile", { error: profileError.message });
-      throw new Error(`Failed to fetch user profile: ${profileError.message}`);
-    }
+    // Use the specific Stripe Customer Portal URL instead of creating a new session
+    const portalUrl = "https://billing.stripe.com/p/login/5kQ6oI4i6a7naFL5Ls83C00";
+    logStep("Redirecting to specified customer portal", { url: portalUrl });
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
-    
-    // Check if the profile has a stripe_customer_id
-    if (!profile.stripe_customer_id) {
-      // If not, check if a customer exists in Stripe
-      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-      
-      if (customers.data.length === 0) {
-        logStep("ERROR: No Stripe customer found");
-        throw new Error("No Stripe customer found for this user. Please subscribe to a plan first.");
-      }
-      
-      // Use the existing customer
-      profile.stripe_customer_id = customers.data[0].id;
-      
-      // Update the profile with the customer ID
-      const supabaseAdmin = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-        { auth: { persistSession: false } }
-      );
-      
-      await supabaseAdmin
-        .from("profiles")
-        .update({ stripe_customer_id: profile.stripe_customer_id })
-        .eq("id", user.id);
-        
-      logStep("Updated profile with Stripe customer ID", { customerId: profile.stripe_customer_id });
-    }
-
-    const customerId = profile.stripe_customer_id;
-    logStep("Found Stripe customer", { customerId });
-
-    const origin = req.headers.get("origin") || "http://localhost:3000";
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: `${origin}/dashboard`,
-    });
-    logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
-
-    return new Response(JSON.stringify({ url: portalSession.url }), {
+    return new Response(JSON.stringify({ url: portalUrl }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import BuilderLayout from "@/components/builder/BuilderLayout";
@@ -7,7 +8,7 @@ import { useWebsite } from "@/hooks/useWebsite";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { v4 as uuidv4 } from "@/lib/uuid";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 // Declare global site settings interface for window
 declare global {
@@ -102,7 +103,7 @@ const Builder = () => {
 
   // Set current page to home page by default or from URL param
   useEffect(() => {
-    if (website?.settings?.pages) {
+    if (website?.settings?.pages && website.settings.pages.length > 0) {
       const urlParams = new URLSearchParams(window.location.search);
       const pageId = urlParams.get('pageId');
       
@@ -153,16 +154,21 @@ const Builder = () => {
   useEffect(() => {
     if (!website || !currentPageId) return;
     
-    // Get content for current page
-    const pagesContent = website.settings.pagesContent || {};
-    const pageContent = pagesContent[currentPageId] || [];
-    const pageSettings = website.settings.pagesSettings?.[currentPageId] || { title: websiteName };
-    
-    // Set current page elements and settings
-    setCurrentPageElements(pageContent.length ? pageContent : elements || []);
-    setCurrentPageSettings(pageSettings);
-    
-    console.log("Loaded page content for:", currentPageId, pageContent);
+    try {
+      // Get content for current page
+      const pagesContent = website.settings.pagesContent || {};
+      const pageContent = pagesContent[currentPageId] || [];
+      const pageSettings = website.settings.pagesSettings?.[currentPageId] || { title: websiteName };
+      
+      // Set current page elements and settings
+      setCurrentPageElements(pageContent.length ? pageContent : elements || []);
+      setCurrentPageSettings(pageSettings);
+      
+      console.log("Loaded page content for:", currentPageId, pageContent);
+    } catch (error) {
+      console.error("Error loading page content:", error);
+      toast.error("Failed to load page content");
+    }
   }, [currentPageId, website, elements, websiteName]);
 
   // Subscribe to builder content changes
@@ -237,7 +243,12 @@ const Builder = () => {
         pages: updatedPages
       };
       
-      await saveWebsite(website.content, website.pageSettings, updatedSettings);
+      try {
+        await saveWebsite(website.content, website.pageSettings, updatedSettings);
+        console.log("Required pages created successfully");
+      } catch (error) {
+        console.error("Error creating required pages:", error);
+      }
     }
   };
 
@@ -278,19 +289,25 @@ const Builder = () => {
     const isHomePage = website.settings.pages?.find(p => p.isHomePage)?.id === currentPageId;
     
     // Save to database - if this is the home page, update the main content as well
-    const success = await saveWebsite(
-      isHomePage ? updatedElements : website.content, 
-      updatedPageSettings, 
-      {
-        pagesContent,
-        pagesSettings
+    try {
+      const success = await saveWebsite(
+        isHomePage ? updatedElements : website.content, 
+        updatedPageSettings, 
+        {
+          pagesContent,
+          pagesSettings
+        }
+      );
+      
+      if (success) {
+        setSaveStatus(`Saved just now`);
+        toast.success("Website saved successfully");
+      } else {
+        setSaveStatus('Save failed');
+        toast.error("Failed to save website");
       }
-    );
-    
-    if (success) {
-      setSaveStatus(`Saved just now`);
-      toast.success("Website saved successfully");
-    } else {
+    } catch (error) {
+      console.error("Error saving website:", error);
       setSaveStatus('Save failed');
       toast.error("Failed to save website");
     }
@@ -386,7 +403,7 @@ const Builder = () => {
           onChangePage={handleChangePage}
           onShopLinkClick={handleShopLinkClick}
           onReturnToDashboard={handleReturnToDashboard}
-          viewSiteUrl={`/site/${id}`}
+          viewSiteUrl={`/view/${id}`}
           saveStatus={saveStatus}
         />
         <BuilderContent isPreviewMode={isPreviewMode} />
