@@ -6,6 +6,8 @@ import BuilderContent from "@/components/builder/BuilderContent";
 import { useWebsite } from "@/hooks/useWebsite";
 import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
 import Cart from "@/pages/Cart";
+import ProductDetails from "@/pages/ProductDetails";
+import Checkout from "@/pages/Checkout";
 import { CartProvider } from "@/contexts/CartContext";
 
 const WebsiteViewer = () => {
@@ -26,14 +28,20 @@ const WebsiteViewer = () => {
 
   // Get the current path to determine which page to show
   const currentPath = location.pathname.replace(`/site/${id}`, '') || '/';
-
-  // Check if we're on the cart page
+  
+  // Check if we're on a special page
   const isCartPage = currentPath === '/cart';
+  const isCheckoutPage = currentPath === '/checkout';
+  
+  // Check if we're on a product details page
+  const productMatch = currentPath.match(/^\/product\/(.+)$/);
+  const isProductPage = !!productMatch;
+  const productId = productMatch ? productMatch[1] : null;
 
   // Set current page based on the URL path
   useEffect(() => {
-    if (isCartPage) {
-      // Don't need to set current page ID for cart page
+    if (isCartPage || isCheckoutPage || isProductPage) {
+      // Don't need to set current page ID for special pages
       return;
     }
 
@@ -66,11 +74,11 @@ const WebsiteViewer = () => {
         }
       }
     }
-  }, [website, currentPath, isCartPage]);
+  }, [website, currentPath, isCartPage, isCheckoutPage, isProductPage]);
 
   // Load page content when currentPageId changes
   useEffect(() => {
-    if (!website || !currentPageId || isCartPage) return;
+    if (!website || !currentPageId || isCartPage || isCheckoutPage || isProductPage) return;
     
     // Get content for current page
     const pagesContent = website.settings.pagesContent || {};
@@ -95,7 +103,7 @@ const WebsiteViewer = () => {
     }
     
     setCurrentPageSettings(pageSettings);
-  }, [currentPageId, website, elements, websiteName, isCartPage]);
+  }, [currentPageId, website, elements, websiteName, isCartPage, isCheckoutPage, isProductPage]);
 
   // Set global site settings for components to access
   useEffect(() => {
@@ -145,6 +153,18 @@ const WebsiteViewer = () => {
             <Cart siteName={websiteName} siteId={id} />
           </div>
         </div>
+      ) : isProductPage ? (
+        <div className="w-full min-h-screen">
+          <div className="mx-auto max-w-[1920px]">
+            <ProductDetails />
+          </div>
+        </div>
+      ) : isCheckoutPage ? (
+        <div className="w-full min-h-screen">
+          <div className="mx-auto max-w-[1920px]">
+            <Checkout />
+          </div>
+        </div>
       ) : (
         <BuilderProvider 
           initialElements={currentPageElements} 
@@ -152,7 +172,7 @@ const WebsiteViewer = () => {
           onSave={() => {}}
         >
           <div className="w-full min-h-screen">
-            <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-[1920px]">
               <BuilderContent isPreviewMode={true} isLiveSite={true} />
             </div>
           </div>

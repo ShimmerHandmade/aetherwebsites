@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Product } from "@/types/product";
 import { useCart } from "@/hooks/useCart";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import CartButton from "@/components/CartButton";
 
 const ProductDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -85,14 +86,10 @@ const ProductDetails = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-semibold">ModernBuilder Store</h1>
-            <Button 
+            <CartButton 
               variant="ghost" 
-              size="icon" 
-              onClick={() => navigate('/cart')}
-              className="relative"
-            >
-              <ShoppingCart className="h-6 w-6" />
-            </Button>
+              size="icon"
+            />
           </div>
         </div>
       </header>

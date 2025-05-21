@@ -8,6 +8,8 @@ import Builder from "@/pages/Builder";
 import WebsiteViewer from "@/pages/WebsiteViewer";
 import Cart from "@/pages/Cart";
 import ProductDetails from "@/pages/ProductDetails";
+import Checkout from "@/pages/Checkout";
+import OrderConfirmation from "@/pages/OrderConfirmation";
 import NotFound from "@/pages/NotFound";
 import Profile from "@/pages/Profile";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
@@ -25,6 +27,8 @@ function App() {
         <Route path="/view/:id/*" element={<WebsiteViewer />} />
         <Route path="/store/:id/cart" element={<Cart />} />
         <Route path="/store/:id/product/:productId" element={<ProductDetails />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/order-confirmation" element={<OrderConfirmation />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/subscription-success" element={<SubscriptionSuccess />} />
         <Route path="/404" element={<NotFound />} />

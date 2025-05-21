@@ -31,6 +31,17 @@ const Cart: React.FC<CartProps> = ({ siteName, siteId }) => {
     }
   };
 
+  // Handle proceeding to checkout
+  const handleCheckout = () => {
+    if (isSiteSpecificCart) {
+      // For site-specific checkout
+      navigate(`/site/${siteId}/checkout`);
+    } else {
+      // For main app checkout
+      navigate('/checkout');
+    }
+  };
+
   // Get display name - either from prop or default
   const displayName = siteName || "ModernBuilder Store";
 
@@ -136,7 +147,10 @@ const Cart: React.FC<CartProps> = ({ siteName, siteId }) => {
                     <span className="font-bold text-lg">${subtotal.toFixed(2)}</span>
                   </div>
                   
-                  <Button className="w-full">
+                  <Button 
+                    className="w-full" 
+                    onClick={handleCheckout}
+                  >
                     Proceed to Checkout
                   </Button>
                   
