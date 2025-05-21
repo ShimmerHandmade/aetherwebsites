@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import BuilderCanvas from "@/components/builder/canvas";
 import PageEditorSidebar from "./PageEditorSidebar";
 import { PreviewModeProps } from "./BuilderLayout";
@@ -20,6 +20,16 @@ const BuilderContent: React.FC<BuilderContentProps> = ({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { elements } = useBuilder();
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Add loading effect to ensure smooth transitions
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   // Always check if we're on the /site/:id route to ensure we're in full preview mode
   const isSiteRoute = window.location.pathname.includes('/site/');
@@ -43,9 +53,21 @@ const BuilderContent: React.FC<BuilderContentProps> = ({
     );
   }
 
+  // Show loading indicator while initial content is being prepared
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-slate-100">
+        <div className="text-center">
+          <div className="h-10 w-10 border-4 border-t-indigo-600 border-r-indigo-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-gray-600">Loading builder content...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 flex">
-      {/* Left sidebar - visible on desktop - width increased */}
+      {/* Left sidebar - visible on desktop */}
       <div className="hidden md:block w-[220px] bg-white border-r border-slate-200">
         {/* This space is for the vertical sidebar managed by PageEditorSidebar */}
         <PageEditorSidebar isPreviewMode={isPreviewMode} />

@@ -12,7 +12,19 @@ export const openCustomerPortal = async (): Promise<{
   try {
     console.log("Opening customer portal...");
     
-    // Return the direct portal URL as requested
+    // Try to get the user's session
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      console.error("No active session found");
+      toast.error("Please log in to manage your subscription");
+      return {
+        url: null,
+        error: "Authentication required"
+      };
+    }
+    
+    // Return the Stripe portal URL
     return {
       url: "https://billing.stripe.com/p/login/5kQ6oI4i6a7naFL5Ls83C00",
     };

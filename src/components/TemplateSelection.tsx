@@ -64,8 +64,20 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [imageLoading, setImageLoading] = useState<Record<string, boolean>>({});
+  const [templateApplying, setTemplateApplying] = useState(false);
   const navigate = useNavigate();
   const { isPremium, isThemeAllowed } = usePlan();
+  
+  // Ensure all images are pre-loaded to prevent flashing
+  useEffect(() => {
+    templates.forEach(template => {
+      setImageLoading(prev => ({ ...prev, [template.id]: true }));
+      const img = new Image();
+      img.src = template.image;
+      img.onload = () => handleImageLoad(template.id);
+      img.onerror = () => handleImageError(template.id);
+    });
+  }, []);
 
   const handleSelectTemplate = async () => {
     if (!selectedTemplate) {
@@ -77,9 +89,9 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
     const template = templates.find(t => t.id === selectedTemplate);
     if (!template) return;
 
-    // Checking theme access with the PlanContext method
     try {
       setIsLoading(true);
+      setTemplateApplying(true);
 
       // Check if theme is allowed for current plan
       const hasAccess = await isThemeAllowed(template.id);
@@ -87,27 +99,41 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       if (!hasAccess) {
         // The toast is already handled in isThemeAllowed
         setIsLoading(false);
+        setTemplateApplying(false);
         return;
       }
+      
+      // Show applying template toast
+      toast.success("Applying template, please wait...", {
+        duration: 3000,
+      });
       
       const result = await updateWebsiteTemplate(websiteId, selectedTemplate);
       
       if (!result.success) {
-        toast.error(result.error || "Failed to update template");
+        toast.error(result.error || "Failed to apply template");
+        setTemplateApplying(false);
         return;
       }
       
-      toast.success("Template applied successfully");
-      onComplete();
+      // Wait a bit to ensure template is properly applied
+      setTimeout(() => {
+        toast.success("Template applied successfully");
+        onComplete();
+        setTemplateApplying(false);
+      }, 1000);
+      
     } catch (error) {
       console.error("Error selecting template:", error);
       toast.error("An unexpected error occurred");
+      setTemplateApplying(false);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSkip = () => {
+    toast.success("Starting from scratch!");
     onComplete();
   };
 
@@ -124,6 +150,19 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       [templateId]: false
     }));
   };
+  
+  // Show loading state if template is being applied
+  if (templateApplying) {
+    return (
+      <div className="py-8 px-4 min-h-[60vh] flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-16 w-16 border-4 border-t-indigo-600 border-r-indigo-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-6"></div>
+          <h2 className="text-2xl font-bold mb-3">Applying Template</h2>
+          <p className="text-gray-600">Please wait while we set up your store with the selected template...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">
