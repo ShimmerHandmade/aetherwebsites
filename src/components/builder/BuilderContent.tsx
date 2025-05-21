@@ -22,17 +22,23 @@ const BuilderContent: React.FC<BuilderContentProps> = ({
   const { elements } = useBuilder();
   const [isLoading, setIsLoading] = useState(true);
   const [contentReady, setContentReady] = useState(false);
+  const [loadingStage, setLoadingStage] = useState<'initial' | 'elements' | 'rendering'>('initial');
+  const [retryCount, setRetryCount] = useState(0);
   
-  // Add loading effect with a guaranteed minimum display time
-  // This prevents flickering and ensures smooth transitions
+  // Enhanced loading effect with retry mechanism
   useEffect(() => {
     // First, mark that we're loading
     setIsLoading(true);
+    setContentReady(false);
+    setLoadingStage('initial');
     
-    const minLoadingTime = 700; // minimum ms to show loading state
+    const minLoadingTime = 1000; // minimum ms to show loading state
     const startTime = Date.now();
     
     const checkElementsAndFinishLoading = () => {
+      // Update loading stage to show progress
+      setLoadingStage('elements');
+      
       // Check if elements are available
       const hasElements = elements && elements.length > 0;
       
@@ -41,12 +47,22 @@ const BuilderContent: React.FC<BuilderContentProps> = ({
       
       if (elapsedTime >= minLoadingTime) {
         // We've shown the loading state for at least the minimum time
-        setIsLoading(false);
+        setLoadingStage('rendering');
         
-        // Add a small delay before showing content for smoother transition
-        setTimeout(() => {
-          setContentReady(true);
-        }, 100);
+        // If we have elements or have already retried enough times, finish loading
+        if (hasElements || retryCount > 2) {
+          setTimeout(() => {
+            setIsLoading(false);
+            // Add a small delay before showing content for smoother transition
+            setTimeout(() => {
+              setContentReady(true);
+            }, 150);
+          }, 200);
+        } else if (retryCount <= 2) {
+          // Retry loading elements a few times before giving up
+          setRetryCount(prev => prev + 1);
+          setTimeout(checkElementsAndFinishLoading, 800);
+        }
       } else {
         // Need to wait longer to meet minimum loading time
         setTimeout(
@@ -57,7 +73,7 @@ const BuilderContent: React.FC<BuilderContentProps> = ({
     };
     
     // Start the loading process
-    checkElementsAndFinishLoading();
+    setTimeout(checkElementsAndFinishLoading, 200);
     
     // Clean up any pending timeouts if component unmounts
     return () => {
@@ -87,20 +103,27 @@ const BuilderContent: React.FC<BuilderContentProps> = ({
     );
   }
 
-  // Show loading indicator while initial content is being prepared
+  // Enhanced loading indicator with stages
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-slate-100">
-        <div className="text-center">
-          <div className="h-10 w-10 border-4 border-t-indigo-600 border-r-indigo-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-gray-600">Loading builder content...</p>
+      <div className="flex-1 flex items-center justify-center bg-slate-100 transition-opacity duration-300">
+        <div className="text-center max-w-md">
+          <div className="h-12 w-12 border-4 border-t-indigo-600 border-r-indigo-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-700 text-lg font-medium mb-2">
+            {loadingStage === 'initial' ? 'Preparing builder content...' : 
+             loadingStage === 'elements' ? 'Loading page elements...' : 
+             'Rendering your page...'}
+          </p>
+          <p className="text-gray-500 text-sm">
+            {retryCount > 0 ? `Still working on it... (attempt ${retryCount + 1})` : 'This will just take a moment'}
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex">
+    <div className={`flex-1 flex ${contentReady ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}>
       {/* Left sidebar - visible on desktop */}
       <div className="hidden md:block w-[220px] bg-white border-r border-slate-200">
         {/* This space is for the vertical sidebar managed by PageEditorSidebar */}

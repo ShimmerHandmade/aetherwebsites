@@ -18,71 +18,91 @@ const OnboardingFlow = ({ websiteId, onComplete }: OnboardingFlowProps) => {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(OnboardingStep.TEMPLATES);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isLoadingComplete, setIsLoadingComplete] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Loading onboarding experience...");
   
-  // Initialize loading state
+  // Initialize loading state with a guaranteed minimum time
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoadingComplete(true);
-    }, 300);
+    }, 600); // Slightly longer initial load for smoother experience
     
     return () => clearTimeout(timer);
   }, []);
   
-  // Handle smooth transition between steps
+  // Handle smooth transition between steps with visual feedback
   const handleTemplateComplete = () => {
     setIsTransitioning(true);
+    setLoadingMessage("Preparing tutorial...");
     
     // Add a longer delay to ensure smooth transition and proper loading
     toast.success("Template selected! Loading tutorial...");
     
+    // Use a series of timed transitions
     setTimeout(() => {
-      setCurrentStep(OnboardingStep.TUTORIAL);
-      // Add another short delay before removing the transition screen
+      setLoadingMessage("Loading tutorial content...");
+      
+      // Add another delay before showing the next step
       setTimeout(() => {
-        setIsTransitioning(false);
-      }, 300);
-    }, 800);
+        setCurrentStep(OnboardingStep.TUTORIAL);
+        // Add another short delay before removing the transition screen
+        setTimeout(() => {
+          setIsTransitioning(false);
+        }, 500);
+      }, 800);
+    }, 1000);
   };
   
   // Handle completion with smooth transition to builder
   const handleTutorialComplete = () => {
     setIsTransitioning(true);
+    setLoadingMessage("Preparing your site builder...");
     
     // Show toast for better UX
     toast.success("Onboarding complete! Loading builder...");
     
-    // Add a longer delay before triggering onComplete
+    // Use a series of timed transitions
     setTimeout(() => {
-      onComplete();
-    }, 1000);
+      setLoadingMessage("Setting up your workspace...");
+      
+      // Add a longer delay before triggering onComplete
+      setTimeout(() => {
+        setLoadingMessage("Almost ready...");
+        
+        // Final delay before transition
+        setTimeout(() => {
+          onComplete();
+        }, 800);
+      }, 1000);
+    }, 800);
   };
 
-  // Show initial loading indicator
+  // Show initial loading indicator with animated appearance
   if (!isLoadingComplete) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center animate-in fade-in duration-500">
         <div className="text-center">
           <div className="h-12 w-12 border-4 border-t-indigo-600 border-r-indigo-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Loading onboarding experience...</p>
+          <p className="text-gray-600 text-lg">{loadingMessage}</p>
         </div>
       </div>
     );
   }
 
-  // Show loading indicator during transitions
+  // Show loading indicator during transitions with animated messaging
   if (isTransitioning) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center animate-in fade-in duration-300">
         <div className="text-center">
           <div className="h-12 w-12 border-4 border-t-indigo-600 border-r-indigo-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Loading next step...</p>
+          <p className="text-gray-600 text-lg">{loadingMessage}</p>
+          <p className="text-gray-400 text-sm mt-2">This will just take a moment</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 animate-in fade-in duration-300">
       {currentStep === OnboardingStep.TEMPLATES && (
         <TemplateSelection 
           websiteId={websiteId} 
