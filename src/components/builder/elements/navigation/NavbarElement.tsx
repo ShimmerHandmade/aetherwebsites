@@ -4,15 +4,19 @@ import { BuilderElement } from "@/contexts/BuilderContext";
 import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import CartButton from "@/components/CartButton";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface ElementProps {
   element: BuilderElement;
+  isLiveSite?: boolean;
 }
 
-const NavbarElement: React.FC<ElementProps> = ({ element }) => {
+const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const siteName = element.props?.siteName || "Your Website";
   const showCartButton = element.props?.showCartButton !== false;
+  const navigate = useNavigate();
+  const location = useLocation();
   
   // Use the logo from element props, or fall back to the global site settings if available
   const logo = element.props?.logo || 
@@ -64,6 +68,32 @@ const NavbarElement: React.FC<ElementProps> = ({ element }) => {
     // Fallback to regular cart path
     return '/cart';
   };
+  
+  // Handle link clicks with proper navigation
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {
+    e.preventDefault();
+    
+    // Only use real navigation in live site mode
+    if (isLiveSite) {
+      // In live site mode, we want to use actual navigation
+      // Check if this is an internal link
+      if (url.startsWith('/') || url === '#') {
+        navigate(url === '#' ? '/' : url);
+      } else if (url.startsWith('http')) {
+        // External link - open in new tab
+        window.open(url, '_blank');
+      } else {
+        // Treat as internal path
+        navigate(url);
+      }
+      
+      // Close mobile menu after navigation
+      setMobileMenuOpen(false);
+    }
+    
+    // In builder mode, we just prevent default navigation
+    // which stops the page from reloading
+  };
 
   return (
     <header className={navbarStyles[variant as keyof typeof navbarStyles]}>
@@ -95,6 +125,7 @@ const NavbarElement: React.FC<ElementProps> = ({ element }) => {
                   <a 
                     href={link.url} 
                     className={linkStyles[variant as keyof typeof linkStyles]}
+                    onClick={(e) => handleLinkClick(e, link.url)}
                   >
                     {link.text}
                   </a>
@@ -139,7 +170,10 @@ const NavbarElement: React.FC<ElementProps> = ({ element }) => {
                   key={index}
                   href={link.url}
                   className={linkStyles[variant as keyof typeof linkStyles]}
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={(e) => {
+                    handleLinkClick(e, link.url);
+                    setMobileMenuOpen(false);
+                  }}
                 >
                   {link.text}
                 </a>

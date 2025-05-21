@@ -13,7 +13,7 @@ export const renderNavigationElement = (
 ): React.ReactNode => {
   switch (element.type) {
     case "navbar":
-      return <NavbarElement element={element} />;
+      return <NavbarElement element={element} isLiveSite={isLiveSite} />;
     case "menu":
       return <MenuElement element={element} />;
     case "footer":
