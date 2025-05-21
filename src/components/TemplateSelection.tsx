@@ -15,7 +15,8 @@ const templates = [
     id: "fashion",
     name: "Fashion Store",
     description: "Stylish template for clothing and accessories",
-    image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=1470&auto=format&fit=crop",
+    image: "/templates/fashion.png",
+    remoteImage: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=1470&auto=format&fit=crop",
     fallbackImage: "/placeholder.svg",
     isPremium: false,
   },
@@ -23,7 +24,8 @@ const templates = [
     id: "electronics",
     name: "Electronics Shop",
     description: "Modern template for tech and gadgets",
-    image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1470&auto=format&fit=crop", 
+    image: "/templates/electronics.png",
+    remoteImage: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1470&auto=format&fit=crop", 
     fallbackImage: "/placeholder.svg",
     isPremium: false,
   },
@@ -31,7 +33,8 @@ const templates = [
     id: "beauty",
     name: "Beauty & Cosmetics",
     description: "Elegant design for beauty products",
-    image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=1480&auto=format&fit=crop",
+    image: "/templates/beauty.png",
+    remoteImage: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=1480&auto=format&fit=crop",
     fallbackImage: "/placeholder.svg",
     isPremium: true,
   },
@@ -39,7 +42,8 @@ const templates = [
     id: "furniture",
     name: "Home & Furniture",
     description: "Sophisticated template for home decor",
-    image: "https://images.unsplash.com/photo-1634712282287-14ed57b9cc89?q=80&w=1406&auto=format&fit=crop",
+    image: "/templates/furniture.png",
+    remoteImage: "https://images.unsplash.com/photo-1634712282287-14ed57b9cc89?q=80&w=1406&auto=format&fit=crop",
     fallbackImage: "/placeholder.svg",
     isPremium: true,
   },
@@ -47,7 +51,8 @@ const templates = [
     id: "food",
     name: "Gourmet Foods",
     description: "Appetizing template for food products",
-    image: "https://images.unsplash.com/photo-1526470498-9ae73c665de8?q=80&w=1298&auto=format&fit=crop",
+    image: "/templates/food.png",
+    remoteImage: "https://images.unsplash.com/photo-1526470498-9ae73c665de8?q=80&w=1298&auto=format&fit=crop",
     fallbackImage: "/placeholder.svg",
     isPremium: false,
   },
@@ -55,7 +60,8 @@ const templates = [
     id: "jewelry",
     name: "Luxury Jewelry",
     description: "Premium template for high-end products",
-    image: "https://images.unsplash.com/photo-1581252517866-6c03232384a4?q=80&w=1471&auto=format&fit=crop",
+    image: "/templates/jewelry.png",
+    remoteImage: "https://images.unsplash.com/photo-1581252517866-6c03232384a4?q=80&w=1471&auto=format&fit=crop",
     fallbackImage: "/placeholder.svg",
     isPremium: true,
   }
@@ -81,7 +87,13 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       const img = new Image();
       img.src = template.image;
       img.onload = () => handleImageLoad(template.id);
-      img.onerror = () => handleImageError(template.id);
+      img.onerror = () => {
+        console.log(`Local template image failed to load: ${template.image}, trying remote image`);
+        const remoteImg = new Image();
+        remoteImg.src = template.remoteImage;
+        remoteImg.onload = () => handleImageLoad(template.id);
+        remoteImg.onerror = () => handleImageError(template.id);
+      };
     });
   }, []);
 
@@ -197,14 +209,20 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
                   <Skeleton className="absolute inset-0 z-10" />
                 )}
                 <img 
-                  src={template.image} 
+                  src={template.image}
                   alt={template.name}
                   className="w-full h-full object-cover"
                   onLoad={() => handleImageLoad(template.id)}
                   onError={(e) => {
-                    // Fall back to placeholder if template image fails to load
-                    e.currentTarget.src = template.fallbackImage || "/placeholder.svg";
-                    handleImageError(template.id);
+                    console.log(`Local template image failed: ${template.image}, trying remote image: ${template.remoteImage}`);
+                    // Try remote image first
+                    e.currentTarget.src = template.remoteImage;
+                    // Add another error handler for the remote image
+                    e.currentTarget.onerror = () => {
+                      console.log(`Remote image also failed, using fallback: ${template.fallbackImage}`);
+                      e.currentTarget.src = template.fallbackImage || "/placeholder.svg";
+                      handleImageError(template.id);
+                    };
                   }}
                 />
               </AspectRatio>
