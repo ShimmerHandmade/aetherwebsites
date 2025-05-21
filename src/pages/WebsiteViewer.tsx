@@ -78,8 +78,6 @@ const WebsiteViewer = () => {
     const pageSettings = website.settings.pagesSettings?.[currentPageId] || { title: websiteName };
     
     console.log("Loading content for page ID:", currentPageId);
-    console.log("Available page content:", Object.keys(pagesContent));
-    console.log("Number of elements in page content:", pageContent.length);
     
     // If the page has no specific content and this is the homepage, use the main content
     if (pageContent.length === 0) {
@@ -138,7 +136,7 @@ const WebsiteViewer = () => {
     );
   }
 
-  // Make sure everything is wrapped in CartProvider to prevent the useCart context error
+  // Everything is wrapped in CartProvider to prevent useCart context errors
   return (
     <CartProvider>
       {isCartPage ? (

@@ -9,13 +9,14 @@ import { usePlan } from "@/contexts/PlanContext";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Template definitions with improved store types
+// Template definitions with improved store types and fallback images
 const templates = [
   {
     id: "fashion",
     name: "Fashion Store",
     description: "Stylish template for clothing and accessories",
     image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=1470&auto=format&fit=crop",
+    fallbackImage: "/placeholder.svg",
     isPremium: false,
   },
   {
@@ -23,6 +24,7 @@ const templates = [
     name: "Electronics Shop",
     description: "Modern template for tech and gadgets",
     image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1470&auto=format&fit=crop", 
+    fallbackImage: "/placeholder.svg",
     isPremium: false,
   },
   {
@@ -30,6 +32,7 @@ const templates = [
     name: "Beauty & Cosmetics",
     description: "Elegant design for beauty products",
     image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=1480&auto=format&fit=crop",
+    fallbackImage: "/placeholder.svg",
     isPremium: true,
   },
   {
@@ -37,6 +40,7 @@ const templates = [
     name: "Home & Furniture",
     description: "Sophisticated template for home decor",
     image: "https://images.unsplash.com/photo-1634712282287-14ed57b9cc89?q=80&w=1406&auto=format&fit=crop",
+    fallbackImage: "/placeholder.svg",
     isPremium: true,
   },
   {
@@ -44,6 +48,7 @@ const templates = [
     name: "Gourmet Foods",
     description: "Appetizing template for food products",
     image: "https://images.unsplash.com/photo-1526470498-9ae73c665de8?q=80&w=1298&auto=format&fit=crop",
+    fallbackImage: "/placeholder.svg",
     isPremium: false,
   },
   {
@@ -51,6 +56,7 @@ const templates = [
     name: "Luxury Jewelry",
     description: "Premium template for high-end products",
     image: "https://images.unsplash.com/photo-1581252517866-6c03232384a4?q=80&w=1471&auto=format&fit=crop",
+    fallbackImage: "/placeholder.svg",
     isPremium: true,
   }
 ];
@@ -145,6 +151,7 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
   };
 
   const handleImageError = (templateId: string) => {
+    console.log(`Template image failed to load for ${templateId}, using fallback`);
     setImageLoading(prev => ({
       ...prev,
       [templateId]: false
@@ -191,10 +198,14 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
                 )}
                 <img 
                   src={template.image} 
-                  alt={template.name} 
+                  alt={template.name}
                   className="w-full h-full object-cover"
                   onLoad={() => handleImageLoad(template.id)}
-                  onError={() => handleImageError(template.id)}
+                  onError={(e) => {
+                    // Fall back to placeholder if template image fails to load
+                    e.currentTarget.src = template.fallbackImage || "/placeholder.svg";
+                    handleImageError(template.id);
+                  }}
                 />
               </AspectRatio>
               {template.isPremium && (

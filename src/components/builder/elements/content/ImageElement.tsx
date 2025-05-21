@@ -17,6 +17,7 @@ const ImageElement: React.FC<ElementProps> = ({ element }) => {
       alt={alt} 
       className={className}
       onError={(e) => {
+        console.log("Image failed to load:", src);
         // Fallback if image doesn't load
         e.currentTarget.src = "/placeholder.svg";
       }}
