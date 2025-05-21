@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Store, Package, Loader2, AlertCircle, Tag, Truck } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -168,7 +167,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
     if (!isLiveSite) return; // Only navigate in live site mode
     
     console.log("Navigating to product:", product.id);
-    navigate(`/product/${product.id}`);
+    navigate(`/store/${websiteId}/product/${product.id}`);
   };
 
   // Calculate pagination
@@ -203,7 +202,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-12">
+      <div className="flex flex-col items-center justify-center py-12 px-4">
         <Loader2 className="h-8 w-8 text-gray-400 animate-spin mb-2" />
         <p className="text-gray-500">Loading products...</p>
       </div>
@@ -212,7 +211,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-12">
+      <div className="flex flex-col items-center justify-center py-12 px-4">
         <AlertCircle className="h-8 w-8 text-red-500 mb-2" />
         <p className="text-gray-700 font-medium">{error}</p>
         <p className="text-gray-500 text-sm mt-1">Please try again later</p>
@@ -222,7 +221,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
 
   if (products.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="flex flex-col items-center justify-center py-12 text-center px-4">
         <Package className="h-12 w-12 text-gray-300 mb-3" />
         <h3 className="text-lg font-medium text-gray-700">No products found</h3>
         <p className="text-gray-500 max-w-md mt-1">
@@ -236,8 +235,8 @@ const ProductsList: React.FC<ProductsListProps> = ({
   }
 
   return (
-    <div className="w-full">
-      <div className={`grid ${getColumnsClass()} gap-4 mb-6`}>
+    <div className="w-full px-4 py-6">
+      <div className={`grid ${getColumnsClass()} gap-6 mb-8`}>
         {currentProducts.map((product) => (
           <Card 
             key={product.id} 
