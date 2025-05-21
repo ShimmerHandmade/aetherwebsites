@@ -16,14 +16,13 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
 }) => {
   const { elements, selectElement } = useBuilder();
   const [isLoaded, setIsLoaded] = useState(false);
-  const [hasError, setHasError] = useState(false);
   
-  // Simplify loading logic - single stable transition
+  // Simplified loading logic - single stable transition
   useEffect(() => {
-    // Use a consistent short delay to allow component mounting
+    // Use a short delay to allow component mounting
     const timer = setTimeout(() => {
       setIsLoaded(true);
-    }, 200);
+    }, 100);
     
     return () => clearTimeout(timer);
   }, []);
@@ -34,11 +33,6 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
       // Deselect any element when clicking the canvas directly
       selectElement(null);
     }
-  };
-
-  const handleCanvasError = () => {
-    console.log("Canvas encountered an error, setting error state");
-    setHasError(true);
   };
 
   return (
@@ -59,7 +53,6 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
               elements={elements} 
               isPreviewMode={isPreviewMode} 
               isLiveSite={isLiveSite}
-              onError={handleCanvasError}
             />
           )}
         </CanvasDragDropHandler>
@@ -74,7 +67,6 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
             elements={elements} 
             isPreviewMode={isPreviewMode} 
             isLiveSite={isLiveSite}
-            onError={handleCanvasError}
           />
         )
       )}
