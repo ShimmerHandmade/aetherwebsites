@@ -24,7 +24,8 @@ export const openCustomerPortal = async (): Promise<{
       };
     }
     
-    // Return the Stripe portal URL
+    // Always use the direct URL for reliability
+    console.log("Using direct Stripe portal URL");
     return {
       url: "https://billing.stripe.com/p/login/5kQ6oI4i6a7naFL5Ls83C00",
     };

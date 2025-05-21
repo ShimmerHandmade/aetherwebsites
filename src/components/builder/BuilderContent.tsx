@@ -21,15 +21,49 @@ const BuilderContent: React.FC<BuilderContentProps> = ({
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { elements } = useBuilder();
   const [isLoading, setIsLoading] = useState(true);
+  const [contentReady, setContentReady] = useState(false);
   
-  // Add loading effect to ensure smooth transitions
+  // Add loading effect with a guaranteed minimum display time
+  // This prevents flickering and ensures smooth transitions
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
+    // First, mark that we're loading
+    setIsLoading(true);
     
-    return () => clearTimeout(timer);
-  }, []);
+    const minLoadingTime = 700; // minimum ms to show loading state
+    const startTime = Date.now();
+    
+    const checkElementsAndFinishLoading = () => {
+      // Check if elements are available
+      const hasElements = elements && elements.length > 0;
+      
+      // Calculate how much time has passed
+      const elapsedTime = Date.now() - startTime;
+      
+      if (elapsedTime >= minLoadingTime) {
+        // We've shown the loading state for at least the minimum time
+        setIsLoading(false);
+        
+        // Add a small delay before showing content for smoother transition
+        setTimeout(() => {
+          setContentReady(true);
+        }, 100);
+      } else {
+        // Need to wait longer to meet minimum loading time
+        setTimeout(
+          checkElementsAndFinishLoading, 
+          minLoadingTime - elapsedTime
+        );
+      }
+    };
+    
+    // Start the loading process
+    checkElementsAndFinishLoading();
+    
+    // Clean up any pending timeouts if component unmounts
+    return () => {
+      setIsLoading(false);
+    };
+  }, [elements]);
   
   // Always check if we're on the /site/:id route to ensure we're in full preview mode
   const isSiteRoute = window.location.pathname.includes('/site/');
