@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -65,7 +65,7 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
   const [isLoading, setIsLoading] = useState(false);
   const [imageLoading, setImageLoading] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
-  const { isPremium } = usePlan();
+  const { isPremium, isThemeAllowed } = usePlan();
 
   const handleSelectTemplate = async () => {
     if (!selectedTemplate) {
@@ -75,15 +75,21 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
 
     // Check if selected template is premium but user doesn't have premium plan
     const template = templates.find(t => t.id === selectedTemplate);
-    if (template?.isPremium && !isPremium) {
-      toast.error("This template requires a premium plan", {
-        description: "Please upgrade to access premium templates"
-      });
-      return;
-    }
+    if (!template) return;
 
+    // Checking theme access with the PlanContext method
     try {
       setIsLoading(true);
+
+      // Check if theme is allowed for current plan
+      const hasAccess = await isThemeAllowed(template.id);
+      
+      if (!hasAccess) {
+        // The toast is already handled in isThemeAllowed
+        setIsLoading(false);
+        return;
+      }
+      
       const result = await updateWebsiteTemplate(websiteId, selectedTemplate);
       
       if (!result.success) {

@@ -17,18 +17,19 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
   isLiveSite = false
 }) => {
   const { selectedElementId } = useBuilder();
-  const { isPremium, isEnterprise } = usePlan();
+  const { isPremium, isEnterprise, loading: planLoading } = usePlan();
   
   // Debug to help identify plan status
   useEffect(() => {
     console.log("PageCanvas rendering with plan status:", { 
       isPremium, 
       isEnterprise,
+      planLoading,
       elementsCount: elements?.length || 0,
       isPreviewMode,
       isLiveSite 
     });
-  }, [isPremium, isEnterprise, elements, isPreviewMode, isLiveSite]);
+  }, [isPremium, isEnterprise, planLoading, elements, isPreviewMode, isLiveSite]);
 
   return (
     <div className={`builder-canvas ${isPreviewMode ? 'preview-mode' : ''}`}>

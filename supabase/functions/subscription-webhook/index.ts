@@ -117,6 +117,50 @@ serve(async (req) => {
           end: currentPeriodEnd
         });
 
+        // Special handling for subscription cancellation/deletion
+        if (event.type === "customer.subscription.deleted" || 
+            subscription.status === "canceled" || 
+            subscription.status === "incomplete_expired") {
+          
+          logStep("Subscription canceled or expired. Planning cleanup actions.", { 
+            userId,
+            subscription_status: subscription.status
+          });
+          
+          // Allow a grace period before cleaning up data (7 days after end date)
+          const gracePeriodMs = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+          const subscriptionEndTime = subscription.canceled_at || subscription.current_period_end;
+          const gracePeriodEnd = new Date((subscriptionEndTime * 1000) + gracePeriodMs);
+          
+          // Schedule cleanup after grace period
+          // For immediate testing, you can remove the timeout and just run the cleanup code
+          logStep("Scheduling account cleanup after grace period", {
+            userId,
+            gracePeriodEnd: gracePeriodEnd.toISOString()
+          });
+          
+          // Check if grace period has already ended
+          if (new Date() >= gracePeriodEnd) {
+            logStep("Grace period ended, cleaning up user data now", { userId });
+            await cleanupUserData(supabaseAdmin, userId);
+          } else {
+            // Note: In a real production implementation, you would have a scheduled job
+            // that checks for accounts where grace period has ended each day
+            // For this implementation, we'll check on next login or webhook event
+            await supabaseAdmin
+              .from("profiles")
+              .update({
+                scheduled_cleanup_date: gracePeriodEnd.toISOString(),
+              })
+              .eq("id", userId);
+            
+            logStep("Set scheduled cleanup date", { 
+              userId, 
+              scheduledCleanup: gracePeriodEnd.toISOString()
+            });
+          }
+        }
+
         if (event.type === "customer.subscription.created") {
           // Record subscription in history
           try {
@@ -176,6 +220,7 @@ serve(async (req) => {
               .update({
                 is_subscribed: true,
                 subscription_end: subscriptionEnd,
+                scheduled_cleanup_date: null, // Clear any scheduled cleanup
                 updated_at: new Date().toISOString(),
               })
               .eq("id", userId);
@@ -224,3 +269,64 @@ serve(async (req) => {
     });
   }
 });
+
+// Helper function to clean up user data when subscription expires
+async function cleanupUserData(supabaseAdmin, userId: string) {
+  try {
+    logStep(`Starting data cleanup for user: ${userId}`);
+    
+    // Delete user's websites
+    const { data: websites, error: websitesError } = await supabaseAdmin
+      .from("websites")
+      .select("id")
+      .eq("owner_id", userId);
+      
+    if (websitesError) {
+      logStep(`Error fetching websites for deletion: ${websitesError.message}`);
+    } else if (websites && websites.length > 0) {
+      // Delete products associated with each website
+      for (const website of websites) {
+        // Delete products for this website
+        await supabaseAdmin
+          .from("products")
+          .delete()
+          .eq("website_id", website.id);
+          
+        logStep(`Deleted products for website ${website.id}`);
+      }
+      
+      // Delete the websites
+      await supabaseAdmin
+        .from("websites")
+        .delete()
+        .eq("owner_id", userId);
+        
+      logStep(`Deleted ${websites.length} websites for user ${userId}`);
+    }
+    
+    // Delete subscription history
+    await supabaseAdmin
+      .from("subscription_history")
+      .delete()
+      .eq("user_id", userId);
+      
+    logStep(`Deleted subscription history for user ${userId}`);
+    
+    // Update profile to show account has been cleaned up
+    await supabaseAdmin
+      .from("profiles")
+      .update({
+        is_subscribed: false,
+        data_cleaned: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
+      
+    logStep(`Marked profile as cleaned for user ${userId}`);
+    
+    return true;
+  } catch (error) {
+    logStep(`Error in cleanupUserData: ${error.message}`);
+    return false;
+  }
+}

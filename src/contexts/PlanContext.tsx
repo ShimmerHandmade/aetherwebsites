@@ -30,10 +30,12 @@ export const PlanProvider = ({ children }: PlanProviderProps) => {
   // and show an upgrade toast if they don't
   const checkUpgrade = (feature: string, isPremiumOnly = false): boolean => {
     if (planInfo.isEnterprise) {
+      console.log(`Enterprise user has access to ${feature}`);
       return true; // Enterprise users have access to everything
     }
     
     if (planInfo.isPremium && isPremiumOnly) {
+      console.log(`Premium user has access to ${feature}`);
       return true; // Premium users have access to premium features
     }
     
@@ -50,6 +52,8 @@ export const PlanProvider = ({ children }: PlanProviderProps) => {
   // Check if a specific theme is allowed for the current plan
   const isThemeAllowed = async (themeName: string): Promise<boolean> => {
     try {
+      console.log(`Checking theme access for ${themeName} with plan status: Premium=${planInfo.isPremium}, Enterprise=${planInfo.isEnterprise}`);
+      
       // All themes allowed for premium and enterprise users
       if (planInfo.isPremium || planInfo.isEnterprise) {
         console.log(`Theme ${themeName} is allowed for premium/enterprise users`);
