@@ -107,7 +107,50 @@ serve(async (req) => {
     }
     
     try {
-      // Get user profile to check for existing subscription info
+      // Check if user profile exists, if not create it
+      const { data: existingProfile, error: profileCheckError } = await supabaseAdmin
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+        
+      if (profileCheckError) {
+        logStep("Error checking for profile", { error: profileCheckError.message });
+      }
+
+      // If profile doesn't exist, create it
+      if (!existingProfile) {
+        logStep("Profile doesn't exist, creating one", { userId, email: userEmail });
+        
+        // Create a new profile for the user
+        const { error: createProfileError } = await supabaseAdmin
+          .from("profiles")
+          .insert({
+            id: userId,
+            email: userEmail,
+            is_subscribed: false,
+            updated_at: new Date().toISOString()
+          });
+          
+        if (createProfileError) {
+          logStep("Error creating profile", { error: createProfileError.message });
+          return new Response(JSON.stringify({ 
+            success: false,
+            subscribed: false,
+            plan: null,
+            error: "Failed to create user profile" 
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 500,
+          });
+        }
+        
+        logStep("Profile created successfully", { userId });
+      } else {
+        logStep("Profile found", { hasStripeId: !!existingProfile.stripe_customer_id });
+      }
+      
+      // Now get the profile (either existing or newly created)
       const { data: profile, error: profileError } = await supabaseAdmin
         .from("profiles")
         .select("*")
@@ -115,7 +158,7 @@ serve(async (req) => {
         .maybeSingle();
         
       if (profileError) {
-        logStep("Error fetching profile", { error: profileError.message });
+        logStep("Error fetching profile after creation check", { error: profileError.message });
         return new Response(JSON.stringify({ 
           success: false,
           subscribed: false,
@@ -128,19 +171,17 @@ serve(async (req) => {
       }
 
       if (!profile) {
-        logStep("No profile found for user", { userId });
+        logStep("No profile found even after creation attempt", { userId });
         return new Response(JSON.stringify({ 
           success: false,
           subscribed: false,
           plan: null,
-          error: "User profile not found" 
+          error: "User profile issue persists" 
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 404,
         });
       }
-      
-      logStep("Profile retrieved", { hasStripeId: !!profile.stripe_customer_id });
       
       // If we have a specific session to check
       if (sessionId) {
@@ -180,7 +221,7 @@ serve(async (req) => {
                     ? new Date(subscription.current_period_end * 1000).toISOString() 
                     : null;
                   
-                  await supabaseAdmin
+                  const { error: updateError } = await supabaseAdmin
                     .from("profiles")
                     .update({
                       is_subscribed: true,
@@ -192,11 +233,15 @@ serve(async (req) => {
                     })
                     .eq("id", userId);
                     
-                  logStep("Updated profile with subscription info", { 
-                    planId, 
-                    isSubscribed: true,
-                    subscriptionEnd: currentPeriodEnd
-                  });
+                  if (updateError) {
+                    logStep("Error updating profile with subscription", { error: updateError.message });
+                  } else {
+                    logStep("Updated profile with subscription info", { 
+                      planId, 
+                      isSubscribed: true,
+                      subscriptionEnd: currentPeriodEnd
+                    });
+                  }
                   
                   return new Response(JSON.stringify({ 
                     success: true,
@@ -246,12 +291,16 @@ serve(async (req) => {
           if (customers.data.length > 0) {
             // Update profile with customer ID
             profile.stripe_customer_id = customers.data[0].id;
-            await supabaseAdmin
+            const { error: updateError } = await supabaseAdmin
               .from("profiles")
               .update({ stripe_customer_id: profile.stripe_customer_id })
               .eq("id", userId);
             
-            logStep("Found and updated customer ID", { customerId: profile.stripe_customer_id });
+            if (updateError) {
+              logStep("Error updating customer ID in profile", { error: updateError.message });
+            } else {
+              logStep("Found and updated customer ID", { customerId: profile.stripe_customer_id });
+            }
           } else {
             logStep("No Stripe customer ID found");
             return new Response(JSON.stringify({ 
@@ -288,13 +337,17 @@ serve(async (req) => {
         logStep("No active subscriptions found");
         
         // Update profile to indicate no subscription
-        await supabaseAdmin
+        const { error: updateError } = await supabaseAdmin
           .from("profiles")
           .update({
             is_subscribed: false,
             updated_at: new Date().toISOString(),
           })
           .eq("id", userId);
+          
+        if (updateError) {
+          logStep("Error updating profile with no subscription", { error: updateError.message });
+        }
         
         return new Response(JSON.stringify({ 
           success: true,
@@ -314,7 +367,7 @@ serve(async (req) => {
         logStep("Subscription found but no plan ID in metadata");
         
         // Still update the profile as subscribed
-        await supabaseAdmin
+        const { error: updateError } = await supabaseAdmin
           .from("profiles")
           .update({
             is_subscribed: true,
@@ -323,6 +376,10 @@ serve(async (req) => {
             updated_at: new Date().toISOString(),
           })
           .eq("id", userId);
+          
+        if (updateError) {
+          logStep("Error updating profile with generic subscription", { error: updateError.message });
+        }
         
         return new Response(JSON.stringify({ 
           success: true,
@@ -345,7 +402,7 @@ serve(async (req) => {
         logStep("Error fetching plan", { error: planError.message });
         
         // Still update the profile as subscribed even if plan details are missing
-        await supabaseAdmin
+        const { error: updateError } = await supabaseAdmin
           .from("profiles")
           .update({
             is_subscribed: true,
@@ -355,6 +412,10 @@ serve(async (req) => {
             updated_at: new Date().toISOString(),
           })
           .eq("id", userId);
+          
+        if (updateError) {
+          logStep("Error updating profile with subscription without plan", { error: updateError.message });
+        }
         
         return new Response(JSON.stringify({ 
           success: true,
@@ -372,7 +433,7 @@ serve(async (req) => {
         ? new Date(subscription.current_period_end * 1000).toISOString() 
         : null;
       
-      await supabaseAdmin
+      const { error: updateError } = await supabaseAdmin
         .from("profiles")
         .update({
           is_subscribed: true,
@@ -384,11 +445,15 @@ serve(async (req) => {
         })
         .eq("id", userId);
         
-      logStep("Updated profile with subscription info", { 
-        planId, 
-        isSubscribed: true,
-        subscriptionEnd: currentPeriodEnd
-      });
+      if (updateError) {
+        logStep("Error updating profile with plan subscription", { error: updateError.message });
+      } else {
+        logStep("Updated profile with subscription info", { 
+          planId, 
+          isSubscribed: true,
+          subscriptionEnd: currentPeriodEnd
+        });
+      }
       
       return new Response(JSON.stringify({ 
         success: true,
