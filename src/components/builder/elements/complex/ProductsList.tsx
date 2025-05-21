@@ -19,7 +19,7 @@ import {
   PaginationPrevious 
 } from "@/components/ui/pagination";
 import { fetchProducts } from "@/api/products";
-import { Product } from "@/types/product"; // Import the proper Product type
+import { Product } from "@/types/product";
 
 interface ProductsListProps {
   element: BuilderElement;
@@ -36,9 +36,17 @@ const ProductsList: React.FC<ProductsListProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const { addToCart } = useCart();
-  const { id: routeWebsiteId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { id: routeWebsiteId } = useParams<{ id: string }>();
+  
+  // Handle potential cart context errors safely
+  let cartFunctions = { addToCart: () => {} };
+  try {
+    cartFunctions = useCart();
+  } catch (err) {
+    console.log("Cart context not available, using placeholder");
+  }
+  const { addToCart } = cartFunctions;
   
   // Get website ID from element props or route params
   const websiteId = element.props?.websiteId || routeWebsiteId;
@@ -147,8 +155,13 @@ const ProductsList: React.FC<ProductsListProps> = ({
     if (!isLiveSite) return;
     
     console.log("Adding to cart:", product.name);
-    addToCart(product);
-    toast.success(`${product.name} added to cart`);
+    try {
+      addToCart(product);
+      toast.success(`${product.name} added to cart`);
+    } catch (err) {
+      console.error("Error adding to cart:", err);
+      toast.error("Could not add to cart. Please try again.");
+    }
   };
   
   const handleProductClick = (product: Product) => {

@@ -6,6 +6,7 @@ import BuilderContent from "@/components/builder/BuilderContent";
 import { useWebsite } from "@/hooks/useWebsite";
 import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
 import Cart from "@/pages/Cart";
+import { CartProvider } from "@/contexts/CartContext";
 
 const WebsiteViewer = () => {
   const { id } = useParams<{ id: string }>();
@@ -133,29 +134,29 @@ const WebsiteViewer = () => {
     );
   }
 
-  // Render cart page when on the cart route
-  if (isCartPage) {
-    return (
-      <div className="w-full min-h-screen">
-        <div className="mx-auto max-w-[1920px]">
-          <Cart siteName={websiteName} siteId={id} />
-        </div>
-      </div>
-    );
-  }
-
+  // Make sure everything is wrapped in CartProvider to prevent the useCart context error
   return (
-    <BuilderProvider 
-      initialElements={currentPageElements} 
-      initialPageSettings={currentPageSettings || { title: websiteName }}
-      onSave={() => {}}
-    >
-      <div className="w-full min-h-screen">
-        <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
-          <BuilderContent isPreviewMode={true} isLiveSite={true} />
+    <CartProvider>
+      {isCartPage ? (
+        <div className="w-full min-h-screen">
+          <div className="mx-auto max-w-[1920px]">
+            <Cart siteName={websiteName} siteId={id} />
+          </div>
         </div>
-      </div>
-    </BuilderProvider>
+      ) : (
+        <BuilderProvider 
+          initialElements={currentPageElements} 
+          initialPageSettings={currentPageSettings || { title: websiteName }}
+          onSave={() => {}}
+        >
+          <div className="w-full min-h-screen">
+            <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
+              <BuilderContent isPreviewMode={true} isLiveSite={true} />
+            </div>
+          </div>
+        </BuilderProvider>
+      )}
+    </CartProvider>
   );
 };
 

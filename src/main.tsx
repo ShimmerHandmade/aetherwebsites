@@ -5,12 +5,15 @@ import App from './App.tsx'
 import './index.css'
 import { BrowserRouter } from 'react-router-dom'
 import { PlanProvider } from './contexts/PlanContext.tsx'
+import { CartProvider } from './contexts/CartContext.tsx'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
       <PlanProvider>
-        <App />
+        <CartProvider>
+          <App />
+        </CartProvider>
       </PlanProvider>
     </BrowserRouter>
   </React.StrictMode>,

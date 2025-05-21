@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import BuilderLayout from "@/components/builder/BuilderLayout";
@@ -9,6 +8,7 @@ import { BuilderElement, PageSettings } from "@/contexts/builder/types";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { v4 as uuidv4 } from "@/lib/uuid";
 import { toast } from "sonner";
+import { CartProvider } from "@/contexts/CartContext";
 
 // Declare global site settings interface for window
 declare global {
@@ -23,6 +23,7 @@ declare global {
 const Builder = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  
   const { 
     website, 
     isLoading, 
@@ -369,46 +370,50 @@ const Builder = () => {
   // If in preview mode via URL parameter, only show the canvas without builder UI
   if (isPreviewMode && new URLSearchParams(window.location.search).get('preview') === 'true') {
     return (
+      <CartProvider>
+        <BuilderProvider 
+          initialElements={currentPageElements} 
+          initialPageSettings={currentPageSettings || { title: currentPage?.title || websiteName }}
+          onSave={handleSaveComplete}
+        >
+          <div className="w-full min-h-screen">
+            <BuilderContent isPreviewMode={true} />
+          </div>
+        </BuilderProvider>
+      </CartProvider>
+    );
+  }
+
+  return (
+    <CartProvider>
       <BuilderProvider 
         initialElements={currentPageElements} 
         initialPageSettings={currentPageSettings || { title: currentPage?.title || websiteName }}
         onSave={handleSaveComplete}
       >
-        <div className="w-full min-h-screen">
-          <BuilderContent isPreviewMode={true} />
-        </div>
+        <BuilderLayout isPreviewMode={isPreviewMode} setIsPreviewMode={setIsPreviewMode}>
+          <BuilderNavbar 
+            websiteName={websiteName} 
+            setWebsiteName={setWebsiteName} 
+            onSave={handleSave} 
+            onPublish={publishWebsite}
+            isPublished={website?.published}
+            isSaving={isSaving}
+            isPublishing={isPublishing}
+            isPreviewMode={isPreviewMode}
+            setIsPreviewMode={setIsPreviewMode}
+            currentPage={currentPage}
+            pages={pages}
+            onChangePage={handleChangePage}
+            onShopLinkClick={handleShopLinkClick}
+            onReturnToDashboard={handleReturnToDashboard}
+            viewSiteUrl={`/view/${id}`}
+            saveStatus={saveStatus}
+          />
+          <BuilderContent isPreviewMode={isPreviewMode} />
+        </BuilderLayout>
       </BuilderProvider>
-    );
-  }
-
-  return (
-    <BuilderProvider 
-      initialElements={currentPageElements} 
-      initialPageSettings={currentPageSettings || { title: currentPage?.title || websiteName }}
-      onSave={handleSaveComplete}
-    >
-      <BuilderLayout isPreviewMode={isPreviewMode} setIsPreviewMode={setIsPreviewMode}>
-        <BuilderNavbar 
-          websiteName={websiteName} 
-          setWebsiteName={setWebsiteName} 
-          onSave={handleSave} 
-          onPublish={publishWebsite}
-          isPublished={website?.published}
-          isSaving={isSaving}
-          isPublishing={isPublishing}
-          isPreviewMode={isPreviewMode}
-          setIsPreviewMode={setIsPreviewMode}
-          currentPage={currentPage}
-          pages={pages}
-          onChangePage={handleChangePage}
-          onShopLinkClick={handleShopLinkClick}
-          onReturnToDashboard={handleReturnToDashboard}
-          viewSiteUrl={`/view/${id}`}
-          saveStatus={saveStatus}
-        />
-        <BuilderContent isPreviewMode={isPreviewMode} />
-      </BuilderLayout>
-    </BuilderProvider>
+    </CartProvider>
   );
 };
 
