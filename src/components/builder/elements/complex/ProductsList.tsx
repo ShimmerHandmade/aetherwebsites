@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Store, Package, Loader2, AlertCircle, Tag, Truck } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -313,6 +314,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
         ))}
       </div>
       
+      {/* Pagination controls */}
       {showPagination && totalPages > 1 && (
         <Pagination className="justify-center">
           <PaginationContent>

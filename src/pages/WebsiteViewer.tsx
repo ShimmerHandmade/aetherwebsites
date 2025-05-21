@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
@@ -156,7 +155,7 @@ const WebsiteViewer = () => {
       ) : isProductPage ? (
         <div className="w-full min-h-screen">
           <div className="mx-auto max-w-[1920px]">
-            <ProductDetails />
+            <ProductDetails productId={productId} siteId={id} />
           </div>
         </div>
       ) : isCheckoutPage ? (
