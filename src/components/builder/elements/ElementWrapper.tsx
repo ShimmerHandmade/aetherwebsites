@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useBuilder } from "@/contexts/builder/useBuilder";
 import { usePlan } from "@/contexts/PlanContext";
 import { renderElement } from "./renderElement";
@@ -16,6 +16,7 @@ interface BuilderElementProps {
   canUseAnimations?: boolean;
   canUseEnterpriseAnimations?: boolean;
   isLiveSite?: boolean;
+  onElementReady?: () => void; // Added this property
 }
 
 export const ElementWrapper: React.FC<BuilderElementProps> = ({
@@ -27,11 +28,20 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   canUseAnimations,
   canUseEnterpriseAnimations,
   isLiveSite = false,
+  onElementReady, // Add the prop here
 }) => {
   const { selectElement, removeElement, duplicateElement, moveElementUp, moveElementDown } = useBuilder();
   const { isPremium, isEnterprise } = usePlan();
   const [isDragging, setIsDragging] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
+
+  // Notify parent when element is ready
+  useEffect(() => {
+    // Call onElementReady when the component mounts
+    if (onElementReady) {
+      onElementReady();
+    }
+  }, [onElementReady]);
 
   // Check if this is a premium animation element
   const isPremiumAnimationElement = element.props?.hasAnimation && (element.props?.animationType === 'premium' || element.props?.animationType === 'enterprise');

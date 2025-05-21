@@ -10,6 +10,7 @@ export interface BuilderElementProps {
   canUseEnterpriseAnimations?: boolean;
   parentId?: string;
   isLiveSite?: boolean;
+  onElementReady?: () => void; // Added this property
 }
 
 export { ElementWrapper };
