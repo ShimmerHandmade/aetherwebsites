@@ -15,7 +15,7 @@ export const renderNavigationElement = (
     case "navbar":
       return <NavbarElement element={element} isLiveSite={isLiveSite} />;
     case "menu":
-      return <MenuElement element={element} />;
+      return <MenuElement element={element} isLiveSite={isLiveSite} />;
     case "footer":
       return <FooterElement element={element} />;
     case "breadcrumbs":
