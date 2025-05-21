@@ -30,7 +30,7 @@ export const usePlanInfo = () => {
   const initialLoadComplete = useRef(false);
   const loadAttempts = useRef(0);
 
-  // Single useEffect to handle data loading
+  // Clean up the useEffect to improve loading stability
   useEffect(() => {
     const loadPlanInfo = async () => {
       // Prevent reloading after 3 attempts
@@ -40,40 +40,61 @@ export const usePlanInfo = () => {
         loadAttempts.current += 1;
         console.log(`Loading plan info, attempt ${loadAttempts.current}`);
         
-        // Use the simplified plan info function which avoids the database join issue
-        const planData = await getUserPlanSimplified();
+        // First handle restrictions, which shouldn't fail even without auth
+        let restrictions;
+        try {
+          restrictions = await getUserPlanRestrictions();
+        } catch (restrictionsError) {
+          console.warn("Failed to load plan restrictions:", restrictionsError);
+          restrictions = null;
+        }
         
-        // Get plan restrictions
-        const restrictions = await getUserPlanRestrictions();
-        
-        if (planData && planData.isActive) {
-          const isPremium = planData.planName === "Professional" || planData.planName === "Enterprise";
-          const isEnterprise = planData.planName === "Enterprise";
+        // Then try to get the plan data
+        try {
+          const planData = await getUserPlanSimplified();
           
-          console.log("Plan data loaded successfully:", {
-            planName: planData.planName,
-            isPremium,
-            isEnterprise
-          });
-          
-          if (isMounted.current) {
-            setPlanInfo({
+          if (planData && planData.isActive) {
+            const isPremium = planData.planName === "Professional" || planData.planName === "Enterprise";
+            const isEnterprise = planData.planName === "Enterprise";
+            
+            console.log("Plan data loaded successfully:", {
               planName: planData.planName,
-              restrictions,
-              loading: false,
-              error: null,
               isPremium,
               isEnterprise
             });
+            
+            if (isMounted.current) {
+              setPlanInfo({
+                planName: planData.planName,
+                restrictions,
+                loading: false,
+                error: null,
+                isPremium,
+                isEnterprise
+              });
+            }
+          } else {
+            console.log("No active plan found, using default values");
+            if (isMounted.current) {
+              setPlanInfo({
+                planName: null,
+                restrictions,
+                loading: false,
+                error: null,
+                isPremium: false,
+                isEnterprise: false
+              });
+            }
           }
-        } else {
-          console.log("No active plan found, using default values");
+        } catch (planError) {
+          console.warn("Failed to load plan data:", planError);
+          // Even if plan data fails, we can still proceed with restrictions
           if (isMounted.current) {
             setPlanInfo({
               planName: null,
               restrictions,
               loading: false,
-              error: null,
+              error: "Failed to load subscription information",
               isPremium: false,
               isEnterprise: false
             });

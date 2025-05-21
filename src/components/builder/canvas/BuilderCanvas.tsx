@@ -16,36 +16,17 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
 }) => {
   const { elements, selectElement } = useBuilder();
   const [isLoaded, setIsLoaded] = useState(false);
-  const [renderAttempt, setRenderAttempt] = useState(0);
   const [hasError, setHasError] = useState(false);
   
-  // Add stabilization effect to prevent blanking
+  // Simplify loading logic - single stable transition
   useEffect(() => {
-    // Use a short delay to allow the DOM to settle
+    // Use a consistent short delay to allow component mounting
     const timer = setTimeout(() => {
       setIsLoaded(true);
-    }, 300);
+    }, 200);
     
     return () => clearTimeout(timer);
   }, []);
-
-  // Add retry mechanism if elements are taking too long
-  useEffect(() => {
-    // Only retry if we have no elements and we're not in an error state
-    if (elements.length === 0 && renderAttempt < 3 && !hasError) {
-      const retryTimer = setTimeout(() => {
-        console.log(`Builder Canvas retry attempt ${renderAttempt + 1}`);
-        setRenderAttempt(prev => prev + 1);
-      }, 800 * (renderAttempt + 1)); // Increasing backoff
-      
-      return () => clearTimeout(retryTimer);
-    }
-    
-    // If we have elements but had an error before, clear the error state
-    if (elements.length > 0 && hasError) {
-      setHasError(false);
-    }
-  }, [elements, renderAttempt, hasError]);
   
   const handleCanvasClick = (e: React.MouseEvent) => {
     // Only handle direct canvas clicks (not bubbled from elements)
@@ -62,7 +43,7 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
 
   return (
     <div 
-      className={`w-full min-h-screen pb-20 relative transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+      className={`w-full min-h-screen pb-20 relative transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
       data-testid="builder-canvas"
     >
       {!isPreviewMode && (
@@ -71,7 +52,6 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
           onCanvasClick={handleCanvasClick}
           className="w-full min-h-screen"
         >
-          {/* Content to be wrapped by the drag-drop handler */}
           {elements.length === 0 ? (
             <EmptyCanvasPlaceholder isPreviewMode={isPreviewMode} />
           ) : (
@@ -79,7 +59,6 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
               elements={elements} 
               isPreviewMode={isPreviewMode} 
               isLiveSite={isLiveSite}
-              key={`page-canvas-${renderAttempt}`} // Force re-render on retry
               onError={handleCanvasError}
             />
           )}
@@ -95,7 +74,6 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
             elements={elements} 
             isPreviewMode={isPreviewMode} 
             isLiveSite={isLiveSite}
-            key={`preview-canvas-${renderAttempt}`} // Force re-render on retry
             onError={handleCanvasError}
           />
         )
