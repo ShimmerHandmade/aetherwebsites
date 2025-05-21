@@ -1,6 +1,6 @@
 
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -70,21 +70,37 @@ const BuilderNavbar = ({
   viewSiteUrl,
   saveStatus = ''
 }: BuilderNavbarProps) => {
-  const [activeTab, setActiveTab] = React.useState("edit");
+  const location = useLocation();
   const navigate = useNavigate();
+  
+  // Determine active tab based on current route
+  const getActiveTabFromRoute = () => {
+    const path = location.pathname;
+    if (path.includes('/products')) return "products";
+    if (path.includes('/pages')) return "pages";
+    if (path.includes('/page-settings')) return "page-settings";
+    if (path.includes('/settings')) return "settings";
+    return "edit";
+  };
+  
+  const [activeTab, setActiveTab] = React.useState(getActiveTabFromRoute());
+  
+  // Update active tab when route changes
+  React.useEffect(() => {
+    setActiveTab(getActiveTabFromRoute());
+  }, [location.pathname]);
   
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     
-    if (value === "edit") {
-      // Stay on the current page, just change the tab
-      return;
-    }
-    
     const websiteId = window.location.pathname.split("/")[2];
     if (!websiteId) return;
     
+    // Prevent default navigation and use react-router instead
     switch (value) {
+      case "edit":
+        navigate(`/builder/${websiteId}`);
+        break;
       case "products":
         navigate(`/builder/${websiteId}/products`);
         break;
@@ -286,3 +302,4 @@ const BuilderNavbar = ({
 };
 
 export default BuilderNavbar;
+

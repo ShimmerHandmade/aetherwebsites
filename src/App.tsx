@@ -5,6 +5,10 @@ import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
 import Builder from "@/pages/Builder";
+import BuilderProducts from "@/pages/builder/Products";
+import BuilderPages from "@/pages/builder/Pages";
+import BuilderPageSettings from "@/pages/builder/PageSettings";
+import BuilderSiteSettings from "@/pages/builder/SiteSettings";
 import WebsiteViewer from "@/pages/WebsiteViewer";
 import Cart from "@/pages/Cart";
 import ProductDetails from "@/pages/ProductDetails";
@@ -23,7 +27,11 @@ function App() {
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/builder/:id/*" element={<Builder />} />
+        <Route path="/builder/:id" element={<Builder />} />
+        <Route path="/builder/:id/products" element={<BuilderProducts />} />
+        <Route path="/builder/:id/pages" element={<BuilderPages />} />
+        <Route path="/builder/:id/page-settings" element={<BuilderPageSettings />} />
+        <Route path="/builder/:id/settings" element={<BuilderSiteSettings />} />
         <Route path="/builder/:id/payment-settings" element={<PaymentSettings />} />
         <Route path="/site/:id/*" element={<WebsiteViewer />} />
         <Route path="/view/:id/*" element={<WebsiteViewer />} />
@@ -41,3 +49,4 @@ function App() {
 }
 
 export default App;
+
