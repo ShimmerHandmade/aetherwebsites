@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { updateWebsiteTemplate } from "@/api/websites";
 import { Badge } from "@/components/ui/badge";
 import { usePlan } from "@/contexts/PlanContext";

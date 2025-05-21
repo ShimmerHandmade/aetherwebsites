@@ -25,7 +25,6 @@ interface PlanProviderProps {
 
 export const PlanProvider = ({ children }: PlanProviderProps) => {
   const planInfo = usePlanInfo();
-  const [allowedThemes, setAllowedThemes] = useState<string[]>([]);
   
   // Helper function to check if user has access to a premium/enterprise feature
   // and show an upgrade toast if they don't
@@ -51,18 +50,19 @@ export const PlanProvider = ({ children }: PlanProviderProps) => {
   // Check if a specific theme is allowed for the current plan
   const isThemeAllowed = async (themeName: string): Promise<boolean> => {
     try {
-      // Enterprise and Premium users have access to all themes
-      if (planInfo.isEnterprise || planInfo.isPremium) {
+      // All themes allowed for premium and enterprise users
+      if (planInfo.isPremium || planInfo.isEnterprise) {
+        console.log(`Theme ${themeName} is allowed for premium/enterprise users`);
         return true;
       }
       
-      // Use the utility function to check theme access
+      // For basic/free users, use the restrictions
       const hasAccess = await checkThemeAccess(themeName);
+      console.log(`Theme access check for ${themeName}: ${hasAccess}`);
       
       if (!hasAccess) {
         toast.error(`The ${themeName} theme requires a Professional plan`, {
-          description: "Upgrade to access premium themes",
-          duration: 5000,
+          description: "Upgrade to access premium themes"
         });
       }
       

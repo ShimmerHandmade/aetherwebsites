@@ -29,7 +29,7 @@ const planRestrictions: Record<string, PlanRestriction> = {
     allowPremiumTemplates: false,
     allowPremiumElements: false,
     allowPremiumAnimations: false,
-    allowedThemes: ["business", "blog", "ecommerce"]
+    allowedThemes: ["business", "blog", "ecommerce", "fashion", "electronics", "food"]
   },
   "Professional": {
     maxProducts: 150,
@@ -66,7 +66,7 @@ const planRestrictions: Record<string, PlanRestriction> = {
     allowPremiumTemplates: false,
     allowPremiumElements: false,
     allowPremiumAnimations: false,
-    allowedThemes: ["business", "blog", "ecommerce"]
+    allowedThemes: ["business", "blog", "ecommerce", "fashion", "electronics", "food"]
   }
 };
 
