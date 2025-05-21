@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
-import { CartItem } from '@/components/CartItem';
 import { ArrowLeft, CreditCard, Truck, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -17,6 +15,8 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { items, subtotal, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
+  const [websiteInfo, setWebsiteInfo] = useState<any>(null);
+  const [hasStripeEnabled, setHasStripeEnabled] = useState(false);
   
   const [customerInfo, setCustomerInfo] = useState({
     email: '',
@@ -44,6 +44,57 @@ const Checkout = () => {
   const [notes, setNotes] = useState('');
   const [sameAsBilling, setSameAsBilling] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Get website ID and check if it has Stripe enabled
+  useEffect(() => {
+    const siteId = window.__SITE_SETTINGS__?.siteId;
+    if (!siteId) {
+      console.error("Could not determine website ID");
+      return;
+    }
+    
+    const fetchWebsiteInfo = async () => {
+      try {
+        // Get website information
+        const { data: website, error: websiteError } = await supabase
+          .from('websites')
+          .select('id, name')
+          .eq('id', siteId)
+          .single();
+        
+        if (websiteError) {
+          console.error("Error fetching website:", websiteError);
+          return;
+        }
+        
+        setWebsiteInfo(website);
+        
+        // Check if this website has Stripe Connect set up
+        const { data: stripeAccount, error: stripeError } = await supabase
+          .from('stripe_connect_accounts')
+          .select('onboarding_complete, charges_enabled')
+          .eq('website_id', siteId)
+          .eq('onboarding_complete', true)
+          .eq('charges_enabled', true)
+          .maybeSingle();
+        
+        if (stripeError) {
+          console.error("Error checking Stripe status:", stripeError);
+          return;
+        }
+        
+        // If a valid Stripe Connect account exists, enable Stripe payment option
+        if (stripeAccount) {
+          setHasStripeEnabled(true);
+          setPaymentMethod('stripe'); // Default to Stripe if available
+        }
+      } catch (error) {
+        console.error("Error fetching website info:", error);
+      }
+    };
+    
+    fetchWebsiteInfo();
+  }, []);
 
   const handleCustomerInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -143,18 +194,35 @@ const Checkout = () => {
       }
 
       if (data && data.success) {
-        // Order was created successfully
-        toast.success('Order placed successfully!');
+        // Clear the cart
         clearCart();
         
-        // Redirect to order confirmation page
-        navigate('/order-confirmation', { 
-          state: { 
-            orderId: data.order.id,
-            orderTotal: data.order.total,
-            orderStatus: data.order.status
-          } 
-        });
+        // If this is a Stripe payment, redirect to the Stripe checkout
+        if (paymentMethod === 'stripe' && data.checkout_url) {
+          // Open Stripe checkout in a new tab
+          window.open(data.checkout_url, '_blank');
+          
+          // Navigate to order confirmation page
+          navigate('/order-confirmation', { 
+            state: { 
+              orderId: data.order.id,
+              orderTotal: data.order.total,
+              orderStatus: data.order.status,
+              isStripePayment: true
+            } 
+          });
+        } else {
+          // For COD, just go to order confirmation
+          navigate('/order-confirmation', { 
+            state: { 
+              orderId: data.order.id,
+              orderTotal: data.order.total,
+              orderStatus: data.order.status
+            } 
+          });
+        }
+        
+        toast.success('Order placed successfully!');
       } else {
         throw new Error(data?.error || 'Failed to create order');
       }
@@ -407,23 +475,24 @@ const Checkout = () => {
               </div>
               
               <RadioGroup 
-                defaultValue="cod" 
                 value={paymentMethod}
                 onValueChange={setPaymentMethod}
               >
+                {hasStripeEnabled && (
+                  <div className="flex items-center space-x-2 p-3 border rounded-md mb-3 cursor-pointer hover:bg-gray-50">
+                    <RadioGroupItem value="stripe" id="stripe" />
+                    <Label htmlFor="stripe" className="cursor-pointer flex-1">
+                      <div className="font-medium">Credit Card</div>
+                      <div className="text-sm text-gray-500">Pay securely with your credit or debit card</div>
+                    </Label>
+                  </div>
+                )}
+                
                 <div className="flex items-center space-x-2 p-3 border rounded-md mb-3 cursor-pointer hover:bg-gray-50">
                   <RadioGroupItem value="cod" id="cod" />
                   <Label htmlFor="cod" className="cursor-pointer flex-1">
                     <div className="font-medium">Cash on Delivery</div>
                     <div className="text-sm text-gray-500">Pay when you receive your order</div>
-                  </Label>
-                </div>
-                
-                <div className="flex items-center space-x-2 p-3 border rounded-md cursor-pointer opacity-50 hover:bg-gray-50">
-                  <RadioGroupItem value="card" id="card" disabled />
-                  <Label htmlFor="card" className="cursor-pointer flex-1">
-                    <div className="font-medium">Credit Card / Debit Card</div>
-                    <div className="text-sm text-gray-500">Coming soon</div>
                   </Label>
                 </div>
               </RadioGroup>
@@ -517,7 +586,7 @@ const Checkout = () => {
                 onClick={handleSubmitOrder}
                 disabled={loading}
               >
-                {loading ? 'Processing...' : 'Place Order'}
+                {loading ? 'Processing...' : (paymentMethod === 'stripe' ? 'Pay with Card' : 'Place Order')}
               </Button>
               
               <p className="text-xs text-gray-500 text-center mt-4">

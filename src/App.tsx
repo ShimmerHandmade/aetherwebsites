@@ -13,6 +13,7 @@ import OrderConfirmation from "@/pages/OrderConfirmation";
 import NotFound from "@/pages/NotFound";
 import Profile from "@/pages/Profile";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
+import PaymentSettings from "@/pages/builder/PaymentSettings";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path="/auth" element={<Auth />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/builder/:id/*" element={<Builder />} />
+        <Route path="/builder/:id/payment-settings" element={<PaymentSettings />} />
         <Route path="/site/:id/*" element={<WebsiteViewer />} />
         <Route path="/view/:id/*" element={<WebsiteViewer />} />
         <Route path="/store/:id/cart" element={<Cart />} />

@@ -1,37 +1,69 @@
 
+# A string used to distinguish different Supabase projects on the same host. Defaults to the project ID.
 project_id = "zmzpekwpzacjymymwtak"
 
 [api]
 enabled = true
 port = 54321
-schemas = ["public", "storage", "auth"]
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
 
 [db]
 port = 54322
+shadow_port = 54320
+major_version = 15
 
-[studio]
-enabled = true
-port = 54323
-api_url = "http://localhost"
-
-[storage]
-enabled = true
-
-[auth]
-enabled = true
-
-[inbucket]
-enabled = true
-port = 54324
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
 
 [realtime]
 enabled = true
+server = true
+ip_address = "::"
+port = 54323
 
-[functions.create-checkout]
+[studio]
+enabled = true
+port = 54324
+api_url = "http://127.0.0.1:54321"
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "https://app.lovable.dev"
+# Important: Must add all URLs that might refer users back after auth.
+additional_redirect_urls = ["https://localhost:3000", "https://app.lovable.dev"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+
+[auth.email.template]
+# Use built-in auth templates
+invite = "base_invite"
+confirmation = "base_confirmation"
+recovery = "base_recovery"
+magic_link = "base_magic_link"
+email_change = "base_email_change"
+
+[functions]
+[functions.create-order]
 verify_jwt = true
-[functions.customer-portal]
+
+[functions.create-connect-account]
 verify_jwt = true
-[functions.check-subscription]
-verify_jwt = true
-[functions.subscription-webhook]
+
+[functions.stripe-connect-webhook]
 verify_jwt = false

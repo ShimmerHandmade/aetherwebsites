@@ -2,12 +2,13 @@
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Home, ShoppingBag } from "lucide-react";
+import { CheckCircle, Home, ShoppingBag, AlertCircle, CreditCard } from "lucide-react";
 
 interface OrderConfirmationState {
   orderId?: string;
   orderTotal?: number;
   orderStatus?: string;
+  isStripePayment?: boolean;
 }
 
 const OrderConfirmation = () => {
@@ -18,6 +19,7 @@ const OrderConfirmation = () => {
   const orderId = state?.orderId;
   const orderTotal = state?.orderTotal;
   const orderStatus = state?.orderStatus;
+  const isStripePayment = state?.isStripePayment || false;
 
   useEffect(() => {
     // If the page is accessed directly without order information, redirect to home
@@ -53,9 +55,13 @@ const OrderConfirmation = () => {
           <div className="rounded-full bg-green-100 p-4 w-fit mx-auto mb-4">
             <CheckCircle className="h-12 w-12 text-green-600" />
           </div>
-          <h1 className="text-3xl font-bold mb-2">Order Confirmed!</h1>
+          <h1 className="text-3xl font-bold mb-2">
+            {isStripePayment ? 'Order Submitted!' : 'Order Confirmed!'}
+          </h1>
           <p className="text-gray-600">
-            Thank you for your purchase. Your order has been received.
+            {isStripePayment 
+              ? 'Your order has been submitted and is awaiting payment.' 
+              : 'Thank you for your purchase. Your order has been received.'}
           </p>
         </div>
         
@@ -80,6 +86,21 @@ const OrderConfirmation = () => {
               </div>
             </div>
           </div>
+          
+          {isStripePayment && (
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+              <div className="flex items-center">
+                <CreditCard className="h-5 w-5 text-blue-500 mr-3" />
+                <div>
+                  <h3 className="font-medium text-blue-800">Payment in Progress</h3>
+                  <p className="text-sm text-blue-600">
+                    Please complete your payment in the Stripe checkout window that opened. If you closed it accidentally, 
+                    you can try again from your order history.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           
           <div>
             <h2 className="text-lg font-semibold mb-2">What Happens Next?</h2>
