@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import BuilderCanvas from "@/components/builder/canvas";
 import PageEditorSidebar from "./PageEditorSidebar";
 import { PreviewModeProps } from "./BuilderLayout";
@@ -24,62 +24,63 @@ const BuilderContent: React.FC<BuilderContentProps> = ({
   const [contentReady, setContentReady] = useState(false);
   const [loadingStage, setLoadingStage] = useState<'initial' | 'elements' | 'rendering'>('initial');
   const [retryCount, setRetryCount] = useState(0);
+  const [loadingFailed, setLoadingFailed] = useState(false);
   
-  // Enhanced loading effect with retry mechanism
-  useEffect(() => {
+  // Enhanced loading effect with retry mechanism and better transitions
+  const initializeContent = useCallback(() => {
     // First, mark that we're loading
     setIsLoading(true);
     setContentReady(false);
+    setLoadingFailed(false);
     setLoadingStage('initial');
     
-    const minLoadingTime = 1000; // minimum ms to show loading state
+    const minLoadingTime = 800; // minimum ms to show loading state
     const startTime = Date.now();
     
-    const checkElementsAndFinishLoading = () => {
-      // Update loading stage to show progress
+    // Step 1: Initial loading state
+    setTimeout(() => {
       setLoadingStage('elements');
       
-      // Check if elements are available
-      const hasElements = elements && elements.length > 0;
-      
-      // Calculate how much time has passed
-      const elapsedTime = Date.now() - startTime;
-      
-      if (elapsedTime >= minLoadingTime) {
-        // We've shown the loading state for at least the minimum time
+      // Step 2: Check if elements are available after a short delay
+      setTimeout(() => {
+        const hasElements = elements && elements.length > 0;
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
+        
         setLoadingStage('rendering');
         
-        // If we have elements or have already retried enough times, finish loading
-        if (hasElements || retryCount > 2) {
-          setTimeout(() => {
+        // Step 3: Transition to content view after minimum loading time
+        setTimeout(() => {
+          if (hasElements || retryCount > 2) {
             setIsLoading(false);
             // Add a small delay before showing content for smoother transition
             setTimeout(() => {
               setContentReady(true);
             }, 150);
-          }, 200);
-        } else if (retryCount <= 2) {
-          // Retry loading elements a few times before giving up
-          setRetryCount(prev => prev + 1);
-          setTimeout(checkElementsAndFinishLoading, 800);
-        }
-      } else {
-        // Need to wait longer to meet minimum loading time
-        setTimeout(
-          checkElementsAndFinishLoading, 
-          minLoadingTime - elapsedTime
-        );
-      }
-    };
+          } else if (retryCount < 2) {
+            // Retry loading if no elements yet
+            setRetryCount(prev => prev + 1);
+            initializeContent(); // Recursive call to retry
+          } else {
+            // Still no elements after retries
+            setIsLoading(false);
+            setLoadingFailed(elements.length === 0);
+            setContentReady(true); // Show content area anyway
+          }
+        }, remainingTime);
+      }, 400);
+    }, 200);
+  }, [elements, retryCount]);
+  
+  // Initialize content when component mounts or elements change
+  useEffect(() => {
+    initializeContent();
     
-    // Start the loading process
-    setTimeout(checkElementsAndFinishLoading, 200);
-    
-    // Clean up any pending timeouts if component unmounts
+    // Clean up any pending operations if component unmounts
     return () => {
       setIsLoading(false);
     };
-  }, [elements]);
+  }, [initializeContent]);
   
   // Always check if we're on the /site/:id route to ensure we're in full preview mode
   const isSiteRoute = window.location.pathname.includes('/site/');
@@ -106,7 +107,7 @@ const BuilderContent: React.FC<BuilderContentProps> = ({
   // Enhanced loading indicator with stages
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-slate-100 transition-opacity duration-300">
+      <div className="flex-1 flex items-center justify-center bg-slate-100 transition-opacity duration-300 animate-fade-in">
         <div className="text-center max-w-md">
           <div className="h-12 w-12 border-4 border-t-indigo-600 border-r-indigo-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-700 text-lg font-medium mb-2">
@@ -123,7 +124,7 @@ const BuilderContent: React.FC<BuilderContentProps> = ({
   }
 
   return (
-    <div className={`flex-1 flex ${contentReady ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}>
+    <div className={`flex-1 flex transition-opacity duration-300 ${contentReady ? 'opacity-100' : 'opacity-0'}`}>
       {/* Left sidebar - visible on desktop */}
       <div className="hidden md:block w-[220px] bg-white border-r border-slate-200">
         {/* This space is for the vertical sidebar managed by PageEditorSidebar */}

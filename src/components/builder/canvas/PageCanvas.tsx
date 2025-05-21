@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useBuilder } from "@/contexts/builder/useBuilder";
 import { BuilderElement } from "@/contexts/builder/types";
 import { ElementWrapper } from "../elements";
@@ -24,6 +24,7 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
   const [retryCount, setRetryCount] = useState(0);
   const [elementStates, setElementStates] = useState<Record<string, boolean>>({});
   const [allElementsReady, setAllElementsReady] = useState(false);
+  const [contentVisible, setContentVisible] = useState(false);
   
   // Enhanced debug logging to help identify plan status and element loading
   useEffect(() => {
@@ -37,39 +38,34 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
       retryCount
     });
     
-    // Use a progressive loading strategy
+    // Use a progressive loading strategy with a fallback to prevent blanking
     const renderWithRetry = () => {
-      // If we have elements, show them after a small delay
-      if (elements && elements.length > 0) {
+      if (!elements || elements.length === 0) {
+        if (retryCount < 4) {
+          // Wait longer on each retry
+          const delayTime = 500 + (retryCount * 500);
+          const timer = setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+          }, delayTime);
+          return () => clearTimeout(timer);
+        } else {
+          // Fall back to showing an empty state rather than blank screen
+          setIsRendering(false);
+          if (!elements || elements.length === 0) {
+            setLoadingFailed(true);
+          }
+        }
+      } else {
+        // We have elements, show them after a short delay to allow DOM update
         const timer = setTimeout(() => {
           setIsRendering(false);
           setLoadingFailed(false);
-        }, 800); // Longer delay for smoother transition
-        return () => clearTimeout(timer);
-      } 
-      // If we don't have elements but have tried fewer than 4 times
-      else if (retryCount < 4) {
-        // Wait longer on each retry
-        const delayTime = 500 + (retryCount * 500);
-        const timer = setTimeout(() => {
-          setRetryCount(prev => prev + 1);
-          // Keep rendering state true while retrying
-        }, delayTime);
-        return () => clearTimeout(timer);
-      } 
-      // If we've tried 4 times and still no elements
-      else {
-        const timer = setTimeout(() => {
-          setIsRendering(false);
-          // Only show loading failed if we really don't have elements after retries
-          if (!elements || elements.length === 0) {
-            setLoadingFailed(true);
-            // Only show toast if not in preview mode
-            if (!isPreviewMode && !isLiveSite) {
-              toast.error("Unable to load page elements. Try refreshing the page.");
-            }
-          }
-        }, 1000);
+          
+          // Add a slight delay before showing content for smoother transition
+          setTimeout(() => {
+            setContentVisible(true);
+          }, 100);
+        }, 300);
         return () => clearTimeout(timer);
       }
     };
@@ -91,36 +87,38 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
       // After some time, consider all elements ready even if not all reported back
       const fallbackTimer = setTimeout(() => {
         setAllElementsReady(true);
+        setContentVisible(true);
       }, 1500);
       
       return () => clearTimeout(fallbackTimer);
     } else {
+      // No elements, so we're technically "ready"
       setAllElementsReady(true);
+      setContentVisible(true);
     }
   }, [elements]);
 
-  const handleElementReady = (elementId: string) => {
-    setElementStates(prev => ({
-      ...prev,
-      [elementId]: true
-    }));
-    
-    // Check if all elements are now ready
-    const updatedStates = {
-      ...elementStates,
-      [elementId]: true
-    };
-    
-    const allReady = elements && elements.every(el => updatedStates[el.id]);
-    if (allReady) {
-      setAllElementsReady(true);
-    }
-  };
+  const handleElementReady = useCallback((elementId: string) => {
+    setElementStates(prev => {
+      const updated = {
+        ...prev,
+        [elementId]: true
+      };
+      
+      // Check if all elements are now ready
+      const allReady = elements && elements.every(el => updated[el.id]);
+      if (allReady) {
+        setAllElementsReady(true);
+      }
+      
+      return updated;
+    });
+  }, [elements]);
 
   // Show loading state while elements are being prepared
   if (isRendering) {
     return (
-      <div className="builder-canvas">
+      <div className="builder-canvas animate-fade-in">
         <div className="page-content">
           <div className="flex items-center justify-center min-h-[300px] p-4">
             <div className="text-center">
@@ -138,7 +136,7 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
   // Show error state if loading failed
   if (loadingFailed) {
     return (
-      <div className="builder-canvas">
+      <div className="builder-canvas animate-fade-in">
         <div className="page-content">
           <div className="flex items-center justify-center min-h-[300px] p-4">
             <div className="text-center max-w-md">
@@ -152,7 +150,11 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
                   onClick={() => {
                     setIsRendering(true);
                     setRetryCount(0);
-                    window.location.reload();
+                    setContentVisible(false);
+                    // Delay reload slightly to show loading state
+                    setTimeout(() => {
+                      window.location.reload();
+                    }, 100);
                   }}
                   className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
                 >
@@ -168,7 +170,7 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
 
   return (
     <div 
-      className={`builder-canvas ${isPreviewMode ? 'preview-mode' : ''} transition-opacity duration-500 ${allElementsReady ? 'opacity-100' : 'opacity-90'}`}
+      className={`builder-canvas ${isPreviewMode ? 'preview-mode' : ''} transition-opacity duration-500 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}
       style={{ minHeight: '50vh' }}
     >
       <div className="page-content">
@@ -187,7 +189,7 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
             />
           ))
         ) : (
-          <div className="flex items-center justify-center min-h-[300px] text-gray-400 p-4">
+          <div className="flex items-center justify-center min-h-[300px] text-gray-400 p-4 animate-fade-in">
             <div className="text-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
