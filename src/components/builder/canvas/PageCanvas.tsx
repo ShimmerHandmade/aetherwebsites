@@ -4,21 +4,22 @@ import { useBuilder } from "@/contexts/builder/useBuilder";
 import { BuilderElement } from "@/contexts/builder/types";
 import { ElementWrapper } from "../elements";
 import { usePlan } from "@/contexts/PlanContext";
-import { toast } from "sonner";
 
 interface PageCanvasProps {
   elements: BuilderElement[];
   isPreviewMode?: boolean;
   isLiveSite?: boolean;
+  onError?: () => void;
 }
 
 const PageCanvas: React.FC<PageCanvasProps> = ({ 
   elements, 
   isPreviewMode = false,
-  isLiveSite = false
+  isLiveSite = false,
+  onError
 }) => {
   const { selectedElementId } = useBuilder();
-  const { isPremium, isEnterprise, loading: planLoading } = usePlan();
+  const { isPremium, isEnterprise, loading: planLoading, error: planError } = usePlan();
   const [isRendering, setIsRendering] = useState(true);
   const [loadingFailed, setLoadingFailed] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
@@ -26,12 +27,21 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
   const [allElementsReady, setAllElementsReady] = useState(false);
   const [contentVisible, setContentVisible] = useState(false);
   
+  // Report errors up to parent component
+  useEffect(() => {
+    if (planError && onError) {
+      console.error("Plan error detected in PageCanvas:", planError);
+      onError();
+    }
+  }, [planError, onError]);
+
   // Enhanced debug logging to help identify plan status and element loading
   useEffect(() => {
     console.log("PageCanvas rendering with plan status:", { 
       isPremium, 
       isEnterprise,
       planLoading,
+      planError: planError ? 'Error present' : 'No error',
       elementsCount: elements?.length || 0,
       isPreviewMode,
       isLiveSite,
@@ -53,6 +63,7 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
           setIsRendering(false);
           if (!elements || elements.length === 0) {
             setLoadingFailed(true);
+            if (onError) onError();
           }
         }
       } else {
@@ -64,14 +75,14 @@ const PageCanvas: React.FC<PageCanvasProps> = ({
           // Add a slight delay before showing content for smoother transition
           setTimeout(() => {
             setContentVisible(true);
-          }, 100);
+          }, 150);
         }, 300);
         return () => clearTimeout(timer);
       }
     };
 
     return renderWithRetry();
-  }, [isPremium, isEnterprise, planLoading, elements, isPreviewMode, isLiveSite, retryCount]);
+  }, [isPremium, isEnterprise, planLoading, elements, isPreviewMode, isLiveSite, retryCount, onError, planError]);
 
   // Track when all elements are loaded
   useEffect(() => {

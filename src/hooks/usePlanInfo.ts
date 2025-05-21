@@ -28,14 +28,18 @@ export const usePlanInfo = () => {
   
   const isMounted = useRef(true);
   const initialLoadComplete = useRef(false);
+  const loadAttempts = useRef(0);
 
   // Single useEffect to handle data loading
   useEffect(() => {
     const loadPlanInfo = async () => {
-      // Prevent reloading after initial load
-      if (initialLoadComplete.current) return;
+      // Prevent reloading after 3 attempts
+      if (initialLoadComplete.current || loadAttempts.current >= 3) return;
       
       try {
+        loadAttempts.current += 1;
+        console.log(`Loading plan info, attempt ${loadAttempts.current}`);
+        
         // Use the simplified plan info function which avoids the database join issue
         const planData = await getUserPlanSimplified();
         
@@ -45,6 +49,12 @@ export const usePlanInfo = () => {
         if (planData && planData.isActive) {
           const isPremium = planData.planName === "Professional" || planData.planName === "Enterprise";
           const isEnterprise = planData.planName === "Enterprise";
+          
+          console.log("Plan data loaded successfully:", {
+            planName: planData.planName,
+            isPremium,
+            isEnterprise
+          });
           
           if (isMounted.current) {
             setPlanInfo({
@@ -57,6 +67,7 @@ export const usePlanInfo = () => {
             });
           }
         } else {
+          console.log("No active plan found, using default values");
           if (isMounted.current) {
             setPlanInfo({
               planName: null,
@@ -73,14 +84,23 @@ export const usePlanInfo = () => {
       } catch (error) {
         console.error("Error in usePlanInfo:", error);
         if (isMounted.current) {
+          // Even on error, we stop loading to prevent UI blocking
           setPlanInfo(prev => ({
             ...prev,
             loading: false,
             error: "Failed to load subscription information"
           }));
           
-          toast.error("Failed to load plan information. Please try again later.");
+          // Only show toast on first attempt to avoid spam
+          if (loadAttempts.current === 1) {
+            toast.error("Failed to load plan information", {
+              description: "Using default settings",
+              duration: 3000,
+            });
+          }
         }
+        
+        // Even with error, mark as completed to prevent endless retries
         initialLoadComplete.current = true;
       }
     };

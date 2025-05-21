@@ -17,27 +17,35 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
   const { elements, selectElement } = useBuilder();
   const [isLoaded, setIsLoaded] = useState(false);
   const [renderAttempt, setRenderAttempt] = useState(0);
+  const [hasError, setHasError] = useState(false);
   
   // Add stabilization effect to prevent blanking
   useEffect(() => {
     // Use a short delay to allow the DOM to settle
     const timer = setTimeout(() => {
       setIsLoaded(true);
-    }, 200);
+    }, 300);
     
     return () => clearTimeout(timer);
   }, []);
 
   // Add retry mechanism if elements are taking too long
   useEffect(() => {
-    if (elements.length === 0 && renderAttempt < 3) {
+    // Only retry if we have no elements and we're not in an error state
+    if (elements.length === 0 && renderAttempt < 3 && !hasError) {
       const retryTimer = setTimeout(() => {
+        console.log(`Builder Canvas retry attempt ${renderAttempt + 1}`);
         setRenderAttempt(prev => prev + 1);
-      }, 500 * (renderAttempt + 1)); // Increasing backoff
+      }, 800 * (renderAttempt + 1)); // Increasing backoff
       
       return () => clearTimeout(retryTimer);
     }
-  }, [elements, renderAttempt]);
+    
+    // If we have elements but had an error before, clear the error state
+    if (elements.length > 0 && hasError) {
+      setHasError(false);
+    }
+  }, [elements, renderAttempt, hasError]);
   
   const handleCanvasClick = (e: React.MouseEvent) => {
     // Only handle direct canvas clicks (not bubbled from elements)
@@ -47,8 +55,16 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
     }
   };
 
+  const handleCanvasError = () => {
+    console.log("Canvas encountered an error, setting error state");
+    setHasError(true);
+  };
+
   return (
-    <div className={`w-full min-h-screen pb-20 relative transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
+    <div 
+      className={`w-full min-h-screen pb-20 relative transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+      data-testid="builder-canvas"
+    >
       {!isPreviewMode && (
         <CanvasDragDropHandler 
           isPreviewMode={isPreviewMode}
@@ -64,6 +80,7 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
               isPreviewMode={isPreviewMode} 
               isLiveSite={isLiveSite}
               key={`page-canvas-${renderAttempt}`} // Force re-render on retry
+              onError={handleCanvasError}
             />
           )}
         </CanvasDragDropHandler>
@@ -79,6 +96,7 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
             isPreviewMode={isPreviewMode} 
             isLiveSite={isLiveSite}
             key={`preview-canvas-${renderAttempt}`} // Force re-render on retry
+            onError={handleCanvasError}
           />
         )
       )}
