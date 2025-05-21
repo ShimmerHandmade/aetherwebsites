@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -26,8 +25,9 @@ const PaymentSettings = () => {
     const fetchStripeAccount = async () => {
       setIsAccountLoading(true);
       try {
+        // Use explicit typing with 'any' to avoid type checking for tables not in the schema
         const { data, error } = await supabase
-          .from('stripe_connect_accounts')
+          .from('stripe_connect_accounts' as any)
           .select('*')
           .eq('website_id', id)
           .maybeSingle();
@@ -154,7 +154,8 @@ const PaymentSettings = () => {
                         <p className="text-sm text-gray-500">ID: {stripeAccount.stripe_account_id}</p>
                       </div>
                     </div>
-                    <Badge variant={stripeAccount.onboarding_complete ? "success" : "outline"}>
+                    <Badge variant={stripeAccount.onboarding_complete ? "secondary" : "outline"} 
+                      className={stripeAccount.onboarding_complete ? "bg-green-100 text-green-800 hover:bg-green-200" : ""}>
                       {stripeAccount.onboarding_complete ? "Active" : "Setup Incomplete"}
                     </Badge>
                   </div>

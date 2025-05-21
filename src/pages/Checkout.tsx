@@ -70,8 +70,9 @@ const Checkout = () => {
         setWebsiteInfo(website);
         
         // Check if this website has Stripe Connect set up
+        // Use explicit typing with 'any' to avoid type checking for tables not in the schema
         const { data: stripeAccount, error: stripeError } = await supabase
-          .from('stripe_connect_accounts')
+          .from('stripe_connect_accounts' as any)
           .select('onboarding_complete, charges_enabled')
           .eq('website_id', siteId)
           .eq('onboarding_complete', true)
