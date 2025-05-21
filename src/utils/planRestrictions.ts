@@ -159,10 +159,8 @@ export async function checkProductLimit(currentCount: number): Promise<boolean> 
   const belowLimit = currentCount < restrictions.maxProducts;
   
   if (!belowLimit) {
-    toast({
-      title: "Plan Limit Reached",
-      description: `You've reached your plan's limit of ${restrictions.maxProducts} products. Upgrade your plan to add more products.`,
-      duration: 5000,
+    toast.error("Plan Limit Reached", {
+      description: `You've reached your plan's limit of ${restrictions.maxProducts} products. Upgrade your plan to add more products.`
     });
   }
   
@@ -175,10 +173,8 @@ export async function checkWebsiteLimit(currentCount: number): Promise<boolean> 
   const belowLimit = currentCount < restrictions.maxWebsites;
   
   if (!belowLimit) {
-    toast({
-      title: "Website Limit Reached",
-      description: `You've reached your plan's limit of ${restrictions.maxWebsites} websites. Upgrade your plan to add more websites.`,
-      duration: 5000,
+    toast.error("Website Limit Reached", {
+      description: `You've reached your plan's limit of ${restrictions.maxWebsites} websites. Upgrade your plan to add more websites.`
     });
   }
   
