@@ -245,35 +245,35 @@ const BuilderNavbar = ({
           <TabsList className="bg-transparent h-10 p-0 border-b border-transparent gap-4">
             <TabsTrigger 
               value="edit" 
-              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
+              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
             >
               <PanelsTopLeft className="h-4 w-4 mr-2" />
               Edit
             </TabsTrigger>
             <TabsTrigger 
               value="products" 
-              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
+              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
             >
               <Package className="h-4 w-4 mr-2" />
               Products
             </TabsTrigger>
             <TabsTrigger 
               value="pages" 
-              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
+              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
             >
               <FileText className="h-4 w-4 mr-2" />
               Pages
             </TabsTrigger>
             <TabsTrigger 
               value="page-settings" 
-              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
+              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
             >
               <Settings className="h-4 w-4 mr-2" />
               Page Settings
             </TabsTrigger>
             <TabsTrigger 
               value="settings" 
-              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
+              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
             >
               <Settings className="h-4 w-4 mr-2" />
               Site Settings
