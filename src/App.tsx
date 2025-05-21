@@ -1,4 +1,5 @@
 
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import Index from "@/pages/Index";
@@ -9,6 +10,7 @@ import BuilderProducts from "@/pages/builder/Products";
 import BuilderPages from "@/pages/builder/Pages";
 import BuilderPageSettings from "@/pages/builder/PageSettings";
 import BuilderSiteSettings from "@/pages/builder/SiteSettings";
+import OrderManagement from "@/pages/builder/OrderManagement";
 import WebsiteViewer from "@/pages/WebsiteViewer";
 import Cart from "@/pages/Cart";
 import ProductDetails from "@/pages/ProductDetails";
@@ -33,6 +35,7 @@ function App() {
         <Route path="/builder/:id/page-settings" element={<BuilderPageSettings />} />
         <Route path="/builder/:id/settings" element={<BuilderSiteSettings />} />
         <Route path="/builder/:id/payment-settings" element={<PaymentSettings />} />
+        <Route path="/builder/:id/orders" element={<OrderManagement />} />
         <Route path="/site/:id/*" element={<WebsiteViewer />} />
         <Route path="/view/:id/*" element={<WebsiteViewer />} />
         <Route path="/store/:id/cart" element={<Cart />} />
@@ -49,3 +52,4 @@ function App() {
 }
 
 export default App;
+

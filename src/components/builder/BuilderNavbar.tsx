@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -22,7 +21,8 @@ import {
   Save,
   ArrowLeft,
   Home,
-  ExternalLink
+  ExternalLink,
+  ShoppingBag
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -77,6 +77,7 @@ const BuilderNavbar = ({
   const getActiveTabFromRoute = () => {
     const path = location.pathname;
     if (path.includes('/products')) return "products";
+    if (path.includes('/orders')) return "orders";
     if (path.includes('/pages')) return "pages";
     if (path.includes('/page-settings')) return "page-settings";
     if (path.includes('/settings')) return "settings";
@@ -103,6 +104,9 @@ const BuilderNavbar = ({
         break;
       case "products":
         navigate(`/builder/${websiteId}/products`);
+        break;
+      case "orders":
+        navigate(`/builder/${websiteId}/orders`);
         break;
       case "pages":
         navigate(`/builder/${websiteId}/pages`);
@@ -274,6 +278,13 @@ const BuilderNavbar = ({
               Products
             </TabsTrigger>
             <TabsTrigger 
+              value="orders" 
+              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
+            >
+              <ShoppingBag className="h-4 w-4 mr-2" />
+              Orders
+            </TabsTrigger>
+            <TabsTrigger 
               value="pages" 
               className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
             >
@@ -302,4 +313,3 @@ const BuilderNavbar = ({
 };
 
 export default BuilderNavbar;
-
