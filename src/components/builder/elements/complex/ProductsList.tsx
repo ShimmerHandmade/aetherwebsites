@@ -39,8 +39,8 @@ const ProductsList: React.FC<ProductsListProps> = ({
   const navigate = useNavigate();
   const { id: routeWebsiteId } = useParams<{ id: string }>();
   
-  // Handle potential cart context errors safely
-  let cartFunctions = { addToCart: () => {} };
+  // Handle potential cart context errors safely with proper typing
+  let cartFunctions = { addToCart: (product: Product) => {} };
   try {
     cartFunctions = useCart();
   } catch (err) {
