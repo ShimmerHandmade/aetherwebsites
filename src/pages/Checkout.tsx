@@ -58,7 +58,7 @@ const Checkout = () => {
         // Get website information
         const { data: website, error: websiteError } = await supabase
           .from('websites')
-          .select('id, name')
+          .select('id, name, settings')
           .eq('id', siteId)
           .single();
         
@@ -86,8 +86,11 @@ const Checkout = () => {
         
         // If a valid Stripe Connect account exists, enable Stripe payment option
         if (stripeAccount) {
+          console.log("Stripe Connect account is active, enabling online payments");
           setHasStripeEnabled(true);
           setPaymentMethod('stripe'); // Default to Stripe if available
+        } else {
+          console.log("No active Stripe Connect account found, using COD only");
         }
       } catch (error) {
         console.error("Error fetching website info:", error);
@@ -174,6 +177,8 @@ const Checkout = () => {
         return;
       }
 
+      console.log("Processing order for website:", websiteId, "with payment method:", paymentMethod);
+
       // Create the order request
       const orderData = {
         items,
@@ -200,6 +205,8 @@ const Checkout = () => {
         
         // If this is a Stripe payment, redirect to the Stripe checkout
         if (paymentMethod === 'stripe' && data.checkout_url) {
+          console.log("Redirecting to Stripe checkout:", data.checkout_url);
+          
           // Open Stripe checkout in a new tab
           window.open(data.checkout_url, '_blank');
           
@@ -214,6 +221,7 @@ const Checkout = () => {
           });
         } else {
           // For COD, just go to order confirmation
+          console.log("Cash on delivery order placed successfully");
           navigate('/order-confirmation', { 
             state: { 
               orderId: data.order.id,
@@ -227,7 +235,7 @@ const Checkout = () => {
       } else {
         throw new Error(data?.error || 'Failed to create order');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating order:', error);
       toast.error('Failed to place order: ' + error.message);
     } finally {

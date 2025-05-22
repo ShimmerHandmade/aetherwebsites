@@ -1,86 +1,41 @@
-import React, { useState, useEffect } from 'react';
+
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Home, AlertCircle, CheckCircle2, DollarSign, CreditCard } from "lucide-react";
+import { ArrowLeft, Home, AlertCircle, CheckCircle2, DollarSign, CreditCard, RefreshCw, Globe } from "lucide-react";
 import { useWebsite } from "@/hooks/useWebsite";
 import { toast } from "sonner";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useStripeConnect } from "@/hooks/useStripeConnect";
 
 const PaymentSettings = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { website, isLoading } = useWebsite(id, navigate);
+  const { website, isLoading: isWebsiteLoading } = useWebsite(id, navigate);
   
-  const [stripeAccount, setStripeAccount] = useState<any>(null);
-  const [isAccountLoading, setIsAccountLoading] = useState(true);
-  const [isConnecting, setIsConnecting] = useState(false);
+  const { 
+    stripeAccount, 
+    isLoading: isStripeLoading, 
+    isConnecting,
+    isRefreshing,
+    connectStripeAccount,
+    refreshStripeAccount
+  } = useStripeConnect(id);
   
-  useEffect(() => {
-    if (!id) return;
-    
-    const fetchStripeAccount = async () => {
-      setIsAccountLoading(true);
-      try {
-        // Use explicit typing with 'any' to avoid type checking for tables not in the schema
-        const { data, error } = await supabase
-          .from('stripe_connect_accounts' as any)
-          .select('*')
-          .eq('website_id', id)
-          .maybeSingle();
-        
-        if (error) {
-          console.error("Error fetching Stripe account:", error);
-          toast.error("Failed to load payment settings");
-        } else {
-          setStripeAccount(data);
-        }
-      } catch (error) {
-        console.error("Error in fetchStripeAccount:", error);
-        toast.error("An unexpected error occurred");
-      } finally {
-        setIsAccountLoading(false);
-      }
-    };
-    
-    fetchStripeAccount();
-  }, [id]);
+  const isLoading = isWebsiteLoading || isStripeLoading;
   
   const handleConnectStripe = async () => {
-    if (!id) return;
-    
-    setIsConnecting(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-connect-account', {
-        body: { websiteId: id }
-      });
-      
-      if (error) {
-        throw new Error(error.message || "Failed to create Stripe Connect account");
-      }
-      
-      if (data?.url) {
-        // Open Stripe Connect onboarding in a new tab
-        window.open(data.url, '_blank');
-        toast.success("Stripe Connect onboarding started");
-        
-        // Refresh Stripe account data after a delay
-        setTimeout(() => {
-          window.location.reload();
-        }, 3000);
-      }
-    } catch (error) {
-      console.error("Error connecting Stripe:", error);
-      toast.error(error.message || "Failed to connect with Stripe");
-    } finally {
-      setIsConnecting(false);
-    }
+    await connectStripeAccount();
   };
   
-  if (isLoading) {
+  const handleRefreshStatus = async () => {
+    await refreshStripeAccount();
+  };
+  
+  if (isLoading && !isRefreshing) {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
@@ -114,21 +69,46 @@ const PaymentSettings = () => {
             Back to Builder
           </Button>
           
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => navigate(`/builder/${id}/site-settings`)}
+              className="flex items-center gap-1"
+            >
+              <Globe className="h-4 w-4 mr-1" />
+              Site Settings
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center gap-1"
+            >
+              <Home className="h-4 w-4 mr-1" />
+              Return to Dashboard
+            </Button>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold flex items-center">
+            <DollarSign className="mr-2 h-6 w-6" />
+            Payment Settings
+          </h1>
+          
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => navigate('/dashboard')}
+            onClick={handleRefreshStatus}
+            disabled={isRefreshing}
             className="flex items-center gap-1"
           >
-            <Home className="h-4 w-4 mr-1" />
-            Return to Dashboard
+            <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? "Refreshing..." : "Refresh Status"}
           </Button>
         </div>
-        
-        <h1 className="text-2xl font-bold mb-6 flex items-center">
-          <DollarSign className="mr-2 h-6 w-6" />
-          Payment Settings
-        </h1>
         
         <div className="space-y-8">
           <Card>
@@ -140,7 +120,7 @@ const PaymentSettings = () => {
             </CardHeader>
             
             <CardContent>
-              {isAccountLoading ? (
+              {isRefreshing ? (
                 <div className="flex justify-center items-center h-24">
                   <div className="h-8 w-8 border-4 border-t-blue-600 border-r-blue-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin"></div>
                 </div>
@@ -200,11 +180,19 @@ const PaymentSettings = () => {
                     </div>
                   </div>
                   
-                  {!stripeAccount.onboarding_complete && (
-                    <Alert className="bg-amber-50 border-amber-200">
+                  {stripeAccount.onboarding_complete ? (
+                    <Alert variant="default" className="bg-green-50 border-green-200">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <AlertTitle className="text-green-700">Stripe account ready</AlertTitle>
+                      <AlertDescription className="text-green-600">
+                        Your Stripe Connect account is fully set up and ready to process payments. Any purchases made on your site will be processed through your Stripe account.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <Alert variant="default" className="bg-amber-50 border-amber-200">
                       <AlertCircle className="h-4 w-4 text-amber-500" />
-                      <AlertTitle>Stripe setup incomplete</AlertTitle>
-                      <AlertDescription>
+                      <AlertTitle className="text-amber-700">Stripe setup incomplete</AlertTitle>
+                      <AlertDescription className="text-amber-600">
                         Your Stripe Connect account setup is not yet complete. Please complete the onboarding process to start accepting payments.
                       </AlertDescription>
                     </Alert>
@@ -304,6 +292,43 @@ const PaymentSettings = () => {
                     )}
                   </div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Checkout Configuration</CardTitle>
+              <CardDescription>
+                Configure your checkout process and payment options
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent>
+              <div className="space-y-4">
+                <Alert variant="default" className="bg-blue-50 border-blue-200">
+                  <AlertCircle className="h-4 w-4 text-blue-500" />
+                  <AlertTitle className="text-blue-700">Automatic checkout process</AlertTitle>
+                  <AlertDescription className="text-blue-600">
+                    Your website is configured to automatically use the appropriate payment options. When Stripe payments are available, customers will see online payment options at checkout.
+                  </AlertDescription>
+                </Alert>
+                
+                {stripeAccount?.onboarding_complete && (
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium mb-2">Test Your Checkout</h4>
+                    <p className="text-sm text-gray-600 mb-4">
+                      You can preview your checkout experience by viewing your site and adding products to cart.
+                    </p>
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(`/view/${id}`, '_blank')}
+                    >
+                      Preview Website
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

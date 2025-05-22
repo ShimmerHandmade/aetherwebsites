@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Upload, Home, Globe, Check, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -119,15 +120,27 @@ const BuilderSiteSettings = () => {
             Back to Builder
           </Button>
           
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleReturnToDashboard}
-            className="flex items-center gap-1"
-          >
-            <Home className="h-4 w-4 mr-1" />
-            Return to Dashboard
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => navigate(`/builder/${id}/payment-settings`)}
+              className="flex items-center gap-1"
+            >
+              <Check className="h-4 w-4 mr-1" />
+              Payment Settings
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleReturnToDashboard}
+              className="flex items-center gap-1"
+            >
+              <Home className="h-4 w-4 mr-1" />
+              Return to Dashboard
+            </Button>
+          </div>
         </div>
         
         <Tabs defaultValue="general" className="space-y-6">
@@ -208,10 +221,10 @@ const BuilderSiteSettings = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {!canUseCustomDomain && (
-                  <Alert className="mb-4">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Premium Feature</AlertTitle>
-                    <AlertDescription>
+                  <Alert variant="default" className="mb-4 bg-amber-50 border-amber-200">
+                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                    <AlertTitle className="text-amber-700">Premium Feature</AlertTitle>
+                    <AlertDescription className="text-amber-600">
                       Custom domains are only available with Professional or Enterprise plans. 
                       Please upgrade your plan to use this feature.
                     </AlertDescription>
@@ -279,7 +292,9 @@ const BuilderSiteSettings = () => {
                           Your website is currently available at:
                         </p>
                         <p className="text-sm font-mono mt-1">
-                          https://site-{id}.lovable.app
+                          <a href={`https://site-${id}.lovable.app`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                            https://site-{id}.lovable.app
+                          </a>
                         </p>
                       </div>
                     </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import BuilderCanvas from "@/components/builder/canvas";
 import PageEditorSidebar from "./PageEditorSidebar";
@@ -9,8 +8,22 @@ import { Edit } from "lucide-react";
 import { useBuilder } from "@/contexts/builder/useBuilder";
 
 // Extend the interface to include isLiveSite
-interface BuilderContentProps extends PreviewModeProps {
+interface BuilderContentProps {
+  isPreviewMode?: boolean;
   isLiveSite?: boolean;
+}
+
+const detectCustomDomain = () => {
+  const hostname = window.location.hostname;
+  return hostname !== 'localhost' && 
+         !hostname.includes('127.0.0.1') && 
+         !hostname.includes('lovable.app') && 
+         !hostname.includes('localhost');
+};
+
+// Set a global flag for use in other components
+if (typeof window !== 'undefined') {
+  window.__IS_CUSTOM_DOMAIN = detectCustomDomain();
 }
 
 const BuilderContent: React.FC<BuilderContentProps> = ({ 

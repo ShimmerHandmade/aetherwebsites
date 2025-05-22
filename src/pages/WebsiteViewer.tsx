@@ -29,10 +29,18 @@ const WebsiteViewer = () => {
   // Determine if this is a live site view
   const isViewRoute = location.pathname.startsWith(`/view/${id}`);
   const isSiteRoute = location.pathname.startsWith(`/site/${id}`);
-  const isLiveSite = isSiteRoute || isViewRoute;
+  // Also detect custom domain by checking window location
+  const isCustomDomain = window.location.hostname !== 'localhost' && 
+                         !window.location.hostname.includes('lovable.app');
+  const isLiveSite = isSiteRoute || isViewRoute || isCustomDomain;
 
   // Get the current path to determine which page to show
-  const currentPath = location.pathname.replace(`/site/${id}`, '').replace(`/view/${id}`, '') || '/';
+  let currentPath = location.pathname.replace(`/site/${id}`, '').replace(`/view/${id}`, '') || '/';
+  
+  // If we're on a custom domain, the path is just the pathname
+  if (isCustomDomain) {
+    currentPath = location.pathname || '/';
+  }
   
   // Check if we're on a special page
   const isCartPage = currentPath === '/cart';
@@ -48,10 +56,12 @@ const WebsiteViewer = () => {
     isLiveSite,
     isViewRoute,
     isSiteRoute,
+    isCustomDomain,
     isCartPage,
     isCheckoutPage,
     isProductPage,
-    productId
+    productId,
+    hostname: window.location.hostname
   });
 
   // Set current page based on the URL path

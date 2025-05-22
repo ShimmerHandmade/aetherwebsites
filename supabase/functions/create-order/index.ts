@@ -51,7 +51,10 @@ serve(async (req) => {
   }
   
   try {
+    console.log("create-order function started");
     const { items, websiteId, customerInfo, shippingAddress, billingAddress, paymentMethod, notes } = await req.json() as OrderRequest;
+    
+    console.log("Order request:", { websiteId, paymentMethod, itemsCount: items.length });
     
     if (!items || !items.length || !websiteId) {
       return new Response(
@@ -68,6 +71,8 @@ serve(async (req) => {
       return sum + (item.product.price * item.quantity);
     }, 0);
     
+    console.log("Order total calculated:", totalAmount);
+    
     // Create Supabase client
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -83,12 +88,14 @@ serve(async (req) => {
       const token = authHeader.replace('Bearer ', '');
       const { data: { user } } = await supabaseAdmin.auth.getUser(token);
       userId = user?.id;
+      console.log("Authenticated user:", userId);
     }
     
     // Check if this website has a Stripe Connect account for online payments
     let stripeConnectAccountId = null;
     
     if (paymentMethod === "stripe") {
+      console.log("Checking for Stripe Connect account...");
       const { data: connectAccount, error: connectError } = await supabaseAdmin
         .from('stripe_connect_accounts')
         .select('stripe_account_id, onboarding_complete, charges_enabled')
@@ -140,12 +147,16 @@ serve(async (req) => {
       );
     }
     
+    console.log("Order created with ID:", order.id);
+    
     // Create order items
     const orderItems = items.map(item => ({
       order_id: order.id,
       product_id: item.product.id,
       quantity: item.quantity,
-      price_at_purchase: item.product.price
+      price_at_purchase: item.product.price,
+      product_name: item.product.name,
+      product_image_url: item.product.image_url || null
     }));
     
     const { error: itemsError } = await supabaseAdmin
@@ -166,82 +177,108 @@ serve(async (req) => {
       );
     }
     
-    // If using Stripe payment, create a checkout session
+    console.log("Order items created successfully");
+    
+    // If using Stripe, create a checkout session
     if (paymentMethod === "stripe" && stripeConnectAccountId) {
-      // Initialize Stripe
-      const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
-        apiVersion: "2023-10-16",
-      });
-      
-      const origin = req.headers.get('origin') || 'http://localhost:3000';
-      
-      // Format line items for Stripe
-      const lineItems = items.map(item => ({
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: item.product.name,
-            images: item.product.image_url ? [item.product.image_url] : undefined,
+      try {
+        console.log("Creating Stripe checkout session for Connect account:", stripeConnectAccountId);
+        
+        const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
+          apiVersion: "2023-10-16",
+        });
+        
+        const lineItems = items.map(item => ({
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: item.product.name,
+              images: item.product.image_url ? [item.product.image_url] : []
+            },
+            unit_amount: Math.round(item.product.price * 100) // Convert to cents
           },
-          unit_amount: Math.round(item.product.price * 100), // Convert to cents
-        },
-        quantity: item.quantity,
-      }));
-      
-      // Create Stripe checkout session
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: lineItems,
-        mode: 'payment',
-        success_url: `${origin}/order-confirmation?order_id=${order.id}`,
-        cancel_url: `${origin}/checkout?canceled=true`,
-        customer_email: customerInfo?.email,
-        metadata: {
-          order_id: order.id,
-          website_id: websiteId,
-        },
-        shipping_address_collection: {
-          allowed_countries: ['US', 'CA', 'GB', 'AU'],
-        },
-        stripe_account: stripeConnectAccountId,
-      });
-      
-      // Update order with Stripe session information
-      await supabaseAdmin
-        .from("orders")
-        .update({
-          payment_info: {
-            ...order.payment_info,
-            stripe_session_id: session.id
+          quantity: item.quantity
+        }));
+        
+        // Create the origin for return URLs
+        const origin = req.headers.get("origin") || "http://localhost:3000";
+        const returnUrl = `${origin}/site/${websiteId}/order-confirmation?order_id=${order.id}`;
+        
+        // Create Stripe checkout session using the Connected Account
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          line_items: lineItems,
+          mode: "payment",
+          success_url: returnUrl + "&status=success",
+          cancel_url: returnUrl + "&status=cancelled",
+          customer_email: customerInfo?.email,
+          shipping_address_collection: {
+            allowed_countries: ["US", "CA", "GB"],
+          },
+          metadata: {
+            order_id: order.id,
+            website_id: websiteId
+          },
+          // Use the Stripe Connect account for the payment
+          stripe_account: stripeConnectAccountId,
+        });
+        
+        console.log("Stripe checkout session created:", session.id);
+        
+        // Update the order with the Stripe session ID
+        await supabaseAdmin
+          .from("orders")
+          .update({ 
+            payment_info: { 
+              ...order.payment_info,
+              stripe_session_id: session.id
+            } 
+          })
+          .eq("id", order.id);
+        
+        return new Response(
+          JSON.stringify({
+            success: true,
+            order: {
+              id: order.id,
+              total: totalAmount,
+              status: order.status
+            },
+            checkout_url: session.url
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
           }
-        })
-        .eq("id", order.id);
-      
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: "Order created successfully",
-          order: { 
-            id: order.id, 
-            total: totalAmount,
-            status: order.status
-          },
-          checkout_url: session.url
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+        );
+      } catch (stripeError) {
+        console.error("Stripe error:", stripeError);
+        
+        // Update the order to show the payment failed
+        await supabaseAdmin
+          .from("orders")
+          .update({ status: "payment_failed" })
+          .eq("id", order.id);
+        
+        return new Response(
+          JSON.stringify({ 
+            error: "Failed to create Stripe checkout session",
+            details: stripeError.message
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
     }
     
-    // For COD or if no Stripe account is available
+    // For cash on delivery orders, just return success
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Order created successfully",
-        order: { 
-          id: order.id, 
+        order: {
+          id: order.id,
           total: totalAmount,
           status: order.status
         }
@@ -252,9 +289,9 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("Error processing order:", error);
+    console.error("Unexpected error in create-order:", error);
     return new Response(
-      JSON.stringify({ error: "Failed to process order", details: error.message }),
+      JSON.stringify({ error: "An unexpected error occurred", details: error.message }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
