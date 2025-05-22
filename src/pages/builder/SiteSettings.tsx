@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -209,7 +208,7 @@ const BuilderSiteSettings = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {!canUseCustomDomain && (
-                  <Alert variant="warning" className="mb-4">
+                  <Alert className="mb-4">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Premium Feature</AlertTitle>
                     <AlertDescription>
