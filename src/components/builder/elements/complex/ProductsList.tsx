@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Store, Package, Loader2, AlertCircle, Tag, Truck } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -163,8 +164,11 @@ const ProductsList: React.FC<ProductsListProps> = ({
     }
   };
   
-  const handleProductClick = (product: Product) => {
+  const handleProductClick = (e: React.MouseEvent, product: Product) => {
+    e.preventDefault(); // Prevent default behavior
+    
     if (!isLiveSite) return; // Only navigate in live site mode
+    if (!websiteId) return; // Need website ID to navigate
     
     console.log("Navigating to product:", product.id, "Site ID:", websiteId);
     // Make sure to use the correct URL format for product details
@@ -242,7 +246,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
           <Card 
             key={product.id} 
             className={`${getCardClass()} transition-all overflow-hidden flex flex-col h-full ${isLiveSite ? 'cursor-pointer hover:brightness-95' : ''}`}
-            onClick={isLiveSite ? () => handleProductClick(product) : undefined}
+            onClick={(e) => isLiveSite ? handleProductClick(e, product) : undefined}
             role={isLiveSite ? "link" : undefined}
             aria-label={isLiveSite ? `View details for ${product.name}` : undefined}
           >
@@ -302,7 +306,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
               <Button 
                 onClick={(e) => handleAddToCart(e, product)} 
                 disabled={product.stock === 0 || !isLiveSite}
-                className={`w-full ${isLiveSite ? 'pointer-events-auto' : ''}`}
+                className={`w-full ${isLiveSite ? 'pointer-events-auto z-10' : ''}`}
                 size="sm"
                 data-testid="add-to-cart-button"
               >

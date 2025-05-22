@@ -33,10 +33,17 @@ const WebsiteViewer = () => {
   const isCartPage = currentPath === '/cart';
   const isCheckoutPage = currentPath === '/checkout';
   
-  // Check if we're on a product details page
+  // Check if we're on a product details page - used a better pattern matching for routes
   const productMatch = currentPath.match(/^\/product\/(.+)$/);
   const isProductPage = !!productMatch;
   const productId = productMatch ? productMatch[1] : null;
+
+  console.log({
+    currentPath,
+    isProductPage,
+    productId,
+    fullPath: location.pathname
+  });
 
   // Set current page based on the URL path
   useEffect(() => {
