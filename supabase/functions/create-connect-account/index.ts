@@ -27,6 +27,8 @@ serve(async (req) => {
       );
     }
     
+    console.log("Creating Stripe Connect account for website:", websiteId);
+    
     // Create Supabase client
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -59,6 +61,8 @@ serve(async (req) => {
       );
     }
     
+    console.log("Authenticated user:", user.id);
+    
     // Verify that the user owns the website
     const { data: website, error: websiteError } = await supabaseAdmin
       .from('websites')
@@ -68,6 +72,7 @@ serve(async (req) => {
       .single();
     
     if (websiteError || !website) {
+      console.error("Website verification error:", websiteError);
       return new Response(
         JSON.stringify({ error: "Website not found or you don't have permission" }),
         {
@@ -81,6 +86,8 @@ serve(async (req) => {
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
       apiVersion: "2023-10-16",
     });
+    
+    console.log("Checking for existing Stripe Connect account");
     
     // Check if website already has a Stripe account
     const { data: existingConnect, error: connectError } = await supabaseAdmin
@@ -110,35 +117,47 @@ serve(async (req) => {
       accountId = existingConnect.stripe_account_id;
       console.log(`Using existing Stripe account: ${accountId}`);
     } else {
-      // Create a new Connect account
-      console.log("Creating new Stripe Connect account");
-      const account = await stripe.accounts.create({
-        type: 'standard',
-        email: user.email,
-        metadata: {
-          websiteId,
-          userId: user.id
-        }
-      });
-      
-      accountId = account.id;
-      
-      // Store the Connect account in our database
-      const { error: insertError } = await supabaseAdmin
-        .from('stripe_connect_accounts')
-        .insert({
-          website_id: websiteId,
-          user_id: user.id,
-          stripe_account_id: accountId,
-          account_type: 'standard',
-          onboarding_complete: false,
-          account_details: account
+      try {
+        // Create a new Connect account
+        console.log("Creating new Stripe Connect account");
+        const account = await stripe.accounts.create({
+          type: 'standard',
+          email: user.email,
+          metadata: {
+            websiteId,
+            userId: user.id
+          }
         });
-      
-      if (insertError) {
-        console.error("Error storing Connect account:", insertError);
+        
+        accountId = account.id;
+        console.log("Stripe account created:", accountId);
+        
+        // Store the Connect account in our database
+        const { error: insertError } = await supabaseAdmin
+          .from('stripe_connect_accounts')
+          .insert({
+            website_id: websiteId,
+            user_id: user.id,
+            stripe_account_id: accountId,
+            account_type: 'standard',
+            onboarding_complete: false,
+            account_details: account
+          });
+        
+        if (insertError) {
+          console.error("Error storing Connect account:", insertError);
+          return new Response(
+            JSON.stringify({ error: "Failed to store Connect account information" }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+      } catch (stripeError: any) {
+        console.error("Stripe error creating account:", stripeError);
         return new Response(
-          JSON.stringify({ error: "Failed to store Connect account information" }),
+          JSON.stringify({ error: "Failed to create Stripe account", details: stripeError.message }),
           {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -147,26 +166,39 @@ serve(async (req) => {
       }
     }
     
-    // Create an account link for onboarding
-    const accountLink = await stripe.accountLinks.create({
-      account: accountId,
-      refresh_url: finalReturnUrl,
-      return_url: finalReturnUrl,
-      type: 'account_onboarding',
-    });
-    
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        url: accountLink.url,
-        accountId
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
-  } catch (error) {
+    try {
+      // Create an account link for onboarding
+      const accountLink = await stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: finalReturnUrl,
+        return_url: finalReturnUrl,
+        type: 'account_onboarding',
+      });
+      
+      console.log("Created account link with URL:", accountLink.url);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          url: accountLink.url,
+          accountId
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    } catch (linkError: any) {
+      console.error("Error creating account link:", linkError);
+      return new Response(
+        JSON.stringify({ error: "Failed to create onboarding link", details: linkError.message }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+  } catch (error: any) {
     console.error("Error in create-connect-account:", error);
     return new Response(
       JSON.stringify({ error: error.message || "An unknown error occurred" }),

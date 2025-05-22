@@ -16,6 +16,7 @@ export type Database = {
           order_id: string
           price_at_purchase: number
           product_id: string
+          product_image_url: string | null
           quantity: number
         }
         Insert: {
@@ -24,6 +25,7 @@ export type Database = {
           order_id: string
           price_at_purchase: number
           product_id: string
+          product_image_url?: string | null
           quantity?: number
         }
         Update: {
@@ -32,6 +34,7 @@ export type Database = {
           order_id?: string
           price_at_purchase?: number
           product_id?: string
+          product_image_url?: string | null
           quantity?: number
         }
         Relationships: [
@@ -235,6 +238,51 @@ export type Database = {
           subscription_status?: string | null
           subscription_type?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      stripe_connect_accounts: {
+        Row: {
+          account_details: Json | null
+          account_type: string
+          charges_enabled: boolean | null
+          created_at: string
+          details_submitted: boolean | null
+          id: string
+          onboarding_complete: boolean | null
+          payouts_enabled: boolean | null
+          stripe_account_id: string
+          updated_at: string
+          user_id: string
+          website_id: string
+        }
+        Insert: {
+          account_details?: Json | null
+          account_type: string
+          charges_enabled?: boolean | null
+          created_at?: string
+          details_submitted?: boolean | null
+          id?: string
+          onboarding_complete?: boolean | null
+          payouts_enabled?: boolean | null
+          stripe_account_id: string
+          updated_at?: string
+          user_id: string
+          website_id: string
+        }
+        Update: {
+          account_details?: Json | null
+          account_type?: string
+          charges_enabled?: boolean | null
+          created_at?: string
+          details_submitted?: boolean | null
+          id?: string
+          onboarding_complete?: boolean | null
+          payouts_enabled?: boolean | null
+          stripe_account_id?: string
+          updated_at?: string
+          user_id?: string
+          website_id?: string
         }
         Relationships: []
       }
