@@ -43,6 +43,12 @@ const ProductsList: React.FC<ProductsListProps> = ({
   const globalSettings = window.__SITE_SETTINGS__;
   const isSiteLive = isLiveSite || (globalSettings && globalSettings.isLiveSite);
   
+  console.log("ProductsList - Site Live Check:", { 
+    isLiveSite, 
+    globalSettings, 
+    isSiteLive 
+  });
+  
   // Handle potential cart context errors safely with proper typing
   let cartFunctions = { addToCart: (product: Product) => {} };
   try {
@@ -155,6 +161,8 @@ const ProductsList: React.FC<ProductsListProps> = ({
     e.preventDefault();
     e.stopPropagation();
     
+    console.log("Add to cart clicked - isSiteLive:", isSiteLive);
+    
     // Only add to cart in live site mode
     if (!isSiteLive) {
       console.log("Not adding to cart - not in live site mode");
@@ -171,11 +179,19 @@ const ProductsList: React.FC<ProductsListProps> = ({
     }
   };
   
-  const handleProductClick = (product: Product) => {
+  const handleProductClick = (e: React.MouseEvent, product: Product) => {
+    // Make sure to log for debugging
+    console.log("Product clicked - isSiteLive:", isSiteLive);
+    
     if (!isSiteLive) {
       console.log("Not navigating - not in live site mode");
+      e.preventDefault();
       return; // Only navigate in live site mode
     }
+
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (!websiteId) {
       console.log("Not navigating - no website ID");
       return; // Need website ID to navigate
@@ -262,7 +278,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
           <Card 
             key={product.id} 
             className={`${getCardClass()} transition-all overflow-hidden flex flex-col h-full ${isSiteLive ? 'cursor-pointer hover:brightness-95' : ''}`}
-            onClick={() => isSiteLive ? handleProductClick(product) : undefined}
+            onClick={(e) => isSiteLive ? handleProductClick(e, product) : undefined}
             role={isSiteLive ? "link" : undefined}
             aria-label={isSiteLive ? `View details for ${product.name}` : undefined}
           >

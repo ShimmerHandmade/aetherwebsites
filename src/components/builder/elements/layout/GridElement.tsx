@@ -10,7 +10,7 @@ interface ElementProps {
 }
 
 const GridElement: React.FC<ElementProps> = ({ element }) => {
-  const { selectedElementId } = useBuilder();
+  const { selectedElementId, selectElement } = useBuilder();
   // Use the props from the element, or provide defaults
   const columns = element.props?.columns || 2;
   const gap = element.props?.gap === 'large' ? 'gap-6' : 
@@ -23,15 +23,25 @@ const GridElement: React.FC<ElementProps> = ({ element }) => {
     1: "grid-cols-1",
     2: "grid-cols-1 md:grid-cols-2",
     3: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3",
-    4: "grid-cols-1 sm:grid-cols-2 md:grid-cols-4",
+    4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
     6: "grid-cols-2 sm:grid-cols-3 md:grid-cols-6"
   };
   
   // Dynamically select class based on columns property
   const columnClass = colClasses[columns as keyof typeof colClasses] || colClasses[2];
   
+  // Handle click on the grid container
+  const handleGridClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    selectElement(element.id);
+  };
+  
   return (
-    <div className={`${padding} border border-dashed border-gray-300 hover:border-blue-300 transition-colors rounded-md relative min-h-[100px]`}>
+    <div 
+      className={`${padding} border border-dashed border-gray-300 hover:border-blue-300 transition-colors rounded-md relative min-h-[100px]`}
+      onClick={handleGridClick}
+      data-element-id={element.id}
+    >
       <CanvasDragDropHandler
         isPreviewMode={false}
         onCanvasClick={(e) => e.stopPropagation()}

@@ -2,14 +2,17 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Upload, Home } from "lucide-react";
+import { ArrowLeft, Upload, Home, Globe, Check, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useWebsite } from "@/hooks/useWebsite";
 import { toast } from "sonner";
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { usePlan } from "@/contexts/PlanContext";
+import { Switch } from "@/components/ui/switch";
 
 const BuilderSiteSettings = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,16 +28,36 @@ const BuilderSiteSettings = () => {
   const [localWebsiteName, setLocalWebsiteName] = useState(websiteName);
   const [logoUrl, setLogoUrl] = useState(website?.settings?.logoUrl || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [customDomain, setCustomDomain] = useState(website?.settings?.customDomain || '');
+  const [enableCustomDomain, setEnableCustomDomain] = useState(Boolean(website?.settings?.customDomainEnabled));
+  
+  const { planName, isPremium, isEnterprise } = usePlan();
+  const canUseCustomDomain = isPremium || isEnterprise;
   
   // Update local state when website data from hook changes
   React.useEffect(() => {
     setLocalWebsiteName(websiteName);
     setLogoUrl(website?.settings?.logoUrl || '');
-  }, [websiteName, website?.settings?.logoUrl]);
+    setCustomDomain(website?.settings?.customDomain || '');
+    setEnableCustomDomain(Boolean(website?.settings?.customDomainEnabled));
+  }, [websiteName, website?.settings]);
+
+  const validateDomain = (domain: string): boolean => {
+    // Simple domain validation regex
+    const domainRegex = /^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+    return domainRegex.test(domain);
+  };
 
   const handleSave = async () => {
     try {
       setIsSaving(true);
+      
+      // Validate the domain if custom domain is enabled
+      if (enableCustomDomain && customDomain && !validateDomain(customDomain)) {
+        toast.error("Please enter a valid domain name");
+        setIsSaving(false);
+        return;
+      }
       
       // Update the website name in the parent hook
       setWebsiteName(localWebsiteName);
@@ -44,7 +67,9 @@ const BuilderSiteSettings = () => {
         website?.content || [], 
         website?.pageSettings || {}, 
         { 
-          logoUrl: logoUrl
+          logoUrl: logoUrl,
+          customDomain: customDomain,
+          customDomainEnabled: enableCustomDomain
         }
       );
       
@@ -180,23 +205,87 @@ const BuilderSiteSettings = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Domain Settings</CardTitle>
-                <CardDescription>Configure your website's domain</CardDescription>
+                <CardDescription>Configure your website's custom domain</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="site-domain">Domain</Label>
-                  <div className="max-w-md flex items-center space-x-2">
-                    <span className="text-gray-500">https://</span>
-                    <Input 
-                      id="site-domain" 
-                      placeholder="yoursite.com" 
-                      disabled
-                      className="flex-1"
-                    />
-                    <Button variant="outline" size="sm" disabled>Configure</Button>
-                  </div>
-                  <p className="text-sm text-gray-500">Domain configuration coming soon</p>
+                {!canUseCustomDomain && (
+                  <Alert variant="warning" className="mb-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Premium Feature</AlertTitle>
+                    <AlertDescription>
+                      Custom domains are only available with Professional or Enterprise plans. 
+                      Please upgrade your plan to use this feature.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="flex items-center space-x-2 mb-4">
+                  <Switch 
+                    id="enable-custom-domain" 
+                    checked={enableCustomDomain} 
+                    onCheckedChange={setEnableCustomDomain} 
+                    disabled={!canUseCustomDomain}
+                  />
+                  <Label htmlFor="enable-custom-domain">Enable custom domain</Label>
                 </div>
+
+                {enableCustomDomain && (
+                  <div className="space-y-2">
+                    <Label htmlFor="site-domain">Custom Domain</Label>
+                    <div className="max-w-md flex items-center space-x-2">
+                      <span className="text-gray-500">https://</span>
+                      <Input 
+                        id="site-domain" 
+                        value={customDomain}
+                        onChange={(e) => setCustomDomain(e.target.value)}
+                        placeholder="yourdomain.com" 
+                        disabled={!canUseCustomDomain}
+                        className="flex-1"
+                      />
+                    </div>
+                    
+                    {canUseCustomDomain && (
+                      <div className="mt-4 space-y-2">
+                        <p className="text-sm font-medium">DNS Configuration</p>
+                        <div className="bg-gray-50 p-4 rounded-md border">
+                          <p className="text-sm mb-2">To connect your custom domain, add these DNS records:</p>
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm p-2 bg-white rounded">
+                              <span className="font-mono">CNAME</span>
+                              <span className="font-mono">@</span>
+                              <span className="font-mono text-blue-600">custom.lovable.app</span>
+                            </div>
+                            <div className="flex justify-between text-sm p-2 bg-white rounded">
+                              <span className="font-mono">CNAME</span>
+                              <span className="font-mono">www</span>
+                              <span className="font-mono text-blue-600">custom.lovable.app</span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-3">
+                            DNS changes can take up to 24-48 hours to propagate across the internet.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {!enableCustomDomain && (
+                  <div className="p-4 bg-gray-50 rounded-md">
+                    <div className="flex items-start space-x-3">
+                      <Globe className="h-5 w-5 text-gray-500 mt-0.5" />
+                      <div>
+                        <p className="font-medium">Default Domain</p>
+                        <p className="text-sm text-gray-500">
+                          Your website is currently available at:
+                        </p>
+                        <p className="text-sm font-mono mt-1">
+                          https://site-{id}.lovable.app
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

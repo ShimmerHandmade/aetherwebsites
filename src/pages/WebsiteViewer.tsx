@@ -26,7 +26,7 @@ const WebsiteViewer = () => {
   const [currentPageElements, setCurrentPageElements] = useState<BuilderElement[]>([]);
   const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
 
-  // Determine if this is a live site view or preview
+  // Determine if this is a live site view
   const isViewRoute = location.pathname.startsWith(`/view/${id}`);
   const isSiteRoute = location.pathname.startsWith(`/site/${id}`);
   const isLiveSite = isSiteRoute || isViewRoute;
@@ -42,6 +42,17 @@ const WebsiteViewer = () => {
   const productMatch = currentPath.match(/^\/product\/(.+)$/);
   const isProductPage = !!productMatch;
   const productId = productMatch ? productMatch[1] : null;
+
+  console.log("WebsiteViewer - ROUTE INFO:", { 
+    currentPath,
+    isLiveSite,
+    isViewRoute,
+    isSiteRoute,
+    isCartPage,
+    isCheckoutPage,
+    isProductPage,
+    productId
+  });
 
   // Set current page based on the URL path
   useEffect(() => {
@@ -104,11 +115,14 @@ const WebsiteViewer = () => {
   // Set global site settings for components to access
   useEffect(() => {
     if (website?.settings) {
+      console.log("Setting global site settings with isLiveSite =", isLiveSite);
       // Make site settings available globally for components
       window.__SITE_SETTINGS__ = {
         logoUrl: website.settings.logoUrl,
         siteId: id, // Add site ID to settings for cart routes
         isLiveSite: isLiveSite, // Indicate this is a live site
+        customDomain: website.settings.customDomain,
+        customDomainEnabled: website.settings.customDomainEnabled
       };
     }
   }, [website?.settings, id, isLiveSite]);
