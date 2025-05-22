@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,8 @@ import {
   ArrowLeft,
   Home,
   ExternalLink,
-  ShoppingBag
+  ShoppingBag,
+  CreditCard // Added CreditCard icon for payment settings
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -81,6 +83,7 @@ const BuilderNavbar = ({
     if (path.includes('/pages')) return "pages";
     if (path.includes('/page-settings')) return "page-settings";
     if (path.includes('/settings')) return "settings";
+    if (path.includes('/payment-settings')) return "payment-settings"; // Added for payment settings
     return "edit";
   };
   
@@ -116,6 +119,9 @@ const BuilderNavbar = ({
         break;
       case "settings":
         navigate(`/builder/${websiteId}/settings`);
+        break;
+      case "payment-settings": // Added navigation to payment settings
+        navigate(`/builder/${websiteId}/payment-settings`);
         break;
     }
   };
@@ -199,6 +205,20 @@ const BuilderNavbar = ({
               Shop
             </Button>
           )}
+          
+          {/* Payment Settings link - Added this button */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="flex items-center gap-1" 
+            onClick={() => {
+              const websiteId = window.location.pathname.split("/")[2];
+              if (websiteId) navigate(`/builder/${websiteId}/payment-settings`);
+            }}
+          >
+            <CreditCard className="h-4 w-4 mr-1" />
+            Payment Settings
+          </Button>
           
           {/* Save status indicator */}
           {saveStatus && (
@@ -304,6 +324,14 @@ const BuilderNavbar = ({
             >
               <Settings className="h-4 w-4 mr-2" />
               Site Settings
+            </TabsTrigger>
+            {/* Added Payment Settings tab */}
+            <TabsTrigger 
+              value="payment-settings" 
+              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
+            >
+              <CreditCard className="h-4 w-4 mr-2" />
+              Payment Settings
             </TabsTrigger>
           </TabsList>
         </Tabs>

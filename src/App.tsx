@@ -1,15 +1,15 @@
-
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
 import Builder from "@/pages/Builder";
-import BuilderProducts from "@/pages/builder/Products";
-import BuilderPages from "@/pages/builder/Pages";
-import BuilderPageSettings from "@/pages/builder/PageSettings";
-import BuilderSiteSettings from "@/pages/builder/SiteSettings";
+import Products from "@/pages/builder/Products";
+import Pages from "@/pages/builder/Pages";
+import PageSettings from "@/pages/builder/PageSettings";
+import SiteSettings from "@/pages/builder/SiteSettings";
 import OrderManagement from "@/pages/builder/OrderManagement";
+import Shop from "@/pages/builder/Shop";
 import WebsiteViewer from "@/pages/WebsiteViewer";
 import Cart from "@/pages/Cart";
 import ProductDetails from "@/pages/ProductDetails";
@@ -21,7 +21,7 @@ import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
 import PaymentSettings from "@/pages/builder/PaymentSettings";
 import PremiumFeatures from "@/pages/PremiumFeatures";
 
-function App() {
+export default function App() {
   return (
     <>
       <Toaster position="top-center" richColors />
@@ -30,12 +30,13 @@ function App() {
         <Route path="/auth" element={<Auth />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/builder/:id" element={<Builder />} />
-        <Route path="/builder/:id/products" element={<BuilderProducts />} />
-        <Route path="/builder/:id/pages" element={<BuilderPages />} />
-        <Route path="/builder/:id/page-settings" element={<BuilderPageSettings />} />
-        <Route path="/builder/:id/settings" element={<BuilderSiteSettings />} />
-        <Route path="/builder/:id/payment-settings" element={<PaymentSettings />} />
+        <Route path="/builder/:id/products" element={<Products />} />
         <Route path="/builder/:id/orders" element={<OrderManagement />} />
+        <Route path="/builder/:id/pages" element={<Pages />} />
+        <Route path="/builder/:id/page-settings" element={<PageSettings />} />
+        <Route path="/builder/:id/settings" element={<SiteSettings />} />
+        <Route path="/builder/:id/shop" element={<Shop />} />
+        <Route path="/builder/:id/payment-settings" element={<PaymentSettings />} />
         <Route path="/site/:id/*" element={<WebsiteViewer />} />
         <Route path="/view/:id/*" element={<WebsiteViewer />} />
         <Route path="/store/:id/cart" element={<Cart />} />
@@ -51,5 +52,3 @@ function App() {
     </>
   );
 }
-
-export default App;
