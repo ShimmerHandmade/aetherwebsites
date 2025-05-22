@@ -14,19 +14,25 @@ import PageSettings from './pages/builder/PageSettings';
 import PaymentSettings from './pages/builder/PaymentSettings';
 import ShippingSettings from './pages/builder/ShippingSettings';
 import SiteSettings from './pages/builder/SiteSettings';
+import Shop from './pages/Shop';
+import View from './pages/View';
+import PageManager from './pages/builder/PageManager';
+import ProductManager from './pages/builder/ProductManager';
 
 function App() {
   const [session, setSession] = useState(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-    })
+      setSession(session);
+    });
 
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
-  }, [])
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <BrowserRouter>
@@ -47,6 +53,10 @@ function App() {
             <Route path="/builder/:id/payment-settings" element={<PaymentSettings />} />
             <Route path="/builder/:id/shipping-settings" element={<ShippingSettings />} />
             <Route path="/builder/:id/orders" element={<OrderManagement />} />
+            <Route path="/builder/:id/shop" element={<Shop />} />
+            <Route path="/builder/:id/pages" element={<PageManager />} />
+            <Route path="/builder/:id/products" element={<ProductManager />} />
+            <Route path="/view/:id" element={<View />} />
           </>
         )}
       </Routes>
