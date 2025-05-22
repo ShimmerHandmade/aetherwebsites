@@ -62,7 +62,7 @@ const ShippingSettings = () => {
               if (typeof data.weight_based_rates === 'string') {
                 parsedWeightRates = JSON.parse(data.weight_based_rates);
               } else if (Array.isArray(data.weight_based_rates)) {
-                parsedWeightRates = data.weight_based_rates as unknown as WeightBasedRate[];
+                parsedWeightRates = data.weight_based_rates;
               }
             } catch (e) {
               console.error("Error parsing weight_based_rates:", e);
@@ -71,8 +71,12 @@ const ShippingSettings = () => {
           }
           
           setSettings({
-            ...data,
-            weight_based_rates: []
+            flat_rate_enabled: data.flat_rate_enabled,
+            flat_rate_amount: data.flat_rate_amount,
+            weight_based_enabled: data.weight_based_enabled,
+            weight_based_rates: [],
+            free_shipping_enabled: data.free_shipping_enabled,
+            free_shipping_minimum: data.free_shipping_minimum,
           });
           
           setWeightRates(parsedWeightRates);
@@ -108,13 +112,16 @@ const ShippingSettings = () => {
     try {
       setSaving(true);
       
+      // Convert weightRates to a format that can be stored in Supabase
+      const weightRatesJson = weightRates;
+      
       // Prepare the data to save
       const dataToSave = {
         website_id: id,
         flat_rate_enabled: settings.flat_rate_enabled,
         flat_rate_amount: settings.flat_rate_amount,
         weight_based_enabled: settings.weight_based_enabled,
-        weight_based_rates: weightRates,
+        weight_based_rates: weightRatesJson,
         free_shipping_enabled: settings.free_shipping_enabled,
         free_shipping_minimum: settings.free_shipping_minimum,
         updated_at: new Date().toISOString()
@@ -133,15 +140,7 @@ const ShippingSettings = () => {
         // Update existing settings
         result = await supabase
           .from('shipping_settings')
-          .update({
-            flat_rate_enabled: dataToSave.flat_rate_enabled,
-            flat_rate_amount: dataToSave.flat_rate_amount,
-            weight_based_enabled: dataToSave.weight_based_enabled,
-            weight_based_rates: dataToSave.weight_based_rates,
-            free_shipping_enabled: dataToSave.free_shipping_enabled,
-            free_shipping_minimum: dataToSave.free_shipping_minimum,
-            updated_at: dataToSave.updated_at
-          })
+          .update(dataToSave)
           .eq('id', existingSettings.id);
       } else {
         // Insert new settings

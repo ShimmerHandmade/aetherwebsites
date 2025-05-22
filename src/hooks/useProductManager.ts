@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Product, UniqueCategory } from "@/types/product";
 import { saveProduct, deleteProduct } from "@/api/products";
-import { checkProductLimit } from "@/utils/planRestrictions";
+import { getPlanLimits } from "@/utils/planRestrictions";
 import { fetchProducts } from "@/api/products";
+import { supabase } from "@/integrations/supabase/client";
 
 export function useProductManager(
   websiteId: string | undefined,
@@ -72,10 +72,30 @@ export function useProductManager(
 
   const handleAddNew = async () => {
     // Check if adding a new product would exceed the plan limit
-    const canAddProduct = await checkProductLimit(products.length);
-    
-    if (!canAddProduct) {
-      return; // Don't allow adding new product if limit is reached
+    try {
+      // Get the current user
+      const { data } = await supabase.auth.getUser();
+      
+      if (!data.user) {
+        toast.error("You must be logged in to add products");
+        return;
+      }
+      
+      // Get the profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+      
+      const limits = getPlanLimits(profile);
+      
+      if (products.length >= limits.maxProducts) {
+        toast.error(`You've reached your plan's limit of ${limits.maxProducts} products`);
+        return;
+      }
+    } catch (error) {
+      console.error("Error checking product limits:", error);
     }
     
     setEditingProduct({
@@ -154,9 +174,30 @@ export function useProductManager(
     
     // If this is a new product, check if it would exceed the plan limit
     if (isAddingNew) {
-      const canAddProduct = await checkProductLimit(products.length);
-      if (!canAddProduct) {
-        return { success: false }; // Don't allow saving if limit is reached
+      try {
+        // Get the current user
+        const { data } = await supabase.auth.getUser();
+        
+        if (!data.user) {
+          toast.error("You must be logged in to add products");
+          return { success: false };
+        }
+        
+        // Get the profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+        
+        const limits = getPlanLimits(profile);
+        
+        if (products.length >= limits.maxProducts) {
+          toast.error(`You've reached your plan's limit of ${limits.maxProducts} products`);
+          return { success: false };
+        }
+      } catch (error) {
+        console.error("Error checking product limits:", error);
       }
     }
     

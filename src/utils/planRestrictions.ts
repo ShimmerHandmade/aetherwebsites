@@ -1,6 +1,14 @@
 
 import { Profile } from '@/types/general';
 
+export interface PlanRestriction {
+  maxProducts: number;
+  maxPages: number;
+  maxWebsites: number;
+  hasAdvancedAnalytics: boolean;
+  hasCustomDomain: boolean;
+}
+
 // Helper function to check if a user has access to a feature based on their subscription
 export const hasFeatureAccess = (profile: Profile | null, featureName: string): boolean => {
   if (!profile) return false;
@@ -26,15 +34,15 @@ export const hasFeatureAccess = (profile: Profile | null, featureName: string): 
       'limited_pages',
       'single_website',
     ];
-    return basicFeatures.includes(featureName);
+    return basicPlanFeatures.includes(featureName);
   }
   
   return false;
 };
 
 // Helper to get limits based on plan
-export const getPlanLimits = (profile: Profile | null) => {
-  const defaults = {
+export const getPlanLimits = (profile: Profile | null): PlanRestriction => {
+  const defaults: PlanRestriction = {
     maxProducts: 10,
     maxPages: 5,
     maxWebsites: 1,
@@ -70,3 +78,80 @@ export const getPlanLimits = (profile: Profile | null) => {
   
   return defaults;
 };
+
+// Function to check product limits based on profile
+export const checkProductLimit = async (currentCount: number): Promise<boolean> => {
+  // Get the current user
+  const { data } = await supabase.auth.getUser();
+  
+  if (!data.user) return false;
+  
+  // Get the profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', data.user.id)
+    .single();
+  
+  if (!profile) return false;
+  
+  // Get the plan limits
+  const limits = getPlanLimits(profile);
+  
+  // Check if adding a new product would exceed the limit
+  return currentCount < limits.maxProducts;
+};
+
+// Function to check theme access based on profile
+export const checkThemeAccess = async (themeName: string): Promise<boolean> => {
+  // Get the current user
+  const { data } = await supabase.auth.getUser();
+  
+  if (!data.user) return false;
+  
+  // Get the profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', data.user.id)
+    .single();
+  
+  if (!profile) return false;
+  
+  // If not subscribed, only allow basic themes
+  if (!profile.is_subscribed) {
+    const basicThemes = ['basic', 'simple', 'minimal'];
+    return basicThemes.includes(themeName.toLowerCase());
+  }
+  
+  // All themes are accessible for subscribed users
+  return true;
+};
+
+// Function to get plan restrictions
+export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
+  // Get the current user
+  const { data } = await supabase.auth.getUser();
+  
+  if (!data.user) {
+    return {
+      maxProducts: 10,
+      maxPages: 5,
+      maxWebsites: 1,
+      hasAdvancedAnalytics: false,
+      hasCustomDomain: false,
+    };
+  }
+  
+  // Get the profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', data.user.id)
+    .single();
+  
+  return getPlanLimits(profile);
+};
+
+// Add the supabase import at the top of the file
+import { supabase } from '@/integrations/supabase/client';

@@ -19,19 +19,26 @@ const AuthCardWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) 
 const Auth = () => {
   const location = useLocation();
   const [isLogin, setIsLogin] = useState(location.pathname === '/login');
+  const [showPassword, setShowPassword] = useState(false);
 
   const toggleAuthMode = () => {
     setIsLogin(!isLogin);
+  };
+
+  const handleSuccessfulSignup = () => {
+    setIsLogin(true);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <AuthCardWrapper>
         {isLogin ? (
-          // Render login form without onToggleMode if it doesn't accept it
           <div className="p-6">
             <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
-            <LoginForm />
+            <LoginForm 
+              showPassword={showPassword}
+              setShowPassword={setShowPassword}
+            />
             <div className="mt-4 text-center">
               <p className="text-sm text-gray-600">
                 Don't have an account?{' '}
@@ -45,10 +52,13 @@ const Auth = () => {
             </div>
           </div>
         ) : (
-          // Render signup form without onToggleMode if it doesn't accept it
           <div className="p-6">
             <h1 className="text-2xl font-bold mb-6 text-center">Create Account</h1>
-            <SignupForm />
+            <SignupForm 
+              showPassword={showPassword}
+              setShowPassword={setShowPassword}
+              onSuccessfulSignup={handleSuccessfulSignup}
+            />
             <div className="mt-4 text-center">
               <p className="text-sm text-gray-600">
                 Already have an account?{' '}

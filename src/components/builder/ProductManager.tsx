@@ -9,8 +9,9 @@ import PlanLimitsInfo from "@/components/PlanLimitsInfo";
 import { toast } from "sonner";
 import { fetchProducts } from "@/api/products";
 import { Product, UniqueCategory } from "@/types/product";
-import { usePlan } from "@/contexts/PlanContext";
-import { checkProductLimit } from "@/utils/planRestrictions";
+import { usePlanInfo } from "@/hooks/usePlanInfo";
+import { getPlanLimits } from "@/utils/planRestrictions";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProductManagerProps {
   websiteId?: string;
@@ -20,7 +21,7 @@ interface ProductManagerProps {
 const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuilder }) => {
   const { id: websiteIdParam } = useParams<{ id: string }>();
   const effectiveWebsiteId = websiteId || websiteIdParam;
-  const { planName, restrictions, loading: planLoading } = usePlan();
+  const planInfo = usePlanInfo();
   
   // States for data management
   const [initialLoading, setInitialLoading] = useState(true);
@@ -35,8 +36,8 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
     websiteIdParam,
     effectiveWebsiteId,
     productsCount: rawProducts.length,
-    planName,
-    productLimit: restrictions?.maxProducts
+    planName: planInfo.planName,
+    maxProducts: planInfo.restrictions?.maxProducts
   });
   
   // Enhanced data loading function
@@ -147,13 +148,32 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
   
   const handleAddNew = async () => {
     // Check if adding a new product would exceed the plan limit
-    const canAddProduct = await checkProductLimit(products.length);
-    
-    if (!canAddProduct) {
-      toast.error(`You've reached your plan's limit of ${restrictions?.maxProducts} products.`, {
-        description: `Upgrade to ${planName === 'Basic' ? 'Professional' : 'Enterprise'} plan for more products.`
-      });
-      return;
+    try {
+      // Get the current user
+      const { data } = await supabase.auth.getUser();
+      
+      if (!data.user) {
+        toast.error("You must be logged in to add products");
+        return;
+      }
+      
+      // Get the profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+      
+      const limits = getPlanLimits(profile);
+      
+      if (products.length >= limits.maxProducts) {
+        toast.error(`You've reached your plan's limit of ${limits.maxProducts} products.`, {
+          description: `Upgrade to ${planInfo.planName === 'Basic' ? 'Professional' : 'Enterprise'} plan for more products.`
+        });
+        return;
+      }
+    } catch (error) {
+      console.error("Error checking product limits:", error);
     }
     
     // If within limits, proceed with adding new product
@@ -175,7 +195,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
   };
 
   // Determine if we should show loading state
-  const showLoading = initialLoading || isLoading || planLoading;
+  const showLoading = initialLoading || isLoading || planInfo.loading;
 
   return (
     <div className="h-full flex flex-col">
@@ -233,7 +253,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
         onNewCategoryChange={setNewCategory}
         onAddCategory={handleAddCategory}
         planInfo={{
-          maxProducts: restrictions?.maxProducts || 0,
+          maxProducts: planInfo.restrictions?.maxProducts || 0,
           currentCount: products.length
         }}
       />

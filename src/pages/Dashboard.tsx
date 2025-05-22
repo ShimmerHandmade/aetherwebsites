@@ -17,7 +17,7 @@ const Dashboard = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const navigate = useNavigate();
-  const { userPlan, isLoading: planLoading } = usePlanInfo();
+  const planInfo = usePlanInfo();
   const [showTemplateSelection, setShowTemplateSelection] = useState(false);
   
   useEffect(() => {
@@ -60,10 +60,11 @@ const Dashboard = () => {
   }, [navigate]);
 
   const handleCreateWebsite = () => {
-    const hasReachedLimit = userPlan && websites.length >= userPlan.website_limit;
+    const maxWebsites = planInfo.restrictions?.maxWebsites || 1;
+    const hasReachedLimit = websites.length >= maxWebsites;
     
     if (hasReachedLimit) {
-      toast.error(`You've reached the maximum number of websites for your plan (${userPlan.website_limit})`);
+      toast.error(`You've reached the maximum number of websites for your plan (${maxWebsites})`);
       return;
     }
     
@@ -96,7 +97,7 @@ const Dashboard = () => {
           <h1 className="text-3xl font-bold">My Websites</h1>
           <Button 
             onClick={handleCreateWebsite}
-            disabled={isCreating || planLoading}
+            disabled={isCreating || planInfo.loading}
           >
             <PlusIcon className="w-4 h-4 mr-2" />
             Create Website
@@ -129,7 +130,7 @@ const Dashboard = () => {
       
       {showTemplateSelection && (
         <TemplateSelection 
-          open={showTemplateSelection}
+          isOpen={showTemplateSelection}
           onClose={() => setShowTemplateSelection(false)}
           setWebsites={setWebsites}
         />

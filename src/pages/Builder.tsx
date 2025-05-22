@@ -14,7 +14,6 @@ const Builder = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [websiteData, setWebsiteData] = useState<any>(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [showElementPalette, setShowElementPalette] = useState(true);
 
   useEffect(() => {
     if (!id) return;
@@ -58,10 +57,6 @@ const Builder = () => {
     toast.success('Website published');
   };
   
-  const toggleElementPalette = () => {
-    setShowElementPalette(!showElementPalette);
-  };
-  
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -79,8 +74,6 @@ const Builder = () => {
           onSave={handleSave}
           onPublish={handlePublish}
           isPreviewMode={isPreviewMode}
-          showElementPalette={showElementPalette}
-          toggleElementPalette={toggleElementPalette}
         />
         <BuilderContent />
       </BuilderLayout>
