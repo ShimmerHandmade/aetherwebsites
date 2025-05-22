@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
@@ -26,7 +27,7 @@ const WebsiteViewer = () => {
   const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
 
   // Get the current path to determine which page to show
-  const currentPath = location.pathname.replace(`/site/${id}`, '') || '/';
+  const currentPath = location.pathname.replace(`/site/${id}`, '').replace(`/view/${id}`, '') || '/';
   
   // Check if we're on a special page
   const isCartPage = currentPath === '/cart';

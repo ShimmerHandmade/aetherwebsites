@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Store, Package, Loader2, AlertCircle, Tag, Truck } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -167,8 +166,9 @@ const ProductsList: React.FC<ProductsListProps> = ({
   const handleProductClick = (product: Product) => {
     if (!isLiveSite) return; // Only navigate in live site mode
     
-    console.log("Navigating to product:", product.id);
-    navigate(`/store/${websiteId}/product/${product.id}`);
+    console.log("Navigating to product:", product.id, "Site ID:", websiteId);
+    // Make sure to use the correct URL format for product details
+    navigate(`/site/${websiteId}/product/${product.id}`);
   };
 
   // Calculate pagination
