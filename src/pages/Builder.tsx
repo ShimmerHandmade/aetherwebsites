@@ -10,15 +10,7 @@ import { v4 as uuidv4 } from "@/lib/uuid";
 import { toast } from "sonner";
 import { CartProvider } from "@/contexts/CartContext";
 
-// Declare global site settings interface for window
-declare global {
-  interface Window {
-    __SITE_SETTINGS__?: {
-      logoUrl?: string;
-      [key: string]: any;
-    };
-  }
-}
+// No need to declare this interface here as it's already defined in vite-env.d.ts
 
 const Builder = () => {
   const { id } = useParams<{ id: string }>();
