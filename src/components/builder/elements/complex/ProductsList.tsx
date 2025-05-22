@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Store, Package, Loader2, AlertCircle, Tag, Truck } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -147,7 +146,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
   }, [websiteId, categoryFilter, sortBy, sortOrder]);
 
   const handleAddToCart = (e: React.MouseEvent, product: Product) => {
-    // Always prevent default and stop propagation for the Add to Cart button
+    // Make sure we stop propagation and prevent default for add to cart button
     e.preventDefault();
     e.stopPropagation();
     
@@ -165,14 +164,17 @@ const ProductsList: React.FC<ProductsListProps> = ({
   };
   
   const handleProductClick = (e: React.MouseEvent, product: Product) => {
-    e.preventDefault(); // Prevent default behavior
-    
     if (!isLiveSite) return; // Only navigate in live site mode
     if (!websiteId) return; // Need website ID to navigate
     
     console.log("Navigating to product:", product.id, "Site ID:", websiteId);
-    // Make sure to use the correct URL format for product details
+    
+    // IMPORTANT: Use the correct URL format with '/site/' prefix for product details
     navigate(`/site/${websiteId}/product/${product.id}`);
+    
+    // Prevent default and stop propagation after navigation to avoid conflicts
+    e.preventDefault();
+    e.stopPropagation();
   };
 
   // Calculate pagination
@@ -306,7 +308,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
               <Button 
                 onClick={(e) => handleAddToCart(e, product)} 
                 disabled={product.stock === 0 || !isLiveSite}
-                className={`w-full ${isLiveSite ? 'pointer-events-auto z-10' : ''}`}
+                className="w-full relative z-10 pointer-events-auto"
                 size="sm"
                 data-testid="add-to-cart-button"
               >

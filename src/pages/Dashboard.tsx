@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +11,7 @@ import OnboardingFlow from "@/components/OnboardingFlow";
 import RefreshSubscriptionButton from "@/components/RefreshSubscriptionButton";
 import PlanStatusBadge from "@/components/PlanStatusBadge";
 import { usePlan } from "@/contexts/PlanContext";
+import { checkWebsiteLimit } from "@/utils/planRestrictions";
 
 export type Website = {
   id: string;
@@ -128,12 +128,13 @@ const Dashboard = () => {
 
   const createNewWebsite = async () => {
     try {
-      // Check if we've reached the website limit
-      if (restrictions && websites.length >= restrictions.maxWebsites) {
-        toast.error(`You've reached your plan's limit of ${restrictions.maxWebsites} websites`, {
-          description: `Upgrade your plan to create more websites`
-        });
-        return;
+      // Check if we've reached the website limit before creating a new one
+      if (restrictions) {
+        const belowLimit = await checkWebsiteLimit(websites.length);
+        if (!belowLimit) {
+          // The checkWebsiteLimit function will already show a toast
+          return;
+        }
       }
       
       const name = `My Store ${websites.length + 1}`;

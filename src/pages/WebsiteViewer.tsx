@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
@@ -33,17 +32,10 @@ const WebsiteViewer = () => {
   const isCartPage = currentPath === '/cart';
   const isCheckoutPage = currentPath === '/checkout';
   
-  // Check if we're on a product details page - used a better pattern matching for routes
+  // Check if we're on a product details page - use better pattern matching for routes
   const productMatch = currentPath.match(/^\/product\/(.+)$/);
   const isProductPage = !!productMatch;
   const productId = productMatch ? productMatch[1] : null;
-
-  console.log({
-    currentPath,
-    isProductPage,
-    productId,
-    fullPath: location.pathname
-  });
 
   // Set current page based on the URL path
   useEffect(() => {
@@ -58,23 +50,19 @@ const WebsiteViewer = () => {
         const homePage = website.settings.pages.find(page => page.isHomePage);
         if (homePage) {
           setCurrentPageId(homePage.id);
-          console.log("Home page found:", homePage);
         } else if (website.settings.pages.length > 0) {
           setCurrentPageId(website.settings.pages[0].id);
-          console.log("No home page found, using first page:", website.settings.pages[0]);
         }
       } else {
         // Find the page that matches the current path
         const matchingPage = website.settings.pages.find(page => page.slug === currentPath);
         if (matchingPage) {
           setCurrentPageId(matchingPage.id);
-          console.log("Matched page by slug:", matchingPage);
         } else {
           // If no matching page, default to home
           const homePage = website.settings.pages.find(page => page.isHomePage);
           if (homePage) {
             setCurrentPageId(homePage.id);
-            console.log("No matching page found, using home page instead");
           } else if (website.settings.pages.length > 0) {
             setCurrentPageId(website.settings.pages[0].id);
           }
@@ -92,20 +80,15 @@ const WebsiteViewer = () => {
     const pageContent = pagesContent[currentPageId] || [];
     const pageSettings = website.settings.pagesSettings?.[currentPageId] || { title: websiteName };
     
-    console.log("Loading content for page ID:", currentPageId);
-    
     // If the page has no specific content and this is the homepage, use the main content
     if (pageContent.length === 0) {
       const homePage = website.settings.pages.find(p => p.isHomePage);
       if (homePage && homePage.id === currentPageId && Array.isArray(website.content)) {
-        console.log("Using website main content for home page");
         setCurrentPageElements(website.content);
       } else {
-        console.log("Using empty or fallback content");
         setCurrentPageElements(pageContent.length ? pageContent : elements || []);
       }
     } else {
-      console.log("Using page-specific content");
       setCurrentPageElements(pageContent);
     }
     
@@ -120,7 +103,6 @@ const WebsiteViewer = () => {
         logoUrl: website.settings.logoUrl,
         siteId: id, // Add site ID to settings for cart routes
         isLiveSite: true, // Indicate this is a live site
-        // Add other global settings here as needed
       };
     }
   }, [website?.settings, id]);
