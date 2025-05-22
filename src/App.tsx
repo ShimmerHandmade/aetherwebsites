@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import Dashboard from './pages/Dashboard';
 import Auth from './pages/Auth';
@@ -35,7 +35,7 @@ function App() {
   }, []);
 
   return (
-    <BrowserRouter>
+    <>
       <Routes>
         {!session ? (
           <>
@@ -61,7 +61,7 @@ function App() {
         )}
       </Routes>
       <Toaster />
-    </BrowserRouter>
+    </>
   );
 }
 
