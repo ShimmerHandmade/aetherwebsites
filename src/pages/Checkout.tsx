@@ -1,607 +1,570 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCart } from '@/hooks/useCart';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, CreditCard, Truck, AlertCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useCart } from '@/contexts/CartContext';
+import { useWebsite } from '@/hooks/useWebsite';
+import { useParams } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
+import { CreditCard, MapPin, Phone, User } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 
 const Checkout = () => {
+  const { id: websiteId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { items, subtotal, clearCart } = useCart();
-  const [loading, setLoading] = useState(false);
-  const [websiteInfo, setWebsiteInfo] = useState<any>(null);
-  const [hasStripeEnabled, setHasStripeEnabled] = useState(false);
-  
+  const { cart, clearCart } = useCart();
+  const { website } = useWebsite(websiteId);
+
   const [customerInfo, setCustomerInfo] = useState({
+    firstName: '',
+    lastName: '',
     email: '',
-    name: '',
-    phone: '',
+    phone: ''
   });
 
-  const [shippingAddress, setShippingAddress] = useState({
-    street: '',
+  const [shippingDetails, setShippingDetails] = useState({
+    address: '',
     city: '',
     state: '',
-    postalCode: '',
-    country: 'United States',
+    zip: '',
+    country: 'US'
   });
 
-  const [billingAddress, setBillingAddress] = useState({
-    street: '',
+  const [billingDetails, setBillingDetails] = useState({
+    address: '',
     city: '',
     state: '',
-    postalCode: '',
-    country: 'United States',
+    zip: '',
+    country: 'US'
   });
 
-  const [paymentMethod, setPaymentMethod] = useState('cod');
-  const [notes, setNotes] = useState('');
-  const [sameAsBilling, setSameAsBilling] = useState(true);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [useShippingForBilling, setUseShippingForBilling] = useState(true);
+  const [paymentMethod, setPaymentMethod] = useState('cod'); // Default to cash on delivery
+  const [orderNotes, setOrderNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [shippingMethods, setShippingMethods] = useState([]);
+  const [selectedShippingMethod, setSelectedShippingMethod] = useState(null);
+  const [shippingCost, setShippingCost] = useState(0);
+  const [loadingShipping, setLoadingShipping] = useState(false);
 
-  // Get website ID and check if it has Stripe enabled
   useEffect(() => {
-    const siteId = window.__SITE_SETTINGS__?.siteId;
-    if (!siteId) {
-      console.error("Could not determine website ID");
+    if (!websiteId) {
+      console.error("Website ID is missing");
       return;
     }
-    
-    const fetchWebsiteInfo = async () => {
-      try {
-        // Get website information
-        const { data: website, error: websiteError } = await supabase
-          .from('websites')
-          .select('id, name, settings')
-          .eq('id', siteId)
-          .single();
-        
-        if (websiteError) {
-          console.error("Error fetching website:", websiteError);
-          return;
+  }, [websiteId]);
+
+  // Fetch shipping methods
+  useEffect(() => {
+    const fetchShippingSettings = async () => {
+      if (websiteId && cart.items.length > 0) {
+        setLoadingShipping(true);
+        try {
+          // Calculate total weight
+          const totalWeight = cart.items.reduce((total, item) => {
+            return total + ((item.product.weight || 0) * item.quantity);
+          }, 0);
+          
+          // Fetch shipping settings
+          const { data: settings, error } = await supabase
+            .from("shipping_settings")
+            .select("*")
+            .eq("website_id", websiteId)
+            .single();
+            
+          if (error) {
+            console.error("Error fetching shipping settings:", error);
+          } else if (settings) {
+            const availableMethods = [];
+            let defaultMethod = null;
+            
+            // Check if order qualifies for free shipping
+            const subtotal = cart.items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+            if (settings.free_shipping_enabled && subtotal >= settings.free_shipping_minimum) {
+              availableMethods.push({
+                id: 'free',
+                name: 'Free Shipping',
+                description: 'Your order qualifies for free shipping!',
+                cost: 0
+              });
+              defaultMethod = 'free';
+            }
+            
+            // Add flat rate if enabled
+            if (settings.flat_rate_enabled) {
+              availableMethods.push({
+                id: 'flat_rate',
+                name: 'Standard Shipping',
+                description: `Flat rate shipping: $${settings.flat_rate_amount.toFixed(2)}`,
+                cost: settings.flat_rate_amount
+              });
+              if (!defaultMethod) defaultMethod = 'flat_rate';
+            }
+            
+            // Add weight-based rates if enabled
+            if (settings.weight_based_enabled && settings.weight_based_rates && settings.weight_based_rates.length > 0) {
+              // Find applicable weight rate
+              const applicableRate = settings.weight_based_rates.find(
+                rate => totalWeight >= rate.min_weight && totalWeight <= rate.max_weight
+              );
+              
+              if (applicableRate) {
+                availableMethods.push({
+                  id: 'weight_based',
+                  name: 'Weight-Based Shipping',
+                  description: `Based on package weight (${totalWeight.toFixed(1)} lbs): $${applicableRate.rate.toFixed(2)}`,
+                  cost: applicableRate.rate
+                });
+                if (!defaultMethod && availableMethods.length === 1) defaultMethod = 'weight_based';
+              }
+            }
+            
+            // Set available methods
+            setShippingMethods(availableMethods);
+            
+            // Set default method if available
+            if (defaultMethod && availableMethods.length > 0) {
+              const method = availableMethods.find(m => m.id === defaultMethod);
+              setSelectedShippingMethod(method);
+              setShippingCost(method.cost);
+            }
+          }
+        } catch (err) {
+          console.error("Error processing shipping methods:", err);
+        } finally {
+          setLoadingShipping(false);
         }
-        
-        setWebsiteInfo(website);
-        
-        // Check if this website has Stripe Connect set up
-        // Use explicit typing with 'any' to avoid type checking for tables not in the schema
-        const { data: stripeAccount, error: stripeError } = await supabase
-          .from('stripe_connect_accounts' as any)
-          .select('onboarding_complete, charges_enabled')
-          .eq('website_id', siteId)
-          .eq('onboarding_complete', true)
-          .eq('charges_enabled', true)
-          .maybeSingle();
-        
-        if (stripeError) {
-          console.error("Error checking Stripe status:", stripeError);
-          return;
-        }
-        
-        // If a valid Stripe Connect account exists, enable Stripe payment option
-        if (stripeAccount) {
-          console.log("Stripe Connect account is active, enabling online payments");
-          setHasStripeEnabled(true);
-          setPaymentMethod('stripe'); // Default to Stripe if available
-        } else {
-          console.log("No active Stripe Connect account found, using COD only");
-        }
-      } catch (error) {
-        console.error("Error fetching website info:", error);
       }
     };
     
-    fetchWebsiteInfo();
-  }, []);
+    fetchShippingSettings();
+  }, [websiteId, cart.items]);
+  
+  const calculateSubtotal = () => {
+    return cart.items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  };
 
-  const handleCustomerInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleShippingForBillingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUseShippingForBilling(e.target.checked);
+  };
+
+  const handlePaymentMethodChange = (method: string) => {
+    setPaymentMethod(method);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, setter: React.Dispatch<React.SetStateAction<any>>) => {
     const { name, value } = e.target;
-    setCustomerInfo(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
+    setter(prevState => ({ ...prevState, [name]: value }));
   };
 
-  const handleShippingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setShippingAddress(prev => ({ ...prev, [name]: value }));
-    if (errors[`shipping_${name}`]) {
-      setErrors(prev => ({ ...prev, [`shipping_${name}`]: '' }));
-    }
-  };
-
-  const handleBillingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setBillingAddress(prev => ({ ...prev, [name]: value }));
-    if (errors[`billing_${name}`]) {
-      setErrors(prev => ({ ...prev, [`billing_${name}`]: '' }));
-    }
-  };
-
-  const toggleSameAsBilling = () => {
-    setSameAsBilling(!sameAsBilling);
-    if (!sameAsBilling) {
-      setBillingAddress({ ...shippingAddress });
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
     
-    // Validate customer info
-    if (!customerInfo.email) newErrors.email = 'Email is required';
-    if (!customerInfo.name) newErrors.name = 'Name is required';
-    
-    // Validate shipping address
-    if (!shippingAddress.street) newErrors.shipping_street = 'Street address is required';
-    if (!shippingAddress.city) newErrors.shipping_city = 'City is required';
-    if (!shippingAddress.state) newErrors.shipping_state = 'State is required';
-    if (!shippingAddress.postalCode) newErrors.shipping_postalCode = 'Postal code is required';
-    
-    // Validate billing address if different
-    if (!sameAsBilling) {
-      if (!billingAddress.street) newErrors.billing_street = 'Street address is required';
-      if (!billingAddress.city) newErrors.billing_city = 'City is required';
-      if (!billingAddress.state) newErrors.billing_state = 'State is required';
-      if (!billingAddress.postalCode) newErrors.billing_postalCode = 'Postal code is required';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmitOrder = async () => {
-    if (!validateForm()) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    if (items.length === 0) {
-      toast.error('Your cart is empty');
-      return;
-    }
-
     try {
-      setLoading(true);
-
-      // Get the website ID from the URL or site settings
-      const websiteId = window.__SITE_SETTINGS__?.siteId || '';
-      if (!websiteId) {
-        toast.error('Could not determine website ID');
-        return;
-      }
-
-      console.log("Processing order for website:", websiteId, "with payment method:", paymentMethod);
-
-      // Create the order request
-      const orderData = {
-        items,
-        websiteId,
-        customerInfo,
-        shippingAddress,
-        billingAddress: sameAsBilling ? shippingAddress : billingAddress,
-        paymentMethod,
-        notes
+      const orderRequest = {
+        items: cart.items,
+        websiteId: websiteId,
+        customerInfo: {
+          name: `${customerInfo.firstName} ${customerInfo.lastName}`,
+          email: customerInfo.email,
+          phone: customerInfo.phone
+        },
+        shippingAddress: {
+          name: `${customerInfo.firstName} ${customerInfo.lastName}`,
+          street: shippingDetails.address,
+          city: shippingDetails.city,
+          state: shippingDetails.state,
+          postalCode: shippingDetails.zip,
+          country: shippingDetails.country || "US"
+        },
+        billingAddress: useShippingForBilling ? {
+          name: `${customerInfo.firstName} ${customerInfo.lastName}`,
+          street: shippingDetails.address,
+          city: shippingDetails.city,
+          state: shippingDetails.state,
+          postalCode: shippingDetails.zip,
+          country: shippingDetails.country || "US"
+        } : {
+          name: `${customerInfo.firstName} ${customerInfo.lastName}`,
+          street: billingDetails.address,
+          city: billingDetails.city,
+          state: billingDetails.state,
+          postalCode: billingDetails.zip,
+          country: billingDetails.country || "US"
+        },
+        paymentMethod: paymentMethod,
+        shippingMethod: selectedShippingMethod?.id || 'flat_rate',
+        notes: orderNotes
       };
-
-      // Call the create-order function
-      const { data, error } = await supabase.functions.invoke('create-order', {
-        body: orderData
+      
+      const response = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderRequest),
       });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data && data.success) {
-        // Clear the cart
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success("Order created successfully!");
         clearCart();
         
-        // If this is a Stripe payment, redirect to the Stripe checkout
-        if (paymentMethod === 'stripe' && data.checkout_url) {
-          console.log("Redirecting to Stripe checkout:", data.checkout_url);
-          
-          // Open Stripe checkout in a new tab
-          window.open(data.checkout_url, '_blank');
-          
-          // Navigate to order confirmation page
-          navigate('/order-confirmation', { 
-            state: { 
-              orderId: data.order.id,
-              orderTotal: data.order.total,
-              orderStatus: data.order.status,
-              isStripePayment: true
-            } 
-          });
+        if (paymentMethod === "stripe" && data.checkout_url) {
+          window.location.href = data.checkout_url;
         } else {
-          // For COD, just go to order confirmation
-          console.log("Cash on delivery order placed successfully");
-          navigate('/order-confirmation', { 
-            state: { 
-              orderId: data.order.id,
-              orderTotal: data.order.total,
-              orderStatus: data.order.status
-            } 
-          });
+          navigate(`/site/${websiteId}/order-confirmation?order_id=${data.order.id}&status=success`);
         }
-        
-        toast.success('Order placed successfully!');
       } else {
-        throw new Error(data?.error || 'Failed to create order');
+        toast.error(data.error || "Failed to create order");
       }
-    } catch (error: any) {
-      console.error('Error creating order:', error);
-      toast.error('Failed to place order: ' + error.message);
+    } catch (error) {
+      console.error("Checkout error:", error);
+      toast.error("An unexpected error occurred");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
-
-  if (items.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50 px-4 py-12">
-        <div className="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow-sm">
-          <div className="text-center py-16">
-            <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-medium text-gray-900 mb-2">Your cart is empty</h2>
-            <p className="text-gray-500 mb-6">You don't have any items in your cart to checkout.</p>
-            <Button onClick={() => navigate(-1)}>Continue Shopping</Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  
+  const subtotal = calculateSubtotal();
+  const total = subtotal + shippingCost;
+  
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-12">
-      <div className="max-w-6xl mx-auto">
-        <Button
-          variant="ghost"
-          className="mb-6"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Cart
-        </Button>
-        
-        <h1 className="text-3xl font-bold mb-8">Checkout</h1>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Customer Info and Shipping Form */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Customer Information */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h2 className="text-xl font-semibold mb-4">Customer Information</h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Full Name <span className="text-red-500">*</span></Label>
-                  <Input 
-                    id="name" 
-                    name="name" 
-                    value={customerInfo.name} 
-                    onChange={handleCustomerInfoChange}
-                    className={errors.name ? "border-red-500" : ""}
-                  />
-                  {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-                </div>
-                
-                <div>
-                  <Label htmlFor="email">Email Address <span className="text-red-500">*</span></Label>
-                  <Input 
-                    id="email" 
-                    name="email" 
-                    type="email" 
-                    value={customerInfo.email} 
-                    onChange={handleCustomerInfoChange}
-                    className={errors.email ? "border-red-500" : ""}
-                  />
-                  {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-                </div>
-                
-                <div>
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input 
-                    id="phone" 
-                    name="phone" 
-                    value={customerInfo.phone} 
-                    onChange={handleCustomerInfoChange}
-                  />
-                </div>
-              </div>
-            </div>
-            
-            {/* Shipping Address */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Shipping Address</h2>
-                <Truck className="h-5 w-5 text-gray-500" />
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="shipping_street">Street Address <span className="text-red-500">*</span></Label>
-                  <Input 
-                    id="shipping_street" 
-                    name="street" 
-                    value={shippingAddress.street} 
-                    onChange={handleShippingChange}
-                    className={errors.shipping_street ? "border-red-500" : ""}
-                  />
-                  {errors.shipping_street && <p className="text-red-500 text-sm mt-1">{errors.shipping_street}</p>}
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="shipping_city">City <span className="text-red-500">*</span></Label>
-                    <Input 
-                      id="shipping_city" 
-                      name="city" 
-                      value={shippingAddress.city} 
-                      onChange={handleShippingChange}
-                      className={errors.shipping_city ? "border-red-500" : ""}
-                    />
-                    {errors.shipping_city && <p className="text-red-500 text-sm mt-1">{errors.shipping_city}</p>}
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="shipping_state">State <span className="text-red-500">*</span></Label>
-                    <Input 
-                      id="shipping_state" 
-                      name="state" 
-                      value={shippingAddress.state} 
-                      onChange={handleShippingChange}
-                      className={errors.shipping_state ? "border-red-500" : ""}
-                    />
-                    {errors.shipping_state && <p className="text-red-500 text-sm mt-1">{errors.shipping_state}</p>}
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="shipping_postalCode">Postal Code <span className="text-red-500">*</span></Label>
-                    <Input 
-                      id="shipping_postalCode" 
-                      name="postalCode" 
-                      value={shippingAddress.postalCode} 
-                      onChange={handleShippingChange}
-                      className={errors.shipping_postalCode ? "border-red-500" : ""}
-                    />
-                    {errors.shipping_postalCode && <p className="text-red-500 text-sm mt-1">{errors.shipping_postalCode}</p>}
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="shipping_country">Country</Label>
-                    <Input 
-                      id="shipping_country" 
-                      name="country" 
-                      value={shippingAddress.country} 
-                      onChange={handleShippingChange}
-                      disabled
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Billing Address */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Billing Address</h2>
-              </div>
-              
-              <div className="mb-4">
-                <div className="flex items-center space-x-2">
-                  <input 
-                    type="checkbox" 
-                    id="sameAsBilling" 
-                    checked={sameAsBilling} 
-                    onChange={toggleSameAsBilling}
-                    className="h-4 w-4 rounded border-gray-300 text-primary"
-                  />
-                  <Label htmlFor="sameAsBilling">Same as shipping address</Label>
-                </div>
-              </div>
-              
-              {!sameAsBilling && (
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="billing_street">Street Address <span className="text-red-500">*</span></Label>
-                    <Input 
-                      id="billing_street" 
-                      name="street" 
-                      value={billingAddress.street} 
-                      onChange={handleBillingChange}
-                      className={errors.billing_street ? "border-red-500" : ""}
-                    />
-                    {errors.billing_street && <p className="text-red-500 text-sm mt-1">{errors.billing_street}</p>}
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="billing_city">City <span className="text-red-500">*</span></Label>
-                      <Input 
-                        id="billing_city" 
-                        name="city" 
-                        value={billingAddress.city} 
-                        onChange={handleBillingChange}
-                        className={errors.billing_city ? "border-red-500" : ""}
-                      />
-                      {errors.billing_city && <p className="text-red-500 text-sm mt-1">{errors.billing_city}</p>}
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="billing_state">State <span className="text-red-500">*</span></Label>
-                      <Input 
-                        id="billing_state" 
-                        name="state" 
-                        value={billingAddress.state} 
-                        onChange={handleBillingChange}
-                        className={errors.billing_state ? "border-red-500" : ""}
-                      />
-                      {errors.billing_state && <p className="text-red-500 text-sm mt-1">{errors.billing_state}</p>}
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="billing_postalCode">Postal Code <span className="text-red-500">*</span></Label>
-                      <Input 
-                        id="billing_postalCode" 
-                        name="postalCode" 
-                        value={billingAddress.postalCode} 
-                        onChange={handleBillingChange}
-                        className={errors.billing_postalCode ? "border-red-500" : ""}
-                      />
-                      {errors.billing_postalCode && <p className="text-red-500 text-sm mt-1">{errors.billing_postalCode}</p>}
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="billing_country">Country</Label>
-                      <Input 
-                        id="billing_country" 
-                        name="country" 
-                        value={billingAddress.country} 
-                        onChange={handleBillingChange}
-                        disabled
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* Payment Method */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Payment Method</h2>
-                <CreditCard className="h-5 w-5 text-gray-500" />
-              </div>
-              
-              <RadioGroup 
-                value={paymentMethod}
-                onValueChange={setPaymentMethod}
-              >
-                {hasStripeEnabled && (
-                  <div className="flex items-center space-x-2 p-3 border rounded-md mb-3 cursor-pointer hover:bg-gray-50">
-                    <RadioGroupItem value="stripe" id="stripe" />
-                    <Label htmlFor="stripe" className="cursor-pointer flex-1">
-                      <div className="font-medium">Credit Card</div>
-                      <div className="text-sm text-gray-500">Pay securely with your credit or debit card</div>
-                    </Label>
-                  </div>
-                )}
-                
-                <div className="flex items-center space-x-2 p-3 border rounded-md mb-3 cursor-pointer hover:bg-gray-50">
-                  <RadioGroupItem value="cod" id="cod" />
-                  <Label htmlFor="cod" className="cursor-pointer flex-1">
-                    <div className="font-medium">Cash on Delivery</div>
-                    <div className="text-sm text-gray-500">Pay when you receive your order</div>
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-            
-            {/* Order Notes */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h2 className="text-xl font-semibold mb-4">Order Notes</h2>
-              
+    <div className="container mx-auto mt-10">
+      <div className="flex shadow-md my-10">
+        <div className="w-3/4 bg-white px-10 py-10">
+          <div className="flex justify-between border-b pb-8">
+            <h1 className="font-semibold text-2xl">Checkout</h1>
+          </div>
+          
+          {/* Customer Information Section */}
+          <div className="mt-8">
+            <h2 className="text-lg font-medium mb-4">Customer Information</h2>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="notes">Notes (optional)</Label>
-                <Textarea 
-                  id="notes" 
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Additional information about your order..."
-                  className="h-24"
+                <Label htmlFor="firstName">First Name</Label>
+                <Input 
+                  type="text" 
+                  id="firstName" 
+                  name="firstName"
+                  value={customerInfo.firstName}
+                  onChange={(e) => handleInputChange(e, setCustomerInfo)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input 
+                  type="text" 
+                  id="lastName" 
+                  name="lastName"
+                  value={customerInfo.lastName}
+                  onChange={(e) => handleInputChange(e, setCustomerInfo)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input 
+                  type="email" 
+                  id="email" 
+                  name="email"
+                  value={customerInfo.email}
+                  onChange={(e) => handleInputChange(e, setCustomerInfo)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">Phone</Label>
+                <Input 
+                  type="tel" 
+                  id="phone"
+                  name="phone"
+                  value={customerInfo.phone}
+                  onChange={(e) => handleInputChange(e, setCustomerInfo)}
+                  className="mt-1"
                 />
               </div>
             </div>
           </div>
           
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-white p-6 rounded-lg shadow-sm sticky top-4">
-              <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-              
-              {/* Products list */}
-              <div className="border rounded-md mb-4 divide-y divide-gray-100">
-                {items.map((item) => (
-                  <div key={item.product.id} className="p-4 flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
-                      {item.product.image_url ? (
-                        <img 
-                          src={item.product.image_url} 
-                          alt={item.product.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-gray-400">
-                          <svg 
-                            xmlns="http://www.w3.org/2000/svg" 
-                            className="h-5 w-5" 
-                            fill="none" 
-                            viewBox="0 0 24 24" 
-                            stroke="currentColor"
-                          >
-                            <path 
-                              strokeLinecap="round" 
-                              strokeLinejoin="round" 
-                              strokeWidth={2} 
-                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" 
-                            />
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-grow">
-                      <p className="font-medium truncate">{item.product.name}</p>
-                      <div className="flex justify-between text-sm text-gray-500">
-                        <span>Qty: {item.quantity}</span>
-                        <span>${(item.product.price * item.quantity).toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Totals */}
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span>Shipping</span>
-                  <span>Calculated at next step</span>
-                </div>
-                
-                <Separator />
-                
-                <div className="flex justify-between font-semibold">
-                  <span>Total</span>
-                  <span>${subtotal.toFixed(2)}</span>
-                </div>
-              </div>
-              
-              <Button 
-                className="w-full mt-6" 
-                onClick={handleSubmitOrder}
-                disabled={loading}
-              >
-                {loading ? 'Processing...' : (paymentMethod === 'stripe' ? 'Pay with Card' : 'Place Order')}
-              </Button>
-              
-              <p className="text-xs text-gray-500 text-center mt-4">
-                By placing your order, you agree to our Terms of Service and Privacy Policy
-              </p>
+          {/* Shipping Details Section */}
+          <div className="mt-8">
+            <h2 className="text-lg font-medium mb-4">Shipping Details</h2>
+            <div>
+              <Label htmlFor="address">Address</Label>
+              <Input 
+                type="text" 
+                id="address"
+                name="address"
+                value={shippingDetails.address}
+                onChange={(e) => handleInputChange(e, setShippingDetails)}
+                className="mt-1"
+              />
             </div>
+            <div className="grid grid-cols-3 gap-4 mt-4">
+              <div>
+                <Label htmlFor="city">City</Label>
+                <Input 
+                  type="text" 
+                  id="city"
+                  name="city"
+                  value={shippingDetails.city}
+                  onChange={(e) => handleInputChange(e, setShippingDetails)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="state">State</Label>
+                <Input 
+                  type="text" 
+                  id="state"
+                  name="state"
+                  value={shippingDetails.state}
+                  onChange={(e) => handleInputChange(e, setShippingDetails)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="zip">Zip Code</Label>
+                <Input 
+                  type="text" 
+                  id="zip"
+                  name="zip"
+                  value={shippingDetails.zip}
+                  onChange={(e) => handleInputChange(e, setShippingDetails)}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="country">Country</Label>
+              <Input 
+                type="text" 
+                id="country"
+                name="country"
+                value={shippingDetails.country}
+                onChange={(e) => handleInputChange(e, setShippingDetails)}
+                className="mt-1"
+              />
+            </div>
+          </div>
+          
+          {/* Billing Details Section */}
+          <div className="mt-8">
+            <div className="flex items-center">
+              <Checkbox 
+                id="useShippingForBilling"
+                checked={useShippingForBilling}
+                onCheckedChange={handleShippingForBillingChange}
+              />
+              <Label htmlFor="useShippingForBilling" className="ml-2">Use shipping address for billing</Label>
+            </div>
+            
+            {!useShippingForBilling && (
+              <div className="mt-4">
+                <h2 className="text-lg font-medium mb-4">Billing Details</h2>
+                <div>
+                  <Label htmlFor="billingAddress">Address</Label>
+                  <Input 
+                    type="text" 
+                    id="billingAddress"
+                    name="address"
+                    value={billingDetails.address}
+                    onChange={(e) => handleInputChange(e, setBillingDetails)}
+                    className="mt-1"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-4 mt-4">
+                  <div>
+                    <Label htmlFor="billingCity">City</Label>
+                    <Input 
+                      type="text" 
+                      id="billingCity"
+                      name="city"
+                      value={billingDetails.city}
+                      onChange={(e) => handleInputChange(e, setBillingDetails)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="billingState">State</Label>
+                    <Input 
+                      type="text" 
+                      id="billingState"
+                      name="state"
+                      value={billingDetails.state}
+                      onChange={(e) => handleInputChange(e, setBillingDetails)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="billingZip">Zip Code</Label>
+                    <Input 
+                      type="text" 
+                      id="billingZip"
+                      name="zip"
+                      value={billingDetails.zip}
+                      onChange={(e) => handleInputChange(e, setBillingDetails)}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="country">Country</Label>
+                  <Input 
+                    type="text" 
+                    id="country"
+                    name="country"
+                    value={billingDetails.country}
+                    onChange={(e) => handleInputChange(e, setBillingDetails)}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Payment Method Section */}
+          <div className="mt-8">
+            <h2 className="text-lg font-medium mb-4">Payment Method</h2>
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <input
+                  type="radio"
+                  id="cod"
+                  name="paymentMethod"
+                  value="cod"
+                  className="mr-2"
+                  checked={paymentMethod === "cod"}
+                  onChange={() => handlePaymentMethodChange("cod")}
+                />
+                <label htmlFor="cod">Cash on Delivery</label>
+              </div>
+              
+              {website?.settings?.stripeEnabled && (
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="stripe"
+                    name="paymentMethod"
+                    value="stripe"
+                    className="mr-2"
+                    checked={paymentMethod === "stripe"}
+                    onChange={() => handlePaymentMethodChange("stripe")}
+                  />
+                  <label htmlFor="stripe">Stripe</label>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Order Notes Section */}
+          <div className="mt-8">
+            <Label htmlFor="orderNotes">Order Notes</Label>
+            <Input
+              id="orderNotes"
+              name="orderNotes"
+              placeholder="Notes about your order, e.g. special notes for delivery"
+              value={orderNotes}
+              onChange={(e) => setOrderNotes(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+        </div>
+        
+        {/* Order Summary Section */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-white rounded-lg shadow p-6 space-y-4">
+            <h3 className="text-lg font-medium border-b pb-3">Order Summary</h3>
+            
+            {/* Order Items Summary */}
+            <div className="space-y-3">
+              {cart.items.map((item) => (
+                <div key={item.product.id} className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <span className="text-sm font-medium mr-2">{item.quantity} ×</span>
+                    <span>{item.product.name}</span>
+                  </div>
+                  <span>${(item.product.price * item.quantity).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+            
+            {/* Shipping Method Selection */}
+            <div className="border-t pt-4 mt-4">
+              <h4 className="font-medium mb-3">Shipping Method</h4>
+              {loadingShipping ? (
+                <div className="flex items-center justify-center py-3">
+                  <div className="w-5 h-5 border-2 border-t-blue-500 border-blue-200 rounded-full animate-spin"></div>
+                  <span className="ml-2 text-sm text-gray-500">Loading shipping options...</span>
+                </div>
+              ) : shippingMethods.length === 0 ? (
+                <div className="text-sm text-gray-500 py-2">No shipping methods available</div>
+              ) : (
+                <div className="space-y-2">
+                  {shippingMethods.map((method) => (
+                    <div key={method.id} className="flex items-center">
+                      <input
+                        type="radio"
+                        id={`shipping-${method.id}`}
+                        name="shippingMethod"
+                        className="mr-2"
+                        checked={selectedShippingMethod?.id === method.id}
+                        onChange={() => {
+                          setSelectedShippingMethod(method);
+                          setShippingCost(method.cost);
+                        }}
+                      />
+                      <label htmlFor={`shipping-${method.id}`} className="flex flex-col">
+                        <span className="font-medium text-sm">{method.name}</span>
+                        <span className="text-xs text-gray-500">{method.description}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Totals */}
+            <div className="border-t pt-4 space-y-2">
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span>${subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Shipping</span>
+                <span>${shippingCost.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-medium text-lg border-t pt-2">
+                <span>Total</span>
+                <span>${total.toFixed(2)}</span>
+              </div>
+            </div>
+            
+            {/* Payment Buttons */}
+            <Button 
+              className="w-full mt-6"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Place Order
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </div>

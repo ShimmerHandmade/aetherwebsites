@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -24,9 +23,14 @@ import {
   Home,
   ExternalLink,
   ShoppingBag,
-  CreditCard // Added CreditCard icon for payment settings
+  CreditCard,
+  Layers,
+  PackageCheck,
+  Truck
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 interface Page {
   id: string;
@@ -156,7 +160,7 @@ const BuilderNavbar = ({
   };
 
   return (
-    <div className="w-full flex flex-col bg-white border-b border-slate-200">
+    <div className={cn("bg-white border-b sticky top-0 z-50", className)}>
       {/* Top bar */}
       <div className="h-14 flex items-center px-4 justify-between">
         <div className="flex items-center space-x-4">
@@ -336,6 +340,44 @@ const BuilderNavbar = ({
           </TabsList>
         </Tabs>
       </div>
+
+      {/* Dropdown Menu */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-8 gap-1 px-2">
+            <Settings className="h-4 w-4" />
+            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Settings</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-[240px]">
+          <DropdownMenuLabel>Website Settings</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => navigate(`/builder/${websiteId}/settings`)}>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Site Settings</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate(`/builder/${websiteId}/pages`)}>
+            <Layers className="mr-2 h-4 w-4" />
+            <span>Pages</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate(`/builder/${websiteId}/products`)}>
+            <ShoppingBag className="mr-2 h-4 w-4" />
+            <span>Products</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate(`/builder/${websiteId}/orders`)}>
+            <PackageCheck className="mr-2 h-4 w-4" />
+            <span>Orders</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate(`/builder/${websiteId}/payment-settings`)}>
+            <CreditCard className="mr-2 h-4 w-4" />
+            <span>Payment Settings</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate(`/builder/${websiteId}/shipping-settings`)}>
+            <Truck className="mr-2 h-4 w-4" />
+            <span>Shipping Settings</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };
