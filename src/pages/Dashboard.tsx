@@ -6,14 +6,16 @@ import DashboardNavbar from '../components/DashboardNavbar';
 import WebsiteCard from '../components/WebsiteCard';
 import TemplateSelection from '../components/TemplateSelection';
 import { toast } from 'sonner';
-import usePlanInfo from '../hooks/usePlanInfo';
+import { usePlanInfo } from '../hooks/usePlanInfo';
 import { Button } from '@/components/ui/button';
 import { PlusIcon } from 'lucide-react';
+import { Profile, Website } from '@/types/general';
 
 const Dashboard = () => {
-  const [websites, setWebsites] = useState([]);
+  const [websites, setWebsites] = useState<Website[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const navigate = useNavigate();
   const { userPlan, isLoading: planLoading } = usePlanInfo();
   const [showTemplateSelection, setShowTemplateSelection] = useState(false);
@@ -28,6 +30,15 @@ const Dashboard = () => {
           navigate('/login');
           return;
         }
+        
+        // Fetch user profile
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        setUserProfile(profileData);
         
         const { data, error } = await supabase
           .from('websites')
@@ -59,7 +70,7 @@ const Dashboard = () => {
     setShowTemplateSelection(true);
   };
 
-  const handleDeleteWebsite = async (websiteId) => {
+  const handleDeleteWebsite = async (websiteId: string) => {
     try {
       const { error } = await supabase
         .from('websites')
@@ -78,7 +89,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <DashboardNavbar />
+      <DashboardNavbar profile={userProfile} />
       
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
@@ -102,6 +113,7 @@ const Dashboard = () => {
               <WebsiteCard 
                 key={website.id}
                 website={website}
+                onWebsiteUpdate={() => fetchWebsites()}
                 onDelete={() => handleDeleteWebsite(website.id)}
               />
             ))}
@@ -124,6 +136,24 @@ const Dashboard = () => {
       )}
     </div>
   );
+  
+  // Helper function for re-fetching websites
+  const fetchWebsites = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('websites')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+        
+      if (data) setWebsites(data);
+    } catch (error) {
+      console.error('Error refreshing websites:', error);
+    }
+  };
 };
 
 export default Dashboard;

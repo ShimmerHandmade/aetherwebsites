@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   Form,
@@ -14,7 +15,6 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ImageIcon, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -25,22 +25,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Product } from "@/types/product";
-
-interface ProductFormProps {
-  product: any;
-  onChange: (product: any) => void;
-  categories: any[];
-  newCategory: string;
-  onNewCategoryChange: (category: string) => void;
-  onAddCategory: () => void;
-  imagePreview: string | null;
-  onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onClearImage: () => void;
-  planInfo: {
-    maxProducts: number;
-    currentCount: number;
-  };
-}
+import { ProductFormProps } from "@/types/general";
 
 const ProductForm: React.FC<ProductFormProps> = ({
   product,
@@ -52,7 +37,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
   imagePreview,
   onImageChange,
   onClearImage,
-  planInfo
+  planInfo,
+  isAddingNew,
+  isSaving,
+  onSave,
+  onCancel
 }) => {
   const [open, setOpen] = useState(false);
 
@@ -317,6 +306,22 @@ const ProductForm: React.FC<ProductFormProps> = ({
           />
         </div>
       </div>
+
+      {/* Add save/cancel buttons if they are provided */}
+      {(onSave || onCancel) && (
+        <div className="flex justify-end space-x-2 pt-4 border-t">
+          {onCancel && (
+            <Button variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+          )}
+          {onSave && (
+            <Button onClick={onSave} disabled={isSaving}>
+              {isSaving ? "Saving..." : isAddingNew ? "Create Product" : "Save Changes"}
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

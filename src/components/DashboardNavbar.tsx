@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Profile } from "@/pages/Dashboard";
 import { Menu, User, LogOut } from "lucide-react";
+import { Profile } from "@/types/general";
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -24,7 +24,7 @@ interface ProductContentProps {
   currentView: "grid" | "list";
   isAddingNew: boolean;
   isSaving: boolean;
-  categories: { name: string }[];
+  categories: { id: string; name: string }[];
   newCategory: string;
   imagePreview: string | null;
   onProductChange: (product: Product) => void;
@@ -105,18 +105,19 @@ const ProductContent: React.FC<ProductContentProps> = ({
     return (
       <ProductForm
         product={editingProduct}
+        onChange={onProductChange}
         categories={categories}
+        newCategory={newCategory}
+        onNewCategoryChange={onNewCategoryChange}
+        onAddCategory={onAddCategory}
+        imagePreview={imagePreview}
+        onImageChange={onImageChange}
+        onClearImage={onClearImage}
+        planInfo={planInfo}
         isAddingNew={isAddingNew}
         isSaving={isSaving}
         onSave={onSave}
         onCancel={onCancel}
-        onProductChange={onProductChange}
-        onImageChange={onImageChange}
-        imagePreview={imagePreview}
-        onClearImage={onClearImage}
-        newCategory={newCategory}
-        onNewCategoryChange={onNewCategoryChange}
-        onAddCategory={onAddCategory}
       />
     );
   }

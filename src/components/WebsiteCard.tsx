@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Website } from "@/pages/Dashboard";
 import { Edit, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { deleteWebsite } from "@/api/websites";
+import { Website } from "@/types/general";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,9 +19,10 @@ import {
 interface WebsiteCardProps {
   website: Website;
   onWebsiteUpdate: () => void;
+  onDelete?: () => Promise<void>;
 }
 
-const WebsiteCard = ({ website, onWebsiteUpdate }: WebsiteCardProps) => {
+const WebsiteCard = ({ website, onWebsiteUpdate, onDelete }: WebsiteCardProps) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
@@ -31,18 +31,22 @@ const WebsiteCard = ({ website, onWebsiteUpdate }: WebsiteCardProps) => {
     try {
       setIsDeleting(true);
       
-      toast.loading("Deleting website and associated data...");
-      const result = await deleteWebsite(website.id);
+      if (onDelete) {
+        await onDelete();
+      } else {
+        toast.loading("Deleting website and associated data...");
+        const result = await deleteWebsite(website.id);
+          
+        if (!result.success) {
+          toast.dismiss();
+          toast.error(result.error || "Failed to delete website");
+          return;
+        }
         
-      if (!result.success) {
         toast.dismiss();
-        toast.error(result.error || "Failed to delete website");
-        return;
+        toast.success("Website and all associated data deleted successfully");
+        onWebsiteUpdate();
       }
-      
-      toast.dismiss();
-      toast.success("Website and all associated data deleted successfully");
-      onWebsiteUpdate();
     } catch (error) {
       console.error("Error in handleDelete:", error);
       toast.dismiss();

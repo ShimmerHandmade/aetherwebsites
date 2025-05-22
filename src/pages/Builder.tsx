@@ -12,7 +12,9 @@ const Builder = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
-  const [websiteData, setWebsiteData] = useState(null);
+  const [websiteData, setWebsiteData] = useState<any>(null);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [showElementPalette, setShowElementPalette] = useState(true);
 
   useEffect(() => {
     if (!id) return;
@@ -46,6 +48,20 @@ const Builder = () => {
     fetchWebsite();
   }, [id, navigate]);
   
+  const handleSave = () => {
+    // Implement save functionality
+    toast.success('Changes saved');
+  };
+  
+  const handlePublish = () => {
+    // Implement publish functionality
+    toast.success('Website published');
+  };
+  
+  const toggleElementPalette = () => {
+    setShowElementPalette(!showElementPalette);
+  };
+  
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -55,9 +71,17 @@ const Builder = () => {
   }
 
   return (
-    <BuilderProvider websiteId={id}>
+    <BuilderProvider initialElements={[]} initialPageSettings={{title: 'Untitled'}}>
       <BuilderLayout>
-        <BuilderNavbar websiteName={websiteData?.name} />
+        <BuilderNavbar 
+          websiteName={websiteData?.name} 
+          setWebsiteName={() => {}} 
+          onSave={handleSave}
+          onPublish={handlePublish}
+          isPreviewMode={isPreviewMode}
+          showElementPalette={showElementPalette}
+          toggleElementPalette={toggleElementPalette}
+        />
         <BuilderContent />
       </BuilderLayout>
     </BuilderProvider>
