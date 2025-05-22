@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Home, AlertCircle, CheckCircle2, DollarSign, CreditCard, RefreshCw, Globe } from "lucide-react";
+import { ArrowLeft, Home, AlertCircle, CheckCircle2, DollarSign, CreditCard, RefreshCw, Globe, ExternalLink } from "lucide-react";
 import { useWebsite } from "@/hooks/useWebsite";
 import { toast } from "sonner";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -21,6 +20,7 @@ const PaymentSettings = () => {
     isLoading: isStripeLoading, 
     isConnecting,
     isRefreshing,
+    platformError,
     connectStripeAccount,
     refreshStripeAccount
   } = useStripeConnect(id);
@@ -33,6 +33,10 @@ const PaymentSettings = () => {
   
   const handleRefreshStatus = async () => {
     await refreshStripeAccount();
+  };
+
+  const handleOpenStripeDashboard = () => {
+    window.open("https://dashboard.stripe.com/connect/accounts/overview", "_blank");
   };
   
   if (isLoading && !isRefreshing) {
@@ -109,6 +113,25 @@ const PaymentSettings = () => {
             {isRefreshing ? "Refreshing..." : "Refresh Status"}
           </Button>
         </div>
+        
+        {platformError && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Stripe Platform Setup Required</AlertTitle>
+            <AlertDescription className="flex flex-col space-y-3">
+              <p>{platformError}</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1 w-fit" 
+                onClick={handleOpenStripeDashboard}
+              >
+                <ExternalLink className="h-4 w-4 mr-1" />
+                Open Stripe Dashboard
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
         
         <div className="space-y-8">
           <Card>
@@ -205,27 +228,47 @@ const PaymentSettings = () => {
                   <p className="text-gray-500 max-w-md mx-auto mb-6">
                     Connect with Stripe to accept payments on your website. This will allow customers to pay online using credit cards.
                   </p>
+                  
+                  {platformError && (
+                    <Alert variant="destructive" className="mb-4 mx-auto max-w-md">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Stripe Setup Required</AlertTitle>
+                      <AlertDescription>
+                        You must complete your Stripe platform profile before you can connect accounts.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               )}
             </CardContent>
             
             <CardFooter className={stripeAccount ? "border-t pt-6" : ""}>
-              <Button 
-                onClick={handleConnectStripe} 
-                className="w-full md:w-auto"
-                disabled={isConnecting}
-              >
-                {isConnecting ? (
-                  <>
-                    <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
-                    Connecting...
-                  </>
-                ) : stripeAccount ? (
-                  stripeAccount.onboarding_complete ? "Update Stripe Settings" : "Complete Stripe Setup"
-                ) : (
-                  "Connect with Stripe"
-                )}
-              </Button>
+              {platformError ? (
+                <Button 
+                  onClick={handleOpenStripeDashboard}
+                  className="w-full md:w-auto"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Open Stripe Dashboard to Complete Platform Setup
+                </Button>
+              ) : (
+                <Button 
+                  onClick={handleConnectStripe} 
+                  className="w-full md:w-auto"
+                  disabled={isConnecting}
+                >
+                  {isConnecting ? (
+                    <>
+                      <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                      Connecting...
+                    </>
+                  ) : stripeAccount ? (
+                    stripeAccount.onboarding_complete ? "Update Stripe Settings" : "Complete Stripe Setup"
+                  ) : (
+                    "Connect with Stripe"
+                  )}
+                </Button>
+              )}
             </CardFooter>
           </Card>
           
@@ -280,14 +323,25 @@ const PaymentSettings = () => {
                     </p>
                     {!stripeAccount?.onboarding_complete && (
                       <div className="mt-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={handleConnectStripe}
-                          disabled={isConnecting}
-                        >
-                          {isConnecting ? "Connecting..." : "Set Up Stripe"}
-                        </Button>
+                        {platformError ? (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={handleOpenStripeDashboard}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            Complete Platform Setup
+                          </Button>
+                        ) : (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={handleConnectStripe}
+                            disabled={isConnecting}
+                          >
+                            {isConnecting ? "Connecting..." : "Set Up Stripe"}
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>

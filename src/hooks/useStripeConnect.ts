@@ -9,12 +9,14 @@ export const useStripeConnect = (websiteId: string | undefined) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [platformError, setPlatformError] = useState<string | null>(null);
 
   const fetchStripeAccount = async () => {
     if (!websiteId) return;
     
     setIsLoading(true);
     setError(null);
+    setPlatformError(null);
     try {
       console.log("Fetching Stripe account for website:", websiteId);
       
@@ -44,6 +46,7 @@ export const useStripeConnect = (websiteId: string | undefined) => {
   const refreshStripeAccount = async () => {
     setIsRefreshing(true);
     setError(null);
+    setPlatformError(null);
     await fetchStripeAccount();
     setIsRefreshing(false);
   };
@@ -56,6 +59,7 @@ export const useStripeConnect = (websiteId: string | undefined) => {
     
     setIsConnecting(true);
     setError(null);
+    setPlatformError(null);
     try {
       console.log("Connecting Stripe for website:", websiteId);
       
@@ -82,13 +86,41 @@ export const useStripeConnect = (websiteId: string | undefined) => {
         }, 3000);
         
         return { success: true, url: data.url };
+      } else if (data?.error && data.error.includes("platform profile")) {
+        // Handle the specific platform setup error
+        const platformErrorMsg = "Your Stripe platform profile is incomplete. Please visit the Stripe Connect dashboard to complete your platform setup.";
+        setPlatformError(platformErrorMsg);
+        toast.error(platformErrorMsg, {
+          duration: 8000,
+          action: {
+            label: "Open Stripe Dashboard",
+            onClick: () => window.open("https://dashboard.stripe.com/connect/accounts/overview", "_blank"),
+          },
+        });
+        return { success: false, platformError: true };
       } else {
         throw new Error("No URL returned from Stripe");
       }
     } catch (error: any) {
       console.error("Error connecting Stripe:", error);
-      setError(error.message || "Failed to connect with Stripe");
-      toast.error(error.message || "Failed to connect with Stripe");
+      
+      // Check if the error message contains platform profile information
+      if (error.message && error.message.toLowerCase().includes("platform profile")) {
+        const platformErrorMsg = "Your Stripe platform profile is incomplete. Please visit the Stripe Connect dashboard to complete your platform setup.";
+        setPlatformError(platformErrorMsg);
+        toast.error(platformErrorMsg, {
+          duration: 8000,
+          action: {
+            label: "Open Stripe Dashboard",
+            onClick: () => window.open("https://dashboard.stripe.com/connect/accounts/overview", "_blank"),
+          },
+        });
+        return { success: false, platformError: true };
+      } else {
+        setError(error.message || "Failed to connect with Stripe");
+        toast.error(error.message || "Failed to connect with Stripe");
+      }
+      
       return { success: false, error };
     } finally {
       setIsConnecting(false);
@@ -105,6 +137,7 @@ export const useStripeConnect = (websiteId: string | undefined) => {
     isConnecting,
     isRefreshing,
     error,
+    platformError,
     connectStripeAccount,
     refreshStripeAccount
   };

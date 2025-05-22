@@ -156,6 +156,21 @@ serve(async (req) => {
         }
       } catch (stripeError: any) {
         console.error("Stripe error creating account:", stripeError);
+        
+        // Check specifically for platform profile errors
+        if (stripeError.message && stripeError.message.includes("platform profile")) {
+          return new Response(
+            JSON.stringify({ 
+              error: "You must complete your Stripe platform profile before you can create Connect accounts. Visit your Stripe dashboard at https://dashboard.stripe.com/connect/accounts/overview to complete your platform setup.",
+              platformProfileIncomplete: true 
+            }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+        
         return new Response(
           JSON.stringify({ error: "Failed to create Stripe account", details: stripeError.message }),
           {
@@ -190,6 +205,21 @@ serve(async (req) => {
       );
     } catch (linkError: any) {
       console.error("Error creating account link:", linkError);
+      
+      // Check for platform profile issues in this step too
+      if (linkError.message && linkError.message.includes("platform profile")) {
+        return new Response(
+          JSON.stringify({ 
+            error: "You must complete your Stripe platform profile before you can create Connect accounts. Visit your Stripe dashboard at https://dashboard.stripe.com/connect/accounts/overview to complete your platform setup.",
+            platformProfileIncomplete: true 
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ error: "Failed to create onboarding link", details: linkError.message }),
         {
