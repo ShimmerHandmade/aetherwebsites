@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { CreditCard, Loader2 } from 'lucide-react';
+import { CreditCard, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { manageSubscription } from '@/api/websites';
 import { Profile } from '@/types/general';
+import { openCustomerPortal } from '@/api/websites/manageSubscription';
 
 interface SubscriptionManagerProps {
   profile: Profile | null;
@@ -13,6 +14,7 @@ interface SubscriptionManagerProps {
 
 const SubscriptionManager = ({ profile, onSuccess }: SubscriptionManagerProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const handleManageSubscription = async () => {
     if (!profile) {
@@ -23,7 +25,7 @@ const SubscriptionManager = ({ profile, onSuccess }: SubscriptionManagerProps) =
     try {
       setIsLoading(true);
       
-      const result = await manageSubscription();
+      const result = await openCustomerPortal();
       if (result.error) {
         toast.error(result.error);
         return;
@@ -32,6 +34,11 @@ const SubscriptionManager = ({ profile, onSuccess }: SubscriptionManagerProps) =
       if (result.url) {
         // Open the Stripe portal URL in a new tab
         window.open(result.url, '_blank');
+        
+        toast.success("Subscription portal opened", {
+          description: "After making changes, return here and refresh your status",
+          duration: 5000
+        });
         
         // If onSuccess callback is provided, call it after a delay
         // to allow time for subscription changes to be processed
@@ -51,25 +58,54 @@ const SubscriptionManager = ({ profile, onSuccess }: SubscriptionManagerProps) =
     }
   };
   
+  const handleRefreshStatus = async () => {
+    if (!onSuccess) return;
+    
+    try {
+      setIsRefreshing(true);
+      await onSuccess();
+      toast.success("Subscription status refreshed");
+    } catch (error) {
+      console.error('Error refreshing subscription status:', error);
+      toast.error('Failed to refresh subscription status');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+  
   return (
-    <Button 
-      variant={profile?.is_subscribed ? "outline" : "default"}
-      onClick={handleManageSubscription}
-      disabled={isLoading}
-      className={profile?.is_subscribed ? "border-blue-200" : ""}
-    >
-      {isLoading ? (
-        <>
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Loading...
-        </>
-      ) : (
-        <>
-          <CreditCard className="w-4 h-4 mr-2" />
-          {profile?.is_subscribed ? 'Manage Subscription' : 'Subscribe Now'}
-        </>
+    <div className="flex gap-2">
+      <Button 
+        variant={profile?.is_subscribed ? "outline" : "default"}
+        onClick={handleManageSubscription}
+        disabled={isLoading || isRefreshing}
+        className={profile?.is_subscribed ? "border-blue-200" : ""}
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Loading...
+          </>
+        ) : (
+          <>
+            <CreditCard className="w-4 h-4 mr-2" />
+            {profile?.is_subscribed ? 'Manage Subscription' : 'Subscribe Now'}
+          </>
+        )}
+      </Button>
+      
+      {profile?.is_subscribed && onSuccess && (
+        <Button
+          size="icon"
+          variant="outline"
+          onClick={handleRefreshStatus}
+          disabled={isRefreshing || isLoading}
+          title="Refresh subscription status"
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+        </Button>
       )}
-    </Button>
+    </div>
   );
 };
 

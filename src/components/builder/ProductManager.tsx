@@ -209,7 +209,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
       />
 
       {!editingProduct && (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4 px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6 px-6 py-4">
           <div className="lg:col-span-3">
             <ProductSearch
               searchTerm={searchTerm}
@@ -226,37 +226,39 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
           <div className="lg:col-span-1">
             <PlanLimitsInfo 
               productCount={products.length} 
-              websiteCount={0} // Changed from pageCount to websiteCount
+              websiteCount={0}
             />
           </div>
         </div>
       )}
 
-      <ProductContent
-        isLoading={showLoading}
-        loadingError={initialLoadError}
-        editingProduct={editingProduct}
-        filteredProducts={filteredProducts}
-        currentView={currentView}
-        isAddingNew={isAddingNew}
-        isSaving={isSaving}
-        categories={categories}
-        newCategory={newCategory}
-        imagePreview={imagePreview}
-        onProductChange={setEditingProduct}
-        onSave={handleSave}
-        onCancel={handleCancel}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onImageChange={handleImageChange}
-        onClearImage={handleClearImage}
-        onNewCategoryChange={setNewCategory}
-        onAddCategory={handleAddCategory}
-        planInfo={{
-          maxProducts: planInfo.restrictions?.maxProducts || 0,
-          currentCount: products.length
-        }}
-      />
+      <div className="flex-1 px-6 pb-6">
+        <ProductContent
+          isLoading={showLoading}
+          loadingError={initialLoadError}
+          editingProduct={editingProduct}
+          filteredProducts={filteredProducts}
+          currentView={currentView}
+          isAddingNew={isAddingNew}
+          isSaving={isSaving}
+          categories={categories}
+          newCategory={newCategory}
+          imagePreview={imagePreview}
+          onProductChange={setEditingProduct}
+          onSave={handleSave}
+          onCancel={handleCancel}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onImageChange={handleImageChange}
+          onClearImage={handleClearImage}
+          onNewCategoryChange={setNewCategory}
+          onAddCategory={handleAddCategory}
+          planInfo={{
+            maxProducts: planInfo.restrictions?.maxProducts || 0,
+            currentCount: products.length
+          }}
+        />
+      </div>
     </div>
   );
 };

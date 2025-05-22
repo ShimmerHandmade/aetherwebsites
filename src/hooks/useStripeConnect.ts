@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -10,8 +10,10 @@ export const useStripeConnect = (websiteId: string | undefined) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [platformError, setPlatformError] = useState<string | null>(null);
+  const [lastRefresh, setLastRefresh] = useState(Date.now());
 
-  const fetchStripeAccount = async () => {
+  // Enhanced fetchStripeAccount with better error handling
+  const fetchStripeAccount = useCallback(async () => {
     if (!websiteId) return;
     
     setIsLoading(true);
@@ -41,14 +43,17 @@ export const useStripeConnect = (websiteId: string | undefined) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [websiteId]);
   
+  // Improved refreshStripeAccount with better UX feedback
   const refreshStripeAccount = async () => {
     setIsRefreshing(true);
     setError(null);
     setPlatformError(null);
     await fetchStripeAccount();
+    setLastRefresh(Date.now()); // Update refresh timestamp
     setIsRefreshing(false);
+    toast.success("Stripe connection status refreshed");
   };
 
   const connectStripeAccount = async () => {
@@ -78,12 +83,15 @@ export const useStripeConnect = (websiteId: string | undefined) => {
       if (data?.url) {
         // Open Stripe Connect onboarding in a new tab
         window.open(data.url, '_blank');
-        toast.success("Stripe Connect onboarding started");
+        toast.success("Stripe Connect onboarding started", {
+          description: "After completing onboarding, return here and click refresh to update your status",
+          duration: 6000
+        });
         
         // Refresh Stripe account data after a delay
         setTimeout(() => {
           refreshStripeAccount();
-        }, 3000);
+        }, 5000);
         
         return { success: true, url: data.url };
       } else if (data?.error && data.error.includes("platform profile")) {
@@ -127,9 +135,27 @@ export const useStripeConnect = (websiteId: string | undefined) => {
     }
   };
   
+  // Set up an interval to regularly check for account updates after onboarding
   useEffect(() => {
     fetchStripeAccount();
-  }, [websiteId]);
+    
+    // Poll for updates if we have a Stripe account that is not fully onboarded
+    let pollingInterval: number | null = null;
+    
+    if (stripeAccount && !stripeAccount.onboarding_complete) {
+      // Poll every 30 seconds for changes during the onboarding process
+      pollingInterval = window.setInterval(() => {
+        console.log("Polling for Stripe account updates...");
+        fetchStripeAccount();
+      }, 30000);
+    }
+    
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [fetchStripeAccount, stripeAccount?.onboarding_complete]);
 
   return {
     stripeAccount,
@@ -139,6 +165,7 @@ export const useStripeConnect = (websiteId: string | undefined) => {
     error,
     platformError,
     connectStripeAccount,
-    refreshStripeAccount
+    refreshStripeAccount,
+    lastRefresh
   };
 };
