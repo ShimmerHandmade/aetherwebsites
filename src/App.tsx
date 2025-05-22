@@ -1,5 +1,4 @@
 
-
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import Index from "@/pages/Index";
@@ -20,6 +19,7 @@ import NotFound from "@/pages/NotFound";
 import Profile from "@/pages/Profile";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
 import PaymentSettings from "@/pages/builder/PaymentSettings";
+import PremiumFeatures from "@/pages/PremiumFeatures";
 
 function App() {
   return (
@@ -43,6 +43,7 @@ function App() {
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/order-confirmation" element={<OrderConfirmation />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/premium-features" element={<PremiumFeatures />} />
         <Route path="/subscription-success" element={<SubscriptionSuccess />} />
         <Route path="/404" element={<NotFound />} />
         <Route path="*" element={<Navigate to="/404" replace />} />
@@ -52,4 +53,3 @@ function App() {
 }
 
 export default App;
-

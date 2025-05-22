@@ -1,35 +1,41 @@
 
 import React from "react";
 import { BuilderElement } from "@/contexts/BuilderContext";
-import FadeInElement from "./FadeInElement";
-import ScaleInElement from "./ScaleInElement";
-import SlideInElement from "./SlideInElement";
-import ScrollRevealElement from "./ScrollRevealElement";
-import ParticlesBackground from "./ParticlesBackground";
+import PremiumAnimationDemo from "./PremiumAnimationDemo";
 
 export const renderAnimationElement = (
   element: BuilderElement,
   isPreviewMode: boolean = false,
   isLiveSite: boolean = false
 ): React.ReactNode => {
+  const props = element.props || {};
+  
+  // Render different animation elements based on type
   switch (element.type) {
-    case "fadeInElement":
-      return <FadeInElement element={element} />;
-    case "slideInElement":
-      return <SlideInElement element={element} />;
-    case "scaleInElement":
-      return <ScaleInElement element={element} />;
-    case "scrollReveal":
-      return <ScrollRevealElement element={element} />;
-    case "particlesBackground":
-      return <ParticlesBackground element={element} />;
+    case 'fadeInElement':
+    case 'slideInElement':
+    case 'scaleInElement':
+      return (
+        <PremiumAnimationDemo 
+          element={element}
+          isPreviewMode={isPreviewMode}
+          isLiveSite={isLiveSite}
+        />
+      );
+    case 'particlesBackground':
+    case 'scrollReveal':
+      // Enterprise animations
+      return (
+        <div className="p-4 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg text-white">
+          <h3 className="text-lg font-bold mb-2">Enterprise Animation: {element.type}</h3>
+          <p>{props.content || element.content || "Enterprise animation content"}</p>
+        </div>
+      );
     default:
-      return null;
+      return (
+        <div className="p-4 border border-dashed border-gray-300 bg-gray-50">
+          <p>Unknown animation element: {element.type}</p>
+        </div>
+      );
   }
 };
-
-export * from "./FadeInElement";
-export * from "./ScaleInElement";
-export * from "./SlideInElement";
-export * from "./ScrollRevealElement";
-export * from "./ParticlesBackground";
