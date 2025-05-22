@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
@@ -24,6 +25,11 @@ const WebsiteViewer = () => {
   const [currentPageId, setCurrentPageId] = useState<string | null>(null);
   const [currentPageElements, setCurrentPageElements] = useState<BuilderElement[]>([]);
   const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
+
+  // Determine if this is a live site view or preview
+  const isViewRoute = location.pathname.startsWith(`/view/${id}`);
+  const isSiteRoute = location.pathname.startsWith(`/site/${id}`);
+  const isLiveSite = isSiteRoute || isViewRoute;
 
   // Get the current path to determine which page to show
   const currentPath = location.pathname.replace(`/site/${id}`, '').replace(`/view/${id}`, '') || '/';
@@ -102,10 +108,10 @@ const WebsiteViewer = () => {
       window.__SITE_SETTINGS__ = {
         logoUrl: website.settings.logoUrl,
         siteId: id, // Add site ID to settings for cart routes
-        isLiveSite: true, // Indicate this is a live site
+        isLiveSite: isLiveSite, // Indicate this is a live site
       };
     }
-  }, [website?.settings, id]);
+  }, [website?.settings, id, isLiveSite]);
 
   if (isLoading) {
     return (
@@ -162,7 +168,7 @@ const WebsiteViewer = () => {
         >
           <div className="w-full min-h-screen">
             <div className="mx-auto max-w-[1920px]">
-              <BuilderContent isPreviewMode={true} isLiveSite={true} />
+              <BuilderContent isPreviewMode={true} isLiveSite={isLiveSite} />
             </div>
           </div>
         </BuilderProvider>

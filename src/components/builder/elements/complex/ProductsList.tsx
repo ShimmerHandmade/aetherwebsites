@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Store, Package, Loader2, AlertCircle, Tag, Truck } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -38,6 +39,10 @@ const ProductsList: React.FC<ProductsListProps> = ({
   const navigate = useNavigate();
   const { id: routeWebsiteId } = useParams<{ id: string }>();
   
+  // Check if we're in a live site by also looking at window.__SITE_SETTINGS__
+  const globalSettings = window.__SITE_SETTINGS__;
+  const isSiteLive = isLiveSite || (globalSettings && globalSettings.isLiveSite);
+  
   // Handle potential cart context errors safely with proper typing
   let cartFunctions = { addToCart: (product: Product) => {} };
   try {
@@ -48,7 +53,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
   const { addToCart } = cartFunctions;
   
   // Get website ID from element props or route params
-  const websiteId = element.props?.websiteId || routeWebsiteId;
+  const websiteId = element.props?.websiteId || routeWebsiteId || (globalSettings && globalSettings.siteId);
 
   // Extract properties from element props
   const columns = element.props?.columns || 4;
@@ -151,7 +156,10 @@ const ProductsList: React.FC<ProductsListProps> = ({
     e.stopPropagation();
     
     // Only add to cart in live site mode
-    if (!isLiveSite) return;
+    if (!isSiteLive) {
+      console.log("Not adding to cart - not in live site mode");
+      return;
+    }
     
     console.log("Adding to cart:", product.name);
     try {
@@ -163,18 +171,24 @@ const ProductsList: React.FC<ProductsListProps> = ({
     }
   };
   
-  const handleProductClick = (e: React.MouseEvent, product: Product) => {
-    if (!isLiveSite) return; // Only navigate in live site mode
-    if (!websiteId) return; // Need website ID to navigate
+  const handleProductClick = (product: Product) => {
+    if (!isSiteLive) {
+      console.log("Not navigating - not in live site mode");
+      return; // Only navigate in live site mode
+    }
+    if (!websiteId) {
+      console.log("Not navigating - no website ID");
+      return; // Need website ID to navigate
+    }
     
     console.log("Navigating to product:", product.id, "Site ID:", websiteId);
     
-    // IMPORTANT: Use the correct URL format with '/site/' prefix for product details
-    navigate(`/site/${websiteId}/product/${product.id}`);
+    // Determine the correct URL format based on the current path
+    const baseUrl = window.location.pathname.includes('/view/') 
+      ? `/view/${websiteId}` 
+      : `/site/${websiteId}`;
     
-    // Prevent default and stop propagation after navigation to avoid conflicts
-    e.preventDefault();
-    e.stopPropagation();
+    navigate(`${baseUrl}/product/${product.id}`);
   };
 
   // Calculate pagination
@@ -247,17 +261,17 @@ const ProductsList: React.FC<ProductsListProps> = ({
         {currentProducts.map((product) => (
           <Card 
             key={product.id} 
-            className={`${getCardClass()} transition-all overflow-hidden flex flex-col h-full ${isLiveSite ? 'cursor-pointer hover:brightness-95' : ''}`}
-            onClick={(e) => isLiveSite ? handleProductClick(e, product) : undefined}
-            role={isLiveSite ? "link" : undefined}
-            aria-label={isLiveSite ? `View details for ${product.name}` : undefined}
+            className={`${getCardClass()} transition-all overflow-hidden flex flex-col h-full ${isSiteLive ? 'cursor-pointer hover:brightness-95' : ''}`}
+            onClick={() => isSiteLive ? handleProductClick(product) : undefined}
+            role={isSiteLive ? "link" : undefined}
+            aria-label={isSiteLive ? `View details for ${product.name}` : undefined}
           >
             <div className="relative aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
               {product.image_url ? (
                 <img 
                   src={product.image_url} 
                   alt={product.name} 
-                  className={`w-full h-full object-cover ${isLiveSite ? 'hover:scale-105 transition-transform' : ''}`}
+                  className={`w-full h-full object-cover ${isSiteLive ? 'hover:scale-105 transition-transform' : ''}`}
                 />
               ) : (
                 <Package className="h-16 w-16 text-gray-400" />
@@ -278,7 +292,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
             </div>
             
             <CardContent className="flex-grow pt-4">
-              <h3 className={`font-medium truncate mb-1 ${isLiveSite ? 'hover:text-blue-600' : ''}`}>{product.name}</h3>
+              <h3 className={`font-medium truncate mb-1 ${isSiteLive ? 'hover:text-blue-600' : ''}`}>{product.name}</h3>
               
               <div className="flex items-center text-sm text-gray-500 mb-2">
                 {product.category && (
@@ -307,7 +321,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
             <CardFooter className="pt-0">
               <Button 
                 onClick={(e) => handleAddToCart(e, product)} 
-                disabled={product.stock === 0 || !isLiveSite}
+                disabled={product.stock === 0 || !isSiteLive}
                 className="w-full relative z-10 pointer-events-auto"
                 size="sm"
                 data-testid="add-to-cart-button"
@@ -327,8 +341,8 @@ const ProductsList: React.FC<ProductsListProps> = ({
             <PaginationItem>
               <Button 
                 variant="ghost"
-                onClick={() => isLiveSite && setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1 || !isLiveSite}
+                onClick={() => isSiteLive && setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1 || !isSiteLive}
                 className="flex items-center gap-1"
               >
                 <span>Previous</span>
@@ -339,8 +353,8 @@ const ProductsList: React.FC<ProductsListProps> = ({
               <PaginationItem key={i}>
                 <Button
                   variant={currentPage === i + 1 ? "outline" : "ghost"}
-                  onClick={() => isLiveSite && setCurrentPage(i + 1)}
-                  disabled={!isLiveSite}
+                  onClick={() => isSiteLive && setCurrentPage(i + 1)}
+                  disabled={!isSiteLive}
                   className="w-10"
                 >
                   {i + 1}
@@ -351,8 +365,8 @@ const ProductsList: React.FC<ProductsListProps> = ({
             <PaginationItem>
               <Button
                 variant="ghost"
-                onClick={() => isLiveSite && setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages || !isLiveSite}
+                onClick={() => isSiteLive && setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages || !isSiteLive}
                 className="flex items-center gap-1"
               >
                 <span>Next</span>
