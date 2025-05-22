@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Form,
   FormControl,
@@ -24,6 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Product } from "@/types/product";
 
 interface ProductFormProps {
   product: any;
@@ -41,7 +42,7 @@ interface ProductFormProps {
   };
 }
 
-const ProductForm = ({
+const ProductForm: React.FC<ProductFormProps> = ({
   product,
   onChange,
   categories,

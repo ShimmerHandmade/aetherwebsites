@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -56,6 +56,7 @@ interface BuilderNavbarProps {
   onReturnToDashboard?: () => void;
   viewSiteUrl?: string;
   saveStatus?: string; // Added save status prop
+  className?: string; // Added className prop
 }
 
 const BuilderNavbar = ({
@@ -74,10 +75,12 @@ const BuilderNavbar = ({
   onShopLinkClick,
   onReturnToDashboard,
   viewSiteUrl,
-  saveStatus = ''
+  saveStatus = '',
+  className = ''
 }: BuilderNavbarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { id: websiteId } = useParams<{ id: string }>();
   
   // Determine active tab based on current route
   const getActiveTabFromRoute = () => {
@@ -101,7 +104,6 @@ const BuilderNavbar = ({
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     
-    const websiteId = window.location.pathname.split("/")[2];
     if (!websiteId) return;
     
     // Prevent default navigation and use react-router instead
@@ -151,7 +153,6 @@ const BuilderNavbar = ({
     if (viewSiteUrl) {
       window.open(viewSiteUrl, '_blank');
     } else {
-      const websiteId = window.location.pathname.split("/")[2];
       if (!websiteId) return;
       
       // Open a new tab with the preview URL
@@ -216,7 +217,6 @@ const BuilderNavbar = ({
             size="sm" 
             className="flex items-center gap-1" 
             onClick={() => {
-              const websiteId = window.location.pathname.split("/")[2];
               if (websiteId) navigate(`/builder/${websiteId}/payment-settings`);
             }}
           >
@@ -352,27 +352,39 @@ const BuilderNavbar = ({
         <DropdownMenuContent align="end" className="w-[240px]">
           <DropdownMenuLabel>Website Settings</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => navigate(`/builder/${websiteId}/settings`)}>
+          <DropdownMenuItem onClick={() => {
+            if (websiteId) navigate(`/builder/${websiteId}/settings`);
+          }}>
             <Settings className="mr-2 h-4 w-4" />
             <span>Site Settings</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => navigate(`/builder/${websiteId}/pages`)}>
+          <DropdownMenuItem onClick={() => {
+            if (websiteId) navigate(`/builder/${websiteId}/pages`);
+          }}>
             <Layers className="mr-2 h-4 w-4" />
             <span>Pages</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => navigate(`/builder/${websiteId}/products`)}>
+          <DropdownMenuItem onClick={() => {
+            if (websiteId) navigate(`/builder/${websiteId}/products`);
+          }}>
             <ShoppingBag className="mr-2 h-4 w-4" />
             <span>Products</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => navigate(`/builder/${websiteId}/orders`)}>
+          <DropdownMenuItem onClick={() => {
+            if (websiteId) navigate(`/builder/${websiteId}/orders`);
+          }}>
             <PackageCheck className="mr-2 h-4 w-4" />
             <span>Orders</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => navigate(`/builder/${websiteId}/payment-settings`)}>
+          <DropdownMenuItem onClick={() => {
+            if (websiteId) navigate(`/builder/${websiteId}/payment-settings`);
+          }}>
             <CreditCard className="mr-2 h-4 w-4" />
             <span>Payment Settings</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => navigate(`/builder/${websiteId}/shipping-settings`)}>
+          <DropdownMenuItem onClick={() => {
+            if (websiteId) navigate(`/builder/${websiteId}/shipping-settings`);
+          }}>
             <Truck className="mr-2 h-4 w-4" />
             <span>Shipping Settings</span>
           </DropdownMenuItem>
