@@ -8,6 +8,8 @@ import { Website } from '@/types/general';
 import { cn } from '@/lib/utils';
 
 interface TemplateSelectionProps {
+  websiteId: string;
+  onComplete: () => void;
   isOpen: boolean;
   onClose: () => void;
   setWebsites: React.Dispatch<React.SetStateAction<Website[]>>;
