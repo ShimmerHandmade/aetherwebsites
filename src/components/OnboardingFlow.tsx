@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import TemplateSelection from "./TemplateSelection";
 import BuilderTutorial from "./BuilderTutorial";
 import { toast } from "sonner";
+import { Website } from "@/types/general";
 
 interface OnboardingFlowProps {
   websiteId: string;
@@ -19,6 +20,7 @@ const OnboardingFlow = ({ websiteId, onComplete }: OnboardingFlowProps) => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isLoadingComplete, setIsLoadingComplete] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("Loading onboarding experience...");
+  const [websites, setWebsites] = useState<Website[]>([]);
   
   // Initialize loading state with a guaranteed minimum time
   useEffect(() => {
@@ -106,7 +108,10 @@ const OnboardingFlow = ({ websiteId, onComplete }: OnboardingFlowProps) => {
       {currentStep === OnboardingStep.TEMPLATES && (
         <TemplateSelection 
           websiteId={websiteId} 
-          onComplete={handleTemplateComplete} 
+          onComplete={handleTemplateComplete}
+          isOpen={true}
+          onClose={() => {}}
+          setWebsites={setWebsites}
         />
       )}
       

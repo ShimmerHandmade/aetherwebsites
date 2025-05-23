@@ -18,6 +18,11 @@ interface ProductManagerProps {
   onBackToBuilder?: () => void;
 }
 
+// Let's create a proper interface for the categories
+interface CategoryWithId extends UniqueCategory {
+  id: string;
+}
+
 const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuilder }) => {
   const { id: websiteIdParam } = useParams<{ id: string }>();
   const effectiveWebsiteId = websiteId || websiteIdParam;
@@ -27,18 +32,8 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
   const [initialLoading, setInitialLoading] = useState(true);
   const [initialLoadError, setInitialLoadError] = useState<string | null>(null);
   const [rawProducts, setRawProducts] = useState<Product[]>([]);
-  const [rawCategories, setRawCategories] = useState<UniqueCategory[]>([]);
+  const [rawCategories, setRawCategories] = useState<CategoryWithId[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  
-  // Improved logging
-  console.log("ProductManager mounted/updated with:", {
-    websiteId,
-    websiteIdParam,
-    effectiveWebsiteId,
-    productsCount: rawProducts.length,
-    planName: planInfo.planName,
-    maxProducts: planInfo.restrictions?.maxProducts
-  });
   
   // Enhanced data loading function
   const loadProducts = useCallback(async () => {
@@ -63,9 +58,15 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
         });
       } else {
         console.log(`Successfully loaded ${result.products.length} products and ${result.categories.length}`);
-        // Important: Set state with the new data
+        // Transform categories to include an id
+        const categoriesWithId = result.categories.map(cat => ({
+          ...cat,
+          id: cat.name.toLowerCase().replace(/\s+/g, '-')
+        }));
+        
+        // Set state with the new data
         setRawProducts(result.products);
-        setRawCategories(result.categories);
+        setRawCategories(categoriesWithId);
         setInitialLoadError(null);
       }
     } catch (error) {

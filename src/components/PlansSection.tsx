@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { CircleCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { Profile } from "@/pages/Dashboard";
-import { Plan, getPlans } from "@/api/websites";
+import { Profile } from "@/types/general";
+import { getPlans } from "@/api/websites";
 
 interface PlansSectionProps {
   profile: Profile | null;

@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { CreditCard, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { manageSubscription } from '@/api/websites';
 import { Profile } from '@/types/general';
 import { openCustomerPortal } from '@/api/websites/manageSubscription';
 

@@ -13,32 +13,42 @@ import { useCart } from '@/hooks/useCart';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, ArrowLeft, CreditCard } from 'lucide-react';
 
-interface ShippingMethod {
-  id: string;
-  name: string;
-  price: number;
-  description: string;
+// Define missing cart properties in CartContextType
+interface CheckoutFormData {
+  email: string;
+  firstName: string;
+  lastName: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+  phone: string;
+  sameAsBilling: boolean;
+  billingAddress: string;
+  billingCity: string;
+  billingState: string;
+  billingZip: string;
+  billingCountry: string;
+  cardNumber: string;
+  cardExpiry: string;
+  cardCvc: string;
+  cardholderName: string;
 }
 
-interface WeightBasedRate {
-  min: number;
-  max: number;
-  rate: number;
-}
+// Mock shipping methods
+const shippingMethods = [
+  { id: 'standard', name: 'Standard Shipping', price: 5.99, description: '3-5 business days' },
+  { id: 'express', name: 'Express Shipping', price: 14.99, description: '1-2 business days' },
+  { id: 'overnight', name: 'Overnight Shipping', price: 24.99, description: 'Next business day' }
+];
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { cart, clearCart, cartTotal } = useCart();
+  const { cart = [], clearCart, cartTotal = 0 } = useCart();
   const { id: siteId } = useParams<{ id: string }>();
   
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
-  const [selectedShippingMethod, setSelectedShippingMethod] = useState('');
-  const [shippingCost, setShippingCost] = useState(0);
-  const [totalWeight, setTotalWeight] = useState(0);
-  
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CheckoutFormData>({
     email: '',
     firstName: '',
     lastName: '',
@@ -46,179 +56,72 @@ const Checkout = () => {
     city: '',
     state: '',
     zip: '',
-    country: 'US',
+    country: 'United States',
     phone: '',
     sameAsBilling: true,
     billingAddress: '',
     billingCity: '',
     billingState: '',
     billingZip: '',
-    billingCountry: 'US',
+    billingCountry: 'United States',
     cardNumber: '',
     cardExpiry: '',
     cardCvc: '',
+    cardholderName: '',
   });
   
-  useEffect(() => {
-    if (!cart || !Array.isArray(cart) || cart.length === 0) {
-      navigate('/cart');
-      return;
-    }
-    
-    if (!siteId) {
-      console.error("No site ID found in URL");
-      navigate('/');
-      return;
-    }
-    
-    // Calculate total weight of cart items
-    let weight = 0;
-    cart.forEach(item => {
-      if (item.product && item.quantity && item.product.weight) {
-        weight += item.product.weight * item.quantity;
-      }
-    });
-    
-    setTotalWeight(weight);
-    
-    // Fetch shipping options from the database
-    const fetchShippingSettings = async () => {
-      try {
-        setLoading(true);
-        
-        const { data, error } = await supabase
-          .from('shipping_settings')
-          .select('*')
-          .eq('website_id', siteId)
-          .single();
-        
-        if (error) {
-          console.error("Error fetching shipping settings:", error);
-          // Set default shipping method
-          setShippingMethods([{
-            id: 'standard',
-            name: 'Standard Shipping',
-            price: 5.99,
-            description: '3-5 business days'
-          }]);
-          setSelectedShippingMethod('standard');
-          setShippingCost(5.99);
-          return;
-        }
-        
-        // Prepare shipping methods based on settings
-        const methods: ShippingMethod[] = [];
-        
-        // Add flat rate if enabled
-        if (data.flat_rate_enabled) {
-          methods.push({
-            id: 'flat',
-            name: 'Flat Rate Shipping',
-            price: data.flat_rate_amount || 0,
-            description: 'Fixed shipping rate'
-          });
-        }
-        
-        // Add weight-based rates if enabled
-        if (data.weight_based_enabled && data.weight_based_rates) {
-          let weightRates: WeightBasedRate[] = [];
-          
-          // Parse weight rates from data
-          if (typeof data.weight_based_rates === 'string') {
-            try {
-              weightRates = JSON.parse(data.weight_based_rates);
-            } catch (e) {
-              console.error("Error parsing weight rates:", e);
-            }
-          } else if (Array.isArray(data.weight_based_rates)) {
-            weightRates = data.weight_based_rates as unknown as WeightBasedRate[];
-          }
-          
-          // Find applicable weight rate
-          const applicableRate = weightRates.find(rate => 
-            weight >= rate.min && weight <= rate.max
-          );
-          
-          if (applicableRate) {
-            methods.push({
-              id: 'weight',
-              name: 'Weight-Based Shipping',
-              price: applicableRate.rate,
-              description: `Based on package weight (${weight.toFixed(2)} lbs)`
-            });
-          }
-        }
-        
-        // Add free shipping if enabled and applicable
-        if (data.free_shipping_enabled) {
-          const cartSubtotal = cart.reduce((total, item) => {
-            return total + (item.product?.price || 0) * (item.quantity || 1);
-          }, 0);
-          
-          if (cartSubtotal >= data.free_shipping_minimum) {
-            methods.push({
-              id: 'free',
-              name: 'Free Shipping',
-              price: 0,
-              description: 'Your order qualifies for free shipping!'
-            });
-          }
-        }
-        
-        // If no methods are available, add default
-        if (methods.length === 0) {
-          methods.push({
-            id: 'standard',
-            name: 'Standard Shipping',
-            price: 5.99,
-            description: '3-5 business days'
-          });
-        }
-        
-        setShippingMethods(methods);
-        
-        // Select the cheapest option by default
-        const cheapestMethod = methods.reduce((prev, current) => 
-          prev.price < current.price ? prev : current
-        );
-        
-        setSelectedShippingMethod(cheapestMethod.id);
-        setShippingCost(cheapestMethod.price);
-        
-      } catch (error) {
-        console.error("Error in fetchShippingSettings:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchShippingSettings();
-  }, [cart, navigate, siteId]);
+  const [submitting, setSubmitting] = useState(false);
+  const [selectedShippingMethod, setSelectedShippingMethod] = useState<string>('standard');
+  const [shippingCost, setShippingCost] = useState(5.99);
   
-  const handleShippingMethodChange = (value: string) => {
-    setSelectedShippingMethod(value);
-    const method = shippingMethods.find(m => m.id === value);
+  // Set shipping cost based on selected method
+  useEffect(() => {
+    const method = shippingMethods.find(m => m.id === selectedShippingMethod);
     if (method) {
       setShippingCost(method.price);
     }
-  };
+  }, [selectedShippingMethod]);
   
+  // Redirect if cart is empty
+  useEffect(() => {
+    if (!cart || cart.length === 0) {
+      toast.error("Your cart is empty");
+      navigate('/');
+    }
+  }, [cart, navigate]);
+  
+  // Form input handlers
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
   
   const handleCheckboxChange = (checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      sameAsBilling: checked,
-      // Copy shipping address to billing if checked
-      billingAddress: checked ? prev.address : prev.billingAddress,
-      billingCity: checked ? prev.city : prev.billingCity,
-      billingState: checked ? prev.state : prev.billingState,
-      billingZip: checked ? prev.zip : prev.billingZip,
-      billingCountry: checked ? prev.country : prev.billingCountry,
-    }));
+    setFormData(prev => ({ ...prev, sameAsBilling: checked }));
+  };
+  
+  const handleShippingMethodChange = (value: string) => {
+    setSelectedShippingMethod(value);
+  };
+  
+  // Mock payment processing
+  const mockProcessPayment = () => {
+    return new Promise<boolean>((resolve) => {
+      // In a real app, this would make a request to Stripe or another payment processor
+      setTimeout(() => {
+        const success = Math.random() > 0.1; // 90% success rate
+        resolve(success);
+      }, 1500);
+    });
+  };
+  
+  // Helper function to determine card brand
+  const detectCardBrand = (cardNumber: string) => {
+    if (cardNumber.startsWith('4')) return 'visa';
+    if (cardNumber.startsWith('5')) return 'mastercard';
+    if (cardNumber.startsWith('3')) return 'amex';
+    if (cardNumber.startsWith('6')) return 'discover';
+    return 'unknown';
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -274,18 +177,6 @@ const Checkout = () => {
       
       const selectedMethod = shippingMethods.find(m => m.id === selectedShippingMethod);
       
-      const orderData = {
-        website_id: siteId,
-        customer_email: formData.email,
-        shipping_address: shippingAddress,
-        billing_address: billingAddress,
-        shipping_method: selectedMethod?.name || 'Standard Shipping',
-        shipping_cost: shippingCost,
-        payment_info: paymentInfo,
-        status: 'processing',
-        total_amount: cartTotal + shippingCost,
-      };
-      
       // Process payment (mock)
       const paymentProcessed = await mockProcessPayment();
       
@@ -295,21 +186,34 @@ const Checkout = () => {
       }
       
       // Create order in database
-      const { data: orderData, error: orderError } = await supabase
+      const { data, error } = await supabase
         .from('orders')
-        .insert([orderData])
-        .select('id')
-        .single();
+        .insert({
+          website_id: siteId,
+          customer_email: formData.email,
+          shipping_address: shippingAddress,
+          billing_address: billingAddress,
+          shipping_method: selectedMethod?.name || 'Standard Shipping',
+          shipping_cost: shippingCost,
+          payment_info: paymentInfo,
+          status: 'processing',
+          total_amount: cartTotal + shippingCost,
+        })
+        .select();
       
-      if (orderError) throw orderError;
+      if (error) throw error;
       
-      if (!orderData?.id) {
+      // Make sure we have order data
+      if (!data || data.length === 0) {
         throw new Error("Failed to create order");
       }
       
+      // Extract the order ID for order items
+      const createdOrderId = data[0].id;
+      
       // Create order items
       const orderItems = cart.map(item => ({
-        order_id: orderData.id,
+        order_id: createdOrderId,
         product_id: item.product.id,
         product_name: item.product.name,
         product_image_url: item.product.image_url,
@@ -326,9 +230,9 @@ const Checkout = () => {
       // Clear cart and redirect to order confirmation
       clearCart();
       toast.success("Order placed successfully!");
-      navigate(`/order-confirmation/${orderData.id}`);
+      navigate(`/order-confirmation/${createdOrderId}`);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error submitting order:", error);
       toast.error("Failed to place your order. Please try again.");
     } finally {
@@ -336,63 +240,36 @@ const Checkout = () => {
     }
   };
   
-  // Mock payment processing
-  const mockProcessPayment = async () => {
-    return new Promise<boolean>((resolve) => {
-      setTimeout(() => {
-        // Simulate 95% success rate
-        const success = Math.random() < 0.95;
-        resolve(success);
-      }, 1500);
-    });
-  };
-  
-  // Helper function to detect card brand
-  const detectCardBrand = (cardNumber: string): string => {
-    // Basic card brand detection
-    if (/^4/.test(cardNumber)) return 'Visa';
-    if (/^5[1-5]/.test(cardNumber)) return 'Mastercard';
-    if (/^3[47]/.test(cardNumber)) return 'American Express';
-    if (/^6(?:011|5)/.test(cardNumber)) return 'Discover';
-    return 'Unknown';
-  };
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen p-4 md:p-8 bg-gray-50 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin mr-2" />
-        <span>Loading checkout...</span>
-      </div>
-    );
+  if (!cart) {
+    return <div>Loading...</div>;
   }
   
   return (
-    <div className="min-h-screen p-4 md:p-8 bg-gray-50">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4">
         <Button 
           variant="ghost" 
-          onClick={() => navigate(-1)} 
-          className="mb-6"
+          onClick={() => navigate(-1)}
+          className="mb-6 flex items-center"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Cart
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Cart
         </Button>
         
         <h1 className="text-3xl font-bold mb-8">Checkout</h1>
         
         <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left column - Customer info and shipping */}
-            <div className="lg:col-span-2 space-y-6">
+          <div className="flex flex-col md:flex-row gap-8">
+            <div className="w-full md:w-2/3 space-y-8">
+              {/* Customer Information */}
               <Card className="p-6">
-                <h2 className="font-semibold text-xl mb-4">Contact Information</h2>
+                <h2 className="text-xl font-semibold mb-4">Customer Information</h2>
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="email">Email Address</Label>
                     <Input 
                       id="email"
                       name="email"
-                      type="email" 
+                      type="email"
                       value={formData.email}
                       onChange={handleInputChange}
                       required
@@ -401,8 +278,9 @@ const Checkout = () => {
                 </div>
               </Card>
               
+              {/* Shipping Address */}
               <Card className="p-6">
-                <h2 className="font-semibold text-xl mb-4">Shipping Address</h2>
+                <h2 className="text-xl font-semibold mb-4">Shipping Address</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="firstName">First Name</Label>
@@ -444,34 +322,41 @@ const Checkout = () => {
                       required
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label htmlFor="state">State</Label>
-                      <Input 
-                        id="state"
-                        name="state"
-                        value={formData.state}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="zip">ZIP Code</Label>
-                      <Input 
-                        id="zip"
-                        name="zip"
-                        value={formData.zip}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
+                  <div>
+                    <Label htmlFor="state">State/Province</Label>
+                    <Input 
+                      id="state"
+                      name="state"
+                      value={formData.state}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
                   <div>
+                    <Label htmlFor="zip">ZIP/Postal Code</Label>
+                    <Input 
+                      id="zip"
+                      name="zip"
+                      value={formData.zip}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="country">Country</Label>
+                    <Input 
+                      id="country"
+                      name="country"
+                      value={formData.country}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div className="md:col-span-2">
                     <Label htmlFor="phone">Phone Number</Label>
                     <Input 
                       id="phone"
                       name="phone"
-                      type="tel"
                       value={formData.phone}
                       onChange={handleInputChange}
                       required
@@ -480,19 +365,17 @@ const Checkout = () => {
                 </div>
               </Card>
               
+              {/* Billing Address */}
               <Card className="p-6">
-                <h2 className="font-semibold text-xl mb-4">Billing Address</h2>
-                <div className="mb-4">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="sameAsBilling" 
-                      checked={formData.sameAsBilling} 
-                      onCheckedChange={handleCheckboxChange} 
-                    />
-                    <Label htmlFor="sameAsBilling" className="text-sm font-medium">
-                      Same as shipping address
-                    </Label>
-                  </div>
+                <div className="flex items-center mb-4">
+                  <Checkbox 
+                    id="sameAsBilling"
+                    checked={formData.sameAsBilling}
+                    onCheckedChange={handleCheckboxChange}
+                  />
+                  <Label htmlFor="sameAsBilling" className="ml-2">
+                    Billing address is same as shipping address
+                  </Label>
                 </div>
                 
                 {!formData.sameAsBilling && (
@@ -517,77 +400,96 @@ const Checkout = () => {
                         required={!formData.sameAsBilling}
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label htmlFor="billingState">State</Label>
-                        <Input 
-                          id="billingState"
-                          name="billingState"
-                          value={formData.billingState}
-                          onChange={handleInputChange}
-                          required={!formData.sameAsBilling}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="billingZip">ZIP Code</Label>
-                        <Input 
-                          id="billingZip"
-                          name="billingZip"
-                          value={formData.billingZip}
-                          onChange={handleInputChange}
-                          required={!formData.sameAsBilling}
-                        />
-                      </div>
+                    <div>
+                      <Label htmlFor="billingState">State/Province</Label>
+                      <Input 
+                        id="billingState"
+                        name="billingState"
+                        value={formData.billingState}
+                        onChange={handleInputChange}
+                        required={!formData.sameAsBilling}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="billingZip">ZIP/Postal Code</Label>
+                      <Input 
+                        id="billingZip"
+                        name="billingZip"
+                        value={formData.billingZip}
+                        onChange={handleInputChange}
+                        required={!formData.sameAsBilling}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="billingCountry">Country</Label>
+                      <Input 
+                        id="billingCountry"
+                        name="billingCountry"
+                        value={formData.billingCountry}
+                        onChange={handleInputChange}
+                        required={!formData.sameAsBilling}
+                      />
                     </div>
                   </div>
                 )}
               </Card>
               
+              {/* Shipping Method */}
               <Card className="p-6">
-                <h2 className="font-semibold text-xl mb-4">Shipping Method</h2>
-                {shippingMethods.length > 0 ? (
-                  <RadioGroup 
-                    value={selectedShippingMethod} 
-                    onValueChange={handleShippingMethodChange}
-                  >
-                    <div className="space-y-3">
-                      {shippingMethods.map((method) => (
-                        <div 
-                          key={method.id}
-                          className="flex items-center justify-between border rounded-md p-4"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <RadioGroupItem value={method.id} id={method.id} />
-                            <div>
-                              <Label htmlFor={method.id} className="font-medium">{method.name}</Label>
-                              <p className="text-sm text-gray-500">{method.description}</p>
-                            </div>
+                <h2 className="text-xl font-semibold mb-4">Shipping Method</h2>
+                <RadioGroup 
+                  value={selectedShippingMethod} 
+                  onValueChange={handleShippingMethodChange}
+                  className="space-y-4"
+                >
+                  {shippingMethods.map(method => (
+                    <div 
+                      key={method.id} 
+                      className={`flex items-center justify-between border p-4 rounded-md ${selectedShippingMethod === method.id ? 'border-primary bg-primary/5' : 'border-gray-200'}`}
+                    >
+                      <div className="flex items-center">
+                        <RadioGroupItem value={method.id} id={`shipping-${method.id}`} />
+                        <Label htmlFor={`shipping-${method.id}`} className="ml-2">
+                          <div>
+                            <p className="font-medium">{method.name}</p>
+                            <p className="text-sm text-gray-500">{method.description}</p>
                           </div>
-                          <span className="font-medium">
-                            {method.price === 0 ? 'FREE' : `$${method.price.toFixed(2)}`}
-                          </span>
-                        </div>
-                      ))}
+                        </Label>
+                      </div>
+                      <div className="font-medium">${method.price.toFixed(2)}</div>
                     </div>
-                  </RadioGroup>
-                ) : (
-                  <p>No shipping methods available.</p>
-                )}
+                  ))}
+                </RadioGroup>
               </Card>
               
+              {/* Payment */}
               <Card className="p-6">
-                <h2 className="font-semibold text-xl mb-4">Payment Information</h2>
+                <h2 className="text-xl font-semibold mb-4">Payment Information</h2>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="cardNumber">Card Number</Label>
+                    <Label htmlFor="cardholderName">Cardholder Name</Label>
                     <Input 
-                      id="cardNumber"
-                      name="cardNumber"
-                      placeholder="1234 5678 9012 3456" 
-                      value={formData.cardNumber}
+                      id="cardholderName"
+                      name="cardholderName"
+                      value={formData.cardholderName}
                       onChange={handleInputChange}
                       required
                     />
+                  </div>
+                  <div>
+                    <Label htmlFor="cardNumber">Card Number</Label>
+                    <div className="relative">
+                      <Input 
+                        id="cardNumber"
+                        name="cardNumber"
+                        value={formData.cardNumber}
+                        onChange={handleInputChange}
+                        placeholder="0000 0000 0000 0000"
+                        maxLength={19}
+                        required
+                      />
+                      <CreditCard className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -595,20 +497,21 @@ const Checkout = () => {
                       <Input 
                         id="cardExpiry"
                         name="cardExpiry"
-                        placeholder="MM/YY" 
                         value={formData.cardExpiry}
                         onChange={handleInputChange}
+                        placeholder="MM/YY"
+                        maxLength={5}
                         required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="cardCvc">Security Code</Label>
+                      <Label htmlFor="cardCvc">CVC</Label>
                       <Input 
                         id="cardCvc"
                         name="cardCvc"
-                        placeholder="CVC" 
                         value={formData.cardCvc}
                         onChange={handleInputChange}
+                        maxLength={4}
                         required
                       />
                     </div>
@@ -617,60 +520,69 @@ const Checkout = () => {
               </Card>
             </div>
             
-            {/* Right column - Order summary */}
-            <div className="lg:col-span-1">
-              <Card className="p-6 sticky top-6">
-                <h2 className="font-semibold text-xl mb-4">Order Summary</h2>
-                
-                <div className="space-y-4">
-                  {cart && Array.isArray(cart) && cart.map((item, index) => (
-                    <div key={index} className="flex justify-between">
-                      <div className="flex">
-                        <span className="font-medium">{item.quantity} × </span>
-                        <span className="ml-2">{item.product.name}</span>
+            {/* Order Summary */}
+            <div className="w-full md:w-1/3">
+              <Card className="p-6 sticky top-4">
+                <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+                <div className="space-y-4 mb-4">
+                  {cart.map((item) => (
+                    <div key={item.product.id} className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <div className="mr-3 text-gray-600">
+                          {item.quantity}x
+                        </div>
+                        <div>
+                          <p className="font-medium">{item.product.name}</p>
+                          <p className="text-sm text-gray-500 truncate max-w-[200px]">
+                            {item.product.description?.substring(0, 30)}
+                            {item.product.description && item.product.description.length > 30 ? '...' : ''}
+                          </p>
+                        </div>
                       </div>
-                      <span>${(item.product.price * item.quantity).toFixed(2)}</span>
+                      <div className="font-medium">
+                        ${(item.product.price * item.quantity).toFixed(2)}
+                      </div>
                     </div>
                   ))}
-                  
-                  <Separator />
-                  
+                </div>
+                
+                <Separator className="my-4" />
+                
+                <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
                     <span>${cartTotal.toFixed(2)}</span>
                   </div>
-                  
                   <div className="flex justify-between">
                     <span>Shipping</span>
-                    <span>{shippingCost === 0 ? 'FREE' : `$${shippingCost.toFixed(2)}`}</span>
+                    <span>${shippingCost.toFixed(2)}</span>
                   </div>
-                  
-                  <Separator />
-                  
-                  <div className="flex justify-between font-semibold text-lg">
+                  <Separator className="my-2" />
+                  <div className="flex justify-between font-bold">
                     <span>Total</span>
                     <span>${(cartTotal + shippingCost).toFixed(2)}</span>
                   </div>
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full mt-6" 
-                    size="lg"
-                    disabled={submitting}
-                  >
-                    {submitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="mr-2 h-4 w-4" />
-                        Complete Order
-                      </>
-                    )}
-                  </Button>
                 </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full mt-6" 
+                  size="lg" 
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Place Order'
+                  )}
+                </Button>
+                
+                <p className="text-xs text-center text-gray-500 mt-4">
+                  By placing your order, you agree to our Terms of Service and Privacy Policy
+                </p>
               </Card>
             </div>
           </div>

@@ -8,14 +8,14 @@ import { Website } from '@/types/general';
 import { cn } from '@/lib/utils';
 
 interface TemplateSelectionProps {
-  websiteId: string;
-  onComplete: () => void;
+  websiteId?: string;
+  onComplete?: () => void;
   isOpen: boolean;
   onClose: () => void;
   setWebsites: React.Dispatch<React.SetStateAction<Website[]>>;
 }
 
-const TemplateSelection = ({ isOpen, onClose, setWebsites }: TemplateSelectionProps) => {
+const TemplateSelection = ({ isOpen, onClose, setWebsites, websiteId, onComplete }: TemplateSelectionProps) => {
   const [selectedTemplate, setSelectedTemplate] = useState<string>('blank');
   const [websiteName, setWebsiteName] = useState<string>('My New Website');
   const [isCreating, setIsCreating] = useState<boolean>(false);
@@ -23,9 +23,10 @@ const TemplateSelection = ({ isOpen, onClose, setWebsites }: TemplateSelectionPr
   const templates = [
     { id: 'blank', name: 'Blank Site', description: 'Start from scratch' },
     { id: 'business', name: 'Business', description: 'Professional business template' },
-    { id: 'portfolio', name: 'Portfolio', description: 'Showcase your work' },
     { id: 'ecommerce', name: 'E-commerce', description: 'Online store template' },
-    // Add more templates as needed
+    { id: 'fashion', name: 'Fashion', description: 'Clothing store template' },
+    { id: 'electronics', name: 'Electronics', description: 'Tech store template' },
+    { id: 'furniture', name: 'Furniture', description: 'Home goods store' }
   ];
 
   const handleTemplateSelect = (templateId: string) => {
@@ -48,29 +49,45 @@ const TemplateSelection = ({ isOpen, onClose, setWebsites }: TemplateSelectionPr
         return;
       }
 
-      // Create a new website
-      const { data, error } = await supabase
-        .from('websites')
-        .insert([
-          {
+      // If websiteId is provided, it means we're updating an existing website template
+      if (websiteId) {
+        const { error } = await supabase
+          .from('websites')
+          .update({
+            template: selectedTemplate !== 'blank' ? selectedTemplate : null,
+          })
+          .eq('id', websiteId);
+
+        if (error) throw error;
+        
+        toast.success('Template selected successfully');
+        
+        if (onComplete) {
+          onComplete();
+        }
+      } else {
+        // Create a new website
+        const { data, error } = await supabase
+          .from('websites')
+          .insert({
             name: websiteName,
-            user_id: user.id,
+            owner_id: user.id,  // Use owner_id instead of user_id
             template: selectedTemplate !== 'blank' ? selectedTemplate : null,
             content: {},
             settings: {}
-          }
-        ])
-        .select();
+          })
+          .select();
 
-      if (error) throw error;
+        if (error) throw error;
 
-      if (data && data.length > 0) {
-        toast.success('Website created successfully');
-        setWebsites(prev => [data[0], ...prev]);
-        onClose();
+        if (data && data.length > 0) {
+          toast.success('Website created successfully');
+          setWebsites(prev => [data[0], ...prev]);
+          onClose();
+        }
       }
     } catch (error) {
-      console.error('Error creating website:', error);
+      console.error('Error creating/updating website:', error);
       toast.error('Failed to create website');
     } finally {
       setIsCreating(false);

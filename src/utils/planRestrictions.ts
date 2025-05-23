@@ -1,5 +1,6 @@
 
 import { Profile } from '@/types/general';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface PlanRestriction {
   maxProducts: number;
@@ -7,6 +8,10 @@ export interface PlanRestriction {
   maxWebsites: number;
   hasAdvancedAnalytics: boolean;
   hasCustomDomain: boolean;
+  allowCoupons: boolean;
+  allowDiscounts: boolean;
+  allowPremiumTemplates: boolean;
+  allowPremiumElements: boolean;
 }
 
 // Helper function to check if a user has access to a feature based on their subscription
@@ -48,6 +53,10 @@ export const getPlanLimits = (profile: Profile | null): PlanRestriction => {
     maxWebsites: 1,
     hasAdvancedAnalytics: false,
     hasCustomDomain: false,
+    allowCoupons: false,
+    allowDiscounts: false,
+    allowPremiumTemplates: false,
+    allowPremiumElements: false
   };
   
   if (!profile || !profile.is_subscribed) {
@@ -63,6 +72,10 @@ export const getPlanLimits = (profile: Profile | null): PlanRestriction => {
       maxWebsites: 10,
       hasAdvancedAnalytics: true,
       hasCustomDomain: true,
+      allowCoupons: true,
+      allowDiscounts: true,
+      allowPremiumTemplates: true,
+      allowPremiumElements: true
     };
   }
   
@@ -73,6 +86,10 @@ export const getPlanLimits = (profile: Profile | null): PlanRestriction => {
       maxWebsites: 3,
       hasAdvancedAnalytics: false,
       hasCustomDomain: true,
+      allowCoupons: true,
+      allowDiscounts: false,
+      allowPremiumTemplates: false,
+      allowPremiumElements: false
     };
   }
   
@@ -140,6 +157,10 @@ export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
       maxWebsites: 1,
       hasAdvancedAnalytics: false,
       hasCustomDomain: false,
+      allowCoupons: false,
+      allowDiscounts: false,
+      allowPremiumTemplates: false,
+      allowPremiumElements: false
     };
   }
   
@@ -152,6 +173,3 @@ export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
   
   return getPlanLimits(profile);
 };
-
-// Add the supabase import at the top of the file
-import { supabase } from '@/integrations/supabase/client';

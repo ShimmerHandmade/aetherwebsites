@@ -1,9 +1,8 @@
 
-// Re-export all website API functions
-export * from './deleteWebsite';
-export * from './getPlans';
-export * from './getUserPlan';
-export * from './getUserPlanSimplified';
-export * from './checkSubscription';
-export * from './manageSubscription';
-export * from './updateWebsiteTemplate';
+export { checkSubscription } from './checkSubscription';
+export { deleteWebsite } from './deleteWebsite';
+export { getUserPlan } from './getUserPlan';
+export { getUserPlanSimplified } from './getUserPlanSimplified';
+export { getPlans } from './getPlans';
+export { openCustomerPortal } from './manageSubscription';
+export { updateWebsiteTemplate } from './updateWebsiteTemplate';
