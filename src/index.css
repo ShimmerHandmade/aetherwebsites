@@ -110,3 +110,26 @@
 .hover\:text-brand-600:hover {
   color: #6366f1;
 }
+
+/* Enhanced styling for pricing cards and features */
+.pricing-card {
+  transition: all 0.3s ease;
+}
+
+.pricing-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Gradient backgrounds for sections */
+.bg-gradient-hero {
+  background: linear-gradient(135deg, #f5f7fa 0%, #eef2f7 100%);
+}
+
+.bg-gradient-cta {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+}
+
+/* Card shadows */
+.shadow-soft {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}

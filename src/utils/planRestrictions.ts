@@ -1,3 +1,4 @@
+
 import { Profile } from '@/types/general';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -12,37 +13,6 @@ export interface PlanRestriction {
   hasAllowPremiumTemplates: boolean;
   hasAllowPremiumElements: boolean;
 }
-
-// Helper function to check if a user has access to a feature based on their subscription
-export const hasFeatureAccess = (profile: Profile | null, featureName: string): boolean => {
-  if (!profile) return false;
-  
-  // If the profile is not subscribed, only allow basic features
-  if (!profile.is_subscribed) {
-    const basicFeatures = ['basic_builder', 'single_website'];
-    return basicFeatures.includes(featureName);
-  }
-  
-  // For subscribed users, check the plan level
-  const planType = profile.subscription_type?.toLowerCase() || '';
-  
-  if (planType === 'pro') {
-    return true; // Pro plan has access to all features
-  }
-  
-  if (planType === 'basic') {
-    const basicPlanFeatures = [
-      'basic_builder',
-      'custom_domain',
-      'limited_products',
-      'limited_pages',
-      'single_website',
-    ];
-    return basicPlanFeatures.includes(featureName);
-  }
-  
-  return false;
-};
 
 // Helper to get limits based on plan
 export const getPlanLimits = (profile: Profile | null): PlanRestriction => {
@@ -62,9 +32,13 @@ export const getPlanLimits = (profile: Profile | null): PlanRestriction => {
     return defaults;
   }
   
-  const planType = profile.subscription_type?.toLowerCase() || '';
+  const planName = profile.plan_id ? profile.plan_id.toLowerCase() : '';
   
-  if (planType === 'pro') {
+  // Check if plan is enterprise/professional based on the plan name
+  const isEnterprise = planName.includes('enterprise') || profile.subscription_type?.toLowerCase() === 'enterprise';
+  const isProfessional = planName.includes('pro') || profile.subscription_type?.toLowerCase() === 'professional';
+  
+  if (isEnterprise) {
     return {
       maxProducts: 1000,
       maxPages: 100,
@@ -78,21 +52,31 @@ export const getPlanLimits = (profile: Profile | null): PlanRestriction => {
     };
   }
   
-  if (planType === 'basic') {
+  if (isProfessional) {
     return {
       maxProducts: 100,
       maxPages: 20,
       maxWebsites: 3,
-      hasAdvancedAnalytics: false,
+      hasAdvancedAnalytics: true,
       hasCustomDomain: true,
       hasAllowCoupons: true,
-      hasAllowDiscounts: false,
-      hasAllowPremiumTemplates: false,
+      hasAllowDiscounts: true,
+      hasAllowPremiumTemplates: true,
       hasAllowPremiumElements: false
     };
   }
   
-  return defaults;
+  return {
+    maxProducts: 20,
+    maxPages: 10,
+    maxWebsites: 1,
+    hasAdvancedAnalytics: false,
+    hasCustomDomain: true,
+    hasAllowCoupons: false,
+    hasAllowDiscounts: false,
+    hasAllowPremiumTemplates: false,
+    hasAllowPremiumElements: false
+  };
 };
 
 // Function to check product limits based on profile
@@ -140,7 +124,15 @@ export const checkThemeAccess = async (themeName: string): Promise<boolean> => {
     return basicThemes.includes(themeName.toLowerCase());
   }
   
-  // All themes are accessible for subscribed users
+  const planType = profile.subscription_type?.toLowerCase() || '';
+  
+  // Premium themes only available for Professional and Enterprise plans
+  if (themeName.toLowerCase().includes('premium') && 
+     !(planType === 'professional' || planType === 'enterprise')) {
+    return false;
+  }
+  
+  // All themes are accessible for subscribed users with appropriate plan
   return true;
 };
 

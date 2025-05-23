@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { CircleCheck } from "lucide-react";
+import { CircleCheck, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -73,8 +72,8 @@ const PricingSection = () => {
       // If the feature contains tier information (T1:, T2:, T3:)
       if (typeof feature === 'string' && feature.match(/^T[1-3]:/)) {
         const featureTier = parseInt(feature.charAt(1));
-        // Only show features exactly matching this plan's tier
-        return featureTier === planIndex + 1;
+        // Include features for this tier and below
+        return featureTier <= planIndex + 1;
       }
       // Otherwise include all features (backward compatibility)
       return true;
@@ -104,7 +103,7 @@ const PricingSection = () => {
   };
 
   return (
-    <section id="pricing" className="py-20 relative">
+    <section id="pricing" className="py-20 relative bg-gradient-to-b from-slate-50 to-white">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -143,7 +142,7 @@ const PricingSection = () => {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-lg p-6 shadow-md h-96 animate-pulse"></div>
+              <div key={i} className="bg-white rounded-2xl p-6 shadow-lg h-96 animate-pulse"></div>
             ))}
           </div>
         ) : (
@@ -155,13 +154,16 @@ const PricingSection = () => {
               return (
                 <div
                   key={plan.id}
-                  className={`pricing-card bg-white rounded-lg shadow-lg p-6 border ${
-                    plan.isPopular ? 'border-indigo-500 ring-2 ring-indigo-500 ring-opacity-50' : 'border-gray-200'
-                  } relative`}
+                  className={`pricing-card bg-white rounded-2xl shadow-xl p-8 border ${
+                    plan.isPopular ? 'border-indigo-500 ring-2 ring-indigo-500 ring-opacity-50 transform md:-translate-y-4' : 'border-gray-100'
+                  } relative transition-all duration-300 hover:shadow-2xl`}
                 >
                   {plan.isPopular && (
-                    <div className="absolute top-0 right-0 bg-indigo-500 text-white px-4 py-1 rounded-bl-lg rounded-tr-lg text-sm font-medium">
-                      Popular
+                    <div className="absolute top-0 right-0 bg-indigo-500 text-white px-4 py-2 rounded-bl-lg rounded-tr-lg text-sm font-medium">
+                      <div className="flex items-center">
+                        <Star className="h-4 w-4 mr-1 fill-white" />
+                        Most Popular
+                      </div>
                     </div>
                   )}
                   
@@ -171,11 +173,15 @@ const PricingSection = () => {
                       <span className="text-4xl font-bold">${isAnnual ? plan.annual_price : plan.monthly_price}</span>
                       <span className="text-gray-500 ml-2">/{isAnnual ? 'year' : 'month'}</span>
                     </div>
-                    <p className="text-gray-600 mt-2">{plan.description}</p>
+                    <p className="text-gray-600 mt-2 h-12">{plan.description}</p>
                   </div>
 
                   <Button 
-                    className={`w-full ${plan.isPopular ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
+                    className={`w-full py-6 ${
+                      plan.isPopular 
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white' 
+                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                    }`}
                     onClick={() => handlePlanSelect(plan)}
                   >
                     Choose {plan.name}
@@ -185,8 +191,8 @@ const PricingSection = () => {
                     <p className="text-sm uppercase font-semibold text-gray-500">What's included:</p>
                     {planFeatures.map((feature, idx) => (
                       <div key={idx} className="flex items-start">
-                        <CircleCheck className="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" />
-                        <span>{feature}</span>
+                        <CircleCheck className={`h-5 w-5 ${plan.isPopular ? 'text-indigo-500' : 'text-green-500'} mr-3 flex-shrink-0 mt-0.5`} />
+                        <span className="text-gray-700">{feature}</span>
                       </div>
                     ))}
                   </div>
