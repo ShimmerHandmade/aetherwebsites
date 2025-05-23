@@ -41,7 +41,7 @@ const DashboardNavbar = ({ profile }: DashboardNavbarProps) => {
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             <a href="/" className="text-2xl font-bold gradient-text">
-              ModernBuilder
+              Aether
             </a>
             
             <div className="hidden md:flex ml-10 space-x-6">
