@@ -33,7 +33,7 @@ const Navbar = () => {
       <div className="container mx-auto flex justify-between items-center">
         <div className="flex items-center">
           <a href="/" className="text-2xl font-bold gradient-text">
-            Aether
+            Aether Websites
           </a>
         </div>
 
