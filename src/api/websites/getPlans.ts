@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-// Define the Plan type
+// Define the Plan type with explicit types to avoid recursive instantiation
 export interface Plan {
   id: string;
   name: string;
@@ -28,13 +28,10 @@ export const getPlans = async () => {
     }
     
     // Transform data to match the Plan interface
-    const plans = data.map(plan => {
-      const features = Array.isArray(plan.features) ? plan.features : [];
-      return {
-        ...plan,
-        features
-      } as Plan;
-    });
+    const plans = data.map(plan => ({
+      ...plan,
+      features: Array.isArray(plan.features) ? plan.features : []
+    })) as Plan[];
     
     return { plans, error: null };
   } catch (err: any) {

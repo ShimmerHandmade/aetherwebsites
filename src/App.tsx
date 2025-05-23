@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import Dashboard from './pages/Dashboard';
 import Auth from './pages/Auth';
@@ -18,6 +18,7 @@ import Shop from './pages/Shop';
 import View from './pages/View';
 import PageManager from './pages/builder/PageManager';
 import ProductManager from './pages/builder/ProductManager';
+import Index from './pages/Index';
 
 function App() {
   const [session, setSession] = useState(null);
@@ -37,28 +38,28 @@ function App() {
   return (
     <>
       <Routes>
-        {!session ? (
-          <>
-            <Route path="/login" element={<Auth />} />
-            <Route path="/register" element={<Auth />} />
-            <Route path="*" element={<Auth />} />
-          </>
-        ) : (
-          <>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/builder/:id" element={<Builder />} />
-            <Route path="/builder/:id/settings" element={<SiteSettings />} />
-            <Route path="/builder/:id/page-settings" element={<PageSettings />} />
-            <Route path="/builder/:id/payment-settings" element={<PaymentSettings />} />
-            <Route path="/builder/:id/shipping-settings" element={<ShippingSettings />} />
-            <Route path="/builder/:id/orders" element={<OrderManagement />} />
-            <Route path="/builder/:id/shop" element={<Shop />} />
-            <Route path="/builder/:id/pages" element={<PageManager />} />
-            <Route path="/builder/:id/products" element={<ProductManager />} />
-            <Route path="/view/:id" element={<View />} />
-          </>
-        )}
+        {/* Public routes */}
+        <Route path="/" element={<Index />} />
+        <Route path="/login" element={<Auth />} />
+        <Route path="/register" element={<Auth />} />
+        
+        {/* Protected routes - redirect to login if not authenticated */}
+        <Route path="/dashboard" element={session ? <Dashboard /> : <Navigate to="/login" />} />
+        <Route path="/builder/:id" element={session ? <Builder /> : <Navigate to="/login" />} />
+        <Route path="/builder/:id/settings" element={session ? <SiteSettings /> : <Navigate to="/login" />} />
+        <Route path="/builder/:id/page-settings" element={session ? <PageSettings /> : <Navigate to="/login" />} />
+        <Route path="/builder/:id/payment-settings" element={session ? <PaymentSettings /> : <Navigate to="/login" />} />
+        <Route path="/builder/:id/shipping-settings" element={session ? <ShippingSettings /> : <Navigate to="/login" />} />
+        <Route path="/builder/:id/orders" element={session ? <OrderManagement /> : <Navigate to="/login" />} />
+        <Route path="/builder/:id/shop" element={session ? <Shop /> : <Navigate to="/login" />} />
+        <Route path="/builder/:id/pages" element={session ? <PageManager /> : <Navigate to="/login" />} />
+        <Route path="/builder/:id/products" element={session ? <ProductManager /> : <Navigate to="/login" />} />
+        
+        {/* Public website view routes */}
+        <Route path="/view/:id" element={<View />} />
+        
+        {/* Catch-all route */}
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       <Toaster />
     </>

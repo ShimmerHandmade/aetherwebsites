@@ -1,4 +1,3 @@
-
 // Profile types
 export interface Profile {
   id: string;

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -130,7 +129,13 @@ const ShippingSettingsPage = () => {
           setWeightRates(rates);
         } else {
           // Set default values if no settings found
-          setWeightRates([{ min_weight: 0, max_weight: 1, rate: 5 }]);
+          setWeightRates([{ 
+            min: 0, 
+            max: 1, 
+            rate: 5, 
+            min_weight: 0, 
+            max_weight: 1 
+          }]);
         }
       } catch (error) {
         console.error("Error fetching shipping settings:", error);
@@ -145,10 +150,12 @@ const ShippingSettingsPage = () => {
   
   const handleAddWeightRate = () => {
     const lastRate = weightRates[weightRates.length - 1];
-    const newRate = {
-      min_weight: lastRate ? lastRate.max_weight : 0,
-      max_weight: lastRate ? lastRate.max_weight + 1 : 1,
-      rate: 5
+    const newRate: WeightBasedRate = {
+      min: lastRate ? lastRate.max : 0,
+      max: lastRate ? lastRate.max + 1 : 1,
+      rate: 5,
+      min_weight: lastRate ? lastRate.max_weight || lastRate.max : 0,
+      max_weight: lastRate ? (lastRate.max_weight || lastRate.max) + 1 : 1
     };
     setWeightRates([...weightRates, newRate]);
   };
@@ -162,6 +169,14 @@ const ShippingSettingsPage = () => {
   const handleWeightRateChange = (index: number, field: keyof WeightBasedRate, value: number) => {
     const newRates = [...weightRates];
     newRates[index] = { ...newRates[index], [field]: value };
+    
+    // Keep min_weight and max_weight in sync with min and max
+    if (field === 'min') {
+      newRates[index].min_weight = value;
+    } else if (field === 'max') {
+      newRates[index].max_weight = value;
+    }
+    
     setWeightRates(newRates);
   };
   
