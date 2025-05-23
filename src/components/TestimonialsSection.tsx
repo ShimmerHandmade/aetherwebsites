@@ -1,19 +1,19 @@
 
 const testimonials = [
   {
-    content: "ModernBuilder made setting up my online store incredibly easy. I was able to launch within a week and sales have been growing ever since.",
+    content: "Aether made setting up my online store incredibly easy. I was able to launch within a week and sales have been growing ever since.",
     author: "Sarah Johnson",
     position: "Owner, Handmade Jewelry Shop",
     avatar: "https://randomuser.me/api/portraits/women/12.jpg"
   },
   {
-    content: "I've tried many e-commerce platforms, but ModernBuilder offers the perfect balance of simplicity and powerful features. Highly recommend!",
+    content: "I've tried many e-commerce platforms, but Aether offers the perfect balance of simplicity and powerful features. Highly recommend!",
     author: "Michael Chen",
     position: "Founder, Organic Food Market",
     avatar: "https://randomuser.me/api/portraits/men/32.jpg"
   },
   {
-    content: "The customer support team at ModernBuilder is exceptional. They helped me customize my store exactly how I wanted it.",
+    content: "The customer support team at Aether is exceptional. They helped me customize my store exactly how I wanted it.",
     author: "Emma Rodriguez",
     position: "CEO, Fashion Boutique",
     avatar: "https://randomuser.me/api/portraits/women/65.jpg"
@@ -29,7 +29,7 @@ const TestimonialsSection = () => {
             Trusted by <span className="gradient-text">Thousands</span> of Businesses
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            See what our customers say about ModernBuilder.
+            See what our customers say about Aether.
           </p>
         </div>
 

@@ -28,19 +28,9 @@ const features = [
     icon: <Calendar className="w-6 h-6 text-brand-600" />
   },
   {
-    title: "Custom Discounts",
-    description: "Create coupons and promotions to drive sales and reward your customers.",
-    icon: <Tag className="w-6 h-6 text-brand-600" />
-  },
-  {
     title: "Multiple Websites",
     description: "Create 1 website on Basic, 3 on Professional, or 5 on Enterprise plans.",
     icon: <Layers className="w-6 h-6 text-brand-600" />
-  },
-  {
-    title: "Enhanced Security",
-    description: "Keep your customer data and business information safe with enterprise security.",
-    icon: <Shield className="w-6 h-6 text-brand-600" />
   },
 ];
 
@@ -53,7 +43,7 @@ const FeaturesSection = () => {
             Everything You Need to <span className="gradient-text">Succeed Online</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            ModernBuilder gives you the tools to build and grow your e-commerce business, all in one platform.
+            Aether gives you the tools to build and grow your e-commerce business, all in one platform.
           </p>
         </div>
 
