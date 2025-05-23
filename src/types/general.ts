@@ -112,7 +112,7 @@ export interface DashboardNavbarProps {
 export interface WebsiteCardProps {
   website: Website;
   onWebsiteUpdate: () => void;
-  onWebsiteDeleted: () => Promise<void> | void;
+  onWebsiteDeleted: () => void;
 }
 
 // Template selection props

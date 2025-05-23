@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -9,15 +10,9 @@ import { ArrowLeft, Plus, X, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
+import { WeightBasedRate } from "@/types/general";
 
 // Define proper types
-interface WeightBasedRate {
-  min_weight: number;
-  max_weight: number;
-  rate: number;
-  id?: string;
-}
-
 interface ShippingSettings {
   id?: string;
   website_id: string;
@@ -56,7 +51,23 @@ const loadSettings = async (websiteId: string) => {
           console.warn('Failed to parse weight_based_rates JSON', e);
         }
       } else if (Array.isArray(data.weight_based_rates)) {
-        parsedRates = data.weight_based_rates as WeightBasedRate[];
+        // Convert Json[] to WeightBasedRate[] with appropriate type casting
+        parsedRates = (data.weight_based_rates as Json[] || []).map(item => {
+          if (typeof item === 'object' && item !== null) {
+            return {
+              min: typeof (item as any).min === 'number' ? (item as any).min : 
+                   typeof (item as any).min_weight === 'number' ? (item as any).min_weight : 0,
+              max: typeof (item as any).max === 'number' ? (item as any).max : 
+                   typeof (item as any).max_weight === 'number' ? (item as any).max_weight : 0,
+              rate: typeof (item as any).rate === 'number' ? (item as any).rate : 0,
+              min_weight: typeof (item as any).min_weight === 'number' ? (item as any).min_weight : 
+                          typeof (item as any).min === 'number' ? (item as any).min : 0,
+              max_weight: typeof (item as any).max_weight === 'number' ? (item as any).max_weight : 
+                          typeof (item as any).max === 'number' ? (item as any).max : 0,
+            };
+          }
+          return { min: 0, max: 0, rate: 0, min_weight: 0, max_weight: 0 };
+        });
       }
       
       return {

@@ -29,9 +29,10 @@ export const getPlans = async () => {
     
     // Transform data to match the Plan interface
     const plans = data.map(plan => {
+      const features = Array.isArray(plan.features) ? plan.features : [];
       return {
         ...plan,
-        features: Array.isArray(plan.features) ? plan.features : []
+        features
       } as Plan;
     });
     
