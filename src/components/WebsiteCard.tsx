@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -19,10 +20,11 @@ import {
 interface WebsiteCardProps {
   website: Website;
   onWebsiteUpdate: () => void;
+  onWebsiteDeleted?: () => void;
   onDelete?: () => Promise<void>;
 }
 
-const WebsiteCard = ({ website, onWebsiteUpdate, onDelete }: WebsiteCardProps) => {
+const WebsiteCard = ({ website, onWebsiteUpdate, onWebsiteDeleted, onDelete }: WebsiteCardProps) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
@@ -45,7 +47,13 @@ const WebsiteCard = ({ website, onWebsiteUpdate, onDelete }: WebsiteCardProps) =
         
         toast.dismiss();
         toast.success("Website and all associated data deleted successfully");
-        onWebsiteUpdate();
+        
+        // Call the appropriate callback
+        if (onWebsiteDeleted) {
+          onWebsiteDeleted();
+        } else {
+          onWebsiteUpdate();
+        }
       }
     } catch (error) {
       console.error("Error in handleDelete:", error);

@@ -17,10 +17,10 @@ export interface Plan {
 
 export const getPlans = async () => {
   try {
+    // Removing the is_active filter as the column doesn't exist according to the error log
     const { data, error } = await supabase
       .from('plans')
-      .select('*')
-      .eq('is_active', true);
+      .select('*');
     
     if (error) {
       console.error('Error fetching plans:', error);

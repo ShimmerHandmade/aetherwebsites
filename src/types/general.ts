@@ -1,3 +1,4 @@
+
 // Profile types
 export interface Profile {
   id: string;
@@ -111,7 +112,8 @@ export interface DashboardNavbarProps {
 export interface WebsiteCardProps {
   website: Website;
   onWebsiteUpdate: () => void;
-  onWebsiteDeleted: () => void;
+  onWebsiteDeleted?: () => void;
+  onDelete?: () => Promise<void>;
 }
 
 // Template selection props
