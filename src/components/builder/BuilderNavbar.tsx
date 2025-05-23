@@ -1,5 +1,6 @@
+
 import React from "react";
-import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,14 +24,9 @@ import {
   Home,
   ExternalLink,
   ShoppingBag,
-  CreditCard,
-  Layers,
-  PackageCheck,
-  Truck
+  CreditCard // Added CreditCard icon for payment settings
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 interface Page {
   id: string;
@@ -56,7 +52,6 @@ interface BuilderNavbarProps {
   onReturnToDashboard?: () => void;
   viewSiteUrl?: string;
   saveStatus?: string; // Added save status prop
-  className?: string; // Added className prop
 }
 
 const BuilderNavbar = ({
@@ -75,12 +70,10 @@ const BuilderNavbar = ({
   onShopLinkClick,
   onReturnToDashboard,
   viewSiteUrl,
-  saveStatus = '',
-  className = ''
+  saveStatus = ''
 }: BuilderNavbarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { id: websiteId } = useParams<{ id: string }>();
   
   // Determine active tab based on current route
   const getActiveTabFromRoute = () => {
@@ -104,6 +97,7 @@ const BuilderNavbar = ({
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     
+    const websiteId = window.location.pathname.split("/")[2];
     if (!websiteId) return;
     
     // Prevent default navigation and use react-router instead
@@ -153,6 +147,7 @@ const BuilderNavbar = ({
     if (viewSiteUrl) {
       window.open(viewSiteUrl, '_blank');
     } else {
+      const websiteId = window.location.pathname.split("/")[2];
       if (!websiteId) return;
       
       // Open a new tab with the preview URL
@@ -161,7 +156,7 @@ const BuilderNavbar = ({
   };
 
   return (
-    <div className={cn("bg-white border-b sticky top-0 z-50", className)}>
+    <div className="w-full flex flex-col bg-white border-b border-slate-200">
       {/* Top bar */}
       <div className="h-14 flex items-center px-4 justify-between">
         <div className="flex items-center space-x-4">
@@ -217,6 +212,7 @@ const BuilderNavbar = ({
             size="sm" 
             className="flex items-center gap-1" 
             onClick={() => {
+              const websiteId = window.location.pathname.split("/")[2];
               if (websiteId) navigate(`/builder/${websiteId}/payment-settings`);
             }}
           >
@@ -340,56 +336,6 @@ const BuilderNavbar = ({
           </TabsList>
         </Tabs>
       </div>
-
-      {/* Dropdown Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-8 gap-1 px-2">
-            <Settings className="h-4 w-4" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Settings</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[240px]">
-          <DropdownMenuLabel>Website Settings</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => {
-            if (websiteId) navigate(`/builder/${websiteId}/settings`);
-          }}>
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Site Settings</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => {
-            if (websiteId) navigate(`/builder/${websiteId}/pages`);
-          }}>
-            <Layers className="mr-2 h-4 w-4" />
-            <span>Pages</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => {
-            if (websiteId) navigate(`/builder/${websiteId}/products`);
-          }}>
-            <ShoppingBag className="mr-2 h-4 w-4" />
-            <span>Products</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => {
-            if (websiteId) navigate(`/builder/${websiteId}/orders`);
-          }}>
-            <PackageCheck className="mr-2 h-4 w-4" />
-            <span>Orders</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => {
-            if (websiteId) navigate(`/builder/${websiteId}/payment-settings`);
-          }}>
-            <CreditCard className="mr-2 h-4 w-4" />
-            <span>Payment Settings</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => {
-            if (websiteId) navigate(`/builder/${websiteId}/shipping-settings`);
-          }}>
-            <Truck className="mr-2 h-4 w-4" />
-            <span>Shipping Settings</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
     </div>
   );
 };

@@ -14,7 +14,6 @@ interface CartItem {
     name: string;
     price: number;
     image_url?: string | null;
-    weight?: number | null;
   };
   quantity: number;
 }
@@ -42,7 +41,6 @@ interface OrderRequest {
     country: string;
   };
   paymentMethod: string; // e.g., "cod" (cash on delivery), "stripe", etc.
-  shippingMethod?: string; // e.g., "flat_rate", "weight_based", "free"
   notes?: string;
 }
 
@@ -54,7 +52,7 @@ serve(async (req) => {
   
   try {
     console.log("create-order function started");
-    const { items, websiteId, customerInfo, shippingAddress, billingAddress, paymentMethod, shippingMethod, notes } = await req.json() as OrderRequest;
+    const { items, websiteId, customerInfo, shippingAddress, billingAddress, paymentMethod, notes } = await req.json() as OrderRequest;
     
     console.log("Order request:", { websiteId, paymentMethod, itemsCount: items.length });
     
@@ -67,6 +65,13 @@ serve(async (req) => {
         }
       );
     }
+    
+    // Calculate order total
+    const totalAmount = items.reduce((sum, item) => {
+      return sum + (item.product.price * item.quantity);
+    }, 0);
+    
+    console.log("Order total calculated:", totalAmount);
     
     // Create Supabase client
     const supabaseAdmin = createClient(
@@ -85,71 +90,6 @@ serve(async (req) => {
       userId = user?.id;
       console.log("Authenticated user:", userId);
     }
-    
-    // Calculate order total based on product prices
-    const subtotal = items.reduce((sum, item) => {
-      return sum + (item.product.price * item.quantity);
-    }, 0);
-    
-    console.log("Order subtotal calculated:", subtotal);
-    
-    // Retrieve shipping settings and calculate shipping cost
-    let shippingCost = 0;
-    let effectiveShippingMethod = shippingMethod || 'flat_rate';
-    
-    try {
-      // Fetch shipping settings for this website
-      const { data: shippingSettings, error: shippingError } = await supabaseAdmin
-        .from('shipping_settings')
-        .select('*')
-        .eq('website_id', websiteId)
-        .single();
-      
-      if (shippingError) {
-        console.error("Error fetching shipping settings:", shippingError);
-      } else if (shippingSettings) {
-        // Calculate shipping cost based on selected/default method and settings
-        if (shippingSettings.free_shipping_enabled && subtotal >= shippingSettings.free_shipping_minimum) {
-          // Free shipping qualification based on order subtotal
-          shippingCost = 0;
-          effectiveShippingMethod = 'free';
-          console.log("Free shipping applied, order qualifies with subtotal:", subtotal);
-        } else if (shippingMethod === 'weight_based' && shippingSettings.weight_based_enabled) {
-          // Calculate total weight of items
-          const totalWeight = items.reduce((sum, item) => {
-            return sum + ((item.product.weight || 0) * item.quantity);
-          }, 0);
-          
-          // Find applicable weight rate
-          const weightRates = shippingSettings.weight_based_rates || [];
-          const applicableRate = weightRates.find(
-            rate => totalWeight >= rate.min_weight && totalWeight <= rate.max_weight
-          );
-          
-          if (applicableRate) {
-            shippingCost = applicableRate.rate;
-            console.log(`Weight-based shipping applied: ${shippingCost} for weight ${totalWeight}`);
-          } else {
-            // Default to flat rate if no weight rate applies
-            shippingCost = shippingSettings.flat_rate_amount || 0;
-            effectiveShippingMethod = 'flat_rate';
-            console.log(`No applicable weight rate, using flat rate: ${shippingCost}`);
-          }
-        } else if (shippingSettings.flat_rate_enabled) {
-          // Default to flat rate
-          shippingCost = shippingSettings.flat_rate_amount || 0;
-          effectiveShippingMethod = 'flat_rate';
-          console.log(`Flat rate shipping applied: ${shippingCost}`);
-        }
-      }
-    } catch (error) {
-      console.error("Error processing shipping:", error);
-      // Continue with zero shipping if there's an error
-    }
-    
-    // Calculate total amount including shipping
-    const totalAmount = subtotal + shippingCost;
-    console.log("Order total calculated:", totalAmount);
     
     // Check if this website has a Stripe Connect account for online payments
     let stripeConnectAccountId = null;
@@ -191,8 +131,6 @@ serve(async (req) => {
           user_id: userId,
           website_id: websiteId,
           total_amount: totalAmount,
-          shipping_cost: shippingCost,
-          shipping_method: effectiveShippingMethod,
           shipping_address: shippingAddress || null,
           billing_address: billingAddress || null,
           payment_info: {
@@ -270,20 +208,6 @@ serve(async (req) => {
             quantity: item.quantity
           }));
           
-          // Add shipping as a separate line item if applicable
-          if (shippingCost > 0) {
-            lineItems.push({
-              price_data: {
-                currency: "usd",
-                product_data: {
-                  name: `Shipping (${effectiveShippingMethod.replace('_', ' ')})`,
-                },
-                unit_amount: Math.round(shippingCost * 100) // Convert to cents
-              },
-              quantity: 1
-            });
-          }
-          
           // Create the origin for return URLs
           const origin = req.headers.get("origin") || "http://localhost:3000";
           const returnUrl = `${origin}/site/${websiteId}/order-confirmation?order_id=${order.id}`;
@@ -327,7 +251,6 @@ serve(async (req) => {
                 order: {
                   id: order.id,
                   total: totalAmount,
-                  shipping: shippingCost,
                   status: order.status
                 },
                 checkout_url: session.url
@@ -379,7 +302,6 @@ serve(async (req) => {
           order: {
             id: order.id,
             total: totalAmount,
-            shipping: shippingCost,
             status: order.status
           }
         }),

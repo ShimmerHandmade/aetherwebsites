@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -10,10 +10,8 @@ export const useStripeConnect = (websiteId: string | undefined) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [platformError, setPlatformError] = useState<string | null>(null);
-  const [lastRefresh, setLastRefresh] = useState(Date.now());
 
-  // Enhanced fetchStripeAccount with better error handling
-  const fetchStripeAccount = useCallback(async () => {
+  const fetchStripeAccount = async () => {
     if (!websiteId) return;
     
     setIsLoading(true);
@@ -43,46 +41,14 @@ export const useStripeConnect = (websiteId: string | undefined) => {
     } finally {
       setIsLoading(false);
     }
-  }, [websiteId]);
+  };
   
-  // Improved refreshStripeAccount with better UX feedback
   const refreshStripeAccount = async () => {
-    if (!websiteId) return;
-    
     setIsRefreshing(true);
     setError(null);
     setPlatformError(null);
-    
-    try {
-      console.log("Refreshing Stripe connection status");
-      
-      // If we have an account, try to check its status with the new edge function
-      if (stripeAccount?.stripe_account_id) {
-        try {
-          const { data, error } = await supabase.functions.invoke('check-connect-status', {
-            body: { accountId: stripeAccount.stripe_account_id }
-          });
-          
-          if (error) {
-            console.error("Error checking account status:", error);
-          } else if (data?.updated) {
-            console.log("Account status updated via edge function");
-          }
-        } catch (err) {
-          console.error("Failed to check account status:", err);
-        }
-      }
-      
-      // Fetch the latest account data from the database
-      await fetchStripeAccount();
-      setLastRefresh(Date.now());
-      toast.success("Stripe connection status refreshed");
-    } catch (error: any) {
-      console.error("Error refreshing account:", error);
-      toast.error("Failed to refresh status");
-    } finally {
-      setIsRefreshing(false);
-    }
+    await fetchStripeAccount();
+    setIsRefreshing(false);
   };
 
   const connectStripeAccount = async () => {
@@ -112,15 +78,12 @@ export const useStripeConnect = (websiteId: string | undefined) => {
       if (data?.url) {
         // Open Stripe Connect onboarding in a new tab
         window.open(data.url, '_blank');
-        toast.success("Stripe Connect onboarding started", {
-          description: "After completing onboarding, return here and click refresh to update your status",
-          duration: 6000
-        });
+        toast.success("Stripe Connect onboarding started");
         
         // Refresh Stripe account data after a delay
         setTimeout(() => {
           refreshStripeAccount();
-        }, 5000);
+        }, 3000);
         
         return { success: true, url: data.url };
       } else if (data?.error && data.error.includes("platform profile")) {
@@ -164,27 +127,9 @@ export const useStripeConnect = (websiteId: string | undefined) => {
     }
   };
   
-  // Set up an interval to regularly check for account updates after onboarding
   useEffect(() => {
     fetchStripeAccount();
-    
-    // Poll for updates if we have a Stripe account that is not fully onboarded
-    let pollingInterval: number | null = null;
-    
-    if (stripeAccount && !stripeAccount.onboarding_complete) {
-      // Poll every 30 seconds for changes during the onboarding process
-      pollingInterval = window.setInterval(() => {
-        console.log("Polling for Stripe account updates...");
-        refreshStripeAccount();
-      }, 30000);
-    }
-    
-    return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-    };
-  }, [fetchStripeAccount, stripeAccount?.onboarding_complete]);
+  }, [websiteId]);
 
   return {
     stripeAccount,
@@ -194,7 +139,6 @@ export const useStripeConnect = (websiteId: string | undefined) => {
     error,
     platformError,
     connectStripeAccount,
-    refreshStripeAccount,
-    lastRefresh
+    refreshStripeAccount
   };
 };

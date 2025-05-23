@@ -1,818 +1,242 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { v4 } from '@/lib/uuid';
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Plus, Edit, Trash2, Package } from 'lucide-react';
-import { toast } from 'sonner';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { z } from "zod"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { cn } from "@/lib/utils"
-import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
-import { PopoverClose } from "@radix-ui/react-popover"
-import { supabase } from '@/integrations/supabase/client';
-import { Product } from '@/types/product';
-import { AspectRatio } from "@/components/ui/aspect-ratio"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { ImageIcon } from "lucide-react";
+
+import React, { useState, useEffect, useCallback } from "react";
+import { useParams } from "react-router-dom";
+import { useProductManager } from "@/hooks/useProductManager";
+import ProductHeader from "./products/ProductHeader";
+import ProductSearch from "./products/ProductSearch";
+import ProductContent from "./products/ProductContent";
+import PlanLimitsInfo from "@/components/PlanLimitsInfo";
+import { toast } from "sonner";
+import { fetchProducts } from "@/api/products";
+import { Product, UniqueCategory } from "@/types/product";
+import { usePlan } from "@/contexts/PlanContext";
+import { checkProductLimit } from "@/utils/planRestrictions";
 
 interface ProductManagerProps {
-  websiteId: string;
+  websiteId?: string;
   onBackToBuilder?: () => void;
 }
 
-// In the component where UniqueCategory is used, add an id property:
-interface UniqueCategory {
-  id: string; // Add this property
-  name: string;
-}
-
-const ProductManager: React.FC<ProductManagerProps> = ({ websiteId }) => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [isNewProduct, setIsNewProduct] = useState(true);
-
-  const productFormSchema = z.object({
-    name: z.string().min(2, {
-      message: "Product name must be at least 2 characters.",
-    }),
-    description: z.string().optional(),
-    price: z.number().min(0, {
-      message: "Price must be a positive number.",
-    }),
-    category: z.string().optional(),
-    stock: z.number().optional(),
-    sku: z.string().optional(),
-    is_new: z.boolean().default(false).optional(),
-    is_featured: z.boolean().default(false).optional(),
-    is_sale: z.boolean().default(false).optional(),
-    image_url: z.string().optional(),
-  })
-
-  type ProductFormValues = z.infer<typeof productFormSchema>;
-
-  const form = useForm<ProductFormValues>({
-    resolver: zodResolver(productFormSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      price: 0,
-      category: "",
-      stock: 0,
-      sku: "",
-      is_new: false,
-      is_featured: false,
-      is_sale: false,
-      image_url: "",
-    },
-  })
-
-  // Load products on mount
-  useEffect(() => {
-    loadProducts();
-  }, [websiteId]);
-
-  const loadProducts = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('website_id', websiteId);
-
-      if (error) {
-        setError(error.message);
-        toast.error('Failed to load products');
-      } else {
-        setProducts(data || []);
-      }
-    } catch (err: any) {
-      setError(err.message);
-      toast.error('Failed to load products');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreate = () => {
-    setIsNewProduct(true);
-    setSelectedProduct(null);
-    setIsEditing(false);
-    form.reset();
-    setIsDrawerOpen(true);
-  };
-
-  const handleEdit = (product: Product) => {
-    setIsNewProduct(false);
-    setSelectedProduct(product);
-    setIsEditing(true);
-    form.reset({
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      category: product.category,
-      stock: product.stock,
-      sku: product.sku,
-      is_new: product.is_new,
-      is_featured: product.is_featured,
-      is_sale: product.is_sale,
-      image_url: product.image_url || "",
-    });
-    setImageUrl(product.image_url || null);
-    setIsDrawerOpen(true);
-  };
-
-  const handleDelete = (product: Product) => {
-    setProductToDelete(product);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!productToDelete) return;
-
-    try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', productToDelete.id);
-
-      if (error) {
-        toast.error('Failed to delete product');
-      } else {
-        toast.success('Product deleted successfully');
-        loadProducts();
-      }
-    } catch (err: any) {
-      toast.error('Failed to delete product');
-    } finally {
-      setIsDeleteDialogOpen(false);
-      setProductToDelete(null);
-    }
-  };
-
-  const cancelDelete = () => {
-    setIsDeleteDialogOpen(false);
-    setProductToDelete(null);
-  };
-
-  const onSubmit = async (values: ProductFormValues) => {
-    try {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
-        toast.error('You must be logged in to save products');
-        return;
-      }
-
-      if (isNewProduct) {
-        // Ensure all required fields are present
-        const productData = {
-          ...values,
-          user_id: userData.user.id,
-          website_id: websiteId,
-          image_url: imageUrl || null,
-          // Ensure required fields have values
-          name: values.name,
-          price: values.price
-        };
-
-        // Create product
-        const { error } = await supabase
-          .from('products')
-          .insert(productData);
-
-        if (error) {
-          toast.error('Failed to create product');
-          console.error(error);
-        } else {
-          toast.success('Product created successfully');
-          loadProducts();
-        }
-      } else if (selectedProduct) {
-        // Update product
-        const { error } = await supabase
-          .from('products')
-          .update({
-            ...values,
-            image_url: imageUrl || null,
-            // Ensure required fields have values
-            name: values.name,
-            price: values.price
-          })
-          .eq('id', selectedProduct.id);
-
-        if (error) {
-          toast.error('Failed to update product');
-        } else {
-          toast.success('Product updated successfully');
-          loadProducts();
-        }
-      }
-    } catch (err: any) {
-      toast.error('Failed to save product');
-      console.error(err);
-    } finally {
-      setIsDrawerOpen(false);
-    }
-  };
-
-  const handleImageUpload = async () => {
-    if (!imageFile) {
-      toast.error('Please select an image to upload.');
+const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuilder }) => {
+  const { id: websiteIdParam } = useParams<{ id: string }>();
+  const effectiveWebsiteId = websiteId || websiteIdParam;
+  const { planName, restrictions, loading: planLoading } = usePlan();
+  
+  // States for data management
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [initialLoadError, setInitialLoadError] = useState<string | null>(null);
+  const [rawProducts, setRawProducts] = useState<Product[]>([]);
+  const [rawCategories, setRawCategories] = useState<UniqueCategory[]>([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  
+  // Improved logging
+  console.log("ProductManager mounted/updated with:", {
+    websiteId,
+    websiteIdParam,
+    effectiveWebsiteId,
+    productsCount: rawProducts.length,
+    planName,
+    productLimit: restrictions?.maxProducts
+  });
+  
+  // Enhanced data loading function
+  const loadProducts = useCallback(async () => {
+    if (!effectiveWebsiteId) {
+      console.error("No website ID available");
+      setInitialLoading(false);
+      setInitialLoadError("Website ID is missing");
       return;
     }
-
-    setUploadingImage(true);
-
+    
     try {
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${v4()}.${fileExt}`;
-      const filePath = `products/${websiteId}/${fileName}`;
-
-      const { data, error } = await supabase.storage
-        .from('website-assets')
-        .upload(filePath, imageFile, {
-          cacheControl: '3600',
-          upsert: false
+      console.log(`Starting to load products for website: ${effectiveWebsiteId}`);
+      setInitialLoading(true);
+      
+      const result = await fetchProducts(effectiveWebsiteId);
+      
+      if (result.error) {
+        console.error("Error loading products:", result.error);
+        setInitialLoadError(result.error);
+        toast.error("Failed to load products", {
+          description: result.error
         });
-
-      if (error) {
-        console.error('Error uploading image: ', error);
-        toast.error('Failed to upload image.');
       } else {
-        // Get the public URL for the uploaded image
-        const { data: urlData } = supabase.storage
-          .from('website-assets')
-          .getPublicUrl(filePath);
-          
-        const imageUrl = urlData.publicUrl;
-        setImageUrl(imageUrl);
-        toast.success('Image uploaded successfully!');
+        console.log(`Successfully loaded ${result.products.length} products and ${result.categories.length}`);
+        // Important: Set state with the new data
+        setRawProducts(result.products);
+        setRawCategories(result.categories);
+        setInitialLoadError(null);
       }
-    } catch (err: any) {
-      console.error('Error uploading image: ', err);
-      toast.error('Failed to upload image.');
+    } catch (error) {
+      console.error("Exception loading products:", error);
+      setInitialLoadError("An unexpected error occurred");
+      toast.error("Failed to load products");
     } finally {
-      setUploadingImage(false);
-      setIsImageUploadOpen(false);
+      setInitialLoading(false);
+    }
+  }, [effectiveWebsiteId]);
+
+  // Load products on mount and when refreshTrigger changes
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts, refreshTrigger]);
+  
+  // Product manager hook with enhanced data passing
+  const {
+    products,
+    editingProduct,
+    setEditingProduct,
+    isAddingNew,
+    isLoading,
+    isSaving,
+    searchTerm,
+    setSearchTerm,
+    activeTab,
+    setActiveTab,
+    newCategory,
+    setNewCategory,
+    imagePreview,
+    currentView,
+    setCurrentView,
+    filteredProducts,
+    categories,
+    handleAddNew: handleAddNewProduct,
+    handleEdit,
+    handleImageChange,
+    handleAddCategory,
+    handleSave: internalHandleSave,
+    handleCancel,
+    handleDelete: internalHandleDelete,
+    handleDeleteCategory,
+    handleClearImage,
+    setProducts,
+    setCategories,
+  } = useProductManager(effectiveWebsiteId, rawProducts, rawCategories);
+
+  // Set the products and categories once they're loaded
+  useEffect(() => {
+    if (rawProducts.length > 0 || rawCategories.length > 0) {
+      console.log("Setting products and categories in useProductManager:", 
+        rawProducts.length, "products,", rawCategories.length, "categories");
+      setProducts(rawProducts);
+      setCategories(rawCategories);
+    }
+  }, [rawProducts, rawCategories, setProducts, setCategories]);
+  
+  // Enhanced handlers with forced reload
+  const handleSuccessfulOperation = async () => {
+    console.log("Operation successful - triggering data refresh");
+    setRefreshTrigger(prev => prev + 1);
+  };
+  
+  const handleSave = async () => {
+    const saveResult = await internalHandleSave();
+    if (saveResult?.success) {
+      await handleSuccessfulOperation();
+    }
+    return saveResult;
+  };
+  
+  const handleDelete = async (id: string) => {
+    const deleteResult = await internalHandleDelete(id);
+    if (deleteResult?.success) {
+      await handleSuccessfulOperation();
+    }
+    return deleteResult;
+  };
+  
+  const handleAddNew = async () => {
+    // Check if adding a new product would exceed the plan limit
+    const canAddProduct = await checkProductLimit(products.length);
+    
+    if (!canAddProduct) {
+      toast.error(`You've reached your plan's limit of ${restrictions?.maxProducts} products.`, {
+        description: `Upgrade to ${planName === 'Basic' ? 'Professional' : 'Enterprise'} plan for more products.`
+      });
+      return;
+    }
+    
+    // If within limits, proceed with adding new product
+    handleAddNewProduct();
+  };
+  
+  const handleBackToBuilder = () => {
+    if (editingProduct) {
+      if (confirm("You have unsaved product changes. Are you sure you want to go back without saving?")) {
+        setEditingProduct(null);
+        if (onBackToBuilder) onBackToBuilder();
+      } 
+      return;
+    }
+    
+    if (onBackToBuilder) {
+      onBackToBuilder();
     }
   };
 
-  const handleImageRemove = () => {
-    setImageUrl(null);
-    form.setValue('image_url', '');
-    toast.success('Image removed successfully!');
-  };
-
-  const extractUniqueCategories = (products: Product[]): UniqueCategory[] => {
-    const categories = new Set<string>();
-
-    products.forEach(product => {
-      if (product.category) {
-        categories.add(product.category);
-      }
-    });
-
-    // Convert to array of objects with id and name properties
-    return Array.from(categories).map(category => ({
-      id: category.toLowerCase().replace(/\s+/g, '-'), // Generate an ID from the category name
-      name: category
-    }));
-  };
-
-  const uniqueCategories = useMemo(() => extractUniqueCategories(products), [products]);
-
-  const renderProductRows = () => {
-    if (loading) {
-      return (
-        <TableRow>
-          <TableCell colSpan={7} className="text-center">Loading products...</TableCell>
-        </TableRow>
-      );
-    }
-
-    if (error) {
-      return (
-        <TableRow>
-          <TableCell colSpan={7} className="text-center text-red-500">Error: {error}</TableCell>
-        </TableRow>
-      );
-    }
-
-    if (products.length === 0) {
-      return (
-        <TableRow>
-          <TableCell colSpan={7} className="text-center">No products found. Add some!</TableCell>
-        </TableRow>
-      );
-    }
-
-    return products.map((product) => (
-      <TableRow key={product.id}>
-        <TableCell className="font-medium">{product.name}</TableCell>
-        <TableCell>{product.description?.substring(0, 50)}{product.description && product.description.length > 50 ? '...' : ''}</TableCell>
-        <TableCell>${product.price.toFixed(2)}</TableCell>
-        <TableCell>{product.category}</TableCell>
-        <TableCell>{product.stock}</TableCell>
-        <TableCell className="flex gap-2">
-          <Button size="icon" variant="outline" onClick={() => handleEdit(product)}>
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button size="icon" variant="destructive" onClick={() => handleDelete(product)}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </TableCell>
-      </TableRow>
-    ));
-  };
-
-  const handleCloseDrawer = () => {
-    setIsDrawerOpen(false);
-  };
-
-  const handleOpenImageUpload = () => {
-    setIsImageUploadOpen(true);
-  };
-
-  const handleCloseImageUpload = () => {
-    setIsImageUploadOpen(false);
-  };
-
-  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-    }
-  };
-
-  const handleRemoveImage = () => {
-    setImageFile(null);
-  };
-
-  const handleClearImage = () => {
-    setImageUrl(null);
-    form.setValue('image_url', '');
-  };
-
-  const hasChanges = () => {
-    if (!selectedProduct) return true;
-
-    const currentValues = form.getValues();
-
-    return (
-      currentValues.name !== selectedProduct.name ||
-      currentValues.description !== selectedProduct.description ||
-      currentValues.price !== selectedProduct.price ||
-      currentValues.category !== selectedProduct.category ||
-      currentValues.stock !== selectedProduct.stock ||
-      currentValues.sku !== selectedProduct.sku ||
-      currentValues.is_new !== selectedProduct.is_new ||
-      currentValues.is_featured !== selectedProduct.is_featured ||
-      currentValues.is_sale !== selectedProduct.is_sale ||
-      imageUrl !== selectedProduct.image_url
-    );
-  };
-
-  const isSubmitDisabled = !hasChanges();
-
-  const renderImagePreview = () => {
-    if (imageUrl) {
-      return (
-        <div className="relative">
-          <img
-            src={imageUrl}
-            alt="Product Image"
-            className="object-cover rounded-md w-full h-32"
-          />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-2 right-2 bg-background/75 text-muted-foreground hover:text-foreground"
-            onClick={handleClearImage}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      );
-    } else {
-      return (
-        <div className="border-dashed border-2 border-muted-foreground rounded-md flex flex-col items-center justify-center h-32 w-full">
-          <Package className="h-8 w-8 text-muted-foreground mb-2" />
-          <p className="text-sm text-muted-foreground">No image selected</p>
-        </div>
-      );
-    }
-  };
-
-  const renderImageUploadDialog = () => {
-    return (
-      <Dialog open={isImageUploadOpen} onOpenChange={setIsImageUploadOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Upload Product Image</DialogTitle>
-            <DialogDescription>
-              Upload an image for your product.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="picture" className="text-right">
-                Image
-              </Label>
-              <div className="col-span-3">
-                <Input
-                  id="picture"
-                  type="file"
-                  onChange={handleImageFileChange}
-                />
-              </div>
-            </div>
-            {imageFile && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="picture" className="text-right">
-                  Preview
-                </Label>
-                <div className="col-span-3">
-                  <AspectRatio ratio={16 / 9}>
-                    <img
-                      src={URL.createObjectURL(imageFile)}
-                      alt="Uploaded Image"
-                      className="object-cover rounded-md"
-                    />
-                  </AspectRatio>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="flex justify-end">
-            <Button type="button" variant="secondary" onClick={handleCloseImageUpload}>
-              Cancel
-            </Button>
-            <Button type="button" onClick={handleImageUpload} disabled={uploadingImage || !imageFile} className="ml-2">
-              {uploadingImage ? 'Uploading...' : 'Upload Image'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  };
+  // Determine if we should show loading state
+  const showLoading = initialLoading || isLoading || planLoading;
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Product Management</h2>
-        <Button onClick={handleCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Product
-        </Button>
-      </div>
+    <div className="h-full flex flex-col">
+      <ProductHeader
+        title="Product Manager"
+        isEditing={!!editingProduct}
+        currentView={currentView}
+        onAddNew={handleAddNew}
+        onToggleView={() => setCurrentView(currentView === "grid" ? "list" : "grid")}
+        onBack={handleBackToBuilder}
+      />
 
-      <Table>
-        <TableCaption>A list of your products.</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Price</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead>Stock</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {renderProductRows()}
-        </TableBody>
-      </Table>
+      {!editingProduct && (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4 px-4">
+          <div className="lg:col-span-3">
+            <ProductSearch
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              categories={categories}
+              newCategory={newCategory}
+              onNewCategoryChange={setNewCategory}
+              onAddCategory={handleAddCategory}
+              onDeleteCategory={handleDeleteCategory}
+            />
+          </div>
+          <div className="lg:col-span-1">
+            <PlanLimitsInfo 
+              productCount={products.length} 
+              websiteCount={0} // Changed from pageCount to websiteCount
+            />
+          </div>
+        </div>
+      )}
 
-      <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>{isNewProduct ? 'Create Product' : 'Edit Product'}</DrawerTitle>
-            <DrawerDescription>
-              {isNewProduct ? 'Create a new product for your website.' : 'Edit the details of your product.'}
-            </DrawerDescription>
-          </DrawerHeader>
-          <ScrollArea className="h-[calc(100vh-10rem)] px-4">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">
-                      Name
-                    </Label>
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem className="col-span-3">
-                          <FormControl>
-                            <Input id="name" placeholder="Product name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="description" className="text-right">
-                      Description
-                    </Label>
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem className="col-span-3">
-                          <FormControl>
-                            <Textarea id="description" placeholder="Product description" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="price" className="text-right">
-                      Price
-                    </Label>
-                    <FormField
-                      control={form.control}
-                      name="price"
-                      render={({ field }) => (
-                        <FormItem className="col-span-3">
-                          <FormControl>
-                            <Input 
-                              id="price" 
-                              type="number" 
-                              placeholder="Product price" 
-                              {...field}
-                              onChange={(e) => field.onChange(parseFloat(e.target.value))} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="category" className="text-right">
-                      Category
-                    </Label>
-                    <FormField
-                      control={form.control}
-                      name="category"
-                      render={({ field }) => (
-                        <FormItem className="col-span-3">
-                          <FormControl>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a category" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {uniqueCategories.map((category) => (
-                                  <SelectItem key={category.id} value={category.name}>{category.name}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="stock" className="text-right">
-                      Stock
-                    </Label>
-                    <FormField
-                      control={form.control}
-                      name="stock"
-                      render={({ field }) => (
-                        <FormItem className="col-span-3">
-                          <FormControl>
-                            <Input 
-                              id="stock" 
-                              type="number" 
-                              placeholder="Product stock" 
-                              {...field}
-                              onChange={(e) => field.onChange(parseInt(e.target.value))} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="sku" className="text-right">
-                      SKU
-                    </Label>
-                    <FormField
-                      control={form.control}
-                      name="sku"
-                      render={({ field }) => (
-                        <FormItem className="col-span-3">
-                          <FormControl>
-                            <Input id="sku" placeholder="Product SKU" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="is_new" className="text-right">
-                      New
-                    </Label>
-                    <FormField
-                      control={form.control}
-                      name="is_new"
-                      render={({ field }) => (
-                        <FormItem className="col-span-3 flex items-center">
-                          <FormControl>
-                            <Switch
-                              id="is_new"
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="is_featured" className="text-right">
-                      Featured
-                    </Label>
-                    <FormField
-                      control={form.control}
-                      name="is_featured"
-                      render={({ field }) => (
-                        <FormItem className="col-span-3 flex items-center">
-                          <FormControl>
-                            <Switch
-                              id="is_featured"
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="is_sale" className="text-right">
-                      Sale
-                    </Label>
-                    <FormField
-                      control={form.control}
-                      name="is_sale"
-                      render={({ field }) => (
-                        <FormItem className="col-span-3 flex items-center">
-                          <FormControl>
-                            <Switch
-                              id="is_sale"
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="image_url" className="text-right">
-                      Image
-                    </Label>
-                    <div className="col-span-3">
-                      {renderImagePreview()}
-                      <div className="flex justify-between mt-2">
-                        <Button type="button" variant="secondary" onClick={handleOpenImageUpload}>
-                          <ImageIcon className="mr-2 h-4 w-4" />
-                          Upload Image
-                        </Button>
-                        {imageUrl && (
-                          <Button type="button" variant="destructive" onClick={handleImageRemove}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Remove Image
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <DrawerFooter>
-                  <Button type="submit" disabled={isSubmitDisabled}>
-                    {isNewProduct ? 'Create' : 'Update'}
-                  </Button>
-                </DrawerFooter>
-              </form>
-            </Form>
-          </ScrollArea>
-        </DrawerContent>
-      </Drawer>
-
-      {renderImageUploadDialog()}
-
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. Are you sure you want to delete <span className="font-medium">{productToDelete?.name}</span>?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelDelete}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ProductContent
+        isLoading={showLoading}
+        loadingError={initialLoadError}
+        editingProduct={editingProduct}
+        filteredProducts={filteredProducts}
+        currentView={currentView}
+        isAddingNew={isAddingNew}
+        isSaving={isSaving}
+        categories={categories}
+        newCategory={newCategory}
+        imagePreview={imagePreview}
+        onProductChange={setEditingProduct}
+        onSave={handleSave}
+        onCancel={handleCancel}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onImageChange={handleImageChange}
+        onClearImage={handleClearImage}
+        onNewCategoryChange={setNewCategory}
+        onAddCategory={handleAddCategory}
+        planInfo={{
+          maxProducts: restrictions?.maxProducts || 0,
+          currentCount: products.length
+        }}
+      />
     </div>
   );
 };

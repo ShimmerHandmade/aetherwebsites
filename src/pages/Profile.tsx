@@ -1,118 +1,249 @@
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { 
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from "@/components/ui/form";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import DashboardNavbar from "@/components/DashboardNavbar";
+import { Profile as ProfileType } from "@/pages/Dashboard";
+import PlanLimitsInfo from "@/components/PlanLimitsInfo";
+import PlanStatusBadge from "@/components/PlanStatusBadge";
+import { getUserPlan, openCustomerPortal, getUserPlanSimplified } from "@/api/websites";
+import SimplifiedSubscriptionDisplay from "@/components/SimplifiedSubscriptionDisplay";
 
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { Loader2, LogOut } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import DashboardNavbar from '@/components/DashboardNavbar';
-import PlanStatusBadge from '@/components/PlanStatusBadge';
-import SubscriptionManager from '@/components/SubscriptionManager';
-import { Profile } from '@/types/general';
+const profileSchema = z.object({
+  full_name: z.string().min(2, { message: "Name must be at least 2 characters" }).optional(),
+  email: z.string().email({ message: "Please enter a valid email address" }).optional(),
+});
 
-const ProfilePage: React.FC = () => {
+const Profile = () => {
+  const [profile, setProfile] = useState<ProfileType | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [productCount, setProductCount] = useState(0);
+  const [websiteCount, setWebsiteCount] = useState(0);
+  const [planInfo, setPlanInfo] = useState<any>(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<{
+    planName: string | null;
+    subscriptionEnd: string | null;
+    isActive: boolean;
+  }>({
+    planName: null,
+    subscriptionEnd: null,
+    isActive: false
+  });
+  const [isManageLoading, setIsManageLoading] = useState(false);
+  const isInitialLoadDone = useRef(false);
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [formData, setFormData] = useState({
-    full_name: '',
-    email: ''
+
+  const form = useForm<z.infer<typeof profileSchema>>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      full_name: "",
+      email: "",
+    },
   });
 
+  // Effect for initial data loading - only runs once
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    const loadData = async () => {
+      if (isInitialLoadDone.current) return;
+      
+      try {
+        setIsLoading(true);
+        isInitialLoadDone.current = true;
+        
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          toast.error("Please log in to view your profile");
+          navigate("/auth");
+          return;
+        }
+        
+        // Load all data in parallel
+        await Promise.all([
+          fetchUserData(),
+          fetchStatsData(),
+          fetchSubscriptionInfo()
+        ]);
+      } catch (error) {
+        console.error("Initial data load error:", error);
+        toast.error("Failed to load profile data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const fetchProfile = async () => {
+    loadData();
+  }, [navigate]);
+
+  const fetchSubscriptionInfo = async () => {
     try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        navigate('/login');
-        return;
-      }
-
-      // Get profile data
-      const { data: profileData, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) throw error;
-      
-      if (profileData) {
-        setProfile(profileData);
-        setFormData({
-          full_name: profileData.full_name || '',
-          email: profileData.email || user.email || ''
-        });
-      }
+      setSubscriptionLoading(true);
+      const data = await getUserPlanSimplified();
+      setSubscriptionInfo(data);
+      return data;
     } catch (error) {
-      console.error('Error loading profile:', error);
-      toast.error('Failed to load your profile');
+      console.error("Error fetching subscription info:", error);
+      return {
+        planName: null,
+        subscriptionEnd: null,
+        isActive: false
+      };
     } finally {
-      setLoading(false);
+      setSubscriptionLoading(false);
     }
   };
 
-  const handleSaveProfile = async () => {
+  const fetchUserData = async () => {
     try {
-      setSaving(true);
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user) {
-        toast.error('You must be logged in to update your profile');
-        return;
+      if (!user) return null;
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      
+      if (error) {
+        console.error("Error fetching profile:", error);
+        return null;
       }
       
-      const updates = {
-        id: user.id,
-        full_name: formData.full_name,
-        updated_at: new Date().toISOString()
-      };
+      setProfile(data);
+      form.reset({
+        full_name: data.full_name || "",
+        email: user.email || "",
+      });
+      
+      return data;
+    } catch (error) {
+      console.error("Error in fetchUserData:", error);
+      return null;
+    }
+  };
+
+  const fetchStatsData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      
+      // Count products
+      const { count: productsCount, error: productsError } = await supabase
+        .from("products")
+        .select("id", { count: 'exact', head: true })
+        .eq("user_id", user.id);
+      
+      if (!productsError) {
+        setProductCount(productsCount || 0);
+      }
+      
+      // Count websites (simplified)
+      const { data: websites, error: websitesError } = await supabase
+        .from("websites")
+        .select("id")
+        .eq("owner_id", user.id);
+      
+      if (!websitesError) {
+        setWebsiteCount(websites?.length || 0);
+      }
+      
+      return { productsCount, websitesCount: websites?.length || 0 };
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+      return null;
+    }
+  };
+
+  const onSubmit = async (values: z.infer<typeof profileSchema>) => {
+    try {
+      setIsSaving(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) return;
       
       const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', user.id);
-        
-      if (error) throw error;
+        .from("profiles")
+        .update({
+          full_name: values.full_name,
+        })
+        .eq("id", user.id);
       
-      toast.success('Profile updated successfully');
-      fetchProfile();
+      if (error) {
+        toast.error("Failed to update profile");
+        console.error("Error updating profile:", error);
+        return;
+      }
+      
+      toast.success("Profile updated successfully");
+      await fetchUserData();
     } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error('Failed to update profile');
+      console.error("Error updating profile:", error);
+      toast.error("An unexpected error occurred");
     } finally {
-      setSaving(false);
+      setIsSaving(false);
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
+  const handleManageSubscription = async () => {
+    try {
+      setIsManageLoading(true);
+      const { url, error } = await openCustomerPortal();
+      
+      if (error) {
+        toast.error("Failed to access customer portal");
+        console.error("Error accessing customer portal:", error);
+        return;
+      }
+      
+      if (url) {
+        window.open(url, '_blank');
+        toast.info("Opening customer portal in a new tab");
+      }
+    } catch (error) {
+      console.error("Error opening customer portal:", error);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsManageLoading(false);
+    }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.id]: e.target.value
-    }));
+  const handleSubscriptionUpdated = async () => {
+    await fetchSubscriptionInfo();
+    toast.success("Subscription information updated");
   };
 
-  if (loading) {
+  // When loading, show a static loader to prevent flicker
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <DashboardNavbar profile={profile} />
-        <div className="container mx-auto px-4 py-16 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
+        <DashboardNavbar profile={null} />
+        <main className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-bold">Account Management</h1>
+            </div>
+            <div className="py-8 text-center">
+              <div className="h-12 w-12 border-4 border-t-indigo-600 border-r-indigo-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading profile...</p>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -120,100 +251,91 @@ const ProfilePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardNavbar profile={profile} />
-
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Your Profile</h1>
-
-        <div className="grid gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>Update your personal details</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="full_name">Full Name</Label>
-                    <Input 
-                      id="full_name" 
-                      value={formData.full_name} 
-                      onChange={handleChange} 
-                      placeholder="Your name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input 
-                      id="email" 
-                      value={formData.email}
-                      disabled
-                    />
-                    <p className="text-xs text-gray-500">Email cannot be changed</p>
-                  </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <Button 
-                    onClick={handleSaveProfile} 
-                    disabled={saving}
-                    className="min-w-[120px]"
-                  >
-                    {saving ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      'Save Changes'
+      
+      <main className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-bold">Account Management</h1>
+            {subscriptionInfo.isActive && (
+              <PlanStatusBadge className="text-sm px-3 py-1.5" />
+            )}
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Profile Settings */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-xl font-bold mb-6">Profile Settings</h2>
+              
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="full_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Full Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Your name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Subscription</CardTitle>
-              <CardDescription>Manage your subscription plan</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">Current Plan</p>
-                    <div className="mt-1">
-                      <PlanStatusBadge profile={profile} />
-                    </div>
-                  </div>
+                  />
                   
-                  <SubscriptionManager profile={profile} onSuccess={fetchProfile} />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="example@email.com" 
+                            disabled 
+                            className="bg-gray-100 cursor-not-allowed"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button 
+                    type="submit" 
+                    className="bg-gradient-to-r from-indigo-600 to-purple-600"
+                    disabled={isSaving}
+                  >
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </Button>
+                </form>
+              </Form>
+            </div>
+            
+            {/* Simplified Subscription Display */}
+            <div>
+              <SimplifiedSubscriptionDisplay
+                loading={subscriptionLoading}
+                planName={subscriptionInfo.planName}
+                subscriptionEnd={subscriptionInfo.subscriptionEnd}
+                onManageClick={handleManageSubscription}
+                isManageLoading={isManageLoading}
+              />
+              
+              {!subscriptionLoading && (
+                <div className="mt-6">
+                  <PlanLimitsInfo 
+                    productCount={productCount}
+                    websiteCount={websiteCount}
+                  />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Account</CardTitle>
-              <CardDescription>Manage your account settings</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button 
-                variant="outline" 
-                onClick={handleLogout}
-                className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </Button>
-            </CardContent>
-          </Card>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
 
-export default ProfilePage;
+export default Profile;

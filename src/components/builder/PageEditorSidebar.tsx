@@ -35,7 +35,6 @@ interface PageEditorSidebarProps {
 const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) => {
   const [activeTab, setActiveTab] = useState<string>("elements");
   const [searchTerm, setSearchTerm] = useState("");
-  // Only use selectedElementId and addElement, remove websiteId if it doesn't exist in the context
   const { selectedElementId, addElement } = useBuilder();
 
   if (isPreviewMode) return null;
@@ -104,7 +103,7 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
           )}
           {activeTab === "properties" && <ElementProperties />}
           {activeTab === "settings" && <PageSettings />}
-          {/* Pass websiteId from the context only if/when it's available */}
+          {activeTab === "products" && <ProductManager />}
         </ScrollArea>
       </div>
     </div>

@@ -64,8 +64,6 @@ export type Database = {
           id: string
           payment_info: Json | null
           shipping_address: Json | null
-          shipping_cost: number | null
-          shipping_method: string | null
           status: string
           total_amount: number
           updated_at: string
@@ -78,8 +76,6 @@ export type Database = {
           id?: string
           payment_info?: Json | null
           shipping_address?: Json | null
-          shipping_cost?: number | null
-          shipping_method?: string | null
           status?: string
           total_amount?: number
           updated_at?: string
@@ -92,8 +88,6 @@ export type Database = {
           id?: string
           payment_info?: Json | null
           shipping_address?: Json | null
-          shipping_cost?: number | null
-          shipping_method?: string | null
           status?: string
           total_amount?: number
           updated_at?: string
@@ -154,7 +148,6 @@ export type Database = {
           updated_at: string
           user_id: string
           website_id: string
-          weight: number | null
         }
         Insert: {
           category?: string | null
@@ -172,7 +165,6 @@ export type Database = {
           updated_at?: string
           user_id: string
           website_id: string
-          weight?: number | null
         }
         Update: {
           category?: string | null
@@ -190,7 +182,6 @@ export type Database = {
           updated_at?: string
           user_id?: string
           website_id?: string
-          weight?: number | null
         }
         Relationships: [
           {
@@ -252,53 +243,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      shipping_settings: {
-        Row: {
-          created_at: string
-          flat_rate_amount: number | null
-          flat_rate_enabled: boolean
-          free_shipping_enabled: boolean
-          free_shipping_minimum: number | null
-          id: string
-          updated_at: string
-          website_id: string
-          weight_based_enabled: boolean
-          weight_based_rates: Json | null
-        }
-        Insert: {
-          created_at?: string
-          flat_rate_amount?: number | null
-          flat_rate_enabled?: boolean
-          free_shipping_enabled?: boolean
-          free_shipping_minimum?: number | null
-          id?: string
-          updated_at?: string
-          website_id: string
-          weight_based_enabled?: boolean
-          weight_based_rates?: Json | null
-        }
-        Update: {
-          created_at?: string
-          flat_rate_amount?: number | null
-          flat_rate_enabled?: boolean
-          free_shipping_enabled?: boolean
-          free_shipping_minimum?: number | null
-          id?: string
-          updated_at?: string
-          website_id?: string
-          weight_based_enabled?: boolean
-          weight_based_rates?: Json | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "shipping_settings_website_id_fkey"
-            columns: ["website_id"]
-            isOneToOne: false
-            referencedRelation: "websites"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       stripe_connect_accounts: {
         Row: {

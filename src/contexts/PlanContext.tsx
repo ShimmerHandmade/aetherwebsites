@@ -34,13 +34,13 @@ export const PlanProvider = ({ children }: PlanProviderProps) => {
       return true; // Enterprise users have access to everything
     }
     
-    if (planInfo.isPremium && !isPremiumOnly) {
+    if (planInfo.isPremium && isPremiumOnly) {
       console.log(`Premium user has access to ${feature}`);
       return true; // Premium users have access to premium features
     }
     
     // Show upgrade toast
-    const requiredPlan = isPremiumOnly ? "Enterprise" : "Professional";
+    const requiredPlan = isPremiumOnly ? "Professional" : "Enterprise";
     toast.error(`${feature} requires a ${requiredPlan} plan`, {
       description: `Upgrade your plan to access this feature`,
       duration: 5000,
@@ -102,5 +102,3 @@ export const PlanProvider = ({ children }: PlanProviderProps) => {
 
 // Custom hook to use the plan context
 export const usePlan = () => useContext(PlanContext);
-
-export default PlanProvider;

@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useRef } from "react";
-import { getPlanLimits, getUserPlanRestrictions, PlanRestriction } from "@/utils/planRestrictions";
+import { getUserPlanRestrictions, PlanRestriction } from "@/utils/planRestrictions";
 import { getUserPlanSimplified } from "@/api/websites/getUserPlanSimplified";
 import { toast } from "sonner";
 

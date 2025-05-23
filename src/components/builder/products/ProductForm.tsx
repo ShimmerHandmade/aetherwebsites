@@ -1,328 +1,255 @@
 
-import React, { useState } from "react";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ImageIcon, X } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Product } from "@/types/product";
-import { ProductFormProps } from "@/types/general";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { 
+  FileImage, 
+  Loader2, 
+  Trash
+} from "lucide-react";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Product, UniqueCategory } from "@/types/product";
+
+interface ProductFormProps {
+  product: Product;
+  categories: UniqueCategory[];
+  isAddingNew: boolean;
+  isSaving: boolean;
+  onSave: () => void;
+  onCancel: () => void;
+  onProductChange: (product: Product) => void;
+  onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  imagePreview: string | null;
+  onClearImage: () => void;
+  newCategory: string;
+  onNewCategoryChange: (category: string) => void;
+  onAddCategory: () => void;
+}
 
 const ProductForm: React.FC<ProductFormProps> = ({
   product,
-  onChange,
   categories,
-  newCategory,
-  onNewCategoryChange,
-  onAddCategory,
-  imagePreview,
-  onImageChange,
-  onClearImage,
-  planInfo,
   isAddingNew,
   isSaving,
   onSave,
-  onCancel
+  onCancel,
+  onProductChange,
+  onImageChange,
+  imagePreview,
+  onClearImage,
+  newCategory,
+  onNewCategoryChange,
+  onAddCategory
 }) => {
-  const [open, setOpen] = useState(false);
-
+  // Function to handle the file input click without triggering parent click events
+  const handleFileInputClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+  
   return (
-    <div className="space-y-6 px-1">
-      <div>
-        <FormLabel htmlFor="name">Name</FormLabel>
-        <Input
-          id="name"
-          type="text"
-          value={product.name || ""}
-          onChange={(e) => onChange({ ...product, name: e.target.value })}
-          placeholder="Product name"
-        />
-        <FormDescription className="mt-1">
-          This is the name of the product that will be displayed on your website.
-        </FormDescription>
-      </div>
-
-      <div>
-        <FormLabel htmlFor="description">Description</FormLabel>
-        <Textarea
-          id="description"
-          value={product.description || ""}
-          onChange={(e) => onChange({ ...product, description: e.target.value })}
-          placeholder="Product description"
-        />
-        <FormDescription className="mt-1">
-          A brief description of the product.
-        </FormDescription>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div>
-          <FormLabel htmlFor="price">Price</FormLabel>
-          <Input
-            id="price"
-            type="number"
-            min="0"
-            step="0.01"
-            value={product.price === undefined ? "" : product.price}
-            onChange={(e) => onChange({ ...product, price: Number(e.target.value) || 0 })}
-            placeholder="0.00"
-          />
-          <FormDescription className="mt-1">
-            The price of the product.
-          </FormDescription>
-        </div>
-
-        <div>
-          <FormLabel htmlFor="sku">SKU</FormLabel>
-          <Input
-            id="sku"
-            type="text"
-            value={product.sku || ""}
-            onChange={(e) => onChange({ ...product, sku: e.target.value })}
-            placeholder="Unique identifier"
-          />
-          <FormDescription className="mt-1">
-            A unique identifier for the product (optional).
-          </FormDescription>
-        </div>
-      </div>
-
-      <div>
-        <FormLabel htmlFor="category">Category</FormLabel>
-        <div className="flex items-center space-x-2">
-          <Select onValueChange={(value) => onChange({ ...product, category: value })}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select a category" defaultValue={product.category} />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((category) => (
-                <SelectItem key={category.id} value={category.name}>{category.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                Add Category
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Add Category</DialogTitle>
-                <DialogDescription>
-                  Add a new category to the list.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <FormLabel htmlFor="name" className="text-right">
-                    Name
-                  </FormLabel>
-                  <Input id="name" value={newCategory} className="col-span-3" onChange={(e) => onNewCategoryChange(e.target.value)} />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="button" onClick={onAddCategory}>Add</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-        <FormDescription className="mt-1">
-          The category this product belongs to.
-        </FormDescription>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div>
-          <FormLabel htmlFor="stock">Stock</FormLabel>
-          <Input
-            id="stock"
-            type="number"
-            min="0"
-            step="1"
-            value={product.stock === undefined ? "" : product.stock}
-            onChange={(e) => onChange({ ...product, stock: Number(e.target.value) || 0 })}
-            placeholder="0"
-          />
-          <FormDescription className="mt-1">
-            Inventory level (optional)
-          </FormDescription>
-        </div>
-
-        <div>
-          <FormLabel htmlFor="weight">Weight (lbs)</FormLabel>
-          <Input
-            id="weight"
-            type="number"
-            min="0"
-            step="0.1"
-            value={product.weight === undefined ? "" : product.weight}
-            onChange={(e) => onChange({ ...product, weight: Number(e.target.value) || 0 })}
-            placeholder="0.0"
-          />
-          <FormDescription className="mt-1">
-            Product weight for shipping (optional)
-          </FormDescription>
-        </div>
-      </div>
-
-      <div>
-        <FormLabel htmlFor="image">Image</FormLabel>
-        <div className="flex items-center space-x-4">
-          <div className="relative w-32 h-32 rounded-md overflow-hidden">
-            {imagePreview || product.image_url ? (
-              <img
-                src={imagePreview || product.image_url}
-                alt="Product Image"
-                className="w-full h-full object-cover"
+    <Card>
+      <CardHeader>
+        <CardTitle>{isAddingNew ? "Add New Product" : "Edit Product"}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="product-name">Product Name *</Label>
+              <Input
+                id="product-name"
+                value={product.name}
+                onChange={(e) => onProductChange({...product, name: e.target.value})}
               />
-            ) : (
-              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                <ImageIcon className="h-8 w-8 text-gray-500" />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="product-description">Description</Label>
+              <Textarea
+                id="product-description"
+                value={product.description || ''}
+                onChange={(e) => onProductChange({...product, description: e.target.value})}
+                rows={4}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="product-price">Price ($) *</Label>
+                <Input
+                  id="product-price"
+                  type="number"
+                  value={product.price}
+                  onChange={(e) => onProductChange({...product, price: parseFloat(e.target.value) || 0})}
+                />
               </div>
-            )}
-            {imagePreview || product.image_url ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 bg-background hover:bg-secondary"
-                onClick={onClearImage}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            ) : null}
+              <div className="space-y-2">
+                <Label htmlFor="product-sku">SKU</Label>
+                <Input
+                  id="product-sku"
+                  value={product.sku || ''}
+                  onChange={(e) => onProductChange({...product, sku: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="product-stock">Stock</Label>
+              <Input
+                id="product-stock"
+                type="number"
+                value={product.stock || 0}
+                onChange={(e) => onProductChange({...product, stock: parseInt(e.target.value) || 0})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="product-category">Category</Label>
+              <div className="flex gap-2">
+                <Select
+                  value={product.category || ''}
+                  onValueChange={(value) => onProductChange({...product, category: value === 'none' ? null : value})}
+                >
+                  <SelectTrigger id="product-category" className="flex-grow">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.name} value={category.name}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Input 
+                  placeholder="Or type new category..."
+                  value={newCategory}
+                  onChange={(e) => onNewCategoryChange(e.target.value)}
+                  className="flex-grow"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newCategory.trim() !== '') {
+                      onProductChange({...product, category: newCategory});
+                      onAddCategory();
+                    }
+                  }}
+                />
+                
+                <Button 
+                  type="button"
+                  disabled={!newCategory.trim()} 
+                  onClick={() => {
+                    if (newCategory.trim()) {
+                      onProductChange({...product, category: newCategory});
+                      onAddCategory();
+                    }
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
           </div>
-          <Input
-            type="file"
-            id="image"
-            className="hidden"
-            onChange={onImageChange}
-          />
-          <label
-            htmlFor="image"
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-          >
-            Upload Image
-          </label>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Product Image</Label>
+              <div 
+                className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center relative"
+                onClick={(e) => {
+                  // Prevent click bubbling but don't do anything here
+                  e.stopPropagation();
+                }}
+              >
+                {imagePreview ? (
+                  <div className="relative">
+                    <img 
+                      src={imagePreview} 
+                      alt="Product preview" 
+                      className="max-h-40 mx-auto object-contain"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-0 right-0 text-red-500"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering the parent's click
+                        onClearImage();
+                      }}
+                      type="button"
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="py-4 flex flex-col items-center">
+                    <FileImage className="h-10 w-10 text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-500 mb-2">Click to upload or drag and drop</p>
+                    <p className="text-xs text-gray-400">PNG, JPG, GIF up to 5MB</p>
+                  </div>
+                )}
+                <input
+                  id="product-image"
+                  type="file"
+                  accept="image/*"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  onChange={onImageChange}
+                  onClick={handleFileInputClick}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-3 pt-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="is_featured" className="cursor-pointer">Featured Product</Label>
+                <Switch 
+                  id="is_featured"
+                  checked={product.is_featured || false}
+                  onCheckedChange={(checked) => onProductChange({...product, is_featured: checked})}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <Label htmlFor="is_sale" className="cursor-pointer">On Sale</Label>
+                <Switch 
+                  id="is_sale"
+                  checked={product.is_sale || false}
+                  onCheckedChange={(checked) => onProductChange({...product, is_sale: checked})}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <Label htmlFor="is_new" className="cursor-pointer">New Arrival</Label>
+                <Switch 
+                  id="is_new"
+                  checked={product.is_new || false}
+                  onCheckedChange={(checked) => onProductChange({...product, is_new: checked})}
+                />
+              </div>
+            </div>
+          </div>
         </div>
-        <FormDescription className="mt-1">
-          A visual representation of the product.
-        </FormDescription>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div>
-          <FormField
-            control={product}
-            name="is_featured"
-            render={() => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                <div className="space-y-0.5">
-                  <FormLabel className="text-base">
-                    Featured
-                  </FormLabel>
-                  <FormDescription>
-                    Mark this product as featured.
-                  </FormDescription>
-                </div>
-                <FormControl>
-                  <Switch
-                    checked={product.is_featured}
-                    onCheckedChange={(e) => onChange({ ...product, is_featured: e })}
-                  />
-                </FormControl>
-              </FormItem>
+        
+        <div className="flex justify-end space-x-2 pt-2">
+          <Button variant="outline" onClick={onCancel} disabled={isSaving}>Cancel</Button>
+          <Button onClick={onSave} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save'
             )}
-          />
+          </Button>
         </div>
-
-        <div>
-          <FormField
-            control={product}
-            name="is_new"
-            render={() => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                <div className="space-y-0.5">
-                  <FormLabel className="text-base">
-                    New Arrival
-                  </FormLabel>
-                  <FormDescription>
-                    Mark this product as a new arrival.
-                  </FormDescription>
-                </div>
-                <FormControl>
-                  <Switch
-                    checked={product.is_new}
-                    onCheckedChange={(e) => onChange({ ...product, is_new: e })}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div>
-          <FormField
-            control={product}
-            name="is_sale"
-            render={() => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                <div className="space-y-0.5">
-                  <FormLabel className="text-base">
-                    On Sale
-                  </FormLabel>
-                  <FormDescription>
-                    Mark this product as on sale.
-                  </FormDescription>
-                </div>
-                <FormControl>
-                  <Switch
-                    checked={product.is_sale}
-                    onCheckedChange={(e) => onChange({ ...product, is_sale: e })}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </div>
-      </div>
-
-      {/* Add save/cancel buttons if they are provided */}
-      {(onSave || onCancel) && (
-        <div className="flex justify-end space-x-2 pt-4 border-t">
-          {onCancel && (
-            <Button variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-          )}
-          {onSave && (
-            <Button onClick={onSave} disabled={isSaving}>
-              {isSaving ? "Saving..." : isAddingNew ? "Create Product" : "Save Changes"}
-            </Button>
-          )}
-        </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -1,226 +1,250 @@
 
-import { Profile } from '@/types/general';
-import { supabase } from '@/integrations/supabase/client';
+import { Plan } from "@/api/websites";
+import { Profile } from "@/pages/Dashboard";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export interface PlanRestriction {
   maxProducts: number;
-  maxPages: number;
   maxWebsites: number;
-  hasAdvancedAnalytics: boolean;
-  hasCustomDomain: boolean;
-  hasAllowCoupons: boolean;
-  hasAllowDiscounts: boolean;
-  hasAllowPremiumTemplates: boolean;
-  hasAllowPremiumElements: boolean;
+  allowCoupons: boolean;
+  allowDiscounts: boolean;
+  allowAdvancedAnalytics: boolean;
+  allowCustomDomain: boolean;
+  allowPremiumTemplates: boolean;
+  allowPremiumElements: boolean;
+  allowPremiumAnimations: boolean;
+  allowedThemes: string[];
 }
 
-// Helper to get limits based on plan
-export const getPlanLimits = (profile: Profile | null): PlanRestriction => {
-  const defaults: PlanRestriction = {
-    maxProducts: 10,
-    maxPages: 5,
+// Define restrictions for each plan tier with more fair features
+const planRestrictions: Record<string, PlanRestriction> = {
+  "Basic": {
+    maxProducts: 30,
     maxWebsites: 1,
-    hasAdvancedAnalytics: false,
-    hasCustomDomain: false,
-    hasAllowCoupons: false,
-    hasAllowDiscounts: false,
-    hasAllowPremiumTemplates: false,
-    hasAllowPremiumElements: false
-  };
-  
-  if (!profile || !profile.is_subscribed) {
-    console.log('Using default plan restrictions');
-    return defaults;
-  }
-  
-  // Check subscription type and plan ID for more accurate detection
-  const subscriptionType = profile.subscription_type?.toLowerCase() || '';
-  const planId = profile.plan_id?.toLowerCase() || '';
-  
-  console.log(`Determining plan limits for subscription type: ${subscriptionType}, plan ID: ${planId}`);
-  
-  const isEnterprise = 
-    subscriptionType === 'enterprise' || 
-    planId.includes('enterprise') ||
-    planId.includes('tier3');
-    
-  const isProfessional = 
-    subscriptionType === 'professional' || 
-    subscriptionType === 'premium' || 
-    planId.includes('pro') ||
-    planId.includes('premium') ||
-    planId.includes('tier2');
-  
-  if (isEnterprise) {
-    console.log('Enterprise plan detected');
-    return {
-      maxProducts: 1000,
-      maxPages: 100,
-      maxWebsites: 10,
-      hasAdvancedAnalytics: true,
-      hasCustomDomain: true,
-      hasAllowCoupons: true,
-      hasAllowDiscounts: true,
-      hasAllowPremiumTemplates: true,
-      hasAllowPremiumElements: true
-    };
-  }
-  
-  if (isProfessional) {
-    console.log('Professional plan detected');
-    return {
-      maxProducts: 100,
-      maxPages: 20,
-      maxWebsites: 3,
-      hasAdvancedAnalytics: true,
-      hasCustomDomain: true,
-      hasAllowCoupons: true,
-      hasAllowDiscounts: true,
-      hasAllowPremiumTemplates: true,
-      hasAllowPremiumElements: false
-    };
-  }
-  
-  console.log('Basic paid plan detected');
-  return {
-    maxProducts: 20,
-    maxPages: 10,
+    allowCoupons: true,
+    allowDiscounts: false,
+    allowAdvancedAnalytics: false,
+    allowCustomDomain: false,
+    allowPremiumTemplates: false,
+    allowPremiumElements: false,
+    allowPremiumAnimations: false,
+    allowedThemes: ["business", "blog", "ecommerce", "fashion", "electronics", "food"]
+  },
+  "Professional": {
+    maxProducts: 150,
+    maxWebsites: 3,
+    allowCoupons: true,
+    allowDiscounts: true,
+    allowAdvancedAnalytics: true,
+    allowCustomDomain: true,
+    allowPremiumTemplates: true,
+    allowPremiumElements: true,
+    allowPremiumAnimations: true,
+    allowedThemes: ["business", "blog", "ecommerce", "fashion", "electronics", "jewelry", "beauty", "food", "furniture", "portfolio"]
+  },
+  "Enterprise": {
+    maxProducts: 1500,
+    maxWebsites: 5,
+    allowCoupons: true,
+    allowDiscounts: true,
+    allowAdvancedAnalytics: true,
+    allowCustomDomain: true,
+    allowPremiumTemplates: true,
+    allowPremiumElements: true,
+    allowPremiumAnimations: true,
+    allowedThemes: ["business", "blog", "ecommerce", "fashion", "electronics", "jewelry", "beauty", "food", "furniture", "portfolio"]
+  },
+  // Default restrictions for users without a plan
+  "default": {
+    maxProducts: 15,
     maxWebsites: 1,
-    hasAdvancedAnalytics: false,
-    hasCustomDomain: true,
-    hasAllowCoupons: false,
-    hasAllowDiscounts: false,
-    hasAllowPremiumTemplates: false,
-    hasAllowPremiumElements: false
-  };
+    allowCoupons: false,
+    allowDiscounts: false,
+    allowAdvancedAnalytics: false,
+    allowCustomDomain: false,
+    allowPremiumTemplates: false,
+    allowPremiumElements: false,
+    allowPremiumAnimations: false,
+    allowedThemes: ["business", "blog", "ecommerce", "fashion", "electronics", "food"]
+  }
 };
 
-// Function to check product limits based on profile
-export const checkProductLimit = async (currentCount: number): Promise<boolean> => {
+// Get the user's current plan restrictions
+export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
   try {
-    // Get the current user
-    const { data } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.log("getUserPlanRestrictions: No authenticated user found");
+      return planRestrictions.default;
+    }
+
+    // Get the user profile first
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("*, plans(*)")
+      .eq("id", user.id)
+      .maybeSingle();
     
-    if (!data.user) {
-      console.log('No authenticated user found for product limit check');
-      return false;
+    console.log("Profile data from DB:", profile);
+    
+    if (error || !profile?.is_subscribed || 
+        (profile.subscription_end && new Date(profile.subscription_end) < new Date())) {
+      console.log("No active subscription found, using default restrictions");
+      return planRestrictions.default;
+    }
+
+    // Check if plans data is valid
+    const planData = profile.plans;
+    
+    // If no plan data but we have a plan_id, try to get the plan directly
+    if ((planData === null || typeof planData !== 'object') && profile.plan_id) {
+      console.log("No plan data in profile relation, trying direct query with plan_id:", profile.plan_id);
+      const { data: directPlan, error: directPlanError } = await supabase
+        .from("plans")
+        .select("name")
+        .eq("id", profile.plan_id)
+        .maybeSingle();
+        
+      if (!directPlanError && directPlan && directPlan.name) {
+        console.log("Retrieved plan name directly:", directPlan.name);
+        // Check if this plan exists in our restrictions mapping
+        if (planRestrictions[directPlan.name]) {
+          console.log(`Using restrictions for plan: ${directPlan.name}`);
+          return planRestrictions[directPlan.name];
+        }
+      }
+      
+      console.log("Could not find plan by ID, using default");
+      return planRestrictions.default;
     }
     
-    // Get the profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', data.user.id)
-      .single();
-    
-    if (!profile) {
-      console.log('No profile found for product limit check');
-      return false;
+    // Get the plan name with additional safeguards
+    let planName = 'default';
+    if (planData !== null && typeof planData === 'object' && planData && 'name' in planData) {
+      planName = ((planData as any).name as string) || 'default';
     }
     
-    // Get the plan limits
-    const limits = getPlanLimits(profile);
+    console.log("Plan name:", planName);
     
-    console.log(`Checking product limit: current count ${currentCount}, limit ${limits.maxProducts}`);
+    // Check if this plan exists in our restrictions mapping
+    if (planName && planRestrictions[planName]) {
+      console.log(`Using restrictions for plan: ${planName}`);
+      return planRestrictions[planName];
+    }
     
-    // Check if adding a new product would exceed the limit
-    return currentCount < limits.maxProducts;
+    console.log("Plan not found in restrictions, using default");
+    return planRestrictions.default;
   } catch (error) {
-    console.error('Error checking product limit:', error);
-    return false;
+    console.error("Error getting user plan restrictions:", error);
+    return planRestrictions.default;
   }
-};
+}
 
-// Function to check theme access based on profile
-export const checkThemeAccess = async (themeName: string): Promise<boolean> => {
-  // Get the current user
-  const { data } = await supabase.auth.getUser();
-  
-  if (!data.user) return false;
-  
-  // Get the profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', data.user.id)
-    .single();
-  
-  if (!profile) return false;
-  
-  // If not subscribed, only allow basic themes
-  if (!profile.is_subscribed) {
-    const basicThemes = ['basic', 'simple', 'minimal'];
-    return basicThemes.includes(themeName.toLowerCase());
-  }
-  
-  const planType = profile.subscription_type?.toLowerCase() || '';
-  
-  // Premium themes only available for Professional and Enterprise plans
-  if (themeName.toLowerCase().includes('premium') && 
-     !(planType === 'professional' || planType === 'enterprise')) {
-    return false;
-  }
-  
-  // All themes are accessible for subscribed users with appropriate plan
-  return true;
-};
+// Check if a specific feature is allowed for the current user
+export async function checkFeatureAccess(feature: keyof PlanRestriction): Promise<boolean> {
+  const restrictions = await getUserPlanRestrictions();
+  return restrictions[feature] === true;
+}
 
-// Function to get plan restrictions
-export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
+// Check if the specified theme is allowed for the current user's plan
+export async function checkThemeAccess(themeName: string): Promise<boolean> {
+  const restrictions = await getUserPlanRestrictions();
+  return restrictions.allowedThemes.includes(themeName);
+}
+
+// Check if adding another product would exceed the user's plan limit
+export async function checkProductLimit(currentCount: number): Promise<boolean> {
+  const restrictions = await getUserPlanRestrictions();
+  const belowLimit = currentCount < restrictions.maxProducts;
+  
+  if (!belowLimit) {
+    toast.error("Plan Limit Reached", {
+      description: `You've reached your plan's limit of ${restrictions.maxProducts} products. Upgrade your plan to add more products.`
+    });
+  }
+  
+  return belowLimit;
+}
+
+// Check website limits
+export async function checkWebsiteLimit(currentCount: number): Promise<boolean> {
+  const restrictions = await getUserPlanRestrictions();
+  const belowLimit = currentCount < restrictions.maxWebsites;
+  
+  if (!belowLimit) {
+    toast.error("Website Limit Reached", {
+      description: `You've reached your plan's limit of ${restrictions.maxWebsites} websites. Upgrade your plan to add more websites.`
+    });
+  }
+  
+  return belowLimit;
+}
+
+// Get the current user's plan name
+export async function getUserPlanName(): Promise<string | null> {
   try {
-    // Get the current user
-    const { data } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.log("No user found, returning null plan name");
+      return null;
+    }
+
+    // Get the user profile
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("*, plans(*)")
+      .eq("id", user.id)
+      .maybeSingle();
     
-    if (!data.user) {
-      console.log('No authenticated user found for plan restrictions');
-      return {
-        maxProducts: 10,
-        maxPages: 5,
-        maxWebsites: 1,
-        hasAdvancedAnalytics: false,
-        hasCustomDomain: false,
-        hasAllowCoupons: false,
-        hasAllowDiscounts: false,
-        hasAllowPremiumTemplates: false,
-        hasAllowPremiumElements: false
-      };
+    console.log("Profile data for plan name:", profile);
+    
+    if (error) {
+      console.error("Error fetching profile:", error);
+      return null;
     }
     
-    // Get the profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', data.user.id)
-      .single();
+    if (!profile?.is_subscribed || 
+        (profile.subscription_end && new Date(profile.subscription_end) < new Date())) {
+      console.log("No active subscription, returning null plan name");
+      return null;
+    }
+
+    // Try to get the plan name in multiple ways
+    let planName: string | null = null;
     
-    if (!profile) {
-      console.log('No profile found for plan restrictions');
-      return {
-        maxProducts: 10,
-        maxPages: 5,
-        maxWebsites: 1,
-        hasAdvancedAnalytics: false,
-        hasCustomDomain: false,
-        hasAllowCoupons: false,
-        hasAllowDiscounts: false,
-        hasAllowPremiumTemplates: false,
-        hasAllowPremiumElements: false
-      };
+    // First try from the plans join
+    const planData = profile.plans;
+    if (planData !== null && typeof planData === 'object' && planData && 'name' in planData) {
+      planName = (planData as any).name as string;
+      console.log("Got plan name from joined data:", planName);
     }
     
-    return getPlanLimits(profile);
+    // If that failed but we have a plan_id, try direct query
+    if (!planName && profile.plan_id) {
+      console.log("Trying direct query for plan name with ID:", profile.plan_id);
+      const { data: directPlan, error: planError } = await supabase
+        .from("plans")
+        .select("name")
+        .eq("id", profile.plan_id)
+        .maybeSingle();
+        
+      if (!planError && directPlan) {
+        planName = directPlan.name;
+        console.log("Got plan name from direct query:", planName);
+      }
+    }
+    
+    console.log("Returning plan name:", planName);
+    return planName;
   } catch (error) {
-    console.error('Error getting user plan restrictions:', error);
-    return {
-      maxProducts: 10,
-      maxPages: 5,
-      maxWebsites: 1,
-      hasAdvancedAnalytics: false,
-      hasCustomDomain: false,
-      hasAllowCoupons: false,
-      hasAllowDiscounts: false,
-      hasAllowPremiumTemplates: false,
-      hasAllowPremiumElements: false
-    };
+    console.error("Error getting user plan:", error);
+    return null;
   }
-};
+}
+
+// Check if premium features are available
+export async function isPremiumPlan(): Promise<boolean> {
+  const planName = await getUserPlanName();
+  return planName === "Professional" || planName === "Enterprise";
+}

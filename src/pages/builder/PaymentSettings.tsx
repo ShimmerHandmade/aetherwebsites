@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Home, AlertCircle, CheckCircle2, DollarSign, CreditCard, RefreshCw, Globe, ExternalLink } from "lucide-react";
@@ -9,13 +9,11 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useStripeConnect } from "@/hooks/useStripeConnect";
-import { supabase } from "@/integrations/supabase/client";
 
 const PaymentSettings = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { website, isLoading: isWebsiteLoading } = useWebsite(id, navigate);
-  const [manuallyChecking, setManuallyChecking] = useState(false);
   
   const { 
     stripeAccount, 
@@ -24,42 +22,10 @@ const PaymentSettings = () => {
     isRefreshing,
     platformError,
     connectStripeAccount,
-    refreshStripeAccount,
-    lastRefresh
+    refreshStripeAccount
   } = useStripeConnect(id);
   
   const isLoading = isWebsiteLoading || isStripeLoading;
-  
-  // Effect to manually check Stripe account status
-  useEffect(() => {
-    const checkAccountStatus = async () => {
-      if (!id || !stripeAccount?.stripe_account_id || manuallyChecking) return;
-      
-      try {
-        setManuallyChecking(true);
-        console.log("Manually checking Stripe Connect account status...");
-        
-        // Fetch latest account details from Stripe via edge function
-        const { data, error } = await supabase.functions.invoke('check-connect-status', {
-          body: { accountId: stripeAccount.stripe_account_id }
-        });
-        
-        if (error) {
-          console.error("Error checking account status:", error);
-        } else if (data?.updated) {
-          console.log("Account status updated, refreshing data");
-          refreshStripeAccount();
-        }
-      } catch (err) {
-        console.error("Error in checkAccountStatus:", err);
-      } finally {
-        setManuallyChecking(false);
-      }
-    };
-    
-    // Run manual check on component mount
-    checkAccountStatus();
-  }, [id, stripeAccount?.stripe_account_id]);
   
   const handleConnectStripe = async () => {
     await connectStripeAccount();
@@ -71,17 +37,6 @@ const PaymentSettings = () => {
 
   const handleOpenStripeDashboard = () => {
     window.open("https://dashboard.stripe.com/connect/accounts/overview", "_blank");
-  };
-  
-  // Function to determine if the payment processing is ready
-  const isPaymentProcessingReady = () => {
-    if (!stripeAccount) return false;
-    
-    // Either check the onboarding_complete field or all three conditions
-    return stripeAccount.onboarding_complete || 
-      (stripeAccount.details_submitted && 
-       stripeAccount.charges_enabled && 
-       stripeAccount.payouts_enabled);
   };
   
   if (isLoading && !isRefreshing) {
@@ -151,11 +106,11 @@ const PaymentSettings = () => {
             variant="outline" 
             size="sm" 
             onClick={handleRefreshStatus}
-            disabled={isRefreshing || manuallyChecking}
+            disabled={isRefreshing}
             className="flex items-center gap-1"
           >
-            <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshing || manuallyChecking ? 'animate-spin' : ''}`} />
-            {isRefreshing || manuallyChecking ? "Refreshing..." : "Refresh Status"}
+            <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? "Refreshing..." : "Refresh Status"}
           </Button>
         </div>
         
@@ -188,7 +143,7 @@ const PaymentSettings = () => {
             </CardHeader>
             
             <CardContent>
-              {isRefreshing || manuallyChecking ? (
+              {isRefreshing ? (
                 <div className="flex justify-center items-center h-24">
                   <div className="h-8 w-8 border-4 border-t-blue-600 border-r-blue-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin"></div>
                 </div>
@@ -202,9 +157,9 @@ const PaymentSettings = () => {
                         <p className="text-sm text-gray-500">ID: {stripeAccount.stripe_account_id}</p>
                       </div>
                     </div>
-                    <Badge variant={isPaymentProcessingReady() ? "secondary" : "outline"} 
-                      className={isPaymentProcessingReady() ? "bg-green-100 text-green-800 hover:bg-green-200" : ""}>
-                      {isPaymentProcessingReady() ? "Active" : "Setup Incomplete"}
+                    <Badge variant={stripeAccount.onboarding_complete ? "secondary" : "outline"} 
+                      className={stripeAccount.onboarding_complete ? "bg-green-100 text-green-800 hover:bg-green-200" : ""}>
+                      {stripeAccount.onboarding_complete ? "Active" : "Setup Incomplete"}
                     </Badge>
                   </div>
                   
@@ -248,7 +203,7 @@ const PaymentSettings = () => {
                     </div>
                   </div>
                   
-                  {isPaymentProcessingReady() ? (
+                  {stripeAccount.onboarding_complete ? (
                     <Alert variant="default" className="bg-green-50 border-green-200">
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
                       <AlertTitle className="text-green-700">Stripe account ready</AlertTitle>
@@ -308,7 +263,7 @@ const PaymentSettings = () => {
                       Connecting...
                     </>
                   ) : stripeAccount ? (
-                    isPaymentProcessingReady() ? "Update Stripe Settings" : "Complete Stripe Setup"
+                    stripeAccount.onboarding_complete ? "Update Stripe Settings" : "Complete Stripe Setup"
                   ) : (
                     "Connect with Stripe"
                   )}

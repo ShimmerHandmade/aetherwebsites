@@ -1,41 +1,63 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/integrations/supabase/client";
 
-// Define the Plan type with explicit types to avoid recursive instantiation
 export interface Plan {
   id: string;
   name: string;
   description: string;
   monthly_price: number;
   annual_price: number;
-  interval?: string;
   features: string[];
-  is_active?: boolean;
-  stripe_price_id?: string;
-  price?: number; // Kept for backward compatibility
+  isPopular?: boolean;
 }
 
-export const getPlans = async () => {
+/**
+ * Fetches all plans from the database
+ */
+export const getPlans = async (): Promise<{
+  data: Plan[] | null;
+  error?: string;
+}> => {
   try {
-    // Removing the is_active filter as the column doesn't exist according to the error log
     const { data, error } = await supabase
-      .from('plans')
-      .select('*');
+      .from("plans")
+      .select("*")
+      .order("monthly_price", { ascending: true });
     
     if (error) {
-      console.error('Error fetching plans:', error);
-      return { plans: [], error: error.message };
+      console.error("Error fetching plans:", error);
+      return {
+        data: null,
+        error: "Failed to fetch pricing plans"
+      };
     }
     
-    // Transform data to match the Plan interface
-    const plans = data.map(plan => ({
-      ...plan,
-      features: Array.isArray(plan.features) ? plan.features : []
+    // Process the plans data - ensure features is properly parsed to string[]
+    // and mark the Professional plan as popular
+    const processedPlans = data.map(plan => ({
+      id: plan.id,
+      name: plan.name,
+      description: plan.description || '',
+      monthly_price: plan.monthly_price,
+      annual_price: plan.annual_price,
+      // Parse features from jsonb to ensure it's a string array
+      features: Array.isArray(plan.features) 
+        ? plan.features.map(feature => String(feature))
+        : typeof plan.features === 'string'
+          ? [plan.features]
+          : plan.features instanceof Object 
+            ? Object.keys(plan.features).map(key => String(plan.features[key])) 
+            : [],
+      // Mark the Professional plan as popular
+      isPopular: plan.name === 'Professional'
     })) as Plan[];
     
-    return { plans, error: null };
-  } catch (err: any) {
-    console.error('Error in getPlans:', err);
-    return { plans: [], error: 'Failed to fetch plans' };
+    return { data: processedPlans };
+  } catch (error) {
+    console.error("Error in getPlans:", error);
+    return {
+      data: null,
+      error: "An unexpected error occurred"
+    };
   }
 };

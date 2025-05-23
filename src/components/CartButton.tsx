@@ -19,7 +19,7 @@ const CartButton: React.FC<CartButtonProps> = ({
   siteCartUrl
 }) => {
   const navigate = useNavigate();
-  const { itemCount } = useCart();
+  const { totalItems } = useCart();
 
   const handleClick = () => {
     if (siteCartUrl) {
@@ -40,9 +40,9 @@ const CartButton: React.FC<CartButtonProps> = ({
       className={`relative ${className}`}
     >
       <ShoppingCart className="h-[1.2rem] w-[1.2rem]" />
-      {itemCount > 0 && (
+      {totalItems > 0 && (
         <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-          {itemCount}
+          {totalItems}
         </span>
       )}
     </Button>

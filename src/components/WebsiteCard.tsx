@@ -2,10 +2,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Website } from "@/pages/Dashboard";
 import { Edit, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { deleteWebsite } from "@/api/websites";
-import { Website } from "@/types/general";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,11 +20,9 @@ import {
 interface WebsiteCardProps {
   website: Website;
   onWebsiteUpdate: () => void;
-  onWebsiteDeleted?: () => void;
-  onDelete?: () => Promise<void>;
 }
 
-const WebsiteCard = ({ website, onWebsiteUpdate, onWebsiteDeleted, onDelete }: WebsiteCardProps) => {
+const WebsiteCard = ({ website, onWebsiteUpdate }: WebsiteCardProps) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
@@ -33,28 +31,18 @@ const WebsiteCard = ({ website, onWebsiteUpdate, onWebsiteDeleted, onDelete }: W
     try {
       setIsDeleting(true);
       
-      if (onDelete) {
-        await onDelete();
-      } else {
-        toast.loading("Deleting website and associated data...");
-        const result = await deleteWebsite(website.id);
-          
-        if (!result.success) {
-          toast.dismiss();
-          toast.error(result.error || "Failed to delete website");
-          return;
-        }
+      toast.loading("Deleting website and associated data...");
+      const result = await deleteWebsite(website.id);
         
+      if (!result.success) {
         toast.dismiss();
-        toast.success("Website and all associated data deleted successfully");
-        
-        // Call the appropriate callback
-        if (onWebsiteDeleted) {
-          onWebsiteDeleted();
-        } else {
-          onWebsiteUpdate();
-        }
+        toast.error(result.error || "Failed to delete website");
+        return;
       }
+      
+      toast.dismiss();
+      toast.success("Website and all associated data deleted successfully");
+      onWebsiteUpdate();
     } catch (error) {
       console.error("Error in handleDelete:", error);
       toast.dismiss();
