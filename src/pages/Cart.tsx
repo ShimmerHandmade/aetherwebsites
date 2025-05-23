@@ -14,7 +14,7 @@ interface CartProps {
 }
 
 const Cart: React.FC<CartProps> = ({ siteName, siteId }) => {
-  const { items, clearCart, totalItems, subtotal } = useCart();
+  const { cart, clearCart, itemCount, cartTotal } = useCart();
   const navigate = useNavigate();
   
   // Determine if this is a site-specific cart (viewed in WebsiteViewer)
@@ -68,7 +68,7 @@ const Cart: React.FC<CartProps> = ({ siteName, siteId }) => {
           Your Shopping Cart
         </h1>
 
-        {items.length === 0 ? (
+        {cart.length === 0 ? (
           <div className="text-center py-16 border border-dashed border-gray-300 rounded-lg">
             <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-3" />
             <h3 className="text-xl font-medium text-gray-700 mb-2">Your cart is empty</h3>
@@ -81,11 +81,11 @@ const Cart: React.FC<CartProps> = ({ siteName, siteId }) => {
             <div className="lg:col-span-2">
               <div className="bg-white rounded-lg shadow-sm border border-gray-100">
                 <div className="p-4 border-b border-gray-100">
-                  <h2 className="text-lg font-semibold">Cart Items ({totalItems})</h2>
+                  <h2 className="text-lg font-semibold">Cart Items ({itemCount})</h2>
                 </div>
                 
                 <div className="divide-y divide-gray-100">
-                  {items.map((item) => (
+                  {cart.map((item) => (
                     <CartItem key={item.product.id} item={item} />
                   ))}
                 </div>
@@ -122,7 +122,7 @@ const Cart: React.FC<CartProps> = ({ siteName, siteId }) => {
                 <div className="p-4 space-y-4">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium">${subtotal.toFixed(2)}</span>
+                    <span className="font-medium">${cartTotal.toFixed(2)}</span>
                   </div>
                   
                   <div className="flex justify-between">
@@ -144,7 +144,7 @@ const Cart: React.FC<CartProps> = ({ siteName, siteId }) => {
                   
                   <div className="flex justify-between">
                     <span className="font-semibold">Total</span>
-                    <span className="font-bold text-lg">${subtotal.toFixed(2)}</span>
+                    <span className="font-bold text-lg">${cartTotal.toFixed(2)}</span>
                   </div>
                   
                   <Button 

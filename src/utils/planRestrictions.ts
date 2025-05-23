@@ -1,4 +1,3 @@
-
 import { Profile } from '@/types/general';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -8,10 +7,10 @@ export interface PlanRestriction {
   maxWebsites: number;
   hasAdvancedAnalytics: boolean;
   hasCustomDomain: boolean;
-  allowCoupons: boolean;
-  allowDiscounts: boolean;
-  allowPremiumTemplates: boolean;
-  allowPremiumElements: boolean;
+  hasAllowCoupons: boolean;
+  hasAllowDiscounts: boolean;
+  hasAllowPremiumTemplates: boolean;
+  hasAllowPremiumElements: boolean;
 }
 
 // Helper function to check if a user has access to a feature based on their subscription
@@ -53,10 +52,10 @@ export const getPlanLimits = (profile: Profile | null): PlanRestriction => {
     maxWebsites: 1,
     hasAdvancedAnalytics: false,
     hasCustomDomain: false,
-    allowCoupons: false,
-    allowDiscounts: false,
-    allowPremiumTemplates: false,
-    allowPremiumElements: false
+    hasAllowCoupons: false,
+    hasAllowDiscounts: false,
+    hasAllowPremiumTemplates: false,
+    hasAllowPremiumElements: false
   };
   
   if (!profile || !profile.is_subscribed) {
@@ -72,10 +71,10 @@ export const getPlanLimits = (profile: Profile | null): PlanRestriction => {
       maxWebsites: 10,
       hasAdvancedAnalytics: true,
       hasCustomDomain: true,
-      allowCoupons: true,
-      allowDiscounts: true,
-      allowPremiumTemplates: true,
-      allowPremiumElements: true
+      hasAllowCoupons: true,
+      hasAllowDiscounts: true,
+      hasAllowPremiumTemplates: true,
+      hasAllowPremiumElements: true
     };
   }
   
@@ -86,10 +85,10 @@ export const getPlanLimits = (profile: Profile | null): PlanRestriction => {
       maxWebsites: 3,
       hasAdvancedAnalytics: false,
       hasCustomDomain: true,
-      allowCoupons: true,
-      allowDiscounts: false,
-      allowPremiumTemplates: false,
-      allowPremiumElements: false
+      hasAllowCoupons: true,
+      hasAllowDiscounts: false,
+      hasAllowPremiumTemplates: false,
+      hasAllowPremiumElements: false
     };
   }
   
@@ -157,10 +156,10 @@ export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
       maxWebsites: 1,
       hasAdvancedAnalytics: false,
       hasCustomDomain: false,
-      allowCoupons: false,
-      allowDiscounts: false,
-      allowPremiumTemplates: false,
-      allowPremiumElements: false
+      hasAllowCoupons: false,
+      hasAllowDiscounts: false,
+      hasAllowPremiumTemplates: false,
+      hasAllowPremiumElements: false
     };
   }
   

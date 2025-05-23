@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Store, Package, Loader2, AlertCircle, Tag, Truck } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -8,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
-import { useCart } from "@/hooks/useCart";
+import { useCartContext } from '@/contexts/CartContext';
 import { useParams } from "react-router-dom";
 import { 
   Pagination, 
@@ -49,14 +48,8 @@ const ProductsList: React.FC<ProductsListProps> = ({
     isSiteLive 
   });
   
-  // Handle potential cart context errors safely with proper typing
-  let cartFunctions = { addToCart: (product: Product) => {} };
-  try {
-    cartFunctions = useCart();
-  } catch (err) {
-    console.log("Cart context not available, using placeholder");
-  }
-  const { addToCart } = cartFunctions;
+  // Get addToCart from context
+  const { addToCart } = useCartContext();
   
   // Get website ID from element props or route params
   const websiteId = element.props?.websiteId || routeWebsiteId || (globalSettings && globalSettings.siteId);

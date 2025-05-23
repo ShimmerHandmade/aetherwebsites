@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
@@ -92,42 +91,42 @@ const PlanLimitsInfo: React.FC<PlanLimitsInfoProps> = ({
 
         <div className="mt-4 grid grid-cols-2 gap-y-2 gap-x-4 text-sm">
           <div className="flex items-center">
-            {restrictions.allowCoupons ? 
+            {restrictions.hasAllowCoupons ? 
               <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" /> : 
               <AlertCircle className="h-4 w-4 text-gray-400 mr-2" />}
             Coupon Codes
           </div>
           
           <div className="flex items-center">
-            {restrictions.allowDiscounts ? 
+            {restrictions.hasAllowDiscounts ? 
               <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" /> : 
               <AlertCircle className="h-4 w-4 text-gray-400 mr-2" />}
             Product Discounts
           </div>
           
           <div className="flex items-center">
-            {restrictions.allowAdvancedAnalytics ? 
+            {restrictions.hasAdvancedAnalytics ? 
               <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" /> : 
               <AlertCircle className="h-4 w-4 text-gray-400 mr-2" />}
             Analytics
           </div>
           
           <div className="flex items-center">
-            {restrictions.allowCustomDomain ? 
+            {restrictions.hasCustomDomain ? 
               <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" /> : 
               <AlertCircle className="h-4 w-4 text-gray-400 mr-2" />}
             Custom Domain
           </div>
           
           <div className="flex items-center">
-            {restrictions.allowPremiumTemplates ? 
+            {restrictions.hasAllowPremiumTemplates ? 
               <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" /> : 
               <AlertCircle className="h-4 w-4 text-gray-400 mr-2" />}
             Premium Templates
           </div>
           
           <div className="flex items-center">
-            {restrictions.allowPremiumElements ? 
+            {restrictions.hasAllowPremiumElements ? 
               <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" /> : 
               <AlertCircle className="h-4 w-4 text-gray-400 mr-2" />}
             Premium Elements

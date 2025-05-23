@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -45,7 +44,7 @@ const shippingMethods = [
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { cart = [], clearCart, cartTotal = 0 } = useCart();
+  const { cart, clearCart, cartTotal } = useCart();
   const { id: siteId } = useParams<{ id: string }>();
   
   const [formData, setFormData] = useState<CheckoutFormData>({
@@ -177,6 +176,18 @@ const Checkout = () => {
       
       const selectedMethod = shippingMethods.find(m => m.id === selectedShippingMethod);
       
+      const orderDetails = {
+        website_id: siteId,
+        customer_email: formData.email,
+        shipping_address: shippingAddress,
+        billing_address: billingAddress,
+        shipping_method: selectedMethod?.name || 'Standard Shipping',
+        shipping_cost: shippingCost,
+        payment_info: paymentInfo,
+        status: 'processing',
+        total_amount: cartTotal + shippingCost,
+      };
+      
       // Process payment (mock)
       const paymentProcessed = await mockProcessPayment();
       
@@ -186,34 +197,21 @@ const Checkout = () => {
       }
       
       // Create order in database
-      const { data, error } = await supabase
+      const { data: createdOrder, error: orderError } = await supabase
         .from('orders')
-        .insert({
-          website_id: siteId,
-          customer_email: formData.email,
-          shipping_address: shippingAddress,
-          billing_address: billingAddress,
-          shipping_method: selectedMethod?.name || 'Standard Shipping',
-          shipping_cost: shippingCost,
-          payment_info: paymentInfo,
-          status: 'processing',
-          total_amount: cartTotal + shippingCost,
-        })
-        .select();
+        .insert([orderDetails])
+        .select('id')
+        .single();
       
-      if (error) throw error;
+      if (orderError) throw orderError;
       
-      // Make sure we have order data
-      if (!data || data.length === 0) {
+      if (!createdOrder?.id) {
         throw new Error("Failed to create order");
       }
       
-      // Extract the order ID for order items
-      const createdOrderId = data[0].id;
-      
       // Create order items
       const orderItems = cart.map(item => ({
-        order_id: createdOrderId,
+        order_id: createdOrder.id,
         product_id: item.product.id,
         product_name: item.product.name,
         product_image_url: item.product.image_url,
@@ -230,9 +228,9 @@ const Checkout = () => {
       // Clear cart and redirect to order confirmation
       clearCart();
       toast.success("Order placed successfully!");
-      navigate(`/order-confirmation/${createdOrderId}`);
+      navigate(`/order-confirmation/${createdOrder.id}`);
       
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error submitting order:", error);
       toast.error("Failed to place your order. Please try again.");
     } finally {

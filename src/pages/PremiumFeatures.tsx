@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import PlanCheck from "@/components/PlanCheck";
@@ -6,10 +5,32 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Star, Sparkles, Shield, Crown } from "lucide-react";
 import { usePlan } from "@/contexts/PlanContext";
 import PlanStatusBadge from "@/components/PlanStatusBadge";
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 const PremiumFeatures = () => {
   const navigate = useNavigate();
   const { planName, isPremium, isEnterprise } = usePlan();
+  const [profile, setProfile] = useState(null);
+  
+  // Add profile fetching
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        setProfile(data);
+      }
+    };
+    
+    fetchProfile();
+  }, []);
   
   return (
     <div className="container max-w-6xl mx-auto px-4 py-12">
@@ -27,7 +48,7 @@ const PremiumFeatures = () => {
           <h1 className="text-3xl font-bold">Premium Features</h1>
           <div className="flex items-center gap-2">
             <span>Current Plan:</span>
-            <PlanStatusBadge />
+            <PlanStatusBadge profile={profile} />
           </div>
         </div>
         

@@ -4,5 +4,7 @@ export { deleteWebsite } from './deleteWebsite';
 export { getUserPlan } from './getUserPlan';
 export { getUserPlanSimplified } from './getUserPlanSimplified';
 export { getPlans } from './getPlans';
+export type { Plan } from './getPlans';
 export { openCustomerPortal } from './manageSubscription';
+export { manageSubscription } from './manageSubscription';
 export { updateWebsiteTemplate } from './updateWebsiteTemplate';

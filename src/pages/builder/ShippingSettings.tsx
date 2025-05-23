@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -11,11 +10,12 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
 
-// Define the correct interfaces
+// Define proper types
 interface WeightBasedRate {
   min_weight: number;
   max_weight: number;
   rate: number;
+  id?: string;
 }
 
 interface ShippingSettings {
@@ -31,7 +31,7 @@ interface ShippingSettings {
   updated_at: string;
 }
 
-// Fix the weight-based rates handling by ensuring proper JSON conversion
+// Fix the loadSettings function
 const loadSettings = async (websiteId: string) => {
   try {
     const { data, error } = await supabase
@@ -53,20 +53,19 @@ const loadSettings = async (websiteId: string) => {
         try {
           parsedRates = JSON.parse(data.weight_based_rates);
         } catch (e) {
-          console.warn('Failed to parse weight_based_rates JSON string', e);
+          console.warn('Failed to parse weight_based_rates JSON', e);
         }
       } else if (Array.isArray(data.weight_based_rates)) {
-        parsedRates = data.weight_based_rates as unknown as WeightBasedRate[];
+        parsedRates = data.weight_based_rates as WeightBasedRate[];
       }
       
-      // Return the data with properly parsed rates
       return {
         ...data,
         weight_based_rates: parsedRates
-      };
+      } as ShippingSettings;
     }
     
-    return data;
+    return null;
   } catch (error) {
     console.error('Error in loadSettings:', error);
     return null;
@@ -157,43 +156,39 @@ const ShippingSettingsPage = () => {
   
   const handleSave = async () => {
     try {
-      if (!id) return;
-      
       setIsSaving(true);
       
-      // Convert weight_based_rates to proper format
-      const settingsData = {
+      // Convert rates to a format suitable for storage
+      const dataToSave = {
         website_id: id,
         flat_rate_enabled: settings.flat_rate_enabled,
         flat_rate_amount: settings.flat_rate_amount,
         weight_based_enabled: settings.weight_based_enabled,
-        weight_based_rates: weightRates as unknown as Json,
+        weight_based_rates: JSON.stringify(weightRates),
         free_shipping_enabled: settings.free_shipping_enabled,
         free_shipping_minimum: settings.free_shipping_minimum,
         updated_at: new Date().toISOString()
       };
       
-      if (existingSettings) {
-        // Update existing settings
+      if (existingSettings?.id) {
         const { error } = await supabase
           .from('shipping_settings')
-          .update(settingsData)
+          .update(dataToSave)
           .eq('id', existingSettings.id);
           
         if (error) throw error;
       } else {
-        // Insert new settings
         const { error } = await supabase
           .from('shipping_settings')
-          .insert([settingsData]);
+          .insert([dataToSave]);
           
         if (error) throw error;
       }
       
-      toast.success("Shipping settings saved successfully");
+      toast.success('Shipping settings saved successfully');
     } catch (error) {
-      console.error("Error saving shipping settings:", error);
-      toast.error("Failed to save shipping settings");
+      console.error('Error saving shipping settings:', error);
+      toast.error('Failed to save shipping settings');
     } finally {
       setIsSaving(false);
     }

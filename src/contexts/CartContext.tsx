@@ -16,9 +16,15 @@ export interface CartContextType {
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   itemCount: number;
+  
+  // Additional properties needed by Cart.tsx
+  items: CartItem[];
+  totalItems: number;
+  subtotal: number;
 }
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
+// Export the CartContext directly so it can be imported
+export const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -100,6 +106,11 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setCart([]);
     toast.success('Cart cleared');
   };
+  
+  // Calculate derived values
+  const subtotal = cartTotal;
+  const totalItems = itemCount;
+  const items = cart;
 
   return (
     <CartContext.Provider value={{ 
@@ -109,7 +120,11 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       removeFromCart, 
       updateQuantity, 
       clearCart,
-      itemCount
+      itemCount,
+      // Additional properties needed by Cart.tsx
+      items,
+      totalItems,
+      subtotal
     }}>
       {children}
     </CartContext.Provider>
