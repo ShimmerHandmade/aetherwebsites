@@ -35,7 +35,7 @@ interface PageEditorSidebarProps {
 const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) => {
   const [activeTab, setActiveTab] = useState<string>("elements");
   const [searchTerm, setSearchTerm] = useState("");
-  const { selectedElementId, addElement } = useBuilder();
+  const { selectedElementId, addElement, websiteId } = useBuilder();
 
   if (isPreviewMode) return null;
 
@@ -103,7 +103,7 @@ const PageEditorSidebar: React.FC<PageEditorSidebarProps> = ({ isPreviewMode }) 
           )}
           {activeTab === "properties" && <ElementProperties />}
           {activeTab === "settings" && <PageSettings />}
-          {activeTab === "products" && <ProductManager />}
+          {activeTab === "products" && websiteId && <ProductManager websiteId={websiteId} />}
         </ScrollArea>
       </div>
     </div>

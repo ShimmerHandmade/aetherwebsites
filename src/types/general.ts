@@ -36,6 +36,8 @@ export interface WeightBasedRate {
   min: number;
   max: number;
   rate: number;
+  min_weight?: number; // Added for backward compatibility
+  max_weight?: number; // Added for backward compatibility
 }
 
 export interface ShippingSettings {
@@ -110,12 +112,12 @@ export interface DashboardNavbarProps {
 export interface WebsiteCardProps {
   website: Website;
   onWebsiteUpdate: () => void;
-  onDelete?: () => Promise<void>;
+  onWebsiteDeleted: () => Promise<void> | void;
 }
 
 // Template selection props
 export interface TemplateSelectionProps {
-  open: boolean;
+  isOpen: boolean;
   onClose: () => void;
   setWebsites: React.Dispatch<React.SetStateAction<Website[]>>;
 }

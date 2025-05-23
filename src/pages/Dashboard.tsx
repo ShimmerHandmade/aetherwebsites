@@ -134,7 +134,7 @@ const Dashboard = () => {
               <WebsiteCard 
                 key={website.id} 
                 website={website} 
-                onWebsiteUpdated={fetchWebsites}
+                onWebsiteUpdate={fetchWebsites}
                 onWebsiteDeleted={fetchWebsites}
               />
             ))}

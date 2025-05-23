@@ -61,7 +61,10 @@ const BuilderProducts = () => {
         </div>
         
         <div className="bg-white rounded-xl shadow-sm border overflow-hidden h-[calc(100vh-200px)]">
-          <ProductManager websiteId={id} onBackToBuilder={handleBackToBuilder} />
+          <ProductManager 
+            websiteId={id} 
+            onBackToBuilder={handleBackToBuilder} 
+          />
         </div>
       </div>
     </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { v4 } from '@/lib/uuid';
 import { Input } from "@/components/ui/input"
@@ -240,15 +239,21 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId }) => {
       }
 
       if (isNewProduct) {
+        // Ensure all required fields are present
+        const productData = {
+          ...values,
+          user_id: userData.user.id,
+          website_id: websiteId,
+          image_url: imageUrl || null,
+          // Ensure required fields have values
+          name: values.name,
+          price: values.price
+        };
+
         // Create product
         const { error } = await supabase
           .from('products')
-          .insert({
-            ...values,
-            user_id: userData.user.id,
-            website_id: websiteId,
-            image_url: imageUrl || null,
-          });
+          .insert(productData);
 
         if (error) {
           toast.error('Failed to create product');
@@ -264,6 +269,9 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId }) => {
           .update({
             ...values,
             image_url: imageUrl || null,
+            // Ensure required fields have values
+            name: values.name,
+            price: values.price
           })
           .eq('id', selectedProduct.id);
 
