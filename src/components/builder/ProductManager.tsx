@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { v4 } from '@/lib/uuid';
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -76,12 +77,13 @@ import { CalendarIcon } from "lucide-react"
 import { PopoverClose } from "@radix-ui/react-popover"
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types/product';
-import { ImageIcon } from '@radix-ui/react-icons';
 import { AspectRatio } from "@/components/ui/aspect-ratio"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { ImageIcon } from "lucide-react";
 
 interface ProductManagerProps {
   websiteId: string;
+  onBackToBuilder?: () => void;
 }
 
 // In the component where UniqueCategory is used, add an id property:
@@ -120,11 +122,12 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId }) => {
     is_new: z.boolean().default(false).optional(),
     is_featured: z.boolean().default(false).optional(),
     is_sale: z.boolean().default(false).optional(),
-    publish_date: z.date().optional(),
     image_url: z.string().optional(),
   })
 
-  const form = useForm<z.infer<typeof productFormSchema>>({
+  type ProductFormValues = z.infer<typeof productFormSchema>;
+
+  const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
       name: "",
@@ -136,7 +139,6 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId }) => {
       is_new: false,
       is_featured: false,
       is_sale: false,
-      publish_date: new Date(),
       image_url: "",
     },
   })
@@ -190,8 +192,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId }) => {
       is_new: product.is_new,
       is_featured: product.is_featured,
       is_sale: product.is_sale,
-      publish_date: product.publish_date ? new Date(product.publish_date) : undefined,
-      image_url: product.image_url,
+      image_url: product.image_url || "",
     });
     setImageUrl(product.image_url || null);
     setIsDrawerOpen(true);
@@ -230,17 +231,24 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId }) => {
     setProductToDelete(null);
   };
 
-  const onSubmit = async (values: z.infer<typeof productFormSchema>) => {
+  const onSubmit = async (values: ProductFormValues) => {
     try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        toast.error('You must be logged in to save products');
+        return;
+      }
+
       if (isNewProduct) {
         // Create product
         const { error } = await supabase
           .from('products')
-          .insert([{
+          .insert({
             ...values,
+            user_id: userData.user.id,
             website_id: websiteId,
             image_url: imageUrl || null,
-          }]);
+          });
 
         if (error) {
           toast.error('Failed to create product');
@@ -284,7 +292,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId }) => {
 
     try {
       const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${uuidv4()}.${fileExt}`;
+      const fileName = `${v4()}.${fileExt}`;
       const filePath = `products/${websiteId}/${fileName}`;
 
       const { data, error } = await supabase.storage
@@ -298,7 +306,12 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId }) => {
         console.error('Error uploading image: ', error);
         toast.error('Failed to upload image.');
       } else {
-        const imageUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/website-assets/${filePath}`;
+        // Get the public URL for the uploaded image
+        const { data: urlData } = supabase.storage
+          .from('website-assets')
+          .getPublicUrl(filePath);
+          
+        const imageUrl = urlData.publicUrl;
         setImageUrl(imageUrl);
         toast.success('Image uploaded successfully!');
       }
@@ -363,7 +376,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId }) => {
     return products.map((product) => (
       <TableRow key={product.id}>
         <TableCell className="font-medium">{product.name}</TableCell>
-        <TableCell>{product.description?.substring(0, 50)}...</TableCell>
+        <TableCell>{product.description?.substring(0, 50)}{product.description && product.description.length > 50 ? '...' : ''}</TableCell>
         <TableCell>${product.price.toFixed(2)}</TableCell>
         <TableCell>{product.category}</TableCell>
         <TableCell>{product.stock}</TableCell>
@@ -422,7 +435,6 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId }) => {
       currentValues.is_new !== selectedProduct.is_new ||
       currentValues.is_featured !== selectedProduct.is_featured ||
       currentValues.is_sale !== selectedProduct.is_sale ||
-      (currentValues.publish_date ? currentValues.publish_date.getTime() : null) !== (selectedProduct.publish_date ? new Date(selectedProduct.publish_date).getTime() : null) ||
       imageUrl !== selectedProduct.image_url
     );
   };
@@ -512,8 +524,8 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId }) => {
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Product Management</h2>
         <Button onClick={handleCreate}>
           <Plus className="mr-2 h-4 w-4" />
@@ -596,7 +608,13 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId }) => {
                       render={({ field }) => (
                         <FormItem className="col-span-3">
                           <FormControl>
-                            <Input id="price" type="number" placeholder="Product price" {...field} />
+                            <Input 
+                              id="price" 
+                              type="number" 
+                              placeholder="Product price" 
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value))} 
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -614,7 +632,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId }) => {
                       render={({ field }) => (
                         <FormItem className="col-span-3">
                           <FormControl>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select a category" />
                               </SelectTrigger>
@@ -641,7 +659,13 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId }) => {
                       render={({ field }) => (
                         <FormItem className="col-span-3">
                           <FormControl>
-                            <Input id="stock" type="number" placeholder="Product stock" {...field} />
+                            <Input 
+                              id="stock" 
+                              type="number" 
+                              placeholder="Product stock" 
+                              {...field}
+                              onChange={(e) => field.onChange(parseInt(e.target.value))} 
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -727,57 +751,6 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId }) => {
                               onCheckedChange={field.onChange}
                             />
                           </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="publish_date" className="text-right">
-                      Publish Date
-                    </Label>
-                    <FormField
-                      control={form.control}
-                      name="publish_date"
-                      render={({ field }) => (
-                        <FormItem className="col-span-3">
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant={"outline"}
-                                  className={cn(
-                                    "pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, "PPP")
-                                  ) : (
-                                    <span>Pick a date</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) =>
-                                  date > new Date()
-                                }
-                                initialFocus
-                              />
-                              <PopoverClose>
-                                <Button className="w-full" variant="secondary">
-                                  Close
-                                </Button>
-                              </PopoverClose>
-                            </PopoverContent>
-                          </Popover>
                           <FormMessage />
                         </FormItem>
                       )}

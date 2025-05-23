@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -35,24 +36,29 @@ const Dashboard = () => {
   
   useEffect(() => {
     const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
-      
-      if (!data.session) {
-        navigate('/login');
-        return;
+      try {
+        const { data } = await supabase.auth.getSession();
+        
+        if (!data.session) {
+          navigate('/login');
+          return;
+        }
+        
+        // Get user profile
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.session.user.id)
+          .single();
+        
+        setState(prev => ({ ...prev, userProfile: profileData || null }));
+        
+        // Fetch the websites
+        await fetchWebsites();
+      } catch (error) {
+        console.error('Error in checkAuth:', error);
+        toast.error('Failed to check authentication');
       }
-      
-      // Get user profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.session.user.id)
-        .single();
-      
-      setState(prev => ({ ...prev, userProfile: profileData }));
-      
-      // Fetch the websites
-      await fetchWebsites();
     };
     
     checkAuth();

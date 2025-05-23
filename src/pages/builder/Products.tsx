@@ -13,7 +13,7 @@ const BuilderProducts = () => {
     website, 
     isLoading, 
     websiteName 
-  } = useWebsite(id, navigate);
+  } = useWebsite(id as string, navigate);
 
   const handleBackToBuilder = () => {
     navigate(`/builder/${id}`);
@@ -30,7 +30,7 @@ const BuilderProducts = () => {
     );
   }
 
-  if (!website) {
+  if (!website || !id) {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center max-w-md px-4">

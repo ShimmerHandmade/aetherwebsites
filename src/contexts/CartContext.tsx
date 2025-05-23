@@ -23,10 +23,13 @@ export interface CartContextType {
   subtotal: number;
 }
 
-// Export the CartContext directly so it can be imported
-export const CartContext = createContext<CartContextType | undefined>(undefined);
+// Create the CartContext directly
+const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export const CartProvider = ({ children }: { children: React.ReactNode }) => {
+// Export it for consumers
+export { CartContext };
+
+export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartTotal, setCartTotal] = useState(0);
   const [itemCount, setItemCount] = useState(0);

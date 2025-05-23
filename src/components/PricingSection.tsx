@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CircleCheck } from "lucide-react";
@@ -17,17 +18,17 @@ const PricingSection = () => {
     const fetchPlans = async () => {
       try {
         setIsLoading(true);
-        const { data, error } = await getPlans();
+        const result = await getPlans();
         
-        if (error) {
-          console.error("Error fetching plans:", error);
+        if (result.error) {
+          console.error("Error fetching plans:", result.error);
           toast.error("Failed to load pricing plans");
           return;
         }
         
-        if (data) {
+        if (result.plans) {
           // Sort plans by tier level and add isPopular flag to the Professional plan
-          const processedPlans = data
+          const processedPlans = result.plans
             .sort((a, b) => {
               const tiers: Record<string, number> = { 'Basic': 1, 'Professional': 2, 'Enterprise': 3 };
               return (tiers[a.name] || 0) - (tiers[b.name] || 0);

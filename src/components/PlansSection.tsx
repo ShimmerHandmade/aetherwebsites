@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { CircleCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Profile } from "@/types/general";
-import { getPlans } from "@/api/websites";
+import { Plan, getPlans } from "@/api/websites";
 
 interface PlansSectionProps {
   profile: Profile | null;
@@ -39,16 +40,16 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
     const fetchPlans = async () => {
       try {
         setIsLoading(true);
-        const { data, error } = await getPlans();
+        const result = await getPlans();
         
-        if (error) {
-          console.error("Error fetching plans:", error);
+        if (result.error) {
+          console.error("Error fetching plans:", result.error);
           return;
         }
         
-        if (data) {
+        if (result.plans) {
           // Sort plans by tier level to ensure proper feature filtering
-          const sortedPlans = data.sort((a, b) => {
+          const sortedPlans = result.plans.sort((a, b) => {
             const tiers: Record<string, number> = { 'Basic': 1, 'Professional': 2, 'Enterprise': 3 };
             return (tiers[a.name] || 0) - (tiers[b.name] || 0);
           });
