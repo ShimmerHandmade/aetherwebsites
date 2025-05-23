@@ -47,13 +47,42 @@ export const useStripeConnect = (websiteId: string | undefined) => {
   
   // Improved refreshStripeAccount with better UX feedback
   const refreshStripeAccount = async () => {
+    if (!websiteId) return;
+    
     setIsRefreshing(true);
     setError(null);
     setPlatformError(null);
-    await fetchStripeAccount();
-    setLastRefresh(Date.now()); // Update refresh timestamp
-    setIsRefreshing(false);
-    toast.success("Stripe connection status refreshed");
+    
+    try {
+      console.log("Refreshing Stripe connection status");
+      
+      // If we have an account, try to check its status with the new edge function
+      if (stripeAccount?.stripe_account_id) {
+        try {
+          const { data, error } = await supabase.functions.invoke('check-connect-status', {
+            body: { accountId: stripeAccount.stripe_account_id }
+          });
+          
+          if (error) {
+            console.error("Error checking account status:", error);
+          } else if (data?.updated) {
+            console.log("Account status updated via edge function");
+          }
+        } catch (err) {
+          console.error("Failed to check account status:", err);
+        }
+      }
+      
+      // Fetch the latest account data from the database
+      await fetchStripeAccount();
+      setLastRefresh(Date.now());
+      toast.success("Stripe connection status refreshed");
+    } catch (error: any) {
+      console.error("Error refreshing account:", error);
+      toast.error("Failed to refresh status");
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const connectStripeAccount = async () => {
@@ -146,7 +175,7 @@ export const useStripeConnect = (websiteId: string | undefined) => {
       // Poll every 30 seconds for changes during the onboarding process
       pollingInterval = window.setInterval(() => {
         console.log("Polling for Stripe account updates...");
-        fetchStripeAccount();
+        refreshStripeAccount();
       }, 30000);
     }
     
