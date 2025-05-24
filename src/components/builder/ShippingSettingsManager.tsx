@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -64,7 +63,7 @@ const ShippingSettingsManager = () => {
           flatRateEnabled: data.flat_rate_enabled,
           flatRateAmount: data.flat_rate_amount || 0,
           weightBasedEnabled: data.weight_based_enabled,
-          weightBasedRates: data.weight_based_rates || [],
+          weightBasedRates: Array.isArray(data.weight_based_rates) ? data.weight_based_rates as WeightBasedRate[] : [],
           freeShippingEnabled: data.free_shipping_enabled,
           freeShippingMinimum: data.free_shipping_minimum || 0,
         });
@@ -88,7 +87,7 @@ const ShippingSettingsManager = () => {
         flat_rate_enabled: settings.flatRateEnabled,
         flat_rate_amount: settings.flatRateAmount,
         weight_based_enabled: settings.weightBasedEnabled,
-        weight_based_rates: settings.weightBasedRates,
+        weight_based_rates: settings.weightBasedRates as any,
         free_shipping_enabled: settings.freeShippingEnabled,
         free_shipping_minimum: settings.freeShippingMinimum,
         updated_at: new Date().toISOString(),

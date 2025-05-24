@@ -202,7 +202,9 @@ const Checkout = () => {
         shippingAddress,
         billingAddress: sameAsBilling ? shippingAddress : billingAddress,
         paymentMethod,
-        notes
+        notes,
+        shippingMethod: shippingCalculation.method,
+        shippingCost: shippingCost
       };
 
       // Call the create-order function

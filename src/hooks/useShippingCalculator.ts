@@ -46,7 +46,7 @@ export const useShippingCalculator = (websiteId: string) => {
             flatRateEnabled: data.flat_rate_enabled,
             flatRateAmount: data.flat_rate_amount || 0,
             weightBasedEnabled: data.weight_based_enabled,
-            weightBasedRates: data.weight_based_rates || [],
+            weightBasedRates: Array.isArray(data.weight_based_rates) ? data.weight_based_rates as WeightBasedRate[] : [],
             freeShippingEnabled: data.free_shipping_enabled,
             freeShippingMinimum: data.free_shipping_minimum || 0,
           });

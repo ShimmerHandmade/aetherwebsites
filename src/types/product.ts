@@ -13,6 +13,7 @@ export interface Product {
   is_sale?: boolean;
   is_new?: boolean;
   image_url?: string | null;
+  weight?: number | null;
 }
 
 export interface UniqueCategory {
