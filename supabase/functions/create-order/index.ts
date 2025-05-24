@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
 import Stripe from "https://esm.sh/stripe@14.21.0"
@@ -14,6 +13,7 @@ interface CartItem {
     name: string;
     price: number;
     image_url?: string | null;
+    weight?: number;
   };
   quantity: number;
 }
@@ -40,8 +40,10 @@ interface OrderRequest {
     postalCode: string;
     country: string;
   };
-  paymentMethod: string; // e.g., "cod" (cash on delivery), "stripe", etc.
+  paymentMethod: string;
   notes?: string;
+  shippingMethod?: string;
+  shippingCost?: number;
 }
 
 serve(async (req) => {
@@ -52,7 +54,17 @@ serve(async (req) => {
   
   try {
     console.log("create-order function started");
-    const { items, websiteId, customerInfo, shippingAddress, billingAddress, paymentMethod, notes } = await req.json() as OrderRequest;
+    const { 
+      items, 
+      websiteId, 
+      customerInfo, 
+      shippingAddress, 
+      billingAddress, 
+      paymentMethod, 
+      notes,
+      shippingMethod,
+      shippingCost
+    } = await req.json() as OrderRequest;
     
     console.log("Order request:", { websiteId, paymentMethod, itemsCount: items.length });
     
@@ -66,12 +78,15 @@ serve(async (req) => {
       );
     }
     
-    // Calculate order total
-    const totalAmount = items.reduce((sum, item) => {
+    // Calculate order total and shipping
+    const subtotal = items.reduce((sum, item) => {
       return sum + (item.product.price * item.quantity);
     }, 0);
     
-    console.log("Order total calculated:", totalAmount);
+    const finalShippingCost = shippingCost || 0;
+    const totalAmount = subtotal + finalShippingCost;
+    
+    console.log("Order totals:", { subtotal, shippingCost: finalShippingCost, total: totalAmount });
     
     // Create Supabase client
     const supabaseAdmin = createClient(
@@ -131,6 +146,8 @@ serve(async (req) => {
           user_id: userId,
           website_id: websiteId,
           total_amount: totalAmount,
+          shipping_cost: finalShippingCost,
+          shipping_method: shippingMethod || null,
           shipping_address: shippingAddress || null,
           billing_address: billingAddress || null,
           payment_info: {

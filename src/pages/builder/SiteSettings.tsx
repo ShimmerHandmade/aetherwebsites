@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { usePlan } from "@/contexts/PlanContext";
 import { Switch } from "@/components/ui/switch";
+import ShippingSettingsManager from "@/components/builder/ShippingSettingsManager";
 
 const BuilderSiteSettings = () => {
   const { id } = useParams<{ id: string }>();
@@ -148,6 +148,7 @@ const BuilderSiteSettings = () => {
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="branding">Branding</TabsTrigger>
             <TabsTrigger value="domain">Domain</TabsTrigger>
+            <TabsTrigger value="shipping">Shipping</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="space-y-6">
@@ -302,6 +303,10 @@ const BuilderSiteSettings = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+          
+          <TabsContent value="shipping" className="space-y-6">
+            <ShippingSettingsManager />
           </TabsContent>
         </Tabs>
 

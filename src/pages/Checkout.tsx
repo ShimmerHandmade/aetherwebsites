@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/hooks/useCart';
+import { useShippingCalculator } from '@/hooks/useShippingCalculator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +18,20 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [websiteInfo, setWebsiteInfo] = useState<any>(null);
   const [hasStripeEnabled, setHasStripeEnabled] = useState(false);
+  
+  // Get website ID from site settings
+  const websiteId = window.__SITE_SETTINGS__?.siteId || '';
+  const { shippingSettings, calculateShipping } = useShippingCalculator(websiteId);
+  
+  // Calculate total weight of items
+  const totalWeight = items.reduce((sum, item) => {
+    return sum + ((item.product.weight || 0) * item.quantity);
+  }, 0);
+  
+  // Calculate shipping cost
+  const shippingCalculation = calculateShipping(subtotal, totalWeight);
+  const shippingCost = shippingCalculation.cost;
+  const totalWithShipping = subtotal + shippingCost;
   
   const [customerInfo, setCustomerInfo] = useState({
     email: '',
@@ -565,6 +580,9 @@ const Checkout = () => {
                         <span>Qty: {item.quantity}</span>
                         <span>${(item.product.price * item.quantity).toFixed(2)}</span>
                       </div>
+                      {item.product.weight && (
+                        <p className="text-xs text-gray-400">Weight: {item.product.weight} lbs each</p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -578,15 +596,32 @@ const Checkout = () => {
                 </div>
                 
                 <div className="flex justify-between">
-                  <span>Shipping</span>
-                  <span>Calculated at next step</span>
+                  <span className="flex items-center gap-1">
+                    <Truck className="h-4 w-4" />
+                    Shipping
+                  </span>
+                  <div className="text-right">
+                    {shippingCalculation.isFree ? (
+                      <span className="text-green-600 font-medium">Free</span>
+                    ) : (
+                      <span>${shippingCost.toFixed(2)}</span>
+                    )}
+                    <div className="text-xs text-gray-500">{shippingCalculation.method}</div>
+                  </div>
                 </div>
+                
+                {totalWeight > 0 && (
+                  <div className="flex justify-between text-sm text-gray-500">
+                    <span>Total Weight</span>
+                    <span>{totalWeight.toFixed(1)} lbs</span>
+                  </div>
+                )}
                 
                 <Separator />
                 
                 <div className="flex justify-between font-semibold">
                   <span>Total</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>${totalWithShipping.toFixed(2)}</span>
                 </div>
               </div>
               
