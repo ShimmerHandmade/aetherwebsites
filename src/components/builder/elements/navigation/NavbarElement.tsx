@@ -1,10 +1,10 @@
-
 import React, { useState } from "react";
 import { BuilderElement } from "@/contexts/BuilderContext";
-import { Menu } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import CartButton from "@/components/CartButton";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ElementProps {
   element: BuilderElement;
@@ -13,10 +13,12 @@ interface ElementProps {
 
 const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const siteName = element.props?.siteName || "Your Website";
-  const showCartButton = element.props?.showCartButton !== false;
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
+  
+  const siteName = element.props?.siteName || "Your Website";
+  const showCartButton = element.props?.showCartButton !== false;
   
   // Use the logo from element props, or fall back to the global site settings if available
   const logo = element.props?.logo || 
@@ -97,21 +99,21 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
 
   return (
     <header className={navbarStyles[variant as keyof typeof navbarStyles]}>
-      <div className="container mx-auto p-4">
-        <div className="flex justify-between items-center">
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-3">
             {logo ? (
-              <img src={logo} alt={`${siteName} logo`} className="h-8" />
+              <img src={logo} alt={`${siteName} logo`} className="h-6 sm:h-8" />
             ) : (
               <div className={cn(
-                "w-8 h-8 rounded flex items-center justify-center text-white font-bold",
+                "w-6 h-6 sm:w-8 sm:h-8 rounded flex items-center justify-center text-white font-bold text-sm",
                 variant === 'default' || variant === 'transparent' ? 'bg-indigo-600' : 'bg-white/20'
               )}>
                 {siteName.charAt(0)}
               </div>
             )}
             <span className={cn(
-              "text-lg font-bold", 
+              "text-sm sm:text-lg font-bold", 
               variant === 'dark' || variant === 'primary' || variant === 'accent' ? 'text-white' : 'text-gray-800'
             )}>
               {siteName}
@@ -119,7 +121,7 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
           </div>
           
           <nav className="hidden md:block">
-            <ul className="flex space-x-8">
+            <ul className="flex space-x-6 lg:space-x-8">
               {links.map((link, index) => (
                 <li key={index}>
                   <a 
@@ -152,10 +154,10 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
                     'text-white/80 hover:bg-white/10 hover:text-white' : 
                     'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 )}
-                aria-label="Menu"
+                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
                 onClick={toggleMobileMenu}
               >
-                <Menu className="h-6 w-6" />
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
             </div>
           </div>
@@ -163,21 +165,29 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
 
         {/* Mobile navigation */}
         {mobileMenuOpen && (
-          <div className="md:hidden mt-4 pt-4 border-t border-gray-100">
-            <div className="flex flex-col space-y-3">
-              {links.map((link, index) => (
-                <a
-                  key={index}
-                  href={link.url}
-                  className={linkStyles[variant as keyof typeof linkStyles]}
-                  onClick={(e) => {
-                    handleLinkClick(e, link.url);
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  {link.text}
-                </a>
-              ))}
+          <div className="md:hidden">
+            <div className={cn(
+              "mt-2 pt-4 pb-4 border-t",
+              variant === 'default' || variant === 'transparent' ? 'border-gray-100' : 'border-white/20'
+            )}>
+              <div className="flex flex-col space-y-3">
+                {links.map((link, index) => (
+                  <a
+                    key={index}
+                    href={link.url}
+                    className={cn(
+                      linkStyles[variant as keyof typeof linkStyles],
+                      "py-2 text-base"
+                    )}
+                    onClick={(e) => {
+                      handleLinkClick(e, link.url);
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    {link.text}
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
         )}

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
@@ -9,11 +8,13 @@ import Cart from "@/pages/Cart";
 import ProductDetails from "@/pages/ProductDetails";
 import Checkout from "@/pages/Checkout";
 import { CartProvider } from "@/contexts/CartContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const WebsiteViewer = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
   
   const { 
     website, 
@@ -61,7 +62,8 @@ const WebsiteViewer = () => {
     isCheckoutPage,
     isProductPage,
     productId,
-    hostname: window.location.hostname
+    hostname: window.location.hostname,
+    isMobile
   });
 
   // Set current page based on the URL path
@@ -132,15 +134,27 @@ const WebsiteViewer = () => {
         siteId: id, // Add site ID to settings for cart routes
         isLiveSite: isLiveSite, // Indicate this is a live site
         customDomain: website.settings.customDomain,
-        customDomainEnabled: website.settings.customDomainEnabled
+        customDomainEnabled: website.settings.customDomainEnabled,
+        isMobile: isMobile // Add mobile detection to global settings
       };
     }
-  }, [website?.settings, id, isLiveSite]);
+  }, [website?.settings, id, isLiveSite, isMobile]);
+
+  // Add viewport meta tag for mobile if missing
+  useEffect(() => {
+    const existingViewport = document.querySelector('meta[name="viewport"]');
+    if (!existingViewport) {
+      const viewport = document.createElement('meta');
+      viewport.name = 'viewport';
+      viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+      document.getElementsByTagName('head')[0].appendChild(viewport);
+    }
+  }, []);
 
   if (isLoading) {
     return (
       <CartProvider>
-        <div className="h-screen flex items-center justify-center">
+        <div className="h-screen flex items-center justify-center px-4">
           <div className="text-center">
             <div className="h-12 w-12 border-4 border-t-blue-600 border-r-blue-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-gray-600">Loading website...</p>
@@ -153,10 +167,10 @@ const WebsiteViewer = () => {
   if (!website) {
     return (
       <CartProvider>
-        <div className="h-screen flex items-center justify-center">
+        <div className="h-screen flex items-center justify-center px-4">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-700 mb-2">Website not found</h2>
-            <p className="text-gray-600 mb-6">The website you're looking for doesn't exist or you don't have permission to access it.</p>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-700 mb-2">Website not found</h2>
+            <p className="text-gray-600 mb-6 text-sm md:text-base">The website you're looking for doesn't exist or you don't have permission to access it.</p>
           </div>
         </div>
       </CartProvider>
@@ -168,19 +182,19 @@ const WebsiteViewer = () => {
     <CartProvider>
       {isCartPage ? (
         <div className="w-full min-h-screen">
-          <div className="mx-auto max-w-[1920px]">
+          <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
             <Cart siteName={websiteName} siteId={id} />
           </div>
         </div>
       ) : isProductPage ? (
         <div className="w-full min-h-screen">
-          <div className="mx-auto max-w-[1920px]">
+          <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
             <ProductDetails productId={productId} siteId={id} />
           </div>
         </div>
       ) : isCheckoutPage ? (
         <div className="w-full min-h-screen">
-          <div className="mx-auto max-w-[1920px]">
+          <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
             <Checkout />
           </div>
         </div>
@@ -191,7 +205,7 @@ const WebsiteViewer = () => {
           onSave={() => {}}
         >
           <div className="w-full min-h-screen">
-            <div className="mx-auto max-w-[1920px]">
+            <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
               <BuilderContent isPreviewMode={true} isLiveSite={isLiveSite} />
             </div>
           </div>
