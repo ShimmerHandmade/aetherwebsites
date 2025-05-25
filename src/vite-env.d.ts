@@ -9,5 +9,6 @@ interface Window {
     isLiveSite?: boolean;
     customDomain?: string;
     customDomainEnabled?: boolean;
+    isMobile?: boolean;
   };
 }
