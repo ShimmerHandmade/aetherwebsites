@@ -12,6 +12,17 @@ interface PayPalSettingsProps {
   websiteId: string;
 }
 
+interface PayPalConfig {
+  clientId?: string;
+  enabled?: boolean;
+  sandbox?: boolean;
+}
+
+interface WebsiteSettings {
+  paypal?: PayPalConfig;
+  [key: string]: any;
+}
+
 const PayPalSettings: React.FC<PayPalSettingsProps> = ({ websiteId }) => {
   const [paypalClientId, setPaypalClientId] = useState('');
   const [paypalClientSecret, setPaypalClientSecret] = useState('');
@@ -37,7 +48,7 @@ const PayPalSettings: React.FC<PayPalSettingsProps> = ({ websiteId }) => {
         return;
       }
 
-      const settings = data?.settings || {};
+      const settings = (data?.settings as WebsiteSettings) || {};
       if (settings.paypal) {
         setPaypalClientId(settings.paypal.clientId || '');
         setPaypalConnected(!!settings.paypal.clientId);
@@ -69,8 +80,8 @@ const PayPalSettings: React.FC<PayPalSettingsProps> = ({ websiteId }) => {
         throw fetchError;
       }
 
-      const currentSettings = currentData?.settings || {};
-      const updatedSettings = {
+      const currentSettings = (currentData?.settings as WebsiteSettings) || {};
+      const updatedSettings: WebsiteSettings = {
         ...currentSettings,
         paypal: {
           clientId: paypalClientId.trim(),
@@ -113,8 +124,8 @@ const PayPalSettings: React.FC<PayPalSettingsProps> = ({ websiteId }) => {
         throw fetchError;
       }
 
-      const currentSettings = currentData?.settings || {};
-      const updatedSettings = {
+      const currentSettings = (currentData?.settings as WebsiteSettings) || {};
+      const updatedSettings: WebsiteSettings = {
         ...currentSettings,
         paypal: {
           enabled: false
