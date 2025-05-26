@@ -97,13 +97,9 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
     // Check if planData is a valid object with a name property
     if (planData && 
         typeof planData === 'object' && 
-        planData !== null && 
-        'name' in planData) {
-      // Now we know planData is not null, so we can safely cast it
-      const typedPlanData = planData as { name: unknown };
-      if (typedPlanData.name && typeof typedPlanData.name === 'string') {
-        planName = typedPlanData.name;
-      }
+        'name' in planData && 
+        typeof planData.name === 'string') {
+      planName = planData.name;
     } else if (profile.plan_id) {
       const { data: directPlan } = await supabase
         .from("plans")
@@ -181,13 +177,9 @@ export async function getUserPlanName(): Promise<string | null> {
     // Check if planData is a valid object with a name property
     if (planData && 
         typeof planData === 'object' && 
-        planData !== null && 
-        'name' in planData) {
-      // Now we know planData is not null, so we can safely cast it
-      const typedPlanData = planData as { name: unknown };
-      if (typedPlanData.name && typeof typedPlanData.name === 'string') {
-        return typedPlanData.name;
-      }
+        'name' in planData && 
+        typeof planData.name === 'string') {
+      return planData.name;
     }
     
     if (profile.plan_id) {
