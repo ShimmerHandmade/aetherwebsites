@@ -80,10 +80,30 @@ export const useStripeConnect = (websiteId: string | undefined) => {
         window.open(data.url, '_blank');
         toast.success("Stripe Connect onboarding started");
         
-        // Refresh Stripe account data after a delay
+        // Set up polling to check for completed onboarding
+        const pollForCompletion = setInterval(async () => {
+          console.log("Polling for Stripe onboarding completion...");
+          await refreshStripeAccount();
+          
+          // Check if onboarding is complete
+          const { data: accountData } = await supabase
+            .from('stripe_connect_accounts')
+            .select('onboarding_complete')
+            .eq('website_id', websiteId)
+            .maybeSingle();
+          
+          if (accountData?.onboarding_complete) {
+            console.log("Stripe onboarding completed!");
+            clearInterval(pollForCompletion);
+            toast.success("Stripe Connect setup completed successfully!");
+            await refreshStripeAccount();
+          }
+        }, 5000); // Poll every 5 seconds
+        
+        // Stop polling after 10 minutes
         setTimeout(() => {
-          refreshStripeAccount();
-        }, 3000);
+          clearInterval(pollForCompletion);
+        }, 600000);
         
         return { success: true, url: data.url };
       } else if (data?.error && data.error.includes("platform profile")) {

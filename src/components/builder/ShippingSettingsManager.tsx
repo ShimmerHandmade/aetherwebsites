@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -48,17 +49,23 @@ const ShippingSettingsManager = () => {
   const fetchShippingSettings = async () => {
     try {
       setLoading(true);
+      console.log("Fetching shipping settings for website:", websiteId);
+      
       const { data, error } = await supabase
         .from('shipping_settings')
         .select('*')
         .eq('website_id', websiteId)
         .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
-        throw error;
+      if (error) {
+        console.error("Error fetching shipping settings:", error);
+        if (error.code !== 'PGRST116') { // PGRST116 means no rows found
+          throw error;
+        }
       }
 
       if (data) {
+        console.log("Shipping settings data:", data);
         setSettings({
           flatRateEnabled: data.flat_rate_enabled,
           flatRateAmount: data.flat_rate_amount || 0,
@@ -67,10 +74,12 @@ const ShippingSettingsManager = () => {
           freeShippingEnabled: data.free_shipping_enabled,
           freeShippingMinimum: data.free_shipping_minimum || 0,
         });
+      } else {
+        console.log("No shipping settings found, using defaults");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching shipping settings:', error);
-      toast.error('Failed to load shipping settings');
+      toast.error(`Failed to load shipping settings: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -81,6 +90,7 @@ const ShippingSettingsManager = () => {
 
     try {
       setSaving(true);
+      console.log("Saving shipping settings for website:", websiteId);
       
       const settingsData = {
         website_id: websiteId,
@@ -93,18 +103,24 @@ const ShippingSettingsManager = () => {
         updated_at: new Date().toISOString(),
       };
 
+      console.log("Settings data to save:", settingsData);
+
       const { error } = await supabase
         .from('shipping_settings')
         .upsert(settingsData, {
           onConflict: 'website_id'
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error saving shipping settings:", error);
+        throw error;
+      }
 
+      console.log("Shipping settings saved successfully");
       toast.success('Shipping settings saved successfully');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving shipping settings:', error);
-      toast.error('Failed to save shipping settings');
+      toast.error(`Failed to save shipping settings: ${error.message}`);
     } finally {
       setSaving(false);
     }
