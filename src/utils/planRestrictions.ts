@@ -100,7 +100,7 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
         planData !== null && 
         'name' in planData) {
       const typedPlanData = planData as { name: unknown };
-      if (typedPlanData.name && typeof typedPlanData.name === 'string') {
+      if (typedPlanData && typedPlanData.name && typeof typedPlanData.name === 'string') {
         planName = typedPlanData.name;
       }
     } else if (profile.plan_id) {
@@ -183,7 +183,7 @@ export async function getUserPlanName(): Promise<string | null> {
         planData !== null && 
         'name' in planData) {
       const typedPlanData = planData as { name: unknown };
-      if (typedPlanData.name && typeof typedPlanData.name === 'string') {
+      if (typedPlanData && typedPlanData.name && typeof typedPlanData.name === 'string') {
         return typedPlanData.name;
       }
     }
