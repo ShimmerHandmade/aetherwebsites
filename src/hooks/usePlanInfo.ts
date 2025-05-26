@@ -28,73 +28,50 @@ export const usePlanInfo = () => {
   
   const isMounted = useRef(true);
   const initialLoadComplete = useRef(false);
-  const loadAttempts = useRef(0);
 
   // Clean up the useEffect to improve loading stability
   useEffect(() => {
     const loadPlanInfo = async () => {
-      // Prevent reloading after 3 attempts
-      if (initialLoadComplete.current || loadAttempts.current >= 3) return;
+      // Prevent reloading if already completed
+      if (initialLoadComplete.current) return;
       
       try {
-        loadAttempts.current += 1;
-        console.log(`Loading plan info, attempt ${loadAttempts.current}`);
+        console.log("Loading plan info...");
         
-        // First handle restrictions, which shouldn't fail even without auth
-        let restrictions;
-        try {
-          restrictions = await getUserPlanRestrictions();
-        } catch (restrictionsError) {
-          console.warn("Failed to load plan restrictions:", restrictionsError);
-          restrictions = null;
-        }
+        // Load restrictions and plan data in parallel
+        const [restrictions, planData] = await Promise.all([
+          getUserPlanRestrictions().catch(() => null),
+          getUserPlanSimplified().catch(() => ({ planName: null, subscriptionEnd: null, isActive: false }))
+        ]);
         
-        // Then try to get the plan data
-        try {
-          const planData = await getUserPlanSimplified();
+        if (planData && planData.isActive) {
+          const isPremium = planData.planName === "Professional" || planData.planName === "Enterprise";
+          const isEnterprise = planData.planName === "Enterprise";
           
-          if (planData && planData.isActive) {
-            const isPremium = planData.planName === "Professional" || planData.planName === "Enterprise";
-            const isEnterprise = planData.planName === "Enterprise";
-            
-            console.log("Plan data loaded successfully:", {
+          console.log("Plan data loaded successfully:", {
+            planName: planData.planName,
+            isPremium,
+            isEnterprise
+          });
+          
+          if (isMounted.current) {
+            setPlanInfo({
               planName: planData.planName,
+              restrictions,
+              loading: false,
+              error: null,
               isPremium,
               isEnterprise
             });
-            
-            if (isMounted.current) {
-              setPlanInfo({
-                planName: planData.planName,
-                restrictions,
-                loading: false,
-                error: null,
-                isPremium,
-                isEnterprise
-              });
-            }
-          } else {
-            console.log("No active plan found, using default values");
-            if (isMounted.current) {
-              setPlanInfo({
-                planName: null,
-                restrictions,
-                loading: false,
-                error: null,
-                isPremium: false,
-                isEnterprise: false
-              });
-            }
           }
-        } catch (planError) {
-          console.warn("Failed to load plan data:", planError);
-          // Even if plan data fails, we can still proceed with restrictions
+        } else {
+          console.log("No active plan found, using default values");
           if (isMounted.current) {
             setPlanInfo({
               planName: null,
               restrictions,
               loading: false,
-              error: "Failed to load subscription information",
+              error: null,
               isPremium: false,
               isEnterprise: false
             });
@@ -105,23 +82,13 @@ export const usePlanInfo = () => {
       } catch (error) {
         console.error("Error in usePlanInfo:", error);
         if (isMounted.current) {
-          // Even on error, we stop loading to prevent UI blocking
           setPlanInfo(prev => ({
             ...prev,
             loading: false,
             error: "Failed to load subscription information"
           }));
-          
-          // Only show toast on first attempt to avoid spam
-          if (loadAttempts.current === 1) {
-            toast.error("Failed to load plan information", {
-              description: "Using default settings",
-              duration: 3000,
-            });
-          }
         }
         
-        // Even with error, mark as completed to prevent endless retries
         initialLoadComplete.current = true;
       }
     };
