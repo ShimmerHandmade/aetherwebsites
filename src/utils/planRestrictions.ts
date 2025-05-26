@@ -94,8 +94,8 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
     let planName = 'default';
     const planData = profile.plans;
     
-    if (planData && typeof planData === 'object' && 'name' in planData) {
-      planName = (planData as any).name as string;
+    if (planData && typeof planData === 'object' && 'name' in planData && planData.name) {
+      planName = planData.name as string;
     } else if (profile.plan_id) {
       const { data: directPlan } = await supabase
         .from("plans")
@@ -169,8 +169,8 @@ export async function getUserPlanName(): Promise<string | null> {
     }
 
     const planData = profile.plans;
-    if (planData && typeof planData === 'object' && 'name' in planData) {
-      return (planData as any).name as string;
+    if (planData && typeof planData === 'object' && 'name' in planData && planData.name) {
+      return planData.name as string;
     }
     
     if (profile.plan_id) {
