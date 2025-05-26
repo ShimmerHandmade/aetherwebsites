@@ -1,7 +1,6 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { useProductManager } from "@/hooks/useProductManager";
 import ProductHeader from "./products/ProductHeader";
 import ProductSearch from "./products/ProductSearch";
 import ProductContent from "./products/ProductContent";
@@ -11,6 +10,7 @@ import { fetchProducts } from "@/api/products";
 import { Product, UniqueCategory } from "@/types/product";
 import { usePlan } from "@/contexts/PlanContext";
 import { checkProductLimit } from "@/utils/planRestrictions";
+import { useProductManager } from "@/hooks/useProductManager";
 
 interface ProductManagerProps {
   websiteId?: string;
@@ -20,74 +20,52 @@ interface ProductManagerProps {
 const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuilder }) => {
   const { id: websiteIdParam } = useParams<{ id: string }>();
   const effectiveWebsiteId = websiteId || websiteIdParam;
-  const { planName, restrictions, loading: planLoading } = usePlan();
+  const { restrictions } = usePlan();
   
-  // States for data management
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<UniqueCategory[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [initialLoadError, setInitialLoadError] = useState<string | null>(null);
-  const [rawProducts, setRawProducts] = useState<Product[]>([]);
-  const [rawCategories, setRawCategories] = useState<UniqueCategory[]>([]);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   
-  // Improved logging
-  console.log("ProductManager mounted/updated with:", {
-    websiteId,
-    websiteIdParam,
-    effectiveWebsiteId,
-    productsCount: rawProducts.length,
-    planName,
-    productLimit: restrictions?.maxProducts
-  });
-  
-  // Enhanced data loading function
-  const loadProducts = useCallback(async () => {
-    if (!effectiveWebsiteId) {
-      console.error("No website ID available");
-      setInitialLoading(false);
-      setInitialLoadError("Website ID is missing");
-      return;
-    }
-    
-    try {
-      console.log(`Starting to load products for website: ${effectiveWebsiteId}`);
-      setInitialLoading(true);
-      
-      const result = await fetchProducts(effectiveWebsiteId);
-      
-      if (result.error) {
-        console.error("Error loading products:", result.error);
-        setInitialLoadError(result.error);
-        toast.error("Failed to load products", {
-          description: result.error
-        });
-      } else {
-        console.log(`Successfully loaded ${result.products.length} products and ${result.categories.length}`);
-        // Important: Set state with the new data
-        setRawProducts(result.products);
-        setRawCategories(result.categories);
-        setInitialLoadError(null);
-      }
-    } catch (error) {
-      console.error("Exception loading products:", error);
-      setInitialLoadError("An unexpected error occurred");
-      toast.error("Failed to load products");
-    } finally {
-      setInitialLoading(false);
-    }
-  }, [effectiveWebsiteId]);
-
-  // Load products on mount and when refreshTrigger changes
+  // Load products on mount
   useEffect(() => {
-    loadProducts();
-  }, [loadProducts, refreshTrigger]);
+    const loadData = async () => {
+      if (!effectiveWebsiteId) {
+        setError("Website ID is missing");
+        setInitialLoading(false);
+        return;
+      }
+      
+      try {
+        console.log(`Loading products for website: ${effectiveWebsiteId}`);
+        const result = await fetchProducts(effectiveWebsiteId);
+        
+        if (result.error) {
+          setError(result.error);
+          toast.error("Failed to load products");
+        } else {
+          console.log(`Loaded ${result.products.length} products`);
+          setProducts(result.products);
+          setCategories(result.categories);
+          setError(null);
+        }
+      } catch (err) {
+        console.error("Error loading products:", err);
+        setError("Failed to load products");
+        toast.error("Failed to load products");
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    loadData();
+  }, [effectiveWebsiteId]);
   
-  // Product manager hook with enhanced data passing
+  // Product manager hook
   const {
-    products,
     editingProduct,
     setEditingProduct,
     isAddingNew,
-    isLoading,
     isSaving,
     searchTerm,
     setSearchTerm,
@@ -99,8 +77,6 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
     currentView,
     setCurrentView,
     filteredProducts,
-    categories,
-    handleAddNew: handleAddNewProduct,
     handleEdit,
     handleImageChange,
     handleAddCategory,
@@ -109,73 +85,60 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
     handleDelete: internalHandleDelete,
     handleDeleteCategory,
     handleClearImage,
-    setProducts,
-    setCategories,
-  } = useProductManager(effectiveWebsiteId, rawProducts, rawCategories);
+  } = useProductManager(effectiveWebsiteId, products, categories);
 
-  // Set the products and categories once they're loaded
-  useEffect(() => {
-    if (rawProducts.length > 0 || rawCategories.length > 0) {
-      console.log("Setting products and categories in useProductManager:", 
-        rawProducts.length, "products,", rawCategories.length, "categories");
-      setProducts(rawProducts);
-      setCategories(rawCategories);
-    }
-  }, [rawProducts, rawCategories, setProducts, setCategories]);
-  
-  // Enhanced handlers with forced reload
-  const handleSuccessfulOperation = async () => {
-    console.log("Operation successful - triggering data refresh");
-    setRefreshTrigger(prev => prev + 1);
-  };
-  
-  const handleSave = async () => {
-    const saveResult = await internalHandleSave();
-    if (saveResult?.success) {
-      await handleSuccessfulOperation();
-    }
-    return saveResult;
-  };
-  
-  const handleDelete = async (id: string) => {
-    const deleteResult = await internalHandleDelete(id);
-    if (deleteResult?.success) {
-      await handleSuccessfulOperation();
-    }
-    return deleteResult;
-  };
-  
   const handleAddNew = async () => {
-    // Check if adding a new product would exceed the plan limit
     const canAddProduct = await checkProductLimit(products.length);
     
     if (!canAddProduct) {
-      toast.error(`You've reached your plan's limit of ${restrictions?.maxProducts} products.`, {
-        description: `Upgrade to ${planName === 'Basic' ? 'Professional' : 'Enterprise'} plan for more products.`
-      });
+      toast.error(`You've reached your plan's limit of ${restrictions?.maxProducts} products.`);
       return;
     }
     
-    // If within limits, proceed with adding new product
-    handleAddNewProduct();
+    setEditingProduct({
+      id: "",
+      name: "",
+      description: "",
+      price: 0,
+      sku: "",
+      stock: 0,
+      category: "",
+      is_featured: false,
+      is_sale: false,
+      is_new: true,
+      image_url: null
+    });
   };
-  
-  const handleBackToBuilder = () => {
-    if (editingProduct) {
-      if (confirm("You have unsaved product changes. Are you sure you want to go back without saving?")) {
-        setEditingProduct(null);
-        if (onBackToBuilder) onBackToBuilder();
-      } 
-      return;
-    }
+
+  const refreshData = async () => {
+    if (!effectiveWebsiteId) return;
     
-    if (onBackToBuilder) {
-      onBackToBuilder();
+    try {
+      const result = await fetchProducts(effectiveWebsiteId);
+      if (!result.error) {
+        setProducts(result.products);
+        setCategories(result.categories);
+      }
+    } catch (err) {
+      console.error("Error refreshing:", err);
     }
   };
 
-  // Determine if we should show loading state
-  const showLoading = initialLoading || isLoading || planLoading;
+  const handleSave = async () => {
+    const result = await internalHandleSave();
+    if (result?.success) {
+      await refreshData();
+    }
+    return result;
+  };
+
+  const handleDelete = async (id: string) => {
+    const result = await internalHandleDelete(id);
+    if (result?.success) {
+      await refreshData();
+    }
+    return result;
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -185,7 +148,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
         currentView={currentView}
         onAddNew={handleAddNew}
         onToggleView={() => setCurrentView(currentView === "grid" ? "list" : "grid")}
-        onBack={handleBackToBuilder}
+        onBack={onBackToBuilder}
       />
 
       {!editingProduct && (
@@ -206,15 +169,15 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
           <div className="lg:col-span-1">
             <PlanLimitsInfo 
               productCount={products.length} 
-              websiteCount={0} // Changed from pageCount to websiteCount
+              websiteCount={0}
             />
           </div>
         </div>
       )}
 
       <ProductContent
-        isLoading={showLoading}
-        loadingError={initialLoadError}
+        isLoading={initialLoading}
+        loadingError={error}
         editingProduct={editingProduct}
         filteredProducts={filteredProducts}
         currentView={currentView}
