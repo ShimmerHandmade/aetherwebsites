@@ -5,12 +5,12 @@ import BuilderNavbar from "@/components/builder/BuilderNavbar";
 import BuilderContent from "@/components/builder/BuilderContent";
 import { useWebsite } from "@/hooks/useWebsite";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { v4 as uuidv4 } from "@/lib/uuid";
 import { toast } from "sonner";
 import { CartProvider } from "@/contexts/CartContext";
-
-// No need to declare this interface here as it's already defined in vite-env.d.ts
+import ErrorBoundary from "@/components/ErrorBoundary";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const Builder = () => {
   const { id } = useParams<{ id: string }>();
@@ -32,10 +32,9 @@ const Builder = () => {
     unsavedChanges
   } = useWebsite(id, navigate, {
     autoSave: true,
-    autoSaveInterval: 30000, // Auto-save every 30 seconds
+    autoSaveInterval: 30000,
   });
   
-  // Track preview mode state at this level
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [currentPageId, setCurrentPageId] = useState<string | null>(null);
   const [currentPageElements, setCurrentPageElements] = useState<BuilderElement[]>([]);
@@ -43,7 +42,7 @@ const Builder = () => {
   const [saveStatus, setSaveStatus] = useState<string>('');
   const latestElementsRef = useRef<BuilderElement[]>([]);
 
-  // Format the last saved time
+  // Track preview mode state at this level
   useEffect(() => {
     if (!lastSaved) return;
     
@@ -245,21 +244,26 @@ const Builder = () => {
     }
   };
 
-  // This function triggers the save event and gets the current builder elements
-  const handleSave = async () => {
+  // Optimized save handler with better error handling
+  const handleSave = useCallback(async () => {
     if (!currentPageId || !website) {
       toast.error("Cannot save: No page selected");
       return;
     }
     
-    // Dispatch event to trigger save in builder context
-    document.dispatchEvent(new CustomEvent('save-website'));
-    setSaveStatus('Saving...');
-    console.log("Manual save triggered");
-  };
+    try {
+      document.dispatchEvent(new CustomEvent('save-website'));
+      setSaveStatus('Saving...');
+      console.log("Manual save triggered");
+    } catch (error) {
+      console.error("Error during save:", error);
+      toast.error("Failed to save website");
+      setSaveStatus('Save failed');
+    }
+  }, [currentPageId, website]);
 
-  // This is called when the BuilderProvider's onSave is triggered
-  const handleSaveComplete = async (updatedElements: BuilderElement[], updatedPageSettings: PageSettings) => {
+  // Optimized save complete handler
+  const handleSaveComplete = useCallback(async (updatedElements: BuilderElement[], updatedPageSettings: PageSettings) => {
     if (!currentPageId || !website) {
       toast.error("Cannot save: Missing page or website data");
       return;
@@ -268,21 +272,17 @@ const Builder = () => {
     console.log("Saving page content:", updatedElements);
     latestElementsRef.current = updatedElements;
     
-    // Create deep copies of objects to avoid mutation issues
-    const pagesContent = website.settings.pagesContent ? JSON.parse(JSON.stringify(website.settings.pagesContent)) : {};
-    const pagesSettings = website.settings.pagesSettings ? JSON.parse(JSON.stringify(website.settings.pagesSettings)) : {};
-    
-    // Update content and settings for current page
-    pagesContent[currentPageId] = updatedElements;
-    pagesSettings[currentPageId] = updatedPageSettings;
-    
-    console.log("Saving content for page:", currentPageId, updatedElements);
-    
-    // Check if this is the home page
-    const isHomePage = website.settings.pages?.find(p => p.isHomePage)?.id === currentPageId;
-    
-    // Save to database - if this is the home page, update the main content as well
     try {
+      const pagesContent = website.settings.pagesContent ? JSON.parse(JSON.stringify(website.settings.pagesContent)) : {};
+      const pagesSettings = website.settings.pagesSettings ? JSON.parse(JSON.stringify(website.settings.pagesSettings)) : {};
+      
+      pagesContent[currentPageId] = updatedElements;
+      pagesSettings[currentPageId] = updatedPageSettings;
+      
+      console.log("Saving content for page:", currentPageId, updatedElements);
+      
+      const isHomePage = website.settings.pages?.find(p => p.isHomePage)?.id === currentPageId;
+      
       const success = await saveWebsite(
         isHomePage ? updatedElements : website.content, 
         updatedPageSettings, 
@@ -304,51 +304,44 @@ const Builder = () => {
       setSaveStatus('Save failed');
       toast.error("Failed to save website");
     }
-  };
+  }, [currentPageId, website, saveWebsite]);
   
-  const handleChangePage = (pageId: string) => {
-    // Save current page first
+  const handleChangePage = useCallback((pageId: string) => {
     handleSave();
-    
-    // Update URL with pageId parameter
     navigate(`/builder/${id}?pageId=${pageId}`);
     setCurrentPageId(pageId);
-  };
+  }, [handleSave, id, navigate]);
 
   const handleShopLinkClick = useCallback(() => {
-    // Save current page first
     handleSave();
-    
-    // Navigate to the shop page
     navigate(`/builder/${id}/shop`);
   }, [handleSave, id, navigate]);
   
-  const handleReturnToDashboard = () => {
+  const handleReturnToDashboard = useCallback(() => {
     navigate('/dashboard');
-  };
+  }, [navigate]);
 
-  const handleViewSite = () => {
+  const handleViewSite = useCallback(() => {
     window.open(`/site/${id}`, '_blank');
-  };
+  }, [id]);
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="h-12 w-12 border-4 border-t-blue-600 border-r-blue-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading builder...</p>
-        </div>
+        <LoadingSpinner size="lg" text="Loading builder..." />
       </div>
     );
   }
 
+  // Error state
   if (!website) {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-700 mb-2">Website not found</h2>
           <p className="text-gray-600 mb-6">The website you're looking for doesn't exist or you don't have permission to access it.</p>
-          <button onClick={() => navigate("/dashboard")} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+          <button onClick={handleReturnToDashboard} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
             Back to Dashboard
           </button>
         </div>
@@ -359,53 +352,62 @@ const Builder = () => {
   const pages = website?.settings?.pages || [];
   const currentPage = pages.find(page => page.id === currentPageId);
 
-  // If in preview mode via URL parameter, only show the canvas without builder UI
+  // Preview mode
   if (isPreviewMode && new URLSearchParams(window.location.search).get('preview') === 'true') {
     return (
+      <ErrorBoundary>
+        <CartProvider>
+          <BuilderProvider 
+            initialElements={currentPageElements} 
+            initialPageSettings={currentPageSettings || { title: currentPage?.title || websiteName }}
+            onSave={handleSaveComplete}
+          >
+            <div className="w-full min-h-screen">
+              <Suspense fallback={<LoadingSpinner size="lg" />}>
+                <BuilderContent isPreviewMode={true} />
+              </Suspense>
+            </div>
+          </BuilderProvider>
+        </CartProvider>
+      </ErrorBoundary>
+    );
+  }
+
+  // Main builder interface
+  return (
+    <ErrorBoundary>
       <CartProvider>
         <BuilderProvider 
           initialElements={currentPageElements} 
           initialPageSettings={currentPageSettings || { title: currentPage?.title || websiteName }}
           onSave={handleSaveComplete}
         >
-          <div className="w-full min-h-screen">
-            <BuilderContent isPreviewMode={true} />
-          </div>
+          <BuilderLayout isPreviewMode={isPreviewMode} setIsPreviewMode={setIsPreviewMode}>
+            <BuilderNavbar 
+              websiteName={websiteName} 
+              setWebsiteName={setWebsiteName} 
+              onSave={handleSave} 
+              onPublish={publishWebsite}
+              isPublished={website?.published}
+              isSaving={isSaving}
+              isPublishing={isPublishing}
+              isPreviewMode={isPreviewMode}
+              setIsPreviewMode={setIsPreviewMode}
+              currentPage={currentPage}
+              pages={pages}
+              onChangePage={handleChangePage}
+              onShopLinkClick={handleShopLinkClick}
+              onReturnToDashboard={handleReturnToDashboard}
+              viewSiteUrl={`/view/${id}`}
+              saveStatus={saveStatus}
+            />
+            <Suspense fallback={<LoadingSpinner size="lg" text="Loading content..." />}>
+              <BuilderContent isPreviewMode={isPreviewMode} />
+            </Suspense>
+          </BuilderLayout>
         </BuilderProvider>
       </CartProvider>
-    );
-  }
-
-  return (
-    <CartProvider>
-      <BuilderProvider 
-        initialElements={currentPageElements} 
-        initialPageSettings={currentPageSettings || { title: currentPage?.title || websiteName }}
-        onSave={handleSaveComplete}
-      >
-        <BuilderLayout isPreviewMode={isPreviewMode} setIsPreviewMode={setIsPreviewMode}>
-          <BuilderNavbar 
-            websiteName={websiteName} 
-            setWebsiteName={setWebsiteName} 
-            onSave={handleSave} 
-            onPublish={publishWebsite}
-            isPublished={website?.published}
-            isSaving={isSaving}
-            isPublishing={isPublishing}
-            isPreviewMode={isPreviewMode}
-            setIsPreviewMode={setIsPreviewMode}
-            currentPage={currentPage}
-            pages={pages}
-            onChangePage={handleChangePage}
-            onShopLinkClick={handleShopLinkClick}
-            onReturnToDashboard={handleReturnToDashboard}
-            viewSiteUrl={`/view/${id}`}
-            saveStatus={saveStatus}
-          />
-          <BuilderContent isPreviewMode={isPreviewMode} />
-        </BuilderLayout>
-      </BuilderProvider>
-    </CartProvider>
+    </ErrorBoundary>
   );
 };
 

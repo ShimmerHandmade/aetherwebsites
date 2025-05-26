@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
 import BuilderContent from "@/components/builder/BuilderContent";
@@ -9,6 +9,8 @@ import ProductDetails from "@/pages/ProductDetails";
 import Checkout from "@/pages/Checkout";
 import { CartProvider } from "@/contexts/CartContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const WebsiteViewer = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,44 +29,42 @@ const WebsiteViewer = () => {
   const [currentPageElements, setCurrentPageElements] = useState<BuilderElement[]>([]);
   const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
 
-  // Determine if this is a live site view
+  // Route detection
   const isViewRoute = location.pathname.startsWith(`/view/${id}`);
   const isSiteRoute = location.pathname.startsWith(`/site/${id}`);
-  // Also detect custom domain by checking window location
   const isCustomDomain = window.location.hostname !== 'localhost' && 
                          !window.location.hostname.includes('lovable.app');
   const isLiveSite = isSiteRoute || isViewRoute || isCustomDomain;
 
-  // Get the current path to determine which page to show
   let currentPath = location.pathname.replace(`/site/${id}`, '').replace(`/view/${id}`, '') || '/';
   
-  // If we're on a custom domain, the path is just the pathname
   if (isCustomDomain) {
     currentPath = location.pathname || '/';
   }
   
-  // Check if we're on a special page
   const isCartPage = currentPath === '/cart';
   const isCheckoutPage = currentPath === '/checkout';
-  
-  // Check if we're on a product details page - use better pattern matching for routes
   const productMatch = currentPath.match(/^\/product\/(.+)$/);
   const isProductPage = !!productMatch;
   const productId = productMatch ? productMatch[1] : null;
 
-  console.log("WebsiteViewer - ROUTE INFO:", { 
-    currentPath,
-    isLiveSite,
-    isViewRoute,
-    isSiteRoute,
-    isCustomDomain,
-    isCartPage,
-    isCheckoutPage,
-    isProductPage,
-    productId,
-    hostname: window.location.hostname,
-    isMobile
-  });
+  // SEO meta tags update
+  useEffect(() => {
+    if (website && currentPageSettings) {
+      document.title = currentPageSettings.title || websiteName || 'Website';
+      
+      // Update meta description
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription && currentPageSettings.meta?.description) {
+        metaDescription.setAttribute('content', currentPageSettings.meta.description);
+      } else if (!metaDescription && currentPageSettings.meta?.description) {
+        const meta = document.createElement('meta');
+        meta.name = 'description';
+        meta.content = currentPageSettings.meta.description;
+        document.head.appendChild(meta);
+      }
+    }
+  }, [website, currentPageSettings, websiteName]);
 
   // Set current page based on the URL path
   useEffect(() => {
@@ -140,7 +140,7 @@ const WebsiteViewer = () => {
     }
   }, [website?.settings, id, isLiveSite, isMobile]);
 
-  // Add viewport meta tag for mobile if missing
+  // Viewport optimization for mobile
   useEffect(() => {
     const existingViewport = document.querySelector('meta[name="viewport"]');
     if (!existingViewport) {
@@ -151,19 +151,18 @@ const WebsiteViewer = () => {
     }
   }, []);
 
+  // Loading state
   if (isLoading) {
     return (
       <CartProvider>
         <div className="h-screen flex items-center justify-center px-4">
-          <div className="text-center">
-            <div className="h-12 w-12 border-4 border-t-blue-600 border-r-blue-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading website...</p>
-          </div>
+          <LoadingSpinner size="lg" text="Loading website..." />
         </div>
       </CartProvider>
     );
   }
 
+  // Error state
   if (!website) {
     return (
       <CartProvider>
@@ -177,41 +176,60 @@ const WebsiteViewer = () => {
     );
   }
 
-  // Everything is wrapped in CartProvider to prevent useCart context errors
-  return (
-    <CartProvider>
-      {isCartPage ? (
+  const renderContent = () => {
+    if (isCartPage) {
+      return (
         <div className="w-full min-h-screen">
           <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
             <Cart siteName={websiteName} siteId={id} />
           </div>
         </div>
-      ) : isProductPage ? (
+      );
+    }
+    
+    if (isProductPage) {
+      return (
         <div className="w-full min-h-screen">
           <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
             <ProductDetails productId={productId} siteId={id} />
           </div>
         </div>
-      ) : isCheckoutPage ? (
+      );
+    }
+    
+    if (isCheckoutPage) {
+      return (
         <div className="w-full min-h-screen">
           <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
             <Checkout />
           </div>
         </div>
-      ) : (
-        <BuilderProvider 
-          initialElements={currentPageElements} 
-          initialPageSettings={currentPageSettings || { title: websiteName }}
-          onSave={() => {}}
-        >
-          <div className="w-full min-h-screen">
-            <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
-              <BuilderContent isPreviewMode={true} isLiveSite={isLiveSite} />
-            </div>
+      );
+    }
+
+    return (
+      <BuilderProvider 
+        initialElements={currentPageElements} 
+        initialPageSettings={currentPageSettings || { title: websiteName }}
+        onSave={() => {}}
+      >
+        <div className="w-full min-h-screen">
+          <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
+            <BuilderContent isPreviewMode={true} isLiveSite={isLiveSite} />
           </div>
-        </BuilderProvider>
-      )}
-    </CartProvider>
+        </div>
+      </BuilderProvider>
+    );
+  };
+
+  return (
+    <ErrorBoundary>
+      <CartProvider>
+        <Suspense fallback={<LoadingSpinner size="lg" text="Loading content..." />}>
+          {renderContent()}
+        </Suspense>
+      </CartProvider>
+    </ErrorBoundary>
   );
 };
 

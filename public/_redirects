@@ -1,0 +1,15 @@
+
+# Netlify redirects file for SPA routing
+/*    /index.html   200
+
+# Handle API routes and prevent them from being redirected to index.html
+/api/*    /api/*    200
+
+# Handle site routes for live websites
+/site/*   /index.html   200
+/view/*   /index.html   200
+
+# Handle cart and product routes
+/cart     /index.html   200
+/product/* /index.html  200
+/checkout /index.html   200
