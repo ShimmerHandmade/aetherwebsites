@@ -99,8 +99,9 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
         typeof planData === 'object' && 
         planData !== null && 
         'name' in planData) {
+      // Now we know planData is not null, so we can safely cast it
       const typedPlanData = planData as { name: unknown };
-      if (typedPlanData && typedPlanData.name && typeof typedPlanData.name === 'string') {
+      if (typedPlanData.name && typeof typedPlanData.name === 'string') {
         planName = typedPlanData.name;
       }
     } else if (profile.plan_id) {
@@ -182,8 +183,9 @@ export async function getUserPlanName(): Promise<string | null> {
         typeof planData === 'object' && 
         planData !== null && 
         'name' in planData) {
+      // Now we know planData is not null, so we can safely cast it
       const typedPlanData = planData as { name: unknown };
-      if (typedPlanData && typedPlanData.name && typeof typedPlanData.name === 'string') {
+      if (typedPlanData.name && typeof typedPlanData.name === 'string') {
         return typedPlanData.name;
       }
     }
