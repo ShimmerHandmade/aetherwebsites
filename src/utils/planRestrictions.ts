@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -94,10 +95,10 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
     const planData = profile.plans;
     
     // Check if planData is a valid object with a name property
-    if (planData != null && typeof planData === 'object' && 'name' in planData) {
-      const name = (planData as any).name;
-      if (typeof name === 'string') {
-        planName = name;
+    if (planData !== null && planData !== undefined && typeof planData === 'object') {
+      const planObj = planData as Record<string, any>;
+      if (planObj.name && typeof planObj.name === 'string') {
+        planName = planObj.name;
       }
     } else if (profile.plan_id) {
       const { data: directPlan } = await supabase
@@ -174,10 +175,10 @@ export async function getUserPlanName(): Promise<string | null> {
     const planData = profile.plans;
     
     // Check if planData is a valid object with a name property
-    if (planData != null && typeof planData === 'object' && 'name' in planData) {
-      const name = (planData as any).name;
-      if (typeof name === 'string') {
-        return name;
+    if (planData !== null && planData !== undefined && typeof planData === 'object') {
+      const planObj = planData as Record<string, any>;
+      if (planObj.name && typeof planObj.name === 'string') {
+        return planObj.name;
       }
     }
     
