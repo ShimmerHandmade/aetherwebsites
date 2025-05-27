@@ -38,25 +38,42 @@ export const usePlanInfo = () => {
         // Check authentication for plan details
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         
-        if (authError || !user) {
+        if (authError) {
+          console.error("❌ Auth error:", authError);
+          if (isMounted) {
+            setPlanInfo({
+              planName: null,
+              restrictions,
+              loading: false,
+              error: authError.message,
+              isPremium: false,
+              isEnterprise: false
+            });
+          }
+          return;
+        }
+        
+        if (!user) {
           console.log("🔄 No authenticated user, using default plan");
-          setPlanInfo({
-            planName: null,
-            restrictions,
-            loading: false,
-            error: null,
-            isPremium: false,
-            isEnterprise: false
-          });
+          if (isMounted) {
+            setPlanInfo({
+              planName: null,
+              restrictions,
+              loading: false,
+              error: null,
+              isPremium: false,
+              isEnterprise: false
+            });
+          }
           return;
         }
         
         console.log("👤 User found, fetching plan details...");
         
-        // Get user profile with plan info
+        // Get user profile with plan info - simplified query
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("is_subscribed, subscription_end, plan_id, plans(name)")
+          .select("is_subscribed, subscription_end, plan_id")
           .eq("id", user.id)
           .maybeSingle();
         
@@ -64,14 +81,16 @@ export const usePlanInfo = () => {
         
         if (profileError) {
           console.error("❌ Profile error:", profileError);
-          setPlanInfo({
-            planName: null,
-            restrictions,
-            loading: false,
-            error: null,
-            isPremium: false,
-            isEnterprise: false
-          });
+          if (isMounted) {
+            setPlanInfo({
+              planName: null,
+              restrictions,
+              loading: false,
+              error: profileError.message,
+              isPremium: false,
+              isEnterprise: false
+            });
+          }
           return;
         }
         
@@ -83,22 +102,19 @@ export const usePlanInfo = () => {
         if (profile?.is_subscribed && 
             (!profile.subscription_end || new Date(profile.subscription_end) > new Date())) {
           
-          // Try to get plan name from the relationship with comprehensive null safety
-          if (profile.plans && 
-              typeof profile.plans === 'object' && 
-              profile.plans !== null && 
-              !Array.isArray(profile.plans) && 
-              'name' in profile.plans) {
-            planName = (profile.plans as { name: string }).name;
-          } else if (profile.plan_id) {
-            // Fallback: fetch plan separately
-            const { data: planData } = await supabase
+          // Get plan name if we have a plan_id
+          if (profile.plan_id) {
+            const { data: planData, error: planError } = await supabase
               .from("plans")
               .select("name")
               .eq("id", profile.plan_id)
               .maybeSingle();
             
-            planName = planData?.name || null;
+            if (planError) {
+              console.error("❌ Plan fetch error:", planError);
+            } else {
+              planName = planData?.name || null;
+            }
           }
           
           isPremium = planName === "Professional" || planName === "Enterprise";
@@ -123,7 +139,7 @@ export const usePlanInfo = () => {
           setPlanInfo(prev => ({
             ...prev,
             loading: false,
-            error: "Failed to load subscription information"
+            error: error instanceof Error ? error.message : "Failed to load subscription information"
           }));
         }
       }

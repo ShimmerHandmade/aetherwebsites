@@ -115,11 +115,14 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
   }, []);
 
   const updateElement = useCallback((id: string, updates: Partial<BuilderElement>) => {
+    console.log("🔄 Updating element:", { id, updates });
     setElements(prevElements => {
       const updateElementRecursively = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
         return elementsToUpdate.map(element => {
           if (element.id === id) {
-            return { ...element, ...updates };
+            const updated = { ...element, ...updates };
+            console.log("✅ Element updated:", updated);
+            return updated;
           }
           if (element.children) {
             return { ...element, children: updateElementRecursively(element.children) };
@@ -133,6 +136,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
   }, []);
 
   const removeElement = useCallback((id: string) => {
+    console.log("🗑️ Removing element:", id);
     setElements(prevElements => {
       const removeElementRecursively = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
         return elementsToUpdate
@@ -143,7 +147,9 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
           }));
       };
       
-      return removeElementRecursively(prevElements);
+      const newElements = removeElementRecursively(prevElements);
+      console.log("✅ Element removed, new count:", newElements.length);
+      return newElements;
     });
     
     if (selectedElementId === id) {
@@ -153,10 +159,12 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
 
   // Alias for removeElement to maintain compatibility
   const deleteElement = useCallback((id: string) => {
+    console.log("🗑️ Deleting element (alias):", id);
     removeElement(id);
   }, [removeElement]);
 
   const moveElement = useCallback((fromIndex: number, toIndex: number, parentId?: string) => {
+    console.log("🔄 Moving element:", { fromIndex, toIndex, parentId });
     setElements(prevElements => {
       if (parentId) {
         // Move within a specific parent container
@@ -166,6 +174,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
               const children = [...el.children];
               const [movedElement] = children.splice(fromIndex, 1);
               children.splice(toIndex, 0, movedElement);
+              console.log("✅ Element moved within container");
               return { ...el, children };
             }
             
@@ -185,12 +194,15 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
         newElements.splice(toIndex, 0, movedElement);
         
         // Ensure proper ordering after move
-        return ensureElementsOrder(newElements);
+        const orderedElements = ensureElementsOrder(newElements);
+        console.log("✅ Element moved at root level");
+        return orderedElements;
       }
     });
   }, []);
 
   const moveElementUp = useCallback((id: string) => {
+    console.log("⬆️ Moving element up:", id);
     const currentIndex = findElementIndex(id);
     if (currentIndex > 0) {
       moveElement(currentIndex, currentIndex - 1);
@@ -198,6 +210,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
   }, [findElementIndex, moveElement]);
 
   const moveElementDown = useCallback((id: string) => {
+    console.log("⬇️ Moving element down:", id);
     const currentIndex = findElementIndex(id);
     if (currentIndex >= 0 && currentIndex < elements.length - 1) {
       moveElement(currentIndex, currentIndex + 1);
@@ -205,12 +218,17 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
   }, [findElementIndex, moveElement, elements.length]);
 
   const selectElement = useCallback((id: string | null) => {
+    console.log("🎯 Selecting element:", id);
     setSelectedElementId(id);
   }, []);
 
   const duplicateElement = useCallback((id: string) => {
+    console.log("📋 Duplicating element:", id);
     const element = findElementById(id);
-    if (!element) return;
+    if (!element) {
+      console.warn("❌ Element not found for duplication:", id);
+      return;
+    }
     
     const duplicateRecursively = (el: BuilderElement): BuilderElement => ({
       ...el,
@@ -225,12 +243,14 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       setElements(prevElements => {
         const newElements = [...prevElements];
         newElements.splice(currentIndex + 1, 0, duplicated);
+        console.log("✅ Element duplicated");
         return newElements;
       });
     }
   }, [findElementById, findElementIndex]);
 
   const updatePageSettings = useCallback((newSettings: Partial<PageSettings>) => {
+    console.log("🔄 Updating page settings:", newSettings);
     setPageSettings(prev => ({ ...prev, ...newSettings }));
   }, []);
 

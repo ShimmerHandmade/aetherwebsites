@@ -26,8 +26,18 @@ interface PlanProviderProps {
 export const PlanProvider = ({ children }: PlanProviderProps) => {
   const planInfo = usePlanInfo();
   
+  // Show error toast if there's an error loading plan info
+  useEffect(() => {
+    if (planInfo.error && !planInfo.loading) {
+      console.error("Plan loading error:", planInfo.error);
+      toast.error("Plan Loading Error", {
+        description: planInfo.error,
+        duration: 5000,
+      });
+    }
+  }, [planInfo.error, planInfo.loading]);
+  
   // Helper function to check if user has access to a premium/enterprise feature
-  // and show an upgrade toast if they don't
   const checkUpgrade = (feature: string, isPremiumOnly = false): boolean => {
     console.log("🔍 Checking upgrade for feature:", feature, {
       isPremiumOnly,
@@ -37,12 +47,17 @@ export const PlanProvider = ({ children }: PlanProviderProps) => {
     
     if (planInfo.isEnterprise) {
       console.log(`✅ Enterprise user has access to ${feature}`);
-      return true; // Enterprise users have access to everything
+      return true;
     }
     
     if (planInfo.isPremium && isPremiumOnly) {
       console.log(`✅ Premium user has access to ${feature}`);
-      return true; // Premium users have access to premium features
+      return true;
+    }
+    
+    if (!isPremiumOnly && planInfo.isPremium) {
+      console.log(`✅ Premium user has access to ${feature}`);
+      return true;
     }
     
     // Show upgrade toast
