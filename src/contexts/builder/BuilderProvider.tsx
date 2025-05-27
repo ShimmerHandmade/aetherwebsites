@@ -36,6 +36,23 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     });
   }, []);
 
+  const findElementById = useCallback((id: string): BuilderElement | null => {
+    const searchElements = (elements: BuilderElement[]): BuilderElement | null => {
+      for (const element of elements) {
+        if (element.id === id) {
+          return element;
+        }
+        if (element.children) {
+          const found = searchElements(element.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    
+    return searchElements(elements);
+  }, [elements]);
+
   const addElement = useCallback((
     element: BuilderElement, 
     index?: number, 
@@ -172,7 +189,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       return -1;
     }
     return elements.findIndex(el => el.id === id);
-  }, [elements]);
+  }, [elements, findElementById]);
 
   const moveElementUp = useCallback((id: string) => {
     const element = findElementById(id);
@@ -223,23 +240,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
   const selectElement = useCallback((id: string | null) => {
     setSelectedElementId(id);
   }, []);
-
-  const findElementById = useCallback((id: string): BuilderElement | null => {
-    const searchElements = (elements: BuilderElement[]): BuilderElement | null => {
-      for (const element of elements) {
-        if (element.id === id) {
-          return element;
-        }
-        if (element.children) {
-          const found = searchElements(element.children);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-    
-    return searchElements(elements);
-  }, [elements]);
 
   const duplicateElement = useCallback((id: string) => {
     const element = findElementById(id);
