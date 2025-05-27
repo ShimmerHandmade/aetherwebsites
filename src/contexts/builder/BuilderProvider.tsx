@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useCallback, ReactNode, useEffect } from "react";
 import { BuilderElement, PageSettings, BuilderContextType } from "./types";
 import { v4 as uuidv4 } from "@/lib/uuid";
@@ -123,6 +124,11 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     }
   }, [selectedElementId]);
 
+  // Alias for removeElement to maintain compatibility
+  const deleteElement = useCallback((id: string) => {
+    removeElement(id);
+  }, [removeElement]);
+
   const moveElement = useCallback((fromIndex: number, toIndex: number, parentId?: string) => {
     setElements(prevElements => {
       if (parentId) {
@@ -156,6 +162,63 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       }
     });
   }, []);
+
+  const findElementIndex = useCallback((id: string, parentId?: string): number => {
+    if (parentId) {
+      const parent = findElementById(id);
+      if (parent && parent.children) {
+        return parent.children.findIndex(el => el.id === id);
+      }
+      return -1;
+    }
+    return elements.findIndex(el => el.id === id);
+  }, [elements]);
+
+  const moveElementUp = useCallback((id: string) => {
+    const element = findElementById(id);
+    if (!element) return;
+
+    setElements(prevElements => {
+      const moveUpRecursively = (elements: BuilderElement[], parentId?: string): BuilderElement[] => {
+        const index = elements.findIndex(el => el.id === id);
+        if (index > 0) {
+          const newElements = [...elements];
+          [newElements[index - 1], newElements[index]] = [newElements[index], newElements[index - 1]];
+          return newElements;
+        }
+        
+        return elements.map(el => ({
+          ...el,
+          children: el.children ? moveUpRecursively(el.children, el.id) : undefined
+        }));
+      };
+      
+      return moveUpRecursively(prevElements);
+    });
+  }, [findElementById]);
+
+  const moveElementDown = useCallback((id: string) => {
+    const element = findElementById(id);
+    if (!element) return;
+
+    setElements(prevElements => {
+      const moveDownRecursively = (elements: BuilderElement[], parentId?: string): BuilderElement[] => {
+        const index = elements.findIndex(el => el.id === id);
+        if (index >= 0 && index < elements.length - 1) {
+          const newElements = [...elements];
+          [newElements[index], newElements[index + 1]] = [newElements[index + 1], newElements[index]];
+          return newElements;
+        }
+        
+        return elements.map(el => ({
+          ...el,
+          children: el.children ? moveDownRecursively(el.children, el.id) : undefined
+        }));
+      };
+      
+      return moveDownRecursively(prevElements);
+    });
+  }, [findElementById]);
 
   const selectElement = useCallback((id: string | null) => {
     setSelectedElementId(id);
@@ -230,7 +293,10 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     addElement,
     updateElement,
     removeElement,
+    deleteElement,
     moveElement,
+    moveElementUp,
+    moveElementDown,
     selectElement,
     findElementById,
     duplicateElement,

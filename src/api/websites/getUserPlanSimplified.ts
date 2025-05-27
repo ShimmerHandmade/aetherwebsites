@@ -57,10 +57,14 @@ export const getUserPlanSimplified = async (): Promise<SimplifiedPlanInfo> => {
       };
     }
     
-    // Get plan name with null safety
+    // Get plan name with comprehensive null safety
     let planName = null;
     
-    if (profile.plans && typeof profile.plans === 'object' && profile.plans !== null && 'name' in profile.plans) {
+    if (profile.plans && 
+        typeof profile.plans === 'object' && 
+        profile.plans !== null && 
+        !Array.isArray(profile.plans) && 
+        'name' in profile.plans) {
       planName = (profile.plans as { name: string }).name;
     } else if (profile.plan_id) {
       // Fallback query

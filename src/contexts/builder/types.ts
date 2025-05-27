@@ -28,7 +28,10 @@ export interface BuilderContextType {
   addElement: (element: BuilderElement, index?: number, parentId?: string | null) => void;
   updateElement: (id: string, updates: Partial<BuilderElement>) => void;
   removeElement: (id: string) => void;
+  deleteElement: (id: string) => void; // Alias for removeElement
   moveElement: (fromIndex: number, toIndex: number, parentId?: string) => void;
+  moveElementUp: (id: string) => void;
+  moveElementDown: (id: string) => void;
   selectElement: (id: string | null) => void;
   findElementById: (id: string) => BuilderElement | null;
   duplicateElement: (id: string) => void;
