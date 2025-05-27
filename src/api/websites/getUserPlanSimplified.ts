@@ -7,26 +7,12 @@ interface SimplifiedPlanInfo {
   isActive: boolean;
 }
 
-/**
- * Gets simplified plan information that avoids database joins
- * which can cause errors when the relationships aren't set up properly
- */
 export const getUserPlanSimplified = async (): Promise<SimplifiedPlanInfo> => {
   try {
     console.log("🔄 getUserPlanSimplified: Starting...");
     
-    // Check for authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError) {
-      console.error("❌ getUserPlanSimplified: Auth error:", authError);
-      return {
-        planName: null,
-        subscriptionEnd: null,
-        isActive: false
-      };
-    }
-    
-    if (!user) {
+    if (authError || !user) {
       console.log("🔄 getUserPlanSimplified: No authenticated user");
       return {
         planName: null,
@@ -37,10 +23,10 @@ export const getUserPlanSimplified = async (): Promise<SimplifiedPlanInfo> => {
 
     console.log("👤 getUserPlanSimplified: User found:", user.id);
 
-    // Get user profile information
+    // Get user profile with plan info in one query
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("is_subscribed, subscription_end, plan_id")
+      .select("is_subscribed, subscription_end, plan_id, plans(name)")
       .eq("id", user.id)
       .maybeSingle();
     
@@ -49,8 +35,8 @@ export const getUserPlanSimplified = async (): Promise<SimplifiedPlanInfo> => {
       error: profileError
     });
     
-    if (profileError) {
-      console.error("❌ getUserPlanSimplified: Error fetching profile:", profileError);
+    if (profileError || !profile) {
+      console.log("🔄 getUserPlanSimplified: No profile found");
       return {
         planName: null,
         subscriptionEnd: null,
@@ -58,67 +44,37 @@ export const getUserPlanSimplified = async (): Promise<SimplifiedPlanInfo> => {
       };
     }
     
-    if (!profile) {
-      console.log("🔄 getUserPlanSimplified: No profile found for user");
-      return {
-        planName: null,
-        subscriptionEnd: null,
-        isActive: false
-      };
-    }
-    
-    if (!profile.is_subscribed || !profile.plan_id) {
-      console.log("🔄 getUserPlanSimplified: User not subscribed or no plan_id");
-      return {
-        planName: null,
-        subscriptionEnd: null,
-        isActive: false
-      };
-    }
-    
-    // Check if subscription is still active based on end date
+    // Check if subscription is active
     const isActive = profile.is_subscribed && 
       (!profile.subscription_end || new Date(profile.subscription_end) > new Date());
-    
-    console.log("📅 getUserPlanSimplified: Subscription status:", {
-      is_subscribed: profile.is_subscribed,
-      subscription_end: profile.subscription_end,
-      isActive
-    });
     
     if (!isActive) {
       console.log("🔄 getUserPlanSimplified: Subscription not active");
       return {
         planName: null,
-        subscriptionEnd: null,
+        subscriptionEnd: profile.subscription_end,
         isActive: false
       };
     }
     
-    // Fetch plan separately
-    console.log("🔄 getUserPlanSimplified: Fetching plan with ID:", profile.plan_id);
-    const { data: planData, error: planError } = await supabase
-      .from("plans")
-      .select("name")
-      .eq("id", profile.plan_id)
-      .maybeSingle();
+    // Get plan name
+    let planName = null;
     
-    console.log("📊 getUserPlanSimplified: Plan query result:", {
-      planData,
-      error: planError
-    });
-    
-    if (planError || !planData) {
-      console.error("❌ getUserPlanSimplified: Error fetching plan:", planError);
-      return {
-        planName: null,
-        subscriptionEnd: profile.subscription_end,
-        isActive: true
-      };
+    if (profile.plans && typeof profile.plans === 'object' && 'name' in profile.plans) {
+      planName = profile.plans.name;
+    } else if (profile.plan_id) {
+      // Fallback query
+      const { data: planData } = await supabase
+        .from("plans")
+        .select("name")
+        .eq("id", profile.plan_id)
+        .maybeSingle();
+      
+      planName = planData?.name || null;
     }
     
     const result = {
-      planName: planData.name,
+      planName,
       subscriptionEnd: profile.subscription_end,
       isActive: true
     };
