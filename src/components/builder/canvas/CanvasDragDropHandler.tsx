@@ -3,7 +3,7 @@ import React, { useState, useRef } from "react";
 import { useBuilder } from "@/contexts/builder/useBuilder";
 import { v4 as uuidv4 } from "@/lib/uuid";
 import { toast } from "@/components/ui/use-toast";
-import { getContentInsertionIndex, ensureElementsOrder } from "@/contexts/builder/pageStructureUtils";
+import { getContentInsertionIndex } from "@/contexts/builder/pageStructureUtils";
 
 interface CanvasDragDropHandlerProps {
   children: React.ReactNode;
@@ -23,7 +23,6 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
   const { addElement, moveElement, elements, findElementById, removeElement } = useBuilder();
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [dropTarget, setDropTarget] = useState<{top: boolean, element: string | null}>({top: true, element: null});
-  const dragOverTimer = useRef<number | null>(null);
   
   const handleDragOver = (e: React.DragEvent) => {
     if (isPreviewMode) return;
@@ -65,6 +64,19 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
     e.stopPropagation();
     setIsDraggingOver(false);
     setDropTarget({top: true, element: null});
+  };
+
+  const findElementIndex = (elementId: string, parentId?: string): number => {
+    if (!parentId) {
+      return elements.findIndex(el => el.id === elementId);
+    }
+    
+    const parent = findElementById(parentId);
+    if (parent?.children) {
+      return parent.children.findIndex(el => el.id === elementId);
+    }
+    
+    return -1;
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -224,19 +236,6 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
         description: "Error adding element. Please try again."
       });
     }
-  };
-
-  const findElementIndex = (elementId: string, parentId?: string): number => {
-    if (!parentId) {
-      return elements.findIndex(el => el.id === elementId);
-    }
-    
-    const parent = findElementById(parentId);
-    if (parent && parent.children) {
-      return parent.children.findIndex(el => el.id === elementId);
-    }
-    
-    return -1;
   };
 
   const canvasClassName = `${className} transition-colors duration-150 ${

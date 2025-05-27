@@ -40,7 +40,6 @@ const Builder = () => {
   const [currentPageElements, setCurrentPageElements] = useState<BuilderElement[]>([]);
   const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
   const [saveStatus, setSaveStatus] = useState<string>('');
-  const latestElementsRef = useRef<BuilderElement[]>([]);
 
   // Track preview mode state at this level
   useEffect(() => {
@@ -252,9 +251,11 @@ const Builder = () => {
     }
     
     try {
-      document.dispatchEvent(new CustomEvent('save-website'));
+      console.log("🔄 Manual save triggered for page:", currentPageId);
       setSaveStatus('Saving...');
-      console.log("Manual save triggered");
+      
+      // Trigger save through context
+      document.dispatchEvent(new CustomEvent('save-website'));
     } catch (error) {
       console.error("Error during save:", error);
       toast.error("Failed to save website");
@@ -269,8 +270,7 @@ const Builder = () => {
       return;
     }
 
-    console.log("Saving page content:", updatedElements);
-    latestElementsRef.current = updatedElements;
+    console.log("💾 Saving page content for page:", currentPageId, updatedElements);
     
     try {
       const pagesContent = website.settings.pagesContent ? JSON.parse(JSON.stringify(website.settings.pagesContent)) : {};
@@ -278,8 +278,6 @@ const Builder = () => {
       
       pagesContent[currentPageId] = updatedElements;
       pagesSettings[currentPageId] = updatedPageSettings;
-      
-      console.log("Saving content for page:", currentPageId, updatedElements);
       
       const isHomePage = website.settings.pages?.find(p => p.isHomePage)?.id === currentPageId;
       
@@ -293,14 +291,14 @@ const Builder = () => {
       );
       
       if (success) {
-        setSaveStatus(`Saved just now`);
-        toast.success("Website saved successfully");
+        setSaveStatus('Saved just now');
+        console.log("✅ Save successful");
       } else {
         setSaveStatus('Save failed');
         toast.error("Failed to save website");
       }
     } catch (error) {
-      console.error("Error saving website:", error);
+      console.error("❌ Error saving website:", error);
       setSaveStatus('Save failed');
       toast.error("Failed to save website");
     }
