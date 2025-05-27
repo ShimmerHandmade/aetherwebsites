@@ -24,6 +24,25 @@ const PageCanvas: React.FC<PageCanvasProps> = memo(({
   const [loadingFailed, setLoadingFailed] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   
+  // Debug logging for elements
+  useEffect(() => {
+    console.log("PageCanvas received elements:", elements);
+    console.log("Elements count:", elements?.length || 0);
+    console.log("Is preview mode:", isPreviewMode);
+    console.log("Is live site:", isLiveSite);
+    
+    if (elements && elements.length > 0) {
+      elements.forEach((element, index) => {
+        console.log(`Element ${index}:`, {
+          id: element.id,
+          type: element.type,
+          content: element.content,
+          hasChildren: element.children && element.children.length > 0
+        });
+      });
+    }
+  }, [elements, isPreviewMode, isLiveSite]);
+  
   // Single effect for stable rendering
   useEffect(() => {
     // Set visible state once and don't change it to prevent flicker
@@ -77,18 +96,21 @@ const PageCanvas: React.FC<PageCanvasProps> = memo(({
     >
       <div className="page-content">
         {elements && elements.length > 0 ? (
-          elements.map((element, index) => (
-            <ElementWrapper 
-              key={element.id} 
-              element={element}
-              index={index}
-              selected={selectedElementId === element.id}
-              isPreviewMode={isPreviewMode}
-              canUseAnimations={isPremium || isEnterprise}
-              canUseEnterpriseAnimations={isEnterprise}
-              isLiveSite={isLiveSite}
-            />
-          ))
+          elements.map((element, index) => {
+            console.log(`Rendering element ${index}:`, element.type, element.id);
+            return (
+              <ElementWrapper 
+                key={element.id} 
+                element={element}
+                index={index}
+                selected={selectedElementId === element.id}
+                isPreviewMode={isPreviewMode}
+                canUseAnimations={isPremium || isEnterprise}
+                canUseEnterpriseAnimations={isEnterprise}
+                isLiveSite={isLiveSite}
+              />
+            );
+          })
         ) : (
           <div className="flex items-center justify-center min-h-[300px] text-gray-400 p-4">
             <div className="text-center">

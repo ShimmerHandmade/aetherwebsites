@@ -25,9 +25,23 @@ export const updateWebsiteTemplate = async (
   error?: string;
 }> => {
   try {
+    console.log(`Starting template update for website ${websiteId} with template ${template}`);
+    
     // Get template content based on template ID
     const templateContent = getTemplateContent(template);
     const templateSettings = getTemplateSettings(template);
+    
+    console.log("Template content:", templateContent);
+    console.log("Template settings:", templateSettings);
+    
+    // Validate template content
+    if (!templateContent || !templateContent.pages) {
+      console.error("Invalid template content structure");
+      return {
+        success: false,
+        error: "Invalid template structure"
+      };
+    }
     
     // Get current website data
     const { data: website, error: fetchError } = await supabase
@@ -49,21 +63,28 @@ export const updateWebsiteTemplate = async (
       (typeof website.settings === 'string' ? JSON.parse(website.settings) : website.settings) : 
       {};
     
+    console.log("Current website settings:", settings);
+    
     // Create new pages array with uuids
     const pages = templateSettings.pages.map(page => ({
       ...page,
       id: uuidv4() // Generate new unique IDs for each page
     }));
     
+    console.log("Generated pages with new IDs:", pages);
+    
     // Find the home page
     const homePage = pages.find(p => p.isHomePage);
     
     if (!homePage) {
+      console.error("No home page found in template");
       return {
         success: false,
         error: "Template has no home page defined"
       };
     }
+    
+    console.log("Home page found:", homePage);
     
     // Update settings with template data
     const updatedSettings = {
@@ -77,16 +98,21 @@ export const updateWebsiteTemplate = async (
     const pagesContent = { ...(settings.pagesContent || {}) };
     
     // Get the home page content from the template
-    // The template structure stores pages as an object with keys
-    // Check if templateContent.pages exists and if it has a homepage property
-    const homePageContent = templateContent.pages && 'homepage' in templateContent.pages 
-      ? templateContent.pages.homepage 
-      : [];
+    const homePageContent = templateContent.pages?.homepage || [];
+    
+    console.log("Home page content from template:", homePageContent);
+    
+    if (!Array.isArray(homePageContent) || homePageContent.length === 0) {
+      console.warn("Home page content is empty or invalid");
+    }
     
     // Store this content under the new home page ID
     pagesContent[homePage.id] = homePageContent;
     
-    // Make sure to also set the main content for the website to be the home page content
+    // Add pagesContent to settings
+    updatedSettings.pagesContent = pagesContent;
+    
+    console.log("Final updated settings:", updatedSettings);
     
     // Update website with template name, content and settings
     const { error } = await supabase
@@ -94,10 +120,7 @@ export const updateWebsiteTemplate = async (
       .update({ 
         template,
         content: homePageContent, // Set main content to home page content
-        settings: {
-          ...updatedSettings,
-          pagesContent
-        }
+        settings: updatedSettings
       })
       .eq("id", websiteId);
     
@@ -122,6 +145,8 @@ export const updateWebsiteTemplate = async (
 
 // Helper function to get template content
 const getTemplateContent = (templateId: string) => {
+  console.log(`Getting template content for: ${templateId}`);
+  
   switch(templateId) {
     case 'fashion':
       return fashionTemplate;
@@ -134,6 +159,7 @@ const getTemplateContent = (templateId: string) => {
     case 'food':
       return foodTemplate;
     case 'jewelry':
+      console.log("Loading jewelry template:", jewelryTemplate);
       return jewelryTemplate;
     case 'ecommerce':
       return ecommerceTemplate;
@@ -144,6 +170,7 @@ const getTemplateContent = (templateId: string) => {
     case 'business':
       return businessTemplate;
     default:
+      console.warn(`Unknown template ID: ${templateId}, returning empty template`);
       return { pages: {} };
   }
 };

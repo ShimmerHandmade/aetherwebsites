@@ -15,54 +15,48 @@ const templates = [
     id: "fashion",
     name: "Fashion Store",
     description: "Stylish template for clothing and accessories",
-    image: "/templates/fashion.png",
-    remoteImage: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=1470&auto=format&fit=crop",
-    fallbackImage: "/placeholder.svg",
+    image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=1470&auto=format&fit=crop",
+    fallbackImage: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1470&auto=format&fit=crop",
     isPremium: false,
   },
   {
     id: "electronics",
     name: "Electronics Shop",
     description: "Modern template for tech and gadgets",
-    image: "/templates/electronics.png",
-    remoteImage: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1470&auto=format&fit=crop", 
-    fallbackImage: "/placeholder.svg",
+    image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1470&auto=format&fit=crop", 
+    fallbackImage: "https://images.unsplash.com/photo-1498049794561-7780e7231661?q=80&w=1470&auto=format&fit=crop",
     isPremium: false,
   },
   {
     id: "beauty",
     name: "Beauty & Cosmetics",
     description: "Elegant design for beauty products",
-    image: "/templates/beauty.png",
-    remoteImage: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=1480&auto=format&fit=crop",
-    fallbackImage: "/placeholder.svg",
+    image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=1480&auto=format&fit=crop",
+    fallbackImage: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=1480&auto=format&fit=crop",
     isPremium: true,
   },
   {
     id: "furniture",
     name: "Home & Furniture",
     description: "Sophisticated template for home decor",
-    image: "/templates/furniture.png",
-    remoteImage: "https://images.unsplash.com/photo-1634712282287-14ed57b9cc89?q=80&w=1406&auto=format&fit=crop",
-    fallbackImage: "/placeholder.svg",
+    image: "https://images.unsplash.com/photo-1634712282287-14ed57b9cc89?q=80&w=1406&auto=format&fit=crop",
+    fallbackImage: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=1406&auto=format&fit=crop",
     isPremium: true,
   },
   {
     id: "food",
     name: "Gourmet Foods",
     description: "Appetizing template for food products",
-    image: "/templates/food.png",
-    remoteImage: "https://images.unsplash.com/photo-1526470498-9ae73c665de8?q=80&w=1298&auto=format&fit=crop",
-    fallbackImage: "/placeholder.svg",
+    image: "https://images.unsplash.com/photo-1526470498-9ae73c665de8?q=80&w=1298&auto=format&fit=crop",
+    fallbackImage: "https://images.unsplash.com/photo-1606797461049-ac8c1b51bea1?q=80&w=1298&auto=format&fit=crop",
     isPremium: false,
   },
   {
     id: "jewelry",
     name: "Luxury Jewelry",
-    description: "Premium template for high-end products",
-    image: "/templates/jewelry.png",
-    remoteImage: "https://images.unsplash.com/photo-1581252517866-6c03232384a4?q=80&w=1471&auto=format&fit=crop",
-    fallbackImage: "/placeholder.svg",
+    description: "Premium template for high-end jewelry",
+    image: "https://images.unsplash.com/photo-1581252517866-6c03232384a4?q=80&w=1471&auto=format&fit=crop",
+    fallbackImage: "https://images.unsplash.com/photo-1573408301185-9146fe634ad0?q=80&w=1471&auto=format&fit=crop",
     isPremium: true,
   }
 ];
@@ -76,24 +70,37 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [imageLoading, setImageLoading] = useState<Record<string, boolean>>({});
+  const [imageError, setImageError] = useState<Record<string, boolean>>({});
   const [templateApplying, setTemplateApplying] = useState(false);
   const navigate = useNavigate();
   const { isPremium, isThemeAllowed } = usePlan();
   
-  // Ensure all images are pre-loaded to prevent flashing
+  // Pre-load all template images
   useEffect(() => {
     templates.forEach(template => {
       setImageLoading(prev => ({ ...prev, [template.id]: true }));
+      
       const img = new Image();
-      img.src = template.image;
-      img.onload = () => handleImageLoad(template.id);
-      img.onerror = () => {
-        console.log(`Local template image failed to load: ${template.image}, trying remote image`);
-        const remoteImg = new Image();
-        remoteImg.src = template.remoteImage;
-        remoteImg.onload = () => handleImageLoad(template.id);
-        remoteImg.onerror = () => handleImageError(template.id);
+      img.onload = () => {
+        setImageLoading(prev => ({ ...prev, [template.id]: false }));
+        setImageError(prev => ({ ...prev, [template.id]: false }));
       };
+      img.onerror = () => {
+        console.log(`Primary image failed for ${template.name}, trying fallback`);
+        // Try fallback image
+        const fallbackImg = new Image();
+        fallbackImg.onload = () => {
+          setImageLoading(prev => ({ ...prev, [template.id]: false }));
+          setImageError(prev => ({ ...prev, [template.id]: false }));
+        };
+        fallbackImg.onerror = () => {
+          console.error(`Both images failed for ${template.name}`);
+          setImageLoading(prev => ({ ...prev, [template.id]: false }));
+          setImageError(prev => ({ ...prev, [template.id]: true }));
+        };
+        fallbackImg.src = template.fallbackImage;
+      };
+      img.src = template.image;
     });
   }, []);
 
@@ -103,9 +110,11 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       return;
     }
 
-    // Check if selected template is premium but user doesn't have premium plan
     const template = templates.find(t => t.id === selectedTemplate);
-    if (!template) return;
+    if (!template) {
+      toast.error("Template not found");
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -115,13 +124,13 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       const hasAccess = await isThemeAllowed(template.id);
       
       if (!hasAccess) {
-        // The toast is already handled in isThemeAllowed
         setIsLoading(false);
         setTemplateApplying(false);
         return;
       }
       
-      // Show applying template toast
+      console.log(`Applying template: ${template.name} (${template.id})`);
+      
       toast.success("Applying template, please wait...", {
         duration: 3000,
       });
@@ -129,12 +138,14 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       const result = await updateWebsiteTemplate(websiteId, selectedTemplate);
       
       if (!result.success) {
+        console.error("Template application failed:", result.error);
         toast.error(result.error || "Failed to apply template");
         setTemplateApplying(false);
         return;
       }
       
-      // Wait a bit to ensure template is properly applied
+      console.log("Template applied successfully");
+      
       setTimeout(() => {
         toast.success("Template applied successfully");
         onComplete();
@@ -151,23 +162,16 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
   };
 
   const handleSkip = () => {
+    console.log("User chose to start from scratch");
     toast.success("Starting from scratch!");
     onComplete();
   };
 
-  const handleImageLoad = (templateId: string) => {
-    setImageLoading(prev => ({
-      ...prev,
-      [templateId]: false
-    }));
-  };
-
-  const handleImageError = (templateId: string) => {
-    console.log(`Template image failed to load for ${templateId}, using fallback`);
-    setImageLoading(prev => ({
-      ...prev,
-      [templateId]: false
-    }));
+  const getImageSrc = (template: typeof templates[0]) => {
+    if (imageError[template.id]) {
+      return "/placeholder.svg";
+    }
+    return template.image;
   };
   
   // Show loading state if template is being applied
@@ -194,7 +198,7 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
         {templates.map((template) => (
           <div 
             key={template.id}
-            className={`rounded-xl overflow-hidden cursor-pointer transition-all duration-300
+            className={`rounded-xl overflow-hidden cursor-pointer transition-all duration-300 bg-white
               ${selectedTemplate === template.id 
                 ? 'ring-4 ring-indigo-500 border-indigo-500 transform scale-[1.02] shadow-xl' 
                 : 'border border-gray-200 shadow-md hover:shadow-lg hover:transform hover:scale-[1.01]'
@@ -205,26 +209,31 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
           >
             <div className="relative">
               <AspectRatio ratio={16/10} className="bg-gray-100">
-                {(imageLoading[template.id] !== false) && (
+                {imageLoading[template.id] && (
                   <Skeleton className="absolute inset-0 z-10" />
                 )}
-                <img 
-                  src={template.image}
-                  alt={template.name}
-                  className="w-full h-full object-cover"
-                  onLoad={() => handleImageLoad(template.id)}
-                  onError={(e) => {
-                    console.log(`Local template image failed: ${template.image}, trying remote image: ${template.remoteImage}`);
-                    // Try remote image first
-                    e.currentTarget.src = template.remoteImage;
-                    // Add another error handler for the remote image
-                    e.currentTarget.onerror = () => {
-                      console.log(`Remote image also failed, using fallback: ${template.fallbackImage}`);
-                      e.currentTarget.src = template.fallbackImage || "/placeholder.svg";
-                      handleImageError(template.id);
-                    };
-                  }}
-                />
+                {imageError[template.id] ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400">
+                    <div className="text-center">
+                      <div className="w-12 h-12 mx-auto mb-2 bg-gray-200 rounded"></div>
+                      <p className="text-sm">Preview unavailable</p>
+                    </div>
+                  </div>
+                ) : (
+                  <img 
+                    src={getImageSrc(template)}
+                    alt={template.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.log(`Image failed to load for ${template.name}`);
+                      if (e.currentTarget.src === template.image) {
+                        e.currentTarget.src = template.fallbackImage;
+                      } else {
+                        setImageError(prev => ({ ...prev, [template.id]: true }));
+                      }
+                    }}
+                  />
+                )}
               </AspectRatio>
               {template.isPremium && (
                 <div className="absolute top-0 right-0 m-3">

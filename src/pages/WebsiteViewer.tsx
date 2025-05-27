@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, Suspense } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
@@ -48,6 +49,22 @@ const WebsiteViewer = () => {
   const isProductPage = !!productMatch;
   const productId = productMatch ? productMatch[1] : null;
 
+  // Debug logging for website data
+  useEffect(() => {
+    if (website) {
+      console.log("Website data loaded:", {
+        id: website.id,
+        name: website.name,
+        template: website.template,
+        content: website.content,
+        settings: website.settings,
+        contentLength: website.content?.length || 0,
+        hasPages: website.settings?.pages?.length || 0,
+        hasPagesContent: Object.keys(website.settings?.pagesContent || {}).length
+      });
+    }
+  }, [website]);
+
   // SEO meta tags update
   useEffect(() => {
     if (website && currentPageSettings) {
@@ -74,25 +91,33 @@ const WebsiteViewer = () => {
     }
 
     if (website?.settings?.pages) {
+      console.log("Available pages:", website.settings.pages);
+      console.log("Current path:", currentPath);
+      
       // If it's the root path, find the home page
       if (currentPath === '/') {
         const homePage = website.settings.pages.find(page => page.isHomePage);
         if (homePage) {
+          console.log("Found home page:", homePage);
           setCurrentPageId(homePage.id);
         } else if (website.settings.pages.length > 0) {
+          console.log("No home page found, using first page:", website.settings.pages[0]);
           setCurrentPageId(website.settings.pages[0].id);
         }
       } else {
         // Find the page that matches the current path
         const matchingPage = website.settings.pages.find(page => page.slug === currentPath);
         if (matchingPage) {
+          console.log("Found matching page:", matchingPage);
           setCurrentPageId(matchingPage.id);
         } else {
           // If no matching page, default to home
           const homePage = website.settings.pages.find(page => page.isHomePage);
           if (homePage) {
+            console.log("No matching page, using home page:", homePage);
             setCurrentPageId(homePage.id);
           } else if (website.settings.pages.length > 0) {
+            console.log("No matching page or home page, using first page:", website.settings.pages[0]);
             setCurrentPageId(website.settings.pages[0].id);
           }
         }
@@ -104,20 +129,28 @@ const WebsiteViewer = () => {
   useEffect(() => {
     if (!website || !currentPageId || isCartPage || isCheckoutPage || isProductPage) return;
     
+    console.log(`Loading content for page ID: ${currentPageId}`);
+    
     // Get content for current page
     const pagesContent = website.settings.pagesContent || {};
     const pageContent = pagesContent[currentPageId] || [];
     const pageSettings = website.settings.pagesSettings?.[currentPageId] || { title: websiteName };
     
+    console.log("Page content from pagesContent:", pageContent);
+    console.log("Page settings:", pageSettings);
+    
     // If the page has no specific content and this is the homepage, use the main content
     if (pageContent.length === 0) {
       const homePage = website.settings.pages.find(p => p.isHomePage);
       if (homePage && homePage.id === currentPageId && Array.isArray(website.content)) {
+        console.log("Using main website content for home page:", website.content);
         setCurrentPageElements(website.content);
       } else {
+        console.log("Using fallback content:", elements || []);
         setCurrentPageElements(pageContent.length ? pageContent : elements || []);
       }
     } else {
+      console.log("Using specific page content:", pageContent);
       setCurrentPageElements(pageContent);
     }
     
@@ -206,6 +239,8 @@ const WebsiteViewer = () => {
         </div>
       );
     }
+
+    console.log("Rendering BuilderContent with elements:", currentPageElements);
 
     return (
       <BuilderProvider 
