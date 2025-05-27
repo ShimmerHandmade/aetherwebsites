@@ -94,12 +94,10 @@ export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
     const planData = profile.plans;
     
     // Check if planData is a valid object with a name property
-    if (planData && typeof planData === 'object') {
-      if ('name' in planData) {
-        const name = (planData as any).name;
-        if (typeof name === 'string') {
-          planName = name;
-        }
+    if (planData != null && typeof planData === 'object' && 'name' in planData) {
+      const name = (planData as any).name;
+      if (typeof name === 'string') {
+        planName = name;
       }
     } else if (profile.plan_id) {
       const { data: directPlan } = await supabase
@@ -176,12 +174,10 @@ export async function getUserPlanName(): Promise<string | null> {
     const planData = profile.plans;
     
     // Check if planData is a valid object with a name property
-    if (planData && typeof planData === 'object') {
-      if ('name' in planData) {
-        const name = (planData as any).name;
-        if (typeof name === 'string') {
-          return name;
-        }
+    if (planData != null && typeof planData === 'object' && 'name' in planData) {
+      const name = (planData as any).name;
+      if (typeof name === 'string') {
+        return name;
       }
     }
     
