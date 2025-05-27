@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, Suspense } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
@@ -9,9 +8,11 @@ import Cart from "@/pages/Cart";
 import ProductDetails from "@/pages/ProductDetails";
 import Checkout from "@/pages/Checkout";
 import { CartProvider } from "@/contexts/CartContext";
+import { PlanProvider } from "@/contexts/PlanContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import PlanDebugInfo from "@/components/PlanDebugInfo";
 
 const WebsiteViewer = () => {
   const { id } = useParams<{ id: string }>();
@@ -187,25 +188,31 @@ const WebsiteViewer = () => {
   // Loading state
   if (isLoading) {
     return (
-      <CartProvider>
-        <div className="h-screen flex items-center justify-center px-4">
-          <LoadingSpinner size="lg" text="Loading website..." />
-        </div>
-      </CartProvider>
+      <PlanProvider>
+        <CartProvider>
+          <div className="h-screen flex items-center justify-center px-4">
+            <LoadingSpinner size="lg" text="Loading website..." />
+          </div>
+          <PlanDebugInfo />
+        </CartProvider>
+      </PlanProvider>
     );
   }
 
   // Error state
   if (!website) {
     return (
-      <CartProvider>
-        <div className="h-screen flex items-center justify-center px-4">
-          <div className="text-center">
-            <h2 className="text-xl md:text-2xl font-bold text-gray-700 mb-2">Website not found</h2>
-            <p className="text-gray-600 mb-6 text-sm md:text-base">The website you're looking for doesn't exist or you don't have permission to access it.</p>
+      <PlanProvider>
+        <CartProvider>
+          <div className="h-screen flex items-center justify-center px-4">
+            <div className="text-center">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-700 mb-2">Website not found</h2>
+              <p className="text-gray-600 mb-6 text-sm md:text-base">The website you're looking for doesn't exist or you don't have permission to access it.</p>
+            </div>
           </div>
-        </div>
-      </CartProvider>
+          <PlanDebugInfo />
+        </CartProvider>
+      </PlanProvider>
     );
   }
 
@@ -259,14 +266,16 @@ const WebsiteViewer = () => {
 
   return (
     <ErrorBoundary>
-      <CartProvider>
-        <Suspense fallback={<LoadingSpinner size="lg" text="Loading content..." />}>
-          {renderContent()}
-        </Suspense>
-      </CartProvider>
+      <PlanProvider>
+        <CartProvider>
+          <Suspense fallback={<LoadingSpinner size="lg" text="Loading content..." />}>
+            {renderContent()}
+          </Suspense>
+          <PlanDebugInfo />
+        </CartProvider>
+      </PlanProvider>
     </ErrorBoundary>
   );
 };
 
 export default WebsiteViewer;
-
