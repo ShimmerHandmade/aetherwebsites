@@ -10,7 +10,7 @@ import Profile from "@/pages/Profile";
 import PremiumFeatures from "@/pages/PremiumFeatures";
 import Builder from "@/pages/Builder";
 import BuilderShop from "@/pages/builder/Shop";
-import ProductsManager from "@/pages/builder/ProductsManager";
+import ProductsManager from "@/pages/builder/Products";
 import Website from "@/pages/Website";
 import { PlanProvider } from "@/contexts/PlanContext";
 
