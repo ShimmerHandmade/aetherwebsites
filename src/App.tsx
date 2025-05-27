@@ -11,7 +11,7 @@ import PremiumFeatures from "@/pages/PremiumFeatures";
 import Builder from "@/pages/Builder";
 import BuilderShop from "@/pages/builder/Shop";
 import ProductsManager from "@/pages/builder/Products";
-import Website from "@/pages/Website";
+import Website from "@/pages/WebsiteViewer";
 import { PlanProvider } from "@/contexts/PlanContext";
 
 const queryClient = new QueryClient();
