@@ -55,7 +55,7 @@ const WebsiteViewer = () => {
       console.log("Website data loaded:", {
         id: website.id,
         name: website.name,
-        template: website.template,
+        template: (website as any).template, // Safe access with type assertion
         content: website.content,
         settings: website.settings,
         contentLength: website.content?.length || 0,
@@ -269,3 +269,4 @@ const WebsiteViewer = () => {
 };
 
 export default WebsiteViewer;
+

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
 import { toast } from "sonner";
@@ -97,8 +96,10 @@ export const updateWebsiteTemplate = async (
     // For each page in the template, add its content to pagesContent using the NEW page IDs
     const pagesContent = { ...(settings.pagesContent || {}) };
     
-    // Get the home page content from the template
-    const homePageContent = templateContent.pages?.homepage || [];
+    // Get the home page content from the template with proper type checking
+    const homePageContent = (templateContent.pages && typeof templateContent.pages === 'object' && 'homepage' in templateContent.pages) 
+      ? templateContent.pages.homepage 
+      : [];
     
     console.log("Home page content from template:", homePageContent);
     
