@@ -24,26 +24,14 @@ export interface PageSettings {
 export interface BuilderContextType {
   elements: BuilderElement[];
   selectedElementId: string | null;
-  hoveredElementId: string | null;
-  isDraggingOver: boolean;
   pageSettings: PageSettings;
-  setElements: (elements: BuilderElement[]) => void;
-  setSelectedElementId: (id: string | null) => void;
-  setHoveredElementId: (id: string | null) => void;
-  setIsDraggingOver: (isDragging: boolean) => void;
-  setPageSettings: (settings: PageSettings) => void;
-  addElement: (element: BuilderElement, indexOrParentId?: number | string | null, containerId?: string) => void;
+  addElement: (element: BuilderElement, index?: number, parentId?: string | null) => void;
   updateElement: (id: string, updates: Partial<BuilderElement>) => void;
-  deleteElement: (id: string) => void;
-  canAddElement: (elementType: string) => boolean;
-  
-  // Add the missing properties that components are using
-  findElementById: (id: string) => BuilderElement | null;
   removeElement: (id: string) => void;
+  moveElement: (fromIndex: number, toIndex: number, parentId?: string) => void;
   selectElement: (id: string | null) => void;
+  findElementById: (id: string) => BuilderElement | null;
   duplicateElement: (id: string) => void;
-  moveElement: (sourceIndex: number, destinationIndex: number, parentId?: string) => void;
-  moveElementUp: (id: string) => void;
-  moveElementDown: (id: string) => void;
-  updatePageSettings: (settings: Partial<PageSettings>) => void;
+  updatePageSettings: (newSettings: Partial<PageSettings>) => void;
+  saveChanges: () => void;
 }

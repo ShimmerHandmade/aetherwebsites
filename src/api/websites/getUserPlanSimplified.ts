@@ -57,11 +57,11 @@ export const getUserPlanSimplified = async (): Promise<SimplifiedPlanInfo> => {
       };
     }
     
-    // Get plan name
+    // Get plan name with null safety
     let planName = null;
     
-    if (profile.plans && typeof profile.plans === 'object' && 'name' in profile.plans) {
-      planName = profile.plans.name;
+    if (profile.plans && typeof profile.plans === 'object' && profile.plans !== null && 'name' in profile.plans) {
+      planName = (profile.plans as { name: string }).name;
     } else if (profile.plan_id) {
       // Fallback query
       const { data: planData } = await supabase

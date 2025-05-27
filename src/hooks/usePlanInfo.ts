@@ -83,9 +83,9 @@ export const usePlanInfo = () => {
         if (profile?.is_subscribed && 
             (!profile.subscription_end || new Date(profile.subscription_end) > new Date())) {
           
-          // Try to get plan name from the relationship
-          if (profile.plans && typeof profile.plans === 'object' && 'name' in profile.plans) {
-            planName = profile.plans.name;
+          // Try to get plan name from the relationship with null safety
+          if (profile.plans && typeof profile.plans === 'object' && profile.plans !== null && 'name' in profile.plans) {
+            planName = (profile.plans as { name: string }).name;
           } else if (profile.plan_id) {
             // Fallback: fetch plan separately
             const { data: planData } = await supabase

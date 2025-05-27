@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from "react";
-import { useBuilder } from "@/contexts/builder/BuilderProvider";
+import { useBuilder } from "@/contexts/builder/useBuilder";
 import { v4 as uuidv4 } from "@/lib/uuid";
 import { toast } from "@/components/ui/use-toast";
 import { getContentInsertionIndex, ensureElementsOrder } from "@/contexts/builder/pageStructureUtils";
