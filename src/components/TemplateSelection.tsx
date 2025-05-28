@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { usePlan } from "@/contexts/PlanContext";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Skeleton } from "@/components/ui/skeleton";
+import { checkThemeAccess } from "@/utils/planRestrictions";
 
 // Template definitions with improved store types and fallback images
 const templates = [
@@ -73,7 +74,7 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
   const [imageError, setImageError] = useState<Record<string, boolean>>({});
   const [templateApplying, setTemplateApplying] = useState(false);
   const navigate = useNavigate();
-  const { isPremium, isThemeAllowed } = usePlan();
+  const { isPremium, loading: planLoading } = usePlan();
   
   // Pre-load all template images
   useEffect(() => {
@@ -121,9 +122,10 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       setTemplateApplying(true);
 
       // Check if theme is allowed for current plan
-      const hasAccess = await isThemeAllowed(template.id);
+      const hasAccess = await checkThemeAccess(template.id);
       
       if (!hasAccess) {
+        toast.error(`This template requires a ${template.isPremium ? 'Premium' : 'higher'} plan`);
         setIsLoading(false);
         setTemplateApplying(false);
         return;
@@ -182,6 +184,19 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
           <div className="h-16 w-16 border-4 border-t-indigo-600 border-r-indigo-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-6"></div>
           <h2 className="text-2xl font-bold mb-3">Applying Template</h2>
           <p className="text-gray-600">Please wait while we set up your store with the selected template...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state while plan is loading
+  if (planLoading) {
+    return (
+      <div className="py-8 px-4 min-h-[60vh] flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-16 w-16 border-4 border-t-indigo-600 border-r-indigo-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-6"></div>
+          <h2 className="text-2xl font-bold mb-3">Loading Templates</h2>
+          <p className="text-gray-600">Please wait while we load your available templates...</p>
         </div>
       </div>
     );
