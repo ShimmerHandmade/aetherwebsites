@@ -82,7 +82,7 @@ export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
 
     // Get plan name with proper type checking - fix the null check
     let planName = null;
-    if (profile.plans && typeof profile.plans === 'object' && 'name' in profile.plans) {
+    if (profile.plans && profile.plans !== null && typeof profile.plans === 'object' && 'name' in profile.plans) {
       planName = (profile.plans as { name: string }).name;
     }
 
