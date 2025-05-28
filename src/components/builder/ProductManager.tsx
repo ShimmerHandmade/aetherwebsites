@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import ProductHeader from "./products/ProductHeader";
@@ -126,8 +125,9 @@ const ProductManager: React.FC<ProductManagerProps> = ({ websiteId, onBackToBuil
         return; // checkProductLimit already shows the error toast
       }
       
+      // Create a new product object WITHOUT an id field - let the database generate it
       setEditingProduct({
-        id: "",
+        id: "", // This will be ignored when creating new products
         name: "",
         description: "",
         price: 0,

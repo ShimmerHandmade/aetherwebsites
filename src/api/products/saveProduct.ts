@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Product } from "@/types/product";
-import { toast } from "@/components/ui/use-toast"; // Updated import path
+import { toast } from "sonner";
 import { uploadProductImage } from "./uploadImage";
 
 /**
@@ -46,7 +46,7 @@ export const saveProduct = async (
         console.log("Image upload result:", imageUrl);
       }
       
-      // Ensure we're passing all required product fields
+      // Ensure we're passing all required product fields WITHOUT the id field for new products
       const newProductData = {
         name: product.name,
         description: product.description,
@@ -113,7 +113,14 @@ export const saveProduct = async (
         };
       }
     } else {
-      // Update existing product
+      // Update existing product - make sure we have a valid product ID
+      if (!product.id || product.id.trim() === "") {
+        return {
+          success: false,
+          error: "Product ID is required for updates"
+        };
+      }
+
       let imageUrl = product.image_url;
       
       // Upload new image if changed

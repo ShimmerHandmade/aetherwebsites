@@ -60,10 +60,17 @@ export const usePlanInfo = () => {
         
         console.log("👤 User found, fetching plan details...");
         
-        // Get user profile with plan info - simplified query
+        // Get user profile with plan info
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("is_subscribed, subscription_end, plan_id")
+          .select(`
+            is_subscribed,
+            subscription_end,
+            plan_id,
+            plans (
+              name
+            )
+          `)
           .eq("id", session.user.id)
           .maybeSingle();
         
@@ -89,29 +96,38 @@ export const usePlanInfo = () => {
         let isEnterprise = false;
         
         // Check if user has active subscription
-        if (profile?.is_subscribed && 
-            (!profile.subscription_end || new Date(profile.subscription_end) > new Date())) {
-          
-          // Get plan name if we have a plan_id
-          if (profile.plan_id) {
-            const { data: planData, error: planError } = await supabase
+        const hasActiveSubscription = profile?.is_subscribed && 
+          (!profile.subscription_end || new Date(profile.subscription_end) > new Date());
+        
+        if (hasActiveSubscription) {
+          // Get plan name with proper type checking
+          if (profile.plans && 
+              typeof profile.plans === 'object' && 
+              profile.plans !== null && 
+              !Array.isArray(profile.plans) && 
+              'name' in profile.plans) {
+            planName = (profile.plans as { name: string }).name;
+          } else if (profile.plan_id) {
+            // Fallback query if the join didn't work
+            const { data: planData } = await supabase
               .from("plans")
               .select("name")
               .eq("id", profile.plan_id)
               .maybeSingle();
             
-            if (planError) {
-              console.error("❌ Plan fetch error:", planError);
-            } else {
-              planName = planData?.name || null;
-            }
+            planName = planData?.name || null;
           }
           
-          isPremium = planName === "Professional" || planName === "Enterprise";
-          isEnterprise = planName === "Enterprise";
+          // Set premium/enterprise flags based on plan name
+          if (planName) {
+            isPremium = planName.toLowerCase().includes("professional") || 
+                       planName.toLowerCase().includes("premium") ||
+                       planName.toLowerCase().includes("enterprise");
+            isEnterprise = planName.toLowerCase().includes("enterprise");
+          }
         }
         
-        console.log("✅ Final plan info:", { planName, isPremium, isEnterprise });
+        console.log("✅ Final plan info:", { planName, isPremium, isEnterprise, hasActiveSubscription });
         
         if (!isMounted) return;
         
