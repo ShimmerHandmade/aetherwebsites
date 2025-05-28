@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -55,14 +54,7 @@ export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
     // Get user profile to check subscription status
     const { data: profile, error } = await supabase
       .from("profiles")
-      .select(`
-        is_subscribed,
-        subscription_end,
-        plan_id,
-        plans (
-          name
-        )
-      `)
+      .select("is_subscribed, subscription_end, plan_id")
       .eq("id", session.user.id)
       .maybeSingle();
 
@@ -80,16 +72,19 @@ export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
       return DEFAULT_RESTRICTIONS;
     }
 
-    // Get plan name with proper type checking - fix the TypeScript null issue
+    // Get plan name separately if we have a plan_id
     let planName: string | null = null;
     
-    // Type guard function to check if plans object has the expected structure
-    const isValidPlanObject = (plans: any): plans is { name: string } => {
-      return plans !== null && typeof plans === 'object' && typeof plans.name === 'string';
-    };
-    
-    if (isValidPlanObject(profile.plans)) {
-      planName = profile.plans.name;
+    if (profile.plan_id) {
+      const { data: planData, error: planError } = await supabase
+        .from("plans")
+        .select("name")
+        .eq("id", profile.plan_id)
+        .maybeSingle();
+      
+      if (!planError && planData) {
+        planName = planData.name;
+      }
     }
 
     console.log("User plan:", planName);

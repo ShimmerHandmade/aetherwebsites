@@ -60,17 +60,10 @@ export const usePlanInfo = () => {
         
         console.log("👤 User found, fetching plan details...");
         
-        // Get user profile with plan info
+        // Get user profile first
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select(`
-            is_subscribed,
-            subscription_end,
-            plan_id,
-            plans (
-              name
-            )
-          `)
+          .select("is_subscribed, subscription_end, plan_id")
           .eq("id", session.user.id)
           .maybeSingle();
         
@@ -99,31 +92,28 @@ export const usePlanInfo = () => {
         const hasActiveSubscription = profile?.is_subscribed && 
           (!profile.subscription_end || new Date(profile.subscription_end) > new Date());
         
-        if (hasActiveSubscription) {
-          // Get plan name with proper type checking
-          if (profile.plans && 
-              typeof profile.plans === 'object' && 
-              profile.plans !== null && 
-              !Array.isArray(profile.plans) && 
-              'name' in profile.plans) {
-            planName = (profile.plans as { name: string }).name;
-          } else if (profile.plan_id) {
-            // Fallback query if the join didn't work
-            const { data: planData } = await supabase
-              .from("plans")
-              .select("name")
-              .eq("id", profile.plan_id)
-              .maybeSingle();
-            
-            planName = planData?.name || null;
-          }
+        if (hasActiveSubscription && profile.plan_id) {
+          console.log("🔍 Fetching plan details for plan_id:", profile.plan_id);
           
-          // Set premium/enterprise flags based on plan name
-          if (planName) {
-            isPremium = planName.toLowerCase().includes("professional") || 
-                       planName.toLowerCase().includes("premium") ||
-                       planName.toLowerCase().includes("enterprise");
-            isEnterprise = planName.toLowerCase().includes("enterprise");
+          // Fetch plan separately to avoid relationship issues
+          const { data: planData, error: planError } = await supabase
+            .from("plans")
+            .select("name")
+            .eq("id", profile.plan_id)
+            .maybeSingle();
+          
+          console.log("📊 Plan data:", { planData, error: planError });
+          
+          if (!planError && planData) {
+            planName = planData.name;
+            
+            // Set premium/enterprise flags based on plan name
+            if (planName) {
+              isPremium = planName.toLowerCase().includes("professional") || 
+                         planName.toLowerCase().includes("premium") ||
+                         planName.toLowerCase().includes("enterprise");
+              isEnterprise = planName.toLowerCase().includes("enterprise");
+            }
           }
         }
         

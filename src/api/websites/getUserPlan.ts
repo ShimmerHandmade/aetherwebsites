@@ -25,8 +25,7 @@ export const getUserPlan = async (): Promise<{
       };
     }
 
-    // Get user profile with plan info without using a join
-    // Use maybeSingle to avoid errors if no record is found
+    // Get user profile first
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("is_subscribed, subscription_end, plan_id")
@@ -41,7 +40,7 @@ export const getUserPlan = async (): Promise<{
       };
     }
     
-    if (!profile || !profile.plan_id) {
+    if (!profile) {
       return {
         data: {
           id: null,
