@@ -1,11 +1,14 @@
 
 import React from 'react';
 import { usePlan } from '@/contexts/PlanContext';
-import { useBuilder } from '@/contexts/builder/useBuilder';
+import { BuilderContext } from '@/contexts/builder/BuilderProvider';
+import { useContext } from 'react';
 
 const DebugInfo: React.FC = () => {
   const { planName, loading, error, isPremium, isEnterprise, restrictions } = usePlan();
-  const builderContext = useBuilder();
+  
+  // Safely check if we're within a BuilderProvider
+  const builderContext = useContext(BuilderContext);
   
   // Only show in development
   if (process.env.NODE_ENV === 'production') {
@@ -28,9 +31,15 @@ const DebugInfo: React.FC = () => {
       
       <div className="mb-2">
         <div className="text-green-300 font-semibold">Builder Status:</div>
-        <div>Elements: {builderContext?.elements?.length || 0}</div>
-        <div>Selected: {builderContext?.selectedElementId || 'None'}</div>
-        <div>Context: {builderContext ? 'Loaded' : 'Missing'}</div>
+        {builderContext ? (
+          <>
+            <div>Elements: {builderContext.elements?.length || 0}</div>
+            <div>Selected: {builderContext.selectedElementId || 'None'}</div>
+            <div>Context: Loaded</div>
+          </>
+        ) : (
+          <div>Context: Not available (outside BuilderProvider)</div>
+        )}
       </div>
       
       <div className="text-xs text-gray-400 mt-2">
