@@ -80,10 +80,11 @@ export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
       return DEFAULT_RESTRICTIONS;
     }
 
-    // Get plan name with proper type checking - fix the null check
+    // Get plan name with proper type checking - fix the TypeScript null issue
     let planName = null;
-    if (profile.plans && profile.plans !== null && typeof profile.plans === 'object' && 'name' in profile.plans) {
-      planName = (profile.plans as { name: string }).name;
+    const plans = profile.plans;
+    if (plans && typeof plans === 'object' && 'name' in plans) {
+      planName = (plans as { name: string }).name;
     }
 
     console.log("User plan:", planName);
