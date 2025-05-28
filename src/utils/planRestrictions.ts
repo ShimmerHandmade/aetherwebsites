@@ -1,6 +1,5 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 export interface PlanRestriction {
   maxProducts: number;
@@ -15,191 +14,149 @@ export interface PlanRestriction {
   allowedThemes: string[];
 }
 
-const planRestrictions: Record<string, PlanRestriction> = {
-  "Basic": {
-    maxProducts: 30,
-    maxWebsites: 1,
-    allowCoupons: true,
-    allowDiscounts: false,
-    allowAdvancedAnalytics: false,
-    allowCustomDomain: false,
-    allowPremiumTemplates: false,
-    allowPremiumElements: false,
-    allowPremiumAnimations: false,
-    allowedThemes: ["business", "blog", "ecommerce", "fashion", "electronics", "food"]
-  },
-  "Professional": {
-    maxProducts: 150,
-    maxWebsites: 3,
-    allowCoupons: true,
-    allowDiscounts: true,
-    allowAdvancedAnalytics: true,
-    allowCustomDomain: true,
-    allowPremiumTemplates: true,
-    allowPremiumElements: true,
-    allowPremiumAnimations: true,
-    allowedThemes: ["business", "blog", "ecommerce", "fashion", "electronics", "jewelry", "beauty", "food", "furniture", "portfolio"]
-  },
-  "Enterprise": {
-    maxProducts: 1500,
-    maxWebsites: 5,
-    allowCoupons: true,
-    allowDiscounts: true,
-    allowAdvancedAnalytics: true,
-    allowCustomDomain: true,
-    allowPremiumTemplates: true,
-    allowPremiumElements: true,
-    allowPremiumAnimations: true,
-    allowedThemes: ["business", "blog", "ecommerce", "fashion", "electronics", "jewelry", "beauty", "food", "furniture", "portfolio"]
-  },
-  "default": {
-    maxProducts: 15,
-    maxWebsites: 1,
-    allowCoupons: false,
-    allowDiscounts: false,
-    allowAdvancedAnalytics: false,
-    allowCustomDomain: false,
-    allowPremiumTemplates: false,
-    allowPremiumElements: false,
-    allowPremiumAnimations: false,
-    allowedThemes: ["business", "blog", "ecommerce", "fashion", "electronics", "food"]
+// Default restrictions for free/basic users
+const DEFAULT_RESTRICTIONS: PlanRestriction = {
+  maxProducts: 15,
+  maxWebsites: 1,
+  allowCoupons: false,
+  allowDiscounts: false,
+  allowAdvancedAnalytics: false,
+  allowCustomDomain: false,
+  allowPremiumTemplates: false,
+  allowPremiumElements: false,
+  allowPremiumAnimations: false,
+  allowedThemes: [
+    "business",
+    "blog", 
+    "ecommerce",
+    "fashion",
+    "electronics", 
+    "food"
+  ]
+};
+
+/**
+ * Gets plan restrictions for the current user
+ * Returns default restrictions if no user is authenticated
+ */
+export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
+  try {
+    // Check if user is authenticated without throwing errors
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.user) {
+      console.log("No authenticated user found");
+      return DEFAULT_RESTRICTIONS;
+    }
+
+    console.log("Fetching restrictions for authenticated user:", session.user.id);
+
+    // Get user profile to check subscription status
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select(`
+        is_subscribed,
+        subscription_end,
+        plan_id,
+        plans (
+          name
+        )
+      `)
+      .eq("id", session.user.id)
+      .maybeSingle();
+
+    if (error || !profile) {
+      console.log("No profile found or error, using default restrictions:", error?.message);
+      return DEFAULT_RESTRICTIONS;
+    }
+
+    // Check if subscription is active
+    const hasActiveSubscription = profile.is_subscribed && 
+      (!profile.subscription_end || new Date(profile.subscription_end) > new Date());
+
+    if (!hasActiveSubscription) {
+      console.log("No active subscription, using default restrictions");
+      return DEFAULT_RESTRICTIONS;
+    }
+
+    // Get plan name with proper type checking
+    let planName = null;
+    if (profile.plans && typeof profile.plans === 'object' && 'name' in profile.plans) {
+      planName = (profile.plans as { name: string }).name;
+    }
+
+    console.log("User plan:", planName);
+
+    // Return restrictions based on plan
+    switch (planName) {
+      case "Professional":
+        return {
+          maxProducts: 150,
+          maxWebsites: 3,
+          allowCoupons: true,
+          allowDiscounts: true,
+          allowAdvancedAnalytics: false,
+          allowCustomDomain: false,
+          allowPremiumTemplates: true,
+          allowPremiumElements: true,
+          allowPremiumAnimations: true,
+          allowedThemes: [
+            "business", "blog", "ecommerce", "fashion", "electronics", "food",
+            "beauty", "furniture", "jewelry"
+          ]
+        };
+      
+      case "Enterprise":
+        return {
+          maxProducts: 1000,
+          maxWebsites: 5,
+          allowCoupons: true,
+          allowDiscounts: true,
+          allowAdvancedAnalytics: true,
+          allowCustomDomain: true,
+          allowPremiumTemplates: true,
+          allowPremiumElements: true,
+          allowPremiumAnimations: true,
+          allowedThemes: [
+            "business", "blog", "ecommerce", "fashion", "electronics", "food",
+            "beauty", "furniture", "jewelry"
+          ]
+        };
+      
+      default:
+        console.log("Unknown plan or Basic plan, using enhanced basic restrictions");
+        return {
+          maxProducts: 30,
+          maxWebsites: 1,
+          allowCoupons: true,
+          allowDiscounts: false,
+          allowAdvancedAnalytics: false,
+          allowCustomDomain: false,
+          allowPremiumTemplates: false,
+          allowPremiumElements: false,
+          allowPremiumAnimations: false,
+          allowedThemes: [
+            "business", "blog", "ecommerce", "fashion", "electronics", "food"
+          ]
+        };
+    }
+  } catch (error) {
+    console.error("Error fetching plan restrictions:", error);
+    return DEFAULT_RESTRICTIONS;
   }
 };
 
-export async function getUserPlanRestrictions(): Promise<PlanRestriction> {
+/**
+ * Check if a specific theme is allowed for the current user
+ */
+export const checkThemeAccess = async (themeName: string): Promise<boolean> => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.log("No authenticated user found");
-      return planRestrictions.default;
-    }
-
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select("*, plans(*)")
-      .eq("id", user.id)
-      .maybeSingle();
-    
-    if (error) {
-      console.error("Error fetching profile:", error);
-      return planRestrictions.default;
-    }
-    
-    if (!profile?.is_subscribed || 
-        (profile.subscription_end && new Date(profile.subscription_end) < new Date())) {
-      console.log("No active subscription");
-      return planRestrictions.default;
-    }
-
-    let planName = 'default';
-    const planData = profile.plans;
-    
-    // Check if planData is a valid object with a name property
-    if (planData !== null && planData !== undefined && typeof planData === 'object') {
-      const planObj = planData as Record<string, any>;
-      if (planObj.name && typeof planObj.name === 'string') {
-        planName = planObj.name;
-      }
-    } else if (profile.plan_id) {
-      const { data: directPlan } = await supabase
-        .from("plans")
-        .select("name")
-        .eq("id", profile.plan_id)
-        .maybeSingle();
-        
-      if (directPlan?.name) {
-        planName = directPlan.name;
-      }
-    }
-    
-    console.log("Using plan restrictions for:", planName);
-    return planRestrictions[planName] || planRestrictions.default;
+    const restrictions = await getUserPlanRestrictions();
+    const hasAccess = restrictions.allowedThemes.includes(themeName);
+    console.log(`Theme ${themeName} access: ${hasAccess}, allowed themes:`, restrictions.allowedThemes);
+    return hasAccess;
   } catch (error) {
-    console.error("Error getting user plan restrictions:", error);
-    return planRestrictions.default;
+    console.error("Error checking theme access:", error);
+    return false;
   }
-}
-
-export async function checkFeatureAccess(feature: keyof PlanRestriction): Promise<boolean> {
-  const restrictions = await getUserPlanRestrictions();
-  return restrictions[feature] === true;
-}
-
-export async function checkThemeAccess(themeName: string): Promise<boolean> {
-  const restrictions = await getUserPlanRestrictions();
-  return restrictions.allowedThemes.includes(themeName);
-}
-
-export async function checkProductLimit(currentCount: number): Promise<boolean> {
-  const restrictions = await getUserPlanRestrictions();
-  const belowLimit = currentCount < restrictions.maxProducts;
-  
-  if (!belowLimit) {
-    toast.error("Plan Limit Reached", {
-      description: `You've reached your plan's limit of ${restrictions.maxProducts} products. Upgrade your plan to add more products.`
-    });
-  }
-  
-  return belowLimit;
-}
-
-export async function checkWebsiteLimit(currentCount: number): Promise<boolean> {
-  const restrictions = await getUserPlanRestrictions();
-  const belowLimit = currentCount < restrictions.maxWebsites;
-  
-  if (!belowLimit) {
-    toast.error("Website Limit Reached", {
-      description: `You've reached your plan's limit of ${restrictions.maxWebsites} websites. Upgrade your plan to add more websites.`
-    });
-  }
-  
-  return belowLimit;
-}
-
-export async function getUserPlanName(): Promise<string | null> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
-
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select("*, plans(*)")
-      .eq("id", user.id)
-      .maybeSingle();
-    
-    if (error || !profile?.is_subscribed || 
-        (profile.subscription_end && new Date(profile.subscription_end) < new Date())) {
-      return null;
-    }
-
-    const planData = profile.plans;
-    
-    // Check if planData is a valid object with a name property
-    if (planData !== null && planData !== undefined && typeof planData === 'object') {
-      const planObj = planData as Record<string, any>;
-      if (planObj.name && typeof planObj.name === 'string') {
-        return planObj.name;
-      }
-    }
-    
-    if (profile.plan_id) {
-      const { data: directPlan } = await supabase
-        .from("plans")
-        .select("name")
-        .eq("id", profile.plan_id)
-        .maybeSingle();
-        
-      return directPlan?.name || null;
-    }
-    
-    return null;
-  } catch (error) {
-    console.error("Error getting user plan:", error);
-    return null;
-  }
-}
-
-export async function isPremiumPlan(): Promise<boolean> {
-  const planName = await getUserPlanName();
-  return planName === "Professional" || planName === "Enterprise";
-}
+};

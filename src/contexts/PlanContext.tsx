@@ -26,9 +26,9 @@ interface PlanProviderProps {
 export const PlanProvider = ({ children }: PlanProviderProps) => {
   const planInfo = usePlanInfo();
   
-  // Show error toast if there's an error loading plan info
+  // Only show error toast for genuine errors, not auth session missing
   useEffect(() => {
-    if (planInfo.error && !planInfo.loading) {
+    if (planInfo.error && !planInfo.loading && planInfo.error !== "Auth session missing!") {
       console.error("Plan loading error:", planInfo.error);
       toast.error("Plan Loading Error", {
         description: planInfo.error,

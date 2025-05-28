@@ -29,31 +29,21 @@ export const usePlanInfo = () => {
       try {
         console.log("🔄 Starting plan info load...");
         
-        // Get restrictions first (this handles auth internally)
+        // Get restrictions first (this handles auth internally and works for unauthenticated users)
         const restrictions = await getUserPlanRestrictions();
         console.log("📊 Restrictions loaded:", restrictions);
         
         if (!isMounted) return;
 
-        // Check authentication for plan details
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        // Check authentication status without throwing errors
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (authError) {
-          console.error("❌ Auth error:", authError);
-          if (isMounted) {
-            setPlanInfo({
-              planName: null,
-              restrictions,
-              loading: false,
-              error: authError.message,
-              isPremium: false,
-              isEnterprise: false
-            });
-          }
-          return;
+        if (sessionError) {
+          console.log("🔄 Session error (expected for unauthenticated users):", sessionError.message);
         }
         
-        if (!user) {
+        // If no session, set default values and exit gracefully
+        if (!session?.user) {
           console.log("🔄 No authenticated user, using default plan");
           if (isMounted) {
             setPlanInfo({
@@ -74,7 +64,7 @@ export const usePlanInfo = () => {
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("is_subscribed, subscription_end, plan_id")
-          .eq("id", user.id)
+          .eq("id", session.user.id)
           .maybeSingle();
         
         console.log("📊 Profile data:", { profile, error: profileError });
