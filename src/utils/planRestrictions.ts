@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export interface PlanRestriction {
   maxProducts: number;
@@ -79,7 +80,7 @@ export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
       return DEFAULT_RESTRICTIONS;
     }
 
-    // Get plan name with proper type checking
+    // Get plan name with proper type checking - fix the null check
     let planName = null;
     if (profile.plans && typeof profile.plans === 'object' && 'name' in profile.plans) {
       planName = (profile.plans as { name: string }).name;
@@ -157,6 +158,48 @@ export const checkThemeAccess = async (themeName: string): Promise<boolean> => {
     return hasAccess;
   } catch (error) {
     console.error("Error checking theme access:", error);
+    return false;
+  }
+};
+
+/**
+ * Check if user can add more products based on their plan limits
+ */
+export const checkProductLimit = async (currentProductCount: number): Promise<boolean> => {
+  try {
+    const restrictions = await getUserPlanRestrictions();
+    const canAddProduct = currentProductCount < restrictions.maxProducts;
+    
+    if (!canAddProduct) {
+      toast.error(`You've reached your plan's limit of ${restrictions.maxProducts} products`, {
+        description: "Upgrade your plan to add more products"
+      });
+    }
+    
+    return canAddProduct;
+  } catch (error) {
+    console.error("Error checking product limit:", error);
+    return false;
+  }
+};
+
+/**
+ * Check if user can add more websites based on their plan limits
+ */
+export const checkWebsiteLimit = async (currentWebsiteCount: number): Promise<boolean> => {
+  try {
+    const restrictions = await getUserPlanRestrictions();
+    const canAddWebsite = currentWebsiteCount < restrictions.maxWebsites;
+    
+    if (!canAddWebsite) {
+      toast.error(`You've reached your plan's limit of ${restrictions.maxWebsites} websites`, {
+        description: "Upgrade your plan to create more websites"
+      });
+    }
+    
+    return canAddWebsite;
+  } catch (error) {
+    console.error("Error checking website limit:", error);
     return false;
   }
 };
