@@ -6,20 +6,20 @@
 [build.environment]
   NODE_VERSION = "18"
 
-# Custom domain redirects
+# Handle custom domain redirects for your plan
 [[redirects]]
   from = "https://site-:id.netlify.app/*"
   to = "https://site-:id.netlify.app/:splat"
   status = 200
   force = false
 
-# Handle SPA routing for custom domains
+# Handle SPA routing for all domains
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# Handle API routes and prevent them from being redirected to index.html
+# Handle API routes and prevent them from being redirected
 [[redirects]]
   from = "/api/*"
   to = "/api/:splat"
@@ -36,7 +36,7 @@
   to = "/index.html"
   status = 200
 
-# Handle cart and product routes
+# Handle e-commerce routes
 [[redirects]]
   from = "/cart"
   to = "/index.html"
@@ -52,6 +52,11 @@
   to = "/index.html"
   status = 200
 
+[[redirects]]
+  from = "/checkout/*"
+  to = "/index.html"
+  status = 200
+
 # Security headers
 [[headers]]
   for = "/*"
@@ -61,7 +66,7 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
-# Cache headers
+# Cache headers for performance
 [[headers]]
   for = "/static/*"
   [headers.values]
@@ -81,3 +86,7 @@
   for = "/index.html"
   [headers.values]
     cache-control = "public, max-age=0, must-revalidate"
+
+# Forms handling for contact forms
+[[plugins]]
+  package = "@netlify/plugin-functions-install-core"

@@ -12,6 +12,7 @@ import PremiumFeatures from "@/pages/PremiumFeatures";
 import Builder from "@/pages/Builder";
 import BuilderShop from "@/pages/builder/Shop";
 import ProductsManager from "@/pages/builder/Products";
+import Orders from "@/pages/builder/Orders";
 import ShippingSettings from "@/pages/builder/ShippingSettings";
 import SiteSettings from "@/pages/builder/SiteSettings";
 import PageSettings from "@/pages/builder/PageSettings";
@@ -38,6 +39,7 @@ function App() {
               <Route path="/builder/:id" element={<Builder />} />
               <Route path="/builder/:id/shop" element={<BuilderShop />} />
               <Route path="/builder/:id/products" element={<ProductsManager />} />
+              <Route path="/builder/:id/orders" element={<Orders />} />
               <Route path="/builder/:id/shipping-settings" element={<ShippingSettings />} />
               <Route path="/builder/:id/site-settings" element={<SiteSettings />} />
               <Route path="/builder/:id/pages" element={<PageSettings />} />

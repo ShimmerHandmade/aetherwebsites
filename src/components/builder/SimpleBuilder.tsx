@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import BuilderLayout from "@/components/builder/BuilderLayout";
@@ -100,7 +99,14 @@ const SimpleBuilder = () => {
     }
     
     try {
-      document.dispatchEvent(new CustomEvent('save-website'));
+      // Trigger save event and wait for the context to provide updated data
+      const saveEvent = new CustomEvent('request-save-data');
+      document.dispatchEvent(saveEvent);
+      
+      // Small delay to allow the event to be processed
+      setTimeout(() => {
+        document.dispatchEvent(new CustomEvent('save-website'));
+      }, 100);
     } catch (error) {
       console.error("Save error:", error);
       toast.error("Failed to save website");
@@ -126,13 +132,16 @@ const SimpleBuilder = () => {
       );
       
       if (success) {
-        toast.success("Changes saved");
+        toast.success("Changes saved successfully");
+        setSaveStatus('Saved just now');
       } else {
         toast.error("Failed to save changes");
+        setSaveStatus('Save failed');
       }
     } catch (error) {
       console.error("Save completion error:", error);
       toast.error("Failed to save changes");
+      setSaveStatus('Save failed');
     }
   }, [currentPageId, website, saveWebsite]);
   
