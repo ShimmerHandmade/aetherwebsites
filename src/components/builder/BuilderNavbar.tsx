@@ -82,8 +82,9 @@ const BuilderNavbar = ({
     if (path.includes('/products')) return "products";
     if (path.includes('/orders')) return "orders";
     if (path.includes('/pages')) return "pages";
-    if (path.includes('/settings')) return "settings";
+    if (path.includes('/site-settings')) return "settings";
     if (path.includes('/payment-settings')) return "payment-settings";
+    if (path.includes('/shipping-settings')) return "shipping-settings";
     return "edit";
   };
   
@@ -100,7 +101,6 @@ const BuilderNavbar = ({
     const websiteId = window.location.pathname.split("/")[2];
     if (!websiteId) return;
     
-    // Prevent default navigation and use react-router instead
     switch (value) {
       case "edit":
         navigate(`/builder/${websiteId}`);
@@ -115,19 +115,18 @@ const BuilderNavbar = ({
         navigate(`/builder/${websiteId}/pages`);
         break;
       case "settings":
-        navigate(`/builder/${websiteId}/settings`);
+        navigate(`/builder/${websiteId}/site-settings`);
         break;
       case "payment-settings":
         navigate(`/builder/${websiteId}/payment-settings`);
         break;
-      case "shipping settings":
+      case "shipping-settings":
         navigate(`/builder/${websiteId}/shipping-settings`);
         break;
     }
   };
 
   const handleReturnToDashboard = () => {
-    // Show confirmation if there are unsaved changes
     if (isSaving) {
       toast("Please wait for the current save to complete", {
         description: "Your changes are being saved"
@@ -143,15 +142,13 @@ const BuilderNavbar = ({
   };
 
   const handleOpenFullPreview = () => {
-    // If viewSiteUrl is provided, use that, otherwise use the default preview URL
     if (viewSiteUrl) {
       window.open(viewSiteUrl, '_blank');
     } else {
       const websiteId = window.location.pathname.split("/")[2];
       if (!websiteId) return;
       
-      // Open a new tab with the preview URL
-      window.open(`/builder/${websiteId}?preview=true`, '_blank');
+      window.open(`/view/${websiteId}`, '_blank');
     }
   };
 
@@ -193,7 +190,6 @@ const BuilderNavbar = ({
             </SelectContent>
           </Select>
 
-          {/* Shop link */}
           {onShopLinkClick && (
             <Button 
               variant="ghost" 
@@ -206,35 +202,6 @@ const BuilderNavbar = ({
             </Button>
           )}
           
-          {/* Payment Settings link */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="flex items-center gap-1" 
-            onClick={() => {
-              const websiteId = window.location.pathname.split("/")[2];
-              if (websiteId) navigate(`/builder/${websiteId}/payment-settings`);
-            }}
-          >
-            <CreditCard className="h-4 w-4 mr-1" />
-            Payment Settings
-          </Button>
-
-          {/* Shipping Settings link */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="flex items-center gap-1" 
-            onClick={() => {
-              const websiteId = window.location.pathname.split("/")[2];
-              if (websiteId) navigate(`/builder/${websiteId}/shipping-settings`);
-            }}
-          >
-            <Truck className="h-4 w-4 mr-1" />
-            Shipping Settings
-          </Button>
-          
-          {/* Save status indicator */}
           {saveStatus && (
             <span className="text-xs text-gray-500 ml-2">
               {saveStatus}
@@ -275,8 +242,6 @@ const BuilderNavbar = ({
             onClick={onSave}
             disabled={isSaving}
             className="flex items-center gap-1"
-            aria-label="Save website manually"
-            title={isSaving ? "Saving in progress..." : "Save website manually (changes are also auto-saved)"}
           >
             <Save className="h-4 w-4" />
             {isSaving ? "Saving..." : "Save"}
@@ -326,13 +291,6 @@ const BuilderNavbar = ({
               Pages
             </TabsTrigger>
             <TabsTrigger 
-              value="page-settings" 
-              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Page Settings
-            </TabsTrigger>
-            <TabsTrigger 
               value="settings" 
               className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
             >
@@ -344,7 +302,14 @@ const BuilderNavbar = ({
               className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
             >
               <CreditCard className="h-4 w-4 mr-2" />
-              Payment Settings
+              Payment
+            </TabsTrigger>
+            <TabsTrigger 
+              value="shipping-settings" 
+              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
+            >
+              <Truck className="h-4 w-4 mr-2" />
+              Shipping
             </TabsTrigger>
           </TabsList>
         </Tabs>

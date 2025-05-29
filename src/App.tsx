@@ -13,6 +13,7 @@ import Builder from "@/pages/Builder";
 import BuilderShop from "@/pages/builder/Shop";
 import ProductsManager from "@/pages/builder/Products";
 import ShippingSettings from "@/pages/builder/ShippingSettings";
+import SiteSettings from "@/pages/builder/SiteSettings";
 import PageSettings from "@/pages/builder/PageSettings";
 import PaymentSettings from "@/pages/builder/PaymentSettings";
 import Website from "@/pages/WebsiteViewer";
@@ -38,6 +39,7 @@ function App() {
               <Route path="/builder/:id/shop" element={<BuilderShop />} />
               <Route path="/builder/:id/products" element={<ProductsManager />} />
               <Route path="/builder/:id/shipping-settings" element={<ShippingSettings />} />
+              <Route path="/builder/:id/site-settings" element={<SiteSettings />} />
               <Route path="/builder/:id/pages" element={<PageSettings />} />
               <Route path="/builder/:id/payment-settings" element={<PaymentSettings />} />
               <Route path="/view/:id" element={<Website />} />

@@ -6,6 +6,62 @@
 [build.environment]
   NODE_VERSION = "18"
 
+# Custom domain redirects
+[[redirects]]
+  from = "https://site-:id.netlify.app/*"
+  to = "https://site-:id.netlify.app/:splat"
+  status = 200
+  force = false
+
+# Handle SPA routing for custom domains
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Handle API routes and prevent them from being redirected to index.html
+[[redirects]]
+  from = "/api/*"
+  to = "/api/:splat"
+  status = 200
+
+# Handle site routes for live websites
+[[redirects]]
+  from = "/site/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/view/*"
+  to = "/index.html"
+  status = 200
+
+# Handle cart and product routes
+[[redirects]]
+  from = "/cart"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/product/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/checkout"
+  to = "/index.html"
+  status = 200
+
+# Security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Cache headers
 [[headers]]
   for = "/static/*"
   [headers.values]
@@ -25,19 +81,3 @@
   for = "/index.html"
   [headers.values]
     cache-control = "public, max-age=0, must-revalidate"
-
-# Security headers
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-
-# Handle SPA routing
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  conditions = {Role = ["admin"]}
