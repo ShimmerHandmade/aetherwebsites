@@ -12,6 +12,9 @@ import PremiumFeatures from "@/pages/PremiumFeatures";
 import Builder from "@/pages/Builder";
 import BuilderShop from "@/pages/builder/Shop";
 import ProductsManager from "@/pages/builder/Products";
+import ShippingSettings from "@/pages/builder/ShippingSettings";
+import PageSettings from "@/pages/builder/PageSettings";
+import PaymentSettings from "@/pages/builder/PaymentSettings";
 import Website from "@/pages/WebsiteViewer";
 import { PlanProvider } from "@/contexts/PlanContext";
 
