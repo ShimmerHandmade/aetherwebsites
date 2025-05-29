@@ -24,27 +24,30 @@ export const usePlanInfo = () => {
 
   useEffect(() => {
     let isMounted = true;
+    let isLoading = false;
 
     const loadPlanInfo = async () => {
+      if (isLoading) return; // Prevent concurrent calls
+      isLoading = true;
+
       try {
-        console.log("🔄 Starting plan info load...");
+        console.log("🔄 Loading plan info...");
         
-        // Get restrictions first (this handles auth internally and works for unauthenticated users)
+        // Get restrictions (this handles auth internally)
         const restrictions = await getUserPlanRestrictions();
-        console.log("📊 Restrictions loaded:", restrictions);
         
         if (!isMounted) return;
 
-        // Check authentication status without throwing errors
+        // Check auth status without throwing
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
-          console.log("🔄 Session error (expected for unauthenticated users):", sessionError.message);
+          console.log("⚠️ Session error:", sessionError.message);
         }
         
-        // If no session, set default values and exit gracefully
+        // Default values for unauthenticated users
         if (!session?.user) {
-          console.log("🔄 No authenticated user, using default plan");
+          console.log("👤 No user session, using defaults");
           if (isMounted) {
             setPlanInfo({
               planName: null,
@@ -58,16 +61,14 @@ export const usePlanInfo = () => {
           return;
         }
         
-        console.log("👤 User found, fetching plan details...");
+        console.log("🔍 Fetching plan for authenticated user");
         
-        // Get user profile first
+        // Get user profile
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("is_subscribed, subscription_end, plan_id")
           .eq("id", session.user.id)
           .maybeSingle();
-        
-        console.log("📊 Profile data:", { profile, error: profileError });
         
         if (profileError) {
           console.error("❌ Profile error:", profileError);
@@ -88,56 +89,55 @@ export const usePlanInfo = () => {
         let isPremium = false;
         let isEnterprise = false;
         
-        // Check if user has active subscription
+        // Check subscription status
         const hasActiveSubscription = profile?.is_subscribed && 
           (!profile.subscription_end || new Date(profile.subscription_end) > new Date());
         
         if (hasActiveSubscription && profile.plan_id) {
-          console.log("🔍 Fetching plan details for plan_id:", profile.plan_id);
-          
-          // Fetch plan separately to avoid relationship issues
+          // Get plan name
           const { data: planData, error: planError } = await supabase
             .from("plans")
             .select("name")
             .eq("id", profile.plan_id)
             .maybeSingle();
           
-          console.log("📊 Plan data:", { planData, error: planError });
-          
           if (!planError && planData) {
             planName = planData.name;
             
-            // Set premium/enterprise flags based on plan name
+            // Set flags based on plan name
             if (planName) {
-              isPremium = planName.toLowerCase().includes("professional") || 
-                         planName.toLowerCase().includes("premium") ||
-                         planName.toLowerCase().includes("enterprise");
-              isEnterprise = planName.toLowerCase().includes("enterprise");
+              const lowerPlanName = planName.toLowerCase();
+              isPremium = lowerPlanName.includes("professional") || 
+                         lowerPlanName.includes("premium") ||
+                         lowerPlanName.includes("enterprise");
+              isEnterprise = lowerPlanName.includes("enterprise");
             }
           }
         }
         
-        console.log("✅ Final plan info:", { planName, isPremium, isEnterprise, hasActiveSubscription });
+        console.log("✅ Plan info loaded:", { planName, isPremium, isEnterprise });
         
-        if (!isMounted) return;
-        
-        setPlanInfo({
-          planName,
-          restrictions,
-          loading: false,
-          error: null,
-          isPremium,
-          isEnterprise
-        });
+        if (isMounted) {
+          setPlanInfo({
+            planName,
+            restrictions,
+            loading: false,
+            error: null,
+            isPremium,
+            isEnterprise
+          });
+        }
       } catch (error) {
-        console.error("❌ Error in usePlanInfo:", error);
+        console.error("💥 Error in usePlanInfo:", error);
         if (isMounted) {
           setPlanInfo(prev => ({
             ...prev,
             loading: false,
-            error: error instanceof Error ? error.message : "Failed to load subscription information"
+            error: error instanceof Error ? error.message : "Failed to load plan information"
           }));
         }
+      } finally {
+        isLoading = false;
       }
     };
 
@@ -146,7 +146,7 @@ export const usePlanInfo = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, []); // No dependencies to prevent loops
 
   return planInfo;
 };

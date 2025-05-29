@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import BuilderLayout from "@/components/builder/BuilderLayout";
@@ -5,7 +6,7 @@ import BuilderNavbar from "@/components/builder/BuilderNavbar";
 import BuilderContent from "@/components/builder/BuilderContent";
 import { useWebsite } from "@/hooks/useWebsite";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
-import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { v4 as uuidv4 } from "@/lib/uuid";
 import { toast } from "sonner";
 import { CartProvider } from "@/contexts/CartContext";
@@ -31,8 +32,8 @@ const Builder = () => {
     lastSaved,
     unsavedChanges
   } = useWebsite(id, navigate, {
-    autoSave: true,
-    autoSaveInterval: 30000,
+    autoSave: false, // Disable auto-save to prevent conflicts
+    autoSaveInterval: 60000,
   });
   
   const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -40,50 +41,36 @@ const Builder = () => {
   const [currentPageElements, setCurrentPageElements] = useState<BuilderElement[]>([]);
   const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
   const [saveStatus, setSaveStatus] = useState<string>('');
+  const [isSavingManually, setIsSavingManually] = useState(false);
 
-  // Track preview mode state at this level
+  // Update save status based on saving state
   useEffect(() => {
-    if (!lastSaved) return;
-    
-    const updateSaveStatus = () => {
-      if (lastSaved) {
-        const now = new Date();
-        const diffInSeconds = Math.floor((now.getTime() - lastSaved.getTime()) / 1000);
-        
-        if (diffInSeconds < 60) {
-          setSaveStatus(`Saved ${diffInSeconds} seconds ago`);
-        } else if (diffInSeconds < 3600) {
-          const minutes = Math.floor(diffInSeconds / 60);
-          setSaveStatus(`Saved ${minutes} minute${minutes > 1 ? 's' : ''} ago`);
-        } else {
-          const formattedTime = lastSaved.toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          });
-          setSaveStatus(`Saved at ${formattedTime}`);
-        }
-      } else {
-        setSaveStatus('');
-      }
-    };
-    
-    updateSaveStatus();
-    
-    // Update the status every minute
-    const interval = setInterval(updateSaveStatus, 60000);
-    return () => clearInterval(interval);
-  }, [lastSaved]);
-
-  // Update save status when saving state changes
-  useEffect(() => {
-    if (isSaving) {
+    if (isSaving || isSavingManually) {
       setSaveStatus('Saving...');
     } else if (unsavedChanges) {
       setSaveStatus('Unsaved changes');
+    } else if (lastSaved) {
+      const now = new Date();
+      const diffInSeconds = Math.floor((now.getTime() - lastSaved.getTime()) / 1000);
+      
+      if (diffInSeconds < 60) {
+        setSaveStatus(`Saved ${diffInSeconds} seconds ago`);
+      } else if (diffInSeconds < 3600) {
+        const minutes = Math.floor(diffInSeconds / 60);
+        setSaveStatus(`Saved ${minutes} minute${minutes > 1 ? 's' : ''} ago`);
+      } else {
+        const formattedTime = lastSaved.toLocaleTimeString([], { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+        setSaveStatus(`Saved at ${formattedTime}`);
+      }
+    } else {
+      setSaveStatus('');
     }
-  }, [isSaving, unsavedChanges]);
+  }, [isSaving, isSavingManually, unsavedChanges, lastSaved]);
 
-  // Check URL params for preview mode
+  // Check URL for preview mode
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const preview = urlParams.get('preview');
@@ -92,90 +79,54 @@ const Builder = () => {
     }
   }, []);
 
-  // Set current page to home page by default or from URL param
+  // Initialize pages and set current page
   useEffect(() => {
-    if (website?.settings?.pages && website.settings.pages.length > 0) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const pageId = urlParams.get('pageId');
-      
-      // If pageId is specified in URL, try to use it
-      if (pageId) {
-        const page = website.settings.pages.find(page => page.id === pageId);
-        if (page) {
-          setCurrentPageId(pageId);
-          return;
-        }
-      }
-      
-      // If no pageId in URL or the specified page doesn't exist,
-      // default to home page or first page
-      const homePage = website.settings.pages.find(page => page.isHomePage);
-      if (homePage) {
-        setCurrentPageId(homePage.id);
-        // Update URL to include the home page ID for consistency
-        if (!pageId) {
-          navigate(`/builder/${id}?pageId=${homePage.id}`, { replace: true });
-        }
-      } else if (website.settings.pages.length > 0) {
-        // If no home page exists, use the first page
-        setCurrentPageId(website.settings.pages[0].id);
-        // Update URL to include the first page ID for consistency
-        if (!pageId) {
-          navigate(`/builder/${id}?pageId=${website.settings.pages[0].id}`, { replace: true });
-        }
-      }
-
-      // Ensure we have at least a home page, shop page, and about page
-      ensureRequiredPages();
+    if (!website?.settings?.pages || website.settings.pages.length === 0) return;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageId = urlParams.get('pageId');
+    
+    // Try to use pageId from URL first
+    if (pageId && website.settings.pages.find(p => p.id === pageId)) {
+      setCurrentPageId(pageId);
+      return;
     }
+    
+    // Fall back to home page or first page
+    const homePage = website.settings.pages.find(page => page.isHomePage);
+    const targetPageId = homePage?.id || website.settings.pages[0]?.id;
+    
+    if (targetPageId) {
+      setCurrentPageId(targetPageId);
+      if (!pageId) {
+        navigate(`/builder/${id}?pageId=${targetPageId}`, { replace: true });
+      }
+    }
+
+    // Ensure required pages exist
+    ensureRequiredPages();
   }, [website, navigate, id]);
 
-  // Set global site settings for components to access
-  useEffect(() => {
-    if (website?.settings) {
-      // Make site settings available globally for components
-      window.__SITE_SETTINGS__ = {
-        logoUrl: website.settings.logoUrl,
-        // Add other global settings here as needed
-      };
-    }
-  }, [website?.settings]);
-
-  // Load page content when currentPageId changes
+  // Load page content when page changes
   useEffect(() => {
     if (!website || !currentPageId) return;
     
     try {
-      // Get content for current page
       const pagesContent = website.settings.pagesContent || {};
       const pageContent = pagesContent[currentPageId] || [];
       const pageSettings = website.settings.pagesSettings?.[currentPageId] || { title: websiteName };
       
-      // Set current page elements and settings
       setCurrentPageElements(pageContent.length ? pageContent : elements || []);
       setCurrentPageSettings(pageSettings);
       
-      console.log("Loaded page content for:", currentPageId, pageContent);
+      console.log("📄 Loaded page content:", currentPageId, pageContent.length);
     } catch (error) {
-      console.error("Error loading page content:", error);
+      console.error("💥 Error loading page content:", error);
       toast.error("Failed to load page content");
     }
   }, [currentPageId, website, elements, websiteName]);
 
-  // Subscribe to builder content changes
-  useEffect(() => {
-    const handleContentChanged = () => {
-      setSaveStatus('Unsaved changes');
-    };
-    
-    document.addEventListener('builder-content-changed', handleContentChanged);
-    
-    return () => {
-      document.removeEventListener('builder-content-changed', handleContentChanged);
-    };
-  }, []);
-
-  // Ensure Home, Shop and About pages exist
+  // Ensure required pages exist
   const ensureRequiredPages = async () => {
     if (!website?.settings?.pages) return;
     
@@ -185,96 +136,83 @@ const Builder = () => {
     // Check for Home page
     const homePage = updatedPages.find(page => page.isHomePage || page.title.toLowerCase() === 'home');
     if (!homePage) {
-      const newHomePage = {
+      updatedPages.push({
         id: uuidv4(),
         title: 'Home',
         slug: '/',
         isHomePage: true
-      };
-      updatedPages.push(newHomePage);
-      hasChanged = true;
-    } else if (!homePage.isHomePage) {
-      // Ensure the home page has isHomePage set to true
-      updatedPages = updatedPages.map(p => 
-        p.id === homePage.id ? {...p, isHomePage: true} : p
-      );
+      });
       hasChanged = true;
     }
     
     // Check for Shop page
     const shopPage = updatedPages.find(page => page.title.toLowerCase() === 'shop');
     if (!shopPage) {
-      const newShopPage = {
+      updatedPages.push({
         id: uuidv4(),
         title: 'Shop',
         slug: '/shop',
         isHomePage: false
-      };
-      updatedPages.push(newShopPage);
+      });
       hasChanged = true;
     }
     
-    // Add About page if it doesn't exist
+    // Check for About page
     const aboutPage = updatedPages.find(page => page.title.toLowerCase() === 'about');
     if (!aboutPage) {
-      const newAboutPage = {
+      updatedPages.push({
         id: uuidv4(),
         title: 'About',
         slug: '/about',
         isHomePage: false
-      };
-      updatedPages.push(newAboutPage);
+      });
       hasChanged = true;
     }
     
-    // If changes were made, update the website settings
     if (hasChanged && website) {
-      const updatedSettings = {
-        ...website.settings,
-        pages: updatedPages
-      };
-      
       try {
-        await saveWebsite(website.content, website.pageSettings, updatedSettings);
-        console.log("Required pages created successfully");
+        await saveWebsite(website.content, website.pageSettings, {
+          ...website.settings,
+          pages: updatedPages
+        });
+        console.log("✅ Required pages created");
       } catch (error) {
-        console.error("Error creating required pages:", error);
+        console.error("💥 Error creating pages:", error);
       }
     }
   };
 
-  // Optimized save handler with better error handling
+  // Manual save handler
   const handleSave = useCallback(async () => {
     if (!currentPageId || !website) {
       toast.error("Cannot save: No page selected");
       return;
     }
     
+    setIsSavingManually(true);
     try {
-      console.log("🔄 Manual save triggered for page:", currentPageId);
-      setSaveStatus('Saving...');
-      
-      // Trigger save through context
+      console.log("💾 Manual save triggered");
       document.dispatchEvent(new CustomEvent('save-website'));
     } catch (error) {
-      console.error("Error during save:", error);
+      console.error("💥 Save error:", error);
       toast.error("Failed to save website");
-      setSaveStatus('Save failed');
+    } finally {
+      setIsSavingManually(false);
     }
   }, [currentPageId, website]);
 
-  // Optimized save complete handler
+  // Save completion handler
   const handleSaveComplete = useCallback(async (updatedElements: BuilderElement[], updatedPageSettings: PageSettings) => {
     if (!currentPageId || !website) {
-      toast.error("Cannot save: Missing page or website data");
+      toast.error("Cannot save: Missing data");
       return;
     }
 
-    console.log("💾 Saving page content for page:", currentPageId, updatedElements);
+    console.log("💾 Completing save for page:", currentPageId);
     
     try {
-      const pagesContent = website.settings.pagesContent ? JSON.parse(JSON.stringify(website.settings.pagesContent)) : {};
-      const pagesSettings = website.settings.pagesSettings ? JSON.parse(JSON.stringify(website.settings.pagesSettings)) : {};
+      const pagesContent = { ...(website.settings.pagesContent || {}) };
+      const pagesSettings = { ...(website.settings.pagesSettings || {}) };
       
       pagesContent[currentPageId] = updatedElements;
       pagesSettings[currentPageId] = updatedPageSettings;
@@ -285,43 +223,35 @@ const Builder = () => {
         isHomePage ? updatedElements : website.content, 
         updatedPageSettings, 
         {
+          ...website.settings,
           pagesContent,
           pagesSettings
         }
       );
       
       if (success) {
-        setSaveStatus('Saved just now');
-        console.log("✅ Save successful");
+        console.log("✅ Save completed successfully");
+        toast.success("Changes saved");
       } else {
-        setSaveStatus('Save failed');
-        toast.error("Failed to save website");
+        toast.error("Failed to save changes");
       }
     } catch (error) {
-      console.error("❌ Error saving website:", error);
-      setSaveStatus('Save failed');
-      toast.error("Failed to save website");
+      console.error("💥 Save completion error:", error);
+      toast.error("Failed to save changes");
     }
   }, [currentPageId, website, saveWebsite]);
   
   const handleChangePage = useCallback((pageId: string) => {
-    handleSave();
     navigate(`/builder/${id}?pageId=${pageId}`);
-    setCurrentPageId(pageId);
-  }, [handleSave, id, navigate]);
+  }, [id, navigate]);
 
   const handleShopLinkClick = useCallback(() => {
-    handleSave();
     navigate(`/builder/${id}/shop`);
-  }, [handleSave, id, navigate]);
+  }, [id, navigate]);
   
   const handleReturnToDashboard = useCallback(() => {
     navigate('/dashboard');
   }, [navigate]);
-
-  const handleViewSite = useCallback(() => {
-    window.open(`/site/${id}`, '_blank');
-  }, [id]);
 
   // Loading state
   if (isLoading) {
@@ -350,7 +280,7 @@ const Builder = () => {
   const pages = website?.settings?.pages || [];
   const currentPage = pages.find(page => page.id === currentPageId);
 
-  // Preview mode
+  // Preview mode for URLs with preview=true
   if (isPreviewMode && new URLSearchParams(window.location.search).get('preview') === 'true') {
     return (
       <ErrorBoundary>
@@ -387,7 +317,7 @@ const Builder = () => {
               onSave={handleSave} 
               onPublish={publishWebsite}
               isPublished={website?.published}
-              isSaving={isSaving}
+              isSaving={isSaving || isSavingManually}
               isPublishing={isPublishing}
               isPreviewMode={isPreviewMode}
               setIsPreviewMode={setIsPreviewMode}

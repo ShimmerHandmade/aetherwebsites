@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -35,21 +36,49 @@ const DEFAULT_RESTRICTIONS: PlanRestriction = {
   ]
 };
 
+// Cache to prevent repeated API calls
+let restrictionsCache: { 
+  data: PlanRestriction | null;
+  timestamp: number;
+  userId: string | null;
+} = {
+  data: null,
+  timestamp: 0,
+  userId: null
+};
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 /**
  * Gets plan restrictions for the current user
  * Returns default restrictions if no user is authenticated
  */
 export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
   try {
-    // Check if user is authenticated without throwing errors
+    // Check cache first
+    const now = Date.now();
     const { data: { session } } = await supabase.auth.getSession();
+    const currentUserId = session?.user?.id || null;
+    
+    if (restrictionsCache.data && 
+        restrictionsCache.userId === currentUserId &&
+        (now - restrictionsCache.timestamp) < CACHE_DURATION) {
+      console.log("📋 Using cached restrictions");
+      return restrictionsCache.data;
+    }
     
     if (!session?.user) {
-      console.log("No authenticated user found");
-      return DEFAULT_RESTRICTIONS;
+      console.log("👤 No authenticated user, using default restrictions");
+      const restrictions = DEFAULT_RESTRICTIONS;
+      restrictionsCache = {
+        data: restrictions,
+        timestamp: now,
+        userId: null
+      };
+      return restrictions;
     }
 
-    console.log("Fetching restrictions for authenticated user:", session.user.id);
+    console.log("🔍 Fetching restrictions for user:", session.user.id);
 
     // Get user profile to check subscription status
     const { data: profile, error } = await supabase
@@ -58,8 +87,13 @@ export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
       .eq("id", session.user.id)
       .maybeSingle();
 
-    if (error || !profile) {
-      console.log("No profile found or error, using default restrictions:", error?.message);
+    if (error) {
+      console.warn("⚠️ Profile fetch error, using defaults:", error.message);
+      return DEFAULT_RESTRICTIONS;
+    }
+
+    if (!profile) {
+      console.log("👤 No profile found, using default restrictions");
       return DEFAULT_RESTRICTIONS;
     }
 
@@ -68,11 +102,17 @@ export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
       (!profile.subscription_end || new Date(profile.subscription_end) > new Date());
 
     if (!hasActiveSubscription) {
-      console.log("No active subscription, using default restrictions");
-      return DEFAULT_RESTRICTIONS;
+      console.log("💳 No active subscription, using default restrictions");
+      const restrictions = DEFAULT_RESTRICTIONS;
+      restrictionsCache = {
+        data: restrictions,
+        timestamp: now,
+        userId: currentUserId
+      };
+      return restrictions;
     }
 
-    // Get plan name separately if we have a plan_id
+    // Get plan details if we have a plan_id
     let planName: string | null = null;
     
     if (profile.plan_id) {
@@ -87,12 +127,14 @@ export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
       }
     }
 
-    console.log("User plan:", planName);
+    console.log("📊 User plan determined:", planName);
+
+    let restrictions: PlanRestriction;
 
     // Return restrictions based on plan
-    switch (planName) {
-      case "Professional":
-        return {
+    switch (planName?.toLowerCase()) {
+      case "professional":
+        restrictions = {
           maxProducts: 150,
           maxWebsites: 3,
           allowCoupons: true,
@@ -107,9 +149,10 @@ export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
             "beauty", "furniture", "jewelry"
           ]
         };
+        break;
       
-      case "Enterprise":
-        return {
+      case "enterprise":
+        restrictions = {
           maxProducts: 1000,
           maxWebsites: 5,
           allowCoupons: true,
@@ -124,10 +167,10 @@ export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
             "beauty", "furniture", "jewelry"
           ]
         };
+        break;
       
       default:
-        console.log("Unknown plan or Basic plan, using enhanced basic restrictions");
-        return {
+        restrictions = {
           maxProducts: 30,
           maxWebsites: 1,
           allowCoupons: true,
@@ -141,9 +184,19 @@ export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
             "business", "blog", "ecommerce", "fashion", "electronics", "food"
           ]
         };
+        break;
     }
+
+    // Cache the result
+    restrictionsCache = {
+      data: restrictions,
+      timestamp: now,
+      userId: currentUserId
+    };
+
+    return restrictions;
   } catch (error) {
-    console.error("Error fetching plan restrictions:", error);
+    console.error("💥 Error fetching plan restrictions:", error);
     return DEFAULT_RESTRICTIONS;
   }
 };
@@ -155,10 +208,10 @@ export const checkThemeAccess = async (themeName: string): Promise<boolean> => {
   try {
     const restrictions = await getUserPlanRestrictions();
     const hasAccess = restrictions.allowedThemes.includes(themeName);
-    console.log(`Theme ${themeName} access: ${hasAccess}, allowed themes:`, restrictions.allowedThemes);
+    console.log(`🎨 Theme ${themeName} access: ${hasAccess}`);
     return hasAccess;
   } catch (error) {
-    console.error("Error checking theme access:", error);
+    console.error("💥 Error checking theme access:", error);
     return false;
   }
 };
@@ -179,7 +232,7 @@ export const checkProductLimit = async (currentProductCount: number): Promise<bo
     
     return canAddProduct;
   } catch (error) {
-    console.error("Error checking product limit:", error);
+    console.error("💥 Error checking product limit:", error);
     return false;
   }
 };
@@ -200,7 +253,16 @@ export const checkWebsiteLimit = async (currentWebsiteCount: number): Promise<bo
     
     return canAddWebsite;
   } catch (error) {
-    console.error("Error checking website limit:", error);
+    console.error("💥 Error checking website limit:", error);
     return false;
   }
+};
+
+// Clear cache when needed
+export const clearRestrictionsCache = () => {
+  restrictionsCache = {
+    data: null,
+    timestamp: 0,
+    userId: null
+  };
 };

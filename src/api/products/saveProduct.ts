@@ -18,10 +18,19 @@ export const saveProduct = async (
   error?: string;
 }> => {
   try {
-    if (product.name.trim() === "") {
+    console.log("🔄 saveProduct called:", { product, websiteId, isNew });
+
+    if (!product.name || product.name.trim() === "") {
       return {
         success: false,
         error: "Product name is required"
+      };
+    }
+
+    if (!websiteId || websiteId.trim() === "") {
+      return {
+        success: false,
+        error: "Website ID is required"
       };
     }
 
@@ -34,86 +43,65 @@ export const saveProduct = async (
     }
 
     const userId = session.session.user.id;
+    console.log("👤 User ID:", userId);
     
     // Handle new product
     if (isNew) {
       // Upload image first if provided
-      let imageUrl: string | null = product.image_url;
+      let imageUrl: string | null = null;
       if (imageFile) {
-        console.log("Uploading new product image...");
+        console.log("📸 Uploading new product image...");
         const tempId = 'temp-' + Date.now();
-        imageUrl = await uploadProductImage(imageFile, websiteId, tempId);
-        console.log("Image upload result:", imageUrl);
+        try {
+          imageUrl = await uploadProductImage(imageFile, websiteId, tempId);
+          console.log("✅ Image upload result:", imageUrl);
+        } catch (error) {
+          console.error("❌ Image upload failed:", error);
+          // Continue without image rather than failing
+        }
       }
       
-      // Ensure we're passing all required product fields WITHOUT the id field for new products
+      // Prepare product data for insertion
       const newProductData = {
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        sku: product.sku,
-        stock: product.stock,
-        category: product.category || null,
-        is_featured: product.is_featured || false,
-        is_sale: product.is_sale || false,
-        is_new: product.is_new || false,
+        name: product.name.trim(),
+        description: product.description?.trim() || null,
+        price: Number(product.price) || 0,
+        sku: product.sku?.trim() || null,
+        stock: Number(product.stock) || 0,
+        category: product.category?.trim() || null,
+        is_featured: Boolean(product.is_featured),
+        is_sale: Boolean(product.is_sale),
+        is_new: Boolean(product.is_new),
         image_url: imageUrl,
         user_id: userId,
         website_id: websiteId
       };
       
-      console.log("Inserting new product with data:", newProductData);
+      console.log("📝 Inserting new product:", newProductData);
       
       const { data, error } = await supabase
         .from("products")
         .insert(newProductData)
-        .select();
+        .select()
+        .single();
 
       if (error) {
-        console.error("Error adding product:", error);
+        console.error("❌ Database error:", error);
         return {
           success: false,
-          error: "Failed to add product: " + error.message
+          error: `Failed to add product: ${error.message}`
         };
       }
 
-      if (data && data.length > 0) {
-        let newProduct = data[0];
-        
-        // If we uploaded with a temporary ID and now have a permanent ID, we need to move the image
-        if (imageUrl && imageFile) {
-          const permanentImageUrl = await uploadProductImage(imageFile, websiteId, newProduct.id);
-          
-          if (permanentImageUrl) {
-            // Update the product with the permanent image URL
-            await supabase
-              .from("products")
-              .update({ image_url: permanentImageUrl })
-              .eq("id", newProduct.id);
-              
-            newProduct.image_url = permanentImageUrl;
-            
-            // Try to delete the temporary image if the URL structure allows us to parse it
-            if (imageUrl && imageUrl.includes('/product-images/')) {
-              try {
-                const tempFilePath = imageUrl.split('/product-images/')[1];
-                await supabase.storage
-                  .from('product-images')
-                  .remove([tempFilePath]);
-              } catch (e) {
-                console.log("Failed to clean up temporary image, but this is not critical", e);
-              }
-            }
-          }
-        }
-        
+      if (data) {
+        console.log("✅ Product created successfully:", data);
         return {
           success: true,
-          product: newProduct
+          product: data
         };
       }
     } else {
-      // Update existing product - make sure we have a valid product ID
+      // Update existing product
       if (!product.id || product.id.trim() === "") {
         return {
           success: false,
@@ -125,26 +113,30 @@ export const saveProduct = async (
       
       // Upload new image if changed
       if (imageFile) {
-        console.log("Uploading updated product image...");
-        imageUrl = await uploadProductImage(imageFile, websiteId, product.id);
-        console.log("Image upload result:", imageUrl);
+        console.log("📸 Uploading updated product image...");
+        try {
+          imageUrl = await uploadProductImage(imageFile, websiteId, product.id);
+          console.log("✅ Image upload result:", imageUrl);
+        } catch (error) {
+          console.error("❌ Image upload failed:", error);
+          // Continue with existing image rather than failing
+        }
       }
       
-      // Create a complete update object with all product fields
       const updateData = {
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        sku: product.sku,
-        stock: product.stock,
-        category: product.category || null,
-        is_featured: product.is_featured || false,
-        is_sale: product.is_sale || false,
-        is_new: product.is_new || false,
+        name: product.name.trim(),
+        description: product.description?.trim() || null,
+        price: Number(product.price) || 0,
+        sku: product.sku?.trim() || null,
+        stock: Number(product.stock) || 0,
+        category: product.category?.trim() || null,
+        is_featured: Boolean(product.is_featured),
+        is_sale: Boolean(product.is_sale),
+        is_new: Boolean(product.is_new),
         image_url: imageUrl
       };
       
-      console.log("Updating product with data:", updateData);
+      console.log("📝 Updating product:", updateData);
       
       const { error } = await supabase
         .from("products")
@@ -153,16 +145,17 @@ export const saveProduct = async (
         .eq("website_id", websiteId);
 
       if (error) {
-        console.error("Error updating product:", error);
+        console.error("❌ Update error:", error);
         return {
           success: false,
-          error: "Failed to update product: " + error.message
+          error: `Failed to update product: ${error.message}`
         };
       }
 
+      console.log("✅ Product updated successfully");
       return {
         success: true,
-        product: {...product, image_url: imageUrl}
+        product: {...product, ...updateData}
       };
     }
     
@@ -171,10 +164,10 @@ export const saveProduct = async (
       error: "Unknown error occurred"
     };
   } catch (error) {
-    console.error("Error in saveProduct:", error);
+    console.error("💥 Unexpected error in saveProduct:", error);
     return {
       success: false,
-      error: "An unexpected error occurred: " + (error as Error).message
+      error: `An unexpected error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`
     };
   }
 };
