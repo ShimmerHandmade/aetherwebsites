@@ -24,7 +24,7 @@ import {
   Home,
   ExternalLink,
   ShoppingBag,
-  CreditCard, // Added CreditCard icon for payment settings
+  CreditCard,
   Truck
 } from "lucide-react";
 import { toast } from "sonner";
@@ -52,7 +52,7 @@ interface BuilderNavbarProps {
   onShopLinkClick?: () => void;
   onReturnToDashboard?: () => void;
   viewSiteUrl?: string;
-  saveStatus?: string; // Added save status prop
+  saveStatus?: string;
 }
 
 const BuilderNavbar = ({
@@ -83,7 +83,7 @@ const BuilderNavbar = ({
     if (path.includes('/orders')) return "orders";
     if (path.includes('/pages')) return "pages";
     if (path.includes('/settings')) return "settings";
-    if (path.includes('/payment-settings')) return "payment-settings"; // Added for payment settings
+    if (path.includes('/payment-settings')) return "payment-settings";
     return "edit";
   };
   
@@ -117,7 +117,7 @@ const BuilderNavbar = ({
       case "settings":
         navigate(`/builder/${websiteId}/settings`);
         break;
-      case "payment-settings": // Added navigation to payment settings
+      case "payment-settings":
         navigate(`/builder/${websiteId}/payment-settings`);
         break;
       case "shipping settings":
@@ -206,7 +206,7 @@ const BuilderNavbar = ({
             </Button>
           )}
           
-          {/* Payment Settings link - Added this button */}
+          {/* Payment Settings link */}
           <Button 
             variant="ghost" 
             size="sm" 
@@ -219,9 +219,8 @@ const BuilderNavbar = ({
             <CreditCard className="h-4 w-4 mr-1" />
             Payment Settings
           </Button>
-          )}
 
-          {/* Shipping Settings link - Added this button */}
+          {/* Shipping Settings link */}
           <Button 
             variant="ghost" 
             size="sm" 
@@ -340,7 +339,6 @@ const BuilderNavbar = ({
               <Settings className="h-4 w-4 mr-2" />
               Site Settings
             </TabsTrigger>
-            {/* Added Payment Settings tab */}
             <TabsTrigger 
               value="payment-settings" 
               className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
