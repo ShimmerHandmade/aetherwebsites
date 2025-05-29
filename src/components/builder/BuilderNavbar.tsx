@@ -24,7 +24,7 @@ import {
   Home,
   ExternalLink,
   ShoppingBag,
-  CreditCard // Added CreditCard icon for payment settings
+  CreditCard, // Added CreditCard icon for payment settings
   Truck
 } from "lucide-react";
 import { toast } from "sonner";
