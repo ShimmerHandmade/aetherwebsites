@@ -120,6 +120,9 @@ const BuilderNavbar = ({
       case "payment-settings": // Added navigation to payment settings
         navigate(`/builder/${websiteId}/payment-settings`);
         break;
+      case "shipping settings":
+        navigate(`/builder/${websiteId}/shipping-settings`);
+        break;
     }
   };
 
@@ -215,6 +218,21 @@ const BuilderNavbar = ({
           >
             <CreditCard className="h-4 w-4 mr-1" />
             Payment Settings
+          </Button>
+          )}
+
+          {/* Shipping Settings link - Added this button */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="flex items-center gap-1" 
+            onClick={() => {
+              const websiteId = window.location.pathname.split("/")[2];
+              if (websiteId) navigate(`/builder/${websiteId}/shipping-settings`);
+            }}
+          >
+            <Truck className="h-4 w-4 mr-1" />
+            Shipping Settings
           </Button>
           
           {/* Save status indicator */}
