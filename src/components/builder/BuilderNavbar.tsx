@@ -1,33 +1,33 @@
 
-import React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Eye,
-  EyeOff,
+import { 
+  Save, 
+  Eye, 
+  ExternalLink, 
+  ArrowLeft, 
+  Loader2, 
+  Globe,
   Settings,
-  PanelsTopLeft,
-  Store,
-  FileText,
-  Package,
-  Save,
-  ArrowLeft,
-  Home,
-  ExternalLink,
   ShoppingBag,
-  CreditCard,
-  Truck
+  FileText,
+  Palette
 } from "lucide-react";
-import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import TemplateSelector from "./TemplateSelector";
 
 interface Page {
   id: string;
@@ -44,18 +44,18 @@ interface BuilderNavbarProps {
   isPublished?: boolean;
   isSaving?: boolean;
   isPublishing?: boolean;
-  isPreviewMode: boolean;
-  setIsPreviewMode: (isPreview: boolean) => void;
-  currentPage?: Page | null;
-  pages: Page[];
-  onChangePage: (pageId: string) => void;
+  isPreviewMode?: boolean;
+  setIsPreviewMode?: (mode: boolean) => void;
+  currentPage?: Page;
+  pages?: Page[];
+  onChangePage?: (pageId: string) => void;
   onShopLinkClick?: () => void;
   onReturnToDashboard?: () => void;
   viewSiteUrl?: string;
   saveStatus?: string;
 }
 
-const BuilderNavbar = ({
+const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
   websiteName,
   setWebsiteName,
   onSave,
@@ -63,258 +63,159 @@ const BuilderNavbar = ({
   isPublished = false,
   isSaving = false,
   isPublishing = false,
-  isPreviewMode,
+  isPreviewMode = false,
   setIsPreviewMode,
   currentPage,
-  pages,
+  pages = [],
   onChangePage,
   onShopLinkClick,
   onReturnToDashboard,
   viewSiteUrl,
-  saveStatus = ''
-}: BuilderNavbarProps) => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  
-  // Determine active tab based on current route
-  const getActiveTabFromRoute = () => {
-    const path = location.pathname;
-    if (path.includes('/products')) return "products";
-    if (path.includes('/orders')) return "orders";
-    if (path.includes('/pages')) return "pages";
-    if (path.includes('/site-settings')) return "settings";
-    if (path.includes('/payment-settings')) return "payment-settings";
-    if (path.includes('/shipping-settings')) return "shipping-settings";
-    return "edit";
-  };
-  
-  const [activeTab, setActiveTab] = React.useState(getActiveTabFromRoute());
-  
-  // Update active tab when route changes
-  React.useEffect(() => {
-    setActiveTab(getActiveTabFromRoute());
-  }, [location.pathname]);
-  
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    
-    const websiteId = window.location.pathname.split("/")[2];
-    if (!websiteId) return;
-    
-    switch (value) {
-      case "edit":
-        navigate(`/builder/${websiteId}`);
-        break;
-      case "products":
-        navigate(`/builder/${websiteId}/products`);
-        break;
-      case "orders":
-        navigate(`/builder/${websiteId}/orders`);
-        break;
-      case "pages":
-        navigate(`/builder/${websiteId}/pages`);
-        break;
-      case "settings":
-        navigate(`/builder/${websiteId}/site-settings`);
-        break;
-      case "payment-settings":
-        navigate(`/builder/${websiteId}/payment-settings`);
-        break;
-      case "shipping-settings":
-        navigate(`/builder/${websiteId}/shipping-settings`);
-        break;
-    }
-  };
+  saveStatus,
+}) => {
+  const [showTemplates, setShowTemplates] = useState(false);
 
-  const handleReturnToDashboard = () => {
-    if (isSaving) {
-      toast("Please wait for the current save to complete", {
-        description: "Your changes are being saved"
-      });
-      return;
-    }
-    
-    if (onReturnToDashboard) {
-      onReturnToDashboard();
-    } else {
-      navigate('/dashboard');
-    }
-  };
-
-  const handleOpenFullPreview = () => {
-    if (viewSiteUrl) {
-      window.open(viewSiteUrl, '_blank');
-    } else {
-      const websiteId = window.location.pathname.split("/")[2];
-      if (!websiteId) return;
-      
-      window.open(`/view/${websiteId}`, '_blank');
-    }
+  const handleTemplateSelect = (templateId: string) => {
+    console.log("Selected template:", templateId);
+    setShowTemplates(false);
+    // Template application logic would go here
   };
 
   return (
-    <div className="w-full flex flex-col bg-white border-b border-slate-200">
-      {/* Top bar */}
-      <div className="h-14 flex items-center px-4 justify-between">
+    <>
+      <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button 
-            variant="outline" 
+            variant="ghost" 
             size="sm" 
-            onClick={handleReturnToDashboard}
-            className="flex items-center gap-1"
+            onClick={onReturnToDashboard}
+            className="text-gray-600 hover:text-gray-900"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Dashboard
           </Button>
           
+          <div className="h-6 w-px bg-gray-300" />
+          
           <Input
-            className="w-48 h-8 text-sm font-medium"
             value={websiteName}
             onChange={(e) => setWebsiteName(e.target.value)}
+            className="text-lg font-medium border-none shadow-none p-0 h-auto focus-visible:ring-0 max-w-xs"
             placeholder="Website Name"
           />
-
-          <Select
-            value={currentPage?.id || ""}
-            onValueChange={(value) => onChangePage(value)}
-          >
-            <SelectTrigger className="w-40 h-8">
-              <SelectValue placeholder="Select page" />
-            </SelectTrigger>
-            <SelectContent>
-              {pages.map((page) => (
-                <SelectItem key={page.id} value={page.id}>
-                  {page.title} {page.isHomePage ? "(Home)" : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {onShopLinkClick && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="flex items-center gap-1" 
-              onClick={onShopLinkClick}
-            >
-              <Store className="h-4 w-4" />
-              Shop
-            </Button>
-          )}
           
-          {saveStatus && (
-            <span className="text-xs text-gray-500 ml-2">
-              {saveStatus}
-            </span>
+          {currentPage && (
+            <div className="text-sm text-gray-500">
+              / {currentPage.title}
+            </div>
           )}
         </div>
 
         <div className="flex items-center space-x-2">
+          {saveStatus && (
+            <span className="text-xs text-gray-500 mr-2">{saveStatus}</span>
+          )}
+          
           <Button
             variant="outline"
             size="sm"
-            onClick={handleOpenFullPreview}
-            title="Open in new tab"
-            className="flex items-center gap-1"
+            onClick={() => setShowTemplates(true)}
           >
-            <ExternalLink className="h-4 w-4" />
-            View Site
+            <Palette className="mr-2 h-4 w-4" />
+            Templates
           </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={onShopLinkClick}>
+                <ShoppingBag className="mr-2 h-4 w-4" />
+                Shop Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onChangePage && onChangePage('pages')}>
+                <FileText className="mr-2 h-4 w-4" />
+                Pages
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setIsPreviewMode(!isPreviewMode)}
+            onClick={() => setIsPreviewMode && setIsPreviewMode(!isPreviewMode)}
           >
-            {isPreviewMode ? (
-              <>
-                <EyeOff className="mr-2 h-4 w-4" />
-                Exit Preview
-              </>
-            ) : (
-              <>
-                <Eye className="mr-2 h-4 w-4" />
-                Preview
-              </>
-            )}
+            <Eye className="mr-2 h-4 w-4" />
+            {isPreviewMode ? 'Edit' : 'Preview'}
           </Button>
+
           <Button 
+            variant="outline" 
             size="sm" 
             onClick={onSave}
             disabled={isSaving}
-            className="flex items-center gap-1"
           >
-            <Save className="h-4 w-4" />
-            {isSaving ? "Saving..." : "Save"}
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Save
+              </>
+            )}
           </Button>
+
           <Button 
             size="sm" 
-            onClick={onPublish} 
-            disabled={isPublishing || isPublished}
-            className="flex items-center gap-1"
+            onClick={onPublish}
+            disabled={isPublishing}
+            className="bg-green-600 hover:bg-green-700"
           >
-            <Home className="h-4 w-4" />
-            {isPublishing ? "Publishing..." : isPublished ? "Published" : "Publish"}
+            {isPublishing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Publishing...
+              </>
+            ) : (
+              <>
+                <Globe className="mr-2 h-4 w-4" />
+                {isPublished ? 'Update' : 'Publish'}
+              </>
+            )}
           </Button>
+
+          {viewSiteUrl && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => window.open(viewSiteUrl, '_blank')}
+            >
+              <ExternalLink className="mr-2 h-4 w-4" />
+              View Site
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Tabs row */}
-      <div className="px-4 border-t border-slate-200">
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="bg-transparent h-10 p-0 border-b border-transparent gap-4">
-            <TabsTrigger 
-              value="edit" 
-              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
-            >
-              <PanelsTopLeft className="h-4 w-4 mr-2" />
-              Edit
-            </TabsTrigger>
-            <TabsTrigger 
-              value="products" 
-              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
-            >
-              <Package className="h-4 w-4 mr-2" />
-              Products
-            </TabsTrigger>
-            <TabsTrigger 
-              value="orders" 
-              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
-            >
-              <ShoppingBag className="h-4 w-4 mr-2" />
-              Orders
-            </TabsTrigger>
-            <TabsTrigger 
-              value="pages" 
-              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Pages
-            </TabsTrigger>
-            <TabsTrigger 
-              value="settings" 
-              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Site Settings
-            </TabsTrigger>
-            <TabsTrigger 
-              value="payment-settings" 
-              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
-            >
-              <CreditCard className="h-4 w-4 mr-2" />
-              Payment
-            </TabsTrigger>
-            <TabsTrigger 
-              value="shipping-settings" 
-              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
-            >
-              <Truck className="h-4 w-4 mr-2" />
-              Shipping
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-    </div>
+      <Dialog open={showTemplates} onOpenChange={setShowTemplates}>
+        <DialogContent className="max-w-6xl">
+          <DialogHeader>
+            <DialogTitle>Website Templates</DialogTitle>
+          </DialogHeader>
+          <TemplateSelector
+            onSelectTemplate={handleTemplateSelect}
+            onClose={() => setShowTemplates(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
