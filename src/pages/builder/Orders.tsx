@@ -10,11 +10,26 @@ import { toast } from "sonner";
 
 interface Order {
   id: string;
-  customer_email: string;
+  user_id: string | null;
+  website_id: string;
   total_amount: number;
   status: string;
   created_at: string;
-  items: any[];
+  updated_at: string;
+  shipping_address: any;
+  billing_address: any;
+  payment_info: any;
+  shipping_cost: number | null;
+  shipping_method: string | null;
+  order_items?: OrderItem[];
+}
+
+interface OrderItem {
+  id: string;
+  product_name: string | null;
+  product_image_url: string | null;
+  quantity: number;
+  price_at_purchase: number;
 }
 
 const Orders = () => {
@@ -31,9 +46,19 @@ const Orders = () => {
     if (!id) return;
     
     try {
+      // Fetch orders with their order items
       const { data, error } = await supabase
         .from('orders')
-        .select('*')
+        .select(`
+          *,
+          order_items (
+            id,
+            product_name,
+            product_image_url,
+            quantity,
+            price_at_purchase
+          )
+        `)
         .eq('website_id', id)
         .order('created_at', { ascending: false });
 
@@ -54,6 +79,14 @@ const Orders = () => {
       case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const getCustomerEmail = (order: Order) => {
+    // Try to get email from billing address, shipping address, or payment info
+    return order.billing_address?.email || 
+           order.shipping_address?.email || 
+           order.payment_info?.email || 
+           'No email provided';
   };
 
   if (isLoading) {
@@ -105,7 +138,7 @@ const Orders = () => {
                       <CardDescription className="flex items-center gap-4 mt-1">
                         <span className="flex items-center gap-1">
                           <User className="h-4 w-4" />
-                          {order.customer_email}
+                          {getCustomerEmail(order)}
                         </span>
                         <span className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
@@ -127,12 +160,22 @@ const Orders = () => {
                 <CardContent>
                   <div className="space-y-2">
                     <h4 className="font-medium">Items:</h4>
-                    {order.items?.map((item: any, index: number) => (
-                      <div key={index} className="flex justify-between text-sm">
-                        <span>{item.name} x {item.quantity}</span>
-                        <span>${(item.price * item.quantity).toFixed(2)}</span>
+                    {order.order_items?.length ? (
+                      order.order_items.map((item, index) => (
+                        <div key={index} className="flex justify-between text-sm">
+                          <span>{item.product_name || 'Unknown Product'} x {item.quantity}</span>
+                          <span>${(item.price_at_purchase * item.quantity).toFixed(2)}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">No items found</p>
+                    )}
+                    {order.shipping_cost && order.shipping_cost > 0 && (
+                      <div className="flex justify-between text-sm border-t pt-2">
+                        <span>Shipping ({order.shipping_method || 'Standard'})</span>
+                        <span>${order.shipping_cost.toFixed(2)}</span>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </CardContent>
               </Card>
