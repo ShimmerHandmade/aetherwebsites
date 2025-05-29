@@ -34,6 +34,9 @@ function App() {
               <Route path="/builder/:id" element={<Builder />} />
               <Route path="/builder/:id/shop" element={<BuilderShop />} />
               <Route path="/builder/:id/products" element={<ProductsManager />} />
+              <Route path="/builder/:id/shipping-settings" element={<ShippingSettings />} />
+              <Route path="/builder/:id/pages" element={<PageSettings />} />
+              <Route path="/builder/:id/payment-settings" element={<PaymentSettings />} />
               <Route path="/view/:id" element={<Website />} />
               <Route path="/site/:id" element={<Website />} />
             </Routes>

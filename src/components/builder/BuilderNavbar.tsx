@@ -25,6 +25,7 @@ import {
   ExternalLink,
   ShoppingBag,
   CreditCard // Added CreditCard icon for payment settings
+  Truck
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -81,7 +82,6 @@ const BuilderNavbar = ({
     if (path.includes('/products')) return "products";
     if (path.includes('/orders')) return "orders";
     if (path.includes('/pages')) return "pages";
-    if (path.includes('/page-settings')) return "page-settings";
     if (path.includes('/settings')) return "settings";
     if (path.includes('/payment-settings')) return "payment-settings"; // Added for payment settings
     return "edit";
@@ -113,9 +113,6 @@ const BuilderNavbar = ({
         break;
       case "pages":
         navigate(`/builder/${websiteId}/pages`);
-        break;
-      case "page-settings":
-        navigate(`/builder/${websiteId}/page-settings`);
         break;
       case "settings":
         navigate(`/builder/${websiteId}/settings`);
