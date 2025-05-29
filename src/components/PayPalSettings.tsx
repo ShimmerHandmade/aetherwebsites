@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
@@ -26,7 +25,7 @@ interface WebsiteSettings {
 
 const PayPalSettings: React.FC<PayPalSettingsProps> = ({ websiteId }) => {
   const [paypalClientId, setPaypalClientId] = useState('');
-  const [sandboxMode, setSandboxMode] = useState(true);
+  const [paypalClientSecret, setPaypalClientSecret] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [paypalConnected, setPaypalConnected] = useState(false);
@@ -52,8 +51,7 @@ const PayPalSettings: React.FC<PayPalSettingsProps> = ({ websiteId }) => {
       const settings = (data?.settings as WebsiteSettings) || {};
       if (settings.paypal) {
         setPaypalClientId(settings.paypal.clientId || '');
-        setSandboxMode(settings.paypal.sandbox !== false); // Default to true
-        setPaypalConnected(!!settings.paypal.clientId && !!settings.paypal.enabled);
+        setPaypalConnected(!!settings.paypal.clientId);
       }
     } catch (error) {
       console.error('Error in loadPayPalSettings:', error);
@@ -88,7 +86,7 @@ const PayPalSettings: React.FC<PayPalSettingsProps> = ({ websiteId }) => {
         paypal: {
           clientId: paypalClientId.trim(),
           enabled: true,
-          sandbox: sandboxMode
+          sandbox: true // Default to sandbox for safety
         }
       };
 
@@ -182,7 +180,7 @@ const PayPalSettings: React.FC<PayPalSettingsProps> = ({ websiteId }) => {
           )}
         </CardTitle>
         <CardDescription>
-          Connect PayPal for payment processing
+          Connect PayPal for payment processing (Enterprise feature)
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -191,9 +189,6 @@ const PayPalSettings: React.FC<PayPalSettingsProps> = ({ websiteId }) => {
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-green-800 font-medium">PayPal Connected</p>
               <p className="text-green-600 text-sm">Your PayPal account is connected and ready to process payments.</p>
-              <p className="text-green-600 text-sm mt-1">
-                Mode: {sandboxMode ? 'Sandbox (Test)' : 'Live (Production)'}
-              </p>
             </div>
             <Button 
               onClick={disconnectPayPal}
@@ -226,16 +221,6 @@ const PayPalSettings: React.FC<PayPalSettingsProps> = ({ websiteId }) => {
                 Get your Client ID from the PayPal Developer Dashboard
               </p>
             </div>
-            
-            <div className="flex items-center space-x-2">
-              <Switch 
-                id="sandbox-mode"
-                checked={sandboxMode}
-                onCheckedChange={setSandboxMode}
-              />
-              <Label htmlFor="sandbox-mode">Sandbox Mode (for testing)</Label>
-            </div>
-            
             <Button 
               onClick={savePayPalSettings}
               disabled={isSaving || !paypalClientId.trim()}

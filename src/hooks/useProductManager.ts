@@ -11,15 +11,13 @@ export function useProductManager(
 ) {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isAddingNew, setIsAddingNew] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
   const [newCategory, setNewCategory] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<"grid" | "list">("grid");
-
-  // Determine if we're adding a new product based on the product ID
-  const isAddingNew = !editingProduct?.id;
 
   // Filter products based on search term and active tab
   const filteredProducts = products.filter(product => {
@@ -41,6 +39,7 @@ export function useProductManager(
     setEditingProduct({...product});
     setImagePreview(product.image_url || null);
     setImageFile(null);
+    setIsAddingNew(false);
   }, []);
 
   const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,18 +92,15 @@ export function useProductManager(
     setIsSaving(true);
 
     try {
-      // Use the ID to determine if this is a new product
-      const isNewProduct = !editingProduct.id;
-      
       const result = await saveProduct(
         editingProduct, 
         websiteId, 
-        isNewProduct, 
+        isAddingNew, 
         imageFile
       );
 
       if (result.success) {
-        toast.success(isNewProduct ? "Product added successfully" : "Product updated successfully");
+        toast.success(isAddingNew ? "Product added successfully" : "Product updated successfully");
         setEditingProduct(null);
         setImagePreview(null);
         setImageFile(null);
@@ -119,12 +115,13 @@ export function useProductManager(
     } finally {
       setIsSaving(false);
     }
-  }, [editingProduct, websiteId, imageFile]);
+  }, [editingProduct, websiteId, isAddingNew, imageFile]);
 
   const handleCancel = useCallback(() => {
     setEditingProduct(null);
     setImagePreview(null);
     setImageFile(null);
+    setIsAddingNew(false);
   }, []);
 
   const handleDelete = useCallback(async (id: string) => {

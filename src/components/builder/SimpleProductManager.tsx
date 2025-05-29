@@ -99,9 +99,8 @@ const SimpleProductManager: React.FC<SimpleProductManagerProps> = ({
         return;
       }
       
-      // Create a completely new product with empty ID to ensure it's treated as new
       setEditingProduct({
-        id: "", // Empty ID indicates new product
+        id: "",
         name: "",
         description: "",
         price: 0,
@@ -152,8 +151,8 @@ const SimpleProductManager: React.FC<SimpleProductManagerProps> = ({
   // Show loading state
   if (planLoading || initialLoading) {
     return (
-      <div className="h-full flex items-center justify-center bg-white rounded-lg">
-        <div className="text-center p-8">
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-blue-600" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">Loading Product Manager</h3>
           <p className="text-gray-600">Setting up your product management tools...</p>
@@ -165,7 +164,7 @@ const SimpleProductManager: React.FC<SimpleProductManagerProps> = ({
   // Show error if plan loading failed
   if (planError) {
     return (
-      <div className="h-full flex items-center justify-center p-6 bg-white rounded-lg">
+      <div className="h-full flex items-center justify-center p-6">
         <Alert variant="destructive" className="max-w-md">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
@@ -177,7 +176,7 @@ const SimpleProductManager: React.FC<SimpleProductManagerProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col bg-white rounded-lg">
+    <div className="h-full flex flex-col">
       <ProductHeader
         title="Product Manager"
         isEditing={!!editingProduct}
@@ -188,7 +187,7 @@ const SimpleProductManager: React.FC<SimpleProductManagerProps> = ({
       />
 
       {!editingProduct && (
-        <div className="px-6 mb-4">
+        <div className="px-4 mb-4">
           <ProductSearch
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
@@ -203,33 +202,31 @@ const SimpleProductManager: React.FC<SimpleProductManagerProps> = ({
         </div>
       )}
 
-      <div className="flex-1 px-6 pb-6">
-        <ProductContent
-          isLoading={false}
-          loadingError={error}
-          editingProduct={editingProduct}
-          filteredProducts={filteredProducts}
-          currentView={currentView}
-          isAddingNew={!editingProduct?.id} // True when ID is empty or null
-          isSaving={isSaving}
-          categories={categories}
-          newCategory={newCategory}
-          imagePreview={imagePreview}
-          onProductChange={setEditingProduct}
-          onSave={handleSave}
-          onCancel={handleCancel}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onImageChange={handleImageChange}
-          onClearImage={handleClearImage}
-          onNewCategoryChange={setNewCategory}
-          onAddCategory={handleAddCategory}
-          planInfo={{
-            maxProducts: restrictions.maxProducts,
-            currentCount: products.length
-          }}
-        />
-      </div>
+      <ProductContent
+        isLoading={false}
+        loadingError={error}
+        editingProduct={editingProduct}
+        filteredProducts={filteredProducts}
+        currentView={currentView}
+        isAddingNew={isAddingNew}
+        isSaving={isSaving}
+        categories={categories}
+        newCategory={newCategory}
+        imagePreview={imagePreview}
+        onProductChange={setEditingProduct}
+        onSave={handleSave}
+        onCancel={handleCancel}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onImageChange={handleImageChange}
+        onClearImage={handleClearImage}
+        onNewCategoryChange={setNewCategory}
+        onAddCategory={handleAddCategory}
+        planInfo={{
+          maxProducts: restrictions.maxProducts,
+          currentCount: products.length
+        }}
+      />
     </div>
   );
 };
