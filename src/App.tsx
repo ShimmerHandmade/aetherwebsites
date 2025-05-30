@@ -18,8 +18,8 @@ import SimpleProductManager from "./components/builder/SimpleProductManager";
 import OrderManager from "./components/builder/OrderManager";
 import ShippingSettingsManager from "./components/builder/ShippingSettingsManager";
 import PayPalSettings from "./components/PayPalSettings";
-import SiteSettings from "./components/SiteSettings";
-import ViewWebsite from "./pages/ViewWebsite";
+import SiteSettings from "./pages/builder/SiteSettings";
+import WebsiteViewer from "./pages/WebsiteViewer";
 
 const queryClient = new QueryClient();
 
@@ -64,7 +64,7 @@ function App() {
             <Route path="/builder/:id/site-settings" element={<SiteSettings />} />
             <Route path="/builder/:id/payment-settings" element={<PayPalSettings websiteId="" />} />
             <Route path="/builder/:id/shipping-settings" element={<ShippingSettingsManager />} />
-            <Route path="/view/:id" element={<ViewWebsite />} />
+            <Route path="/view/:id" element={<WebsiteViewer />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
