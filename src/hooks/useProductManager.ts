@@ -3,21 +3,56 @@ import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { Product, UniqueCategory } from "@/types/product";
 import { saveProduct, deleteProduct } from "@/api/products";
+import { useSaveManager } from "./useSaveManager";
 
 export function useProductManager(
   websiteId: string | undefined,
   products: Product[],
-  categories: UniqueCategory[]
+  categories: UniqueCategory[],
+  onProductSaved?: () => void
 ) {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
   const [newCategory, setNewCategory] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<"grid" | "list">("grid");
+
+  const saveManager = useSaveManager({
+    onSave: async () => {
+      if (!editingProduct || !websiteId) return false;
+      
+      if (!editingProduct.name.trim()) {
+        toast.error("Product name is required");
+        return false;
+      }
+      
+      if (editingProduct.price <= 0) {
+        toast.error("Price must be greater than zero");
+        return false;
+      }
+
+      const result = await saveProduct(
+        editingProduct, 
+        websiteId, 
+        isAddingNew, 
+        imageFile
+      );
+
+      if (result.success) {
+        setEditingProduct(null);
+        setImagePreview(null);
+        setImageFile(null);
+        onProductSaved?.();
+        return true;
+      } else {
+        toast.error(result.error || "Failed to save product");
+        return false;
+      }
+    }
+  });
 
   // Filter products based on search term and active tab
   const filteredProducts = products.filter(product => {
@@ -63,7 +98,8 @@ export function useProductManager(
     reader.readAsDataURL(file);
     
     setImageFile(file);
-  }, []);
+    saveManager.markAsUnsaved();
+  }, [saveManager]);
 
   const handleAddCategory = useCallback(() => {
     if (!newCategory.trim()) return;
@@ -75,47 +111,6 @@ export function useProductManager(
     }
     setNewCategory("");
   }, [newCategory, categories]);
-
-  const handleSave = useCallback(async () => {
-    if (!editingProduct || !websiteId) return { success: false };
-    
-    if (!editingProduct.name.trim()) {
-      toast.error("Product name is required");
-      return { success: false };
-    }
-    
-    if (editingProduct.price <= 0) {
-      toast.error("Price must be greater than zero");
-      return { success: false };
-    }
-    
-    setIsSaving(true);
-
-    try {
-      const result = await saveProduct(
-        editingProduct, 
-        websiteId, 
-        isAddingNew, 
-        imageFile
-      );
-
-      if (result.success) {
-        toast.success(isAddingNew ? "Product added successfully" : "Product updated successfully");
-        setEditingProduct(null);
-        setImagePreview(null);
-        setImageFile(null);
-        return { success: true, product: result.product };
-      } else {
-        toast.error(result.error || "Failed to save product");
-        return { success: false, error: result.error };
-      }
-    } catch (error) {
-      toast.error("Failed to save product");
-      return { success: false, error: String(error) };
-    } finally {
-      setIsSaving(false);
-    }
-  }, [editingProduct, websiteId, isAddingNew, imageFile]);
 
   const handleCancel = useCallback(() => {
     setEditingProduct(null);
@@ -136,6 +131,7 @@ export function useProductManager(
       
       if (result.success) {
         toast.success("Product deleted");
+        onProductSaved?.();
         return { success: true };
       } else {
         toast.error(result.error || "Failed to delete product");
@@ -145,7 +141,7 @@ export function useProductManager(
       toast.error("An unexpected error occurred");
       return { success: false, error: String(error) };
     }
-  }, [websiteId]);
+  }, [websiteId, onProductSaved]);
   
   const handleDeleteCategory = useCallback((categoryName: string) => {
     toast.success("Category removed from list");
@@ -156,16 +152,22 @@ export function useProductManager(
     setImageFile(null);
     if (editingProduct) {
       setEditingProduct({...editingProduct, image_url: null});
+      saveManager.markAsUnsaved();
     }
-  }, [editingProduct]);
+  }, [editingProduct, saveManager]);
+
+  const handleProductChange = useCallback((updatedProduct: Product) => {
+    setEditingProduct(updatedProduct);
+    saveManager.markAsUnsaved();
+  }, [saveManager]);
 
   return {
     searchTerm,
     setSearchTerm,
     editingProduct,
-    setEditingProduct,
+    setEditingProduct: handleProductChange,
     isAddingNew,
-    isSaving,
+    isSaving: saveManager.isSaving,
     activeTab,
     setActiveTab,
     newCategory,
@@ -178,10 +180,12 @@ export function useProductManager(
     handleEdit,
     handleImageChange,
     handleAddCategory,
-    handleSave,
+    handleSave: saveManager.save,
     handleCancel,
     handleDelete,
     handleDeleteCategory,
     handleClearImage,
+    saveStatus: saveManager.getSaveStatus(),
+    hasUnsavedChanges: saveManager.hasUnsavedChanges
   };
 }

@@ -53,6 +53,7 @@ interface BuilderNavbarProps {
   onReturnToDashboard?: () => void;
   viewSiteUrl?: string;
   saveStatus?: string;
+  hasUnsavedChanges?: boolean;
 }
 
 const BuilderNavbar = ({
@@ -71,7 +72,8 @@ const BuilderNavbar = ({
   onShopLinkClick,
   onReturnToDashboard,
   viewSiteUrl,
-  saveStatus = ''
+  saveStatus = '',
+  hasUnsavedChanges = false
 }: BuilderNavbarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -96,6 +98,21 @@ const BuilderNavbar = ({
   }, [location.pathname]);
   
   const handleTabChange = (value: string) => {
+    // Check for unsaved changes before navigating
+    if (hasUnsavedChanges) {
+      const confirmLeave = window.confirm("You have unsaved changes. Do you want to save before leaving?");
+      if (confirmLeave) {
+        onSave();
+        // Add a small delay to allow save to complete
+        setTimeout(() => navigateToTab(value), 500);
+        return;
+      }
+    }
+    
+    navigateToTab(value);
+  };
+
+  const navigateToTab = (value: string) => {
     setActiveTab(value);
     
     const websiteId = window.location.pathname.split("/")[2];
@@ -127,11 +144,19 @@ const BuilderNavbar = ({
   };
 
   const handleReturnToDashboard = () => {
-    if (isSaving) {
-      toast("Please wait for the current save to complete", {
-        description: "Your changes are being saved"
-      });
-      return;
+    if (hasUnsavedChanges) {
+      const confirmLeave = window.confirm("You have unsaved changes. Do you want to save before leaving?");
+      if (confirmLeave) {
+        onSave();
+        setTimeout(() => {
+          if (onReturnToDashboard) {
+            onReturnToDashboard();
+          } else {
+            navigate('/dashboard');
+          }
+        }, 500);
+        return;
+      }
     }
     
     if (onReturnToDashboard) {
@@ -153,7 +178,7 @@ const BuilderNavbar = ({
   };
 
   return (
-    <div className="w-full flex flex-col bg-white border-b border-slate-200">
+    <div className="w-full flex flex-col bg-white border-b border-slate-200 sticky top-0 z-50">
       {/* Top bar */}
       <div className="h-14 flex items-center px-4 justify-between">
         <div className="flex items-center space-x-4">
@@ -174,21 +199,23 @@ const BuilderNavbar = ({
             placeholder="Website Name"
           />
 
-          <Select
-            value={currentPage?.id || ""}
-            onValueChange={(value) => onChangePage(value)}
-          >
-            <SelectTrigger className="w-40 h-8">
-              <SelectValue placeholder="Select page" />
-            </SelectTrigger>
-            <SelectContent>
-              {pages.map((page) => (
-                <SelectItem key={page.id} value={page.id}>
-                  {page.title} {page.isHomePage ? "(Home)" : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {pages.length > 0 && (
+            <Select
+              value={currentPage?.id || ""}
+              onValueChange={(value) => onChangePage(value)}
+            >
+              <SelectTrigger className="w-40 h-8">
+                <SelectValue placeholder="Select page" />
+              </SelectTrigger>
+              <SelectContent>
+                {pages.map((page) => (
+                  <SelectItem key={page.id} value={page.id}>
+                    {page.title} {page.isHomePage ? "(Home)" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
           {onShopLinkClick && (
             <Button 
@@ -203,7 +230,9 @@ const BuilderNavbar = ({
           )}
           
           {saveStatus && (
-            <span className="text-xs text-gray-500 ml-2">
+            <span className={`text-xs ${
+              hasUnsavedChanges ? 'text-orange-600 font-medium' : 'text-gray-500'
+            }`}>
               {saveStatus}
             </span>
           )}
@@ -241,10 +270,12 @@ const BuilderNavbar = ({
             size="sm" 
             onClick={onSave}
             disabled={isSaving}
-            className="flex items-center gap-1"
+            className={`flex items-center gap-1 ${
+              hasUnsavedChanges ? 'bg-orange-600 hover:bg-orange-700' : ''
+            }`}
           >
             <Save className="h-4 w-4" />
-            {isSaving ? "Saving..." : "Save"}
+            {isSaving ? "Saving..." : hasUnsavedChanges ? "Save*" : "Save"}
           </Button>
           <Button 
             size="sm" 

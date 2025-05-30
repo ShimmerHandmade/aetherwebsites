@@ -31,6 +31,28 @@ const SimpleProductManager: React.FC<SimpleProductManagerProps> = ({
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const refreshData = async () => {
+    if (!effectiveWebsiteId) return;
+    
+    try {
+      const result = await fetchProducts(effectiveWebsiteId);
+      if (!result.error) {
+        setProducts(result.products);
+        setCategories(result.categories);
+      }
+    } catch (err) {
+      console.error("Error refreshing:", err);
+    }
+  };
+
+  // Product manager hook
+  const productManager = useProductManager(
+    effectiveWebsiteId, 
+    products, 
+    categories,
+    refreshData
+  );
+
   // Load products
   useEffect(() => {
     const loadData = async () => {
@@ -64,32 +86,6 @@ const SimpleProductManager: React.FC<SimpleProductManagerProps> = ({
 
     loadData();
   }, [effectiveWebsiteId]);
-  
-  // Product manager hook
-  const {
-    editingProduct,
-    setEditingProduct,
-    isAddingNew,
-    isSaving,
-    searchTerm,
-    setSearchTerm,
-    activeTab,
-    setActiveTab,
-    newCategory,
-    setNewCategory,
-    imagePreview,
-    currentView,
-    setCurrentView,
-    filteredProducts,
-    handleEdit,
-    handleImageChange,
-    handleAddCategory,
-    handleSave: internalHandleSave,
-    handleCancel,
-    handleDelete: internalHandleDelete,
-    handleDeleteCategory,
-    handleClearImage,
-  } = useProductManager(effectiveWebsiteId, products, categories);
 
   const handleAddNew = async () => {
     try {
@@ -99,7 +95,7 @@ const SimpleProductManager: React.FC<SimpleProductManagerProps> = ({
         return;
       }
       
-      setEditingProduct({
+      productManager.setEditingProduct({
         id: "",
         name: "",
         description: "",
@@ -116,36 +112,6 @@ const SimpleProductManager: React.FC<SimpleProductManagerProps> = ({
       console.error("Error checking product limit:", error);
       toast.error("Unable to verify product limits. Please try again.");
     }
-  };
-
-  const refreshData = async () => {
-    if (!effectiveWebsiteId) return;
-    
-    try {
-      const result = await fetchProducts(effectiveWebsiteId);
-      if (!result.error) {
-        setProducts(result.products);
-        setCategories(result.categories);
-      }
-    } catch (err) {
-      console.error("Error refreshing:", err);
-    }
-  };
-
-  const handleSave = async () => {
-    const result = await internalHandleSave();
-    if (result?.success) {
-      await refreshData();
-    }
-    return result;
-  };
-
-  const handleDelete = async (id: string) => {
-    const result = await internalHandleDelete(id);
-    if (result?.success) {
-      await refreshData();
-    }
-    return result;
   };
 
   // Show loading state
@@ -179,25 +145,29 @@ const SimpleProductManager: React.FC<SimpleProductManagerProps> = ({
     <div className="h-full flex flex-col">
       <ProductHeader
         title="Product Manager"
-        isEditing={!!editingProduct}
-        currentView={currentView}
+        isEditing={!!productManager.editingProduct}
+        currentView={productManager.currentView}
         onAddNew={handleAddNew}
-        onToggleView={() => setCurrentView(currentView === "grid" ? "list" : "grid")}
+        onToggleView={() => productManager.setCurrentView(productManager.currentView === "grid" ? "list" : "grid")}
         onBack={onBackToBuilder}
+        saveStatus={productManager.saveStatus}
+        hasUnsavedChanges={productManager.hasUnsavedChanges}
+        isSaving={productManager.isSaving}
+        onSave={productManager.handleSave}
       />
 
-      {!editingProduct && (
+      {!productManager.editingProduct && (
         <div className="px-4 mb-4">
           <ProductSearch
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
+            searchTerm={productManager.searchTerm}
+            onSearchChange={productManager.setSearchTerm}
+            activeTab={productManager.activeTab}
+            onTabChange={productManager.setActiveTab}
             categories={categories}
-            newCategory={newCategory}
-            onNewCategoryChange={setNewCategory}
-            onAddCategory={handleAddCategory}
-            onDeleteCategory={handleDeleteCategory}
+            newCategory={productManager.newCategory}
+            onNewCategoryChange={productManager.setNewCategory}
+            onAddCategory={productManager.handleAddCategory}
+            onDeleteCategory={productManager.handleDeleteCategory}
           />
         </div>
       )}
@@ -205,23 +175,23 @@ const SimpleProductManager: React.FC<SimpleProductManagerProps> = ({
       <ProductContent
         isLoading={false}
         loadingError={error}
-        editingProduct={editingProduct}
-        filteredProducts={filteredProducts}
-        currentView={currentView}
-        isAddingNew={isAddingNew}
-        isSaving={isSaving}
+        editingProduct={productManager.editingProduct}
+        filteredProducts={productManager.filteredProducts}
+        currentView={productManager.currentView}
+        isAddingNew={productManager.isAddingNew}
+        isSaving={productManager.isSaving}
         categories={categories}
-        newCategory={newCategory}
-        imagePreview={imagePreview}
-        onProductChange={setEditingProduct}
-        onSave={handleSave}
-        onCancel={handleCancel}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onImageChange={handleImageChange}
-        onClearImage={handleClearImage}
-        onNewCategoryChange={setNewCategory}
-        onAddCategory={handleAddCategory}
+        newCategory={productManager.newCategory}
+        imagePreview={productManager.imagePreview}
+        onProductChange={productManager.setEditingProduct}
+        onSave={productManager.handleSave}
+        onCancel={productManager.handleCancel}
+        onEdit={productManager.handleEdit}
+        onDelete={productManager.handleDelete}
+        onImageChange={productManager.handleImageChange}
+        onClearImage={productManager.handleClearImage}
+        onNewCategoryChange={productManager.setNewCategory}
+        onAddCategory={productManager.handleAddCategory}
         planInfo={{
           maxProducts: restrictions.maxProducts,
           currentCount: products.length

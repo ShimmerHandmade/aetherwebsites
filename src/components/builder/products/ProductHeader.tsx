@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus, Grid, List, Save } from "lucide-react";
 
 interface ProductHeaderProps {
   title: string;
@@ -9,7 +9,11 @@ interface ProductHeaderProps {
   currentView: "grid" | "list";
   onAddNew: () => void;
   onToggleView: () => void;
-  onBack: () => void;
+  onBack?: () => void;
+  saveStatus?: string;
+  hasUnsavedChanges?: boolean;
+  isSaving?: boolean;
+  onSave?: () => void;
 }
 
 const ProductHeader: React.FC<ProductHeaderProps> = ({
@@ -18,34 +22,72 @@ const ProductHeader: React.FC<ProductHeaderProps> = ({
   currentView,
   onAddNew,
   onToggleView,
-  onBack
+  onBack,
+  saveStatus,
+  hasUnsavedChanges,
+  isSaving,
+  onSave
 }) => {
   return (
-    <div className="flex items-center justify-between mb-6">
-      <h2 className="text-2xl font-semibold">{title}</h2>
-      <div className="flex gap-2">
-        {isEditing ? (
-          <Button 
-            variant="outline" 
-            onClick={onBack}
-            className="flex items-center gap-1"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Products
-          </Button>
-        ) : (
-          <>
+    <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          {onBack && (
+            <Button variant="outline" size="sm" onClick={onBack}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+          )}
+          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+          
+          {saveStatus && (
+            <span className={`text-sm ${
+              hasUnsavedChanges ? 'text-orange-600' : 'text-gray-500'
+            }`}>
+              {saveStatus}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center space-x-2">
+          {isEditing && onSave && (
             <Button 
-              variant="outline" 
-              onClick={onToggleView}
+              size="sm" 
+              onClick={onSave}
+              disabled={isSaving}
+              className="flex items-center gap-2"
             >
-              {currentView === "grid" ? "List View" : "Grid View"}
+              <Save className="h-4 w-4" />
+              {isSaving ? "Saving..." : "Save"}
             </Button>
-            <Button onClick={onAddNew} className="flex items-center gap-1">
-              <Plus className="h-4 w-4" /> Add Product
-            </Button>
-          </>
-        )}
+          )}
+          
+          {!isEditing && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onToggleView}
+              >
+                {currentView === "grid" ? (
+                  <>
+                    <List className="h-4 w-4 mr-2" />
+                    List View
+                  </>
+                ) : (
+                  <>
+                    <Grid className="h-4 w-4 mr-2" />
+                    Grid View
+                  </>
+                )}
+              </Button>
+              <Button onClick={onAddNew} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Product
+              </Button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
