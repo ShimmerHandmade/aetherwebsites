@@ -77,7 +77,7 @@ export const usePlanInfo = () => {
               planName: null,
               restrictions,
               loading: false,
-              error: null, // Don't show profile errors to users
+              error: profileError.message,
               isPremium: false,
               isEnterprise: false
             });
@@ -133,7 +133,7 @@ export const usePlanInfo = () => {
           setPlanInfo(prev => ({
             ...prev,
             loading: false,
-            error: null // Don't show internal errors to users
+            error: error instanceof Error ? error.message : "Failed to load plan information"
           }));
         }
       } finally {

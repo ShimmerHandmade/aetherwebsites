@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import BuilderLayout from "@/components/builder/BuilderLayout";
@@ -209,7 +208,6 @@ const SimpleBuilder = () => {
               onReturnToDashboard={handleReturnToDashboard}
               viewSiteUrl={`/view/${id}`}
               saveStatus={saveStatus}
-              hasUnsavedChanges={unsavedChanges}
             />
             <BuilderContent isPreviewMode={isPreviewMode} />
           </BuilderLayout>

@@ -28,15 +28,12 @@ export const PlanProvider = ({ children }: PlanProviderProps) => {
   
   // Only show error toast for genuine errors, not auth session missing
   useEffect(() => {
-    if (planInfo.error && !planInfo.loading) {
+    if (planInfo.error && !planInfo.loading && planInfo.error !== "Auth session missing!") {
       console.error("Plan loading error:", planInfo.error);
-      // Don't show toast for auth session missing as it's expected for non-authenticated users
-      if (!planInfo.error.includes("Auth session missing")) {
-        toast.error("Plan Loading Error", {
-          description: planInfo.error,
-          duration: 5000,
-        });
-      }
+      toast.error("Plan Loading Error", {
+        description: planInfo.error,
+        duration: 5000,
+      });
     }
   }, [planInfo.error, planInfo.loading]);
   
@@ -129,20 +126,6 @@ export const PlanProvider = ({ children }: PlanProviderProps) => {
 // Custom hook to use the plan context
 export const usePlan = () => {
   const context = useContext(PlanContext);
-  if (!context) {
-    console.error("usePlan must be used within a PlanProvider");
-    return {
-      planName: null,
-      restrictions: null,
-      loading: true,
-      error: "usePlan must be used within a PlanProvider",
-      isPremium: false,
-      isEnterprise: false,
-      checkUpgrade: () => false,
-      isThemeAllowed: async () => false
-    };
-  }
-  
   console.log("🎯 usePlan hook called, returning:", {
     planName: context.planName,
     loading: context.loading,
