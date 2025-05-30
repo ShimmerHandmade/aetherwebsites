@@ -11,12 +11,23 @@ export interface SimplePlanInfo {
 export const useSimplePlan = () => {
   const [planInfo, setPlanInfo] = useState<SimplePlanInfo>({
     restrictions: {
-      maxProducts: 10,
-      maxPages: 5,
-      maxStorage: 100,
-      hasCustomDomain: false,
-      hasEcommerce: false,
-      hasAnalytics: false
+      maxProducts: 15,
+      maxWebsites: 1,
+      allowCoupons: false,
+      allowDiscounts: false,
+      allowAdvancedAnalytics: false,
+      allowCustomDomain: false,
+      allowPremiumTemplates: false,
+      allowPremiumElements: false,
+      allowPremiumAnimations: false,
+      allowedThemes: [
+        "business",
+        "blog", 
+        "ecommerce",
+        "fashion",
+        "electronics", 
+        "food"
+      ]
     },
     loading: true,
     error: null
