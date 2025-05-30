@@ -10,6 +10,7 @@ import { Product, UniqueCategory } from "@/types/product";
 import { checkProductLimit } from "@/utils/planRestrictions";
 import { useProductManager } from "@/hooks/useProductManager";
 import { useSimplePlan } from "@/hooks/useSimplePlan";
+import { useSaveManager } from "@/hooks/useSaveManager";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, AlertTriangle } from "lucide-react";
 
@@ -91,6 +92,20 @@ const SimpleProductManager: React.FC<SimpleProductManagerProps> = ({
     handleClearImage,
   } = useProductManager(effectiveWebsiteId, products, categories);
 
+  // Save manager for handling save operations
+  const saveManager = useSaveManager({
+    onSave: async () => {
+      if (editingProduct) {
+        const result = await internalHandleSave();
+        if (result?.success) {
+          await refreshData();
+          return true;
+        }
+      }
+      return false;
+    }
+  });
+
   const handleAddNew = async () => {
     try {
       const canAddProduct = await checkProductLimit(products.length);
@@ -133,11 +148,7 @@ const SimpleProductManager: React.FC<SimpleProductManagerProps> = ({
   };
 
   const handleSave = async () => {
-    const result = await internalHandleSave();
-    if (result?.success) {
-      await refreshData();
-    }
-    return result;
+    return await saveManager.save();
   };
 
   const handleDelete = async (id: string) => {
@@ -209,11 +220,14 @@ const SimpleProductManager: React.FC<SimpleProductManagerProps> = ({
         filteredProducts={filteredProducts}
         currentView={currentView}
         isAddingNew={isAddingNew}
-        isSaving={isSaving}
+        isSaving={saveManager.isSaving}
         categories={categories}
         newCategory={newCategory}
         imagePreview={imagePreview}
-        onProductChange={setEditingProduct}
+        onProductChange={(product) => {
+          setEditingProduct(product);
+          saveManager.markAsChanged();
+        }}
         onSave={handleSave}
         onCancel={handleCancel}
         onEdit={handleEdit}

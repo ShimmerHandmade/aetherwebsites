@@ -1,9 +1,11 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import BuilderLayout from "@/components/builder/BuilderLayout";
 import BuilderNavbar from "@/components/builder/BuilderNavbar";
 import BuilderContent from "@/components/builder/BuilderContent";
 import { useWebsite } from "@/hooks/useWebsite";
+import { useSaveManager } from "@/hooks/useSaveManager";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
 import { useState, useEffect, useCallback } from "react";
 import { v4 as uuidv4 } from "@/lib/uuid";
@@ -35,27 +37,32 @@ const SimpleBuilder = () => {
   const [currentPageId, setCurrentPageId] = useState<string | null>(null);
   const [currentPageElements, setCurrentPageElements] = useState<BuilderElement[]>([]);
   const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
-  const [saveStatus, setSaveStatus] = useState<string>('');
 
-  // Update save status
-  useEffect(() => {
-    if (isSaving) {
-      setSaveStatus('Saving...');
-    } else if (unsavedChanges) {
-      setSaveStatus('Unsaved changes');
-    } else if (lastSaved) {
-      const now = new Date();
-      const diffInSeconds = Math.floor((now.getTime() - lastSaved.getTime()) / 1000);
-      
-      if (diffInSeconds < 60) {
-        setSaveStatus(`Saved ${diffInSeconds} seconds ago`);
-      } else {
-        setSaveStatus(`Saved at ${lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
+  // Save manager for handling save operations
+  const saveManager = useSaveManager({
+    onSave: async () => {
+      if (!currentPageId || !website) {
+        toast.error("Cannot save: No page selected");
+        return false;
       }
-    } else {
-      setSaveStatus('');
+      
+      try {
+        // Trigger save event and wait for the context to provide updated data
+        const saveEvent = new CustomEvent('request-save-data');
+        document.dispatchEvent(saveEvent);
+        
+        // Small delay to allow the event to be processed
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        document.dispatchEvent(new CustomEvent('save-website'));
+        return true;
+      } catch (error) {
+        console.error("Save error:", error);
+        toast.error("Failed to save website");
+        return false;
+      }
     }
-  }, [isSaving, unsavedChanges, lastSaved]);
+  });
 
   // Initialize pages
   useEffect(() => {
@@ -93,25 +100,8 @@ const SimpleBuilder = () => {
   }, [currentPageId, website, elements, websiteName]);
 
   const handleSave = useCallback(async () => {
-    if (!currentPageId || !website) {
-      toast.error("Cannot save: No page selected");
-      return;
-    }
-    
-    try {
-      // Trigger save event and wait for the context to provide updated data
-      const saveEvent = new CustomEvent('request-save-data');
-      document.dispatchEvent(saveEvent);
-      
-      // Small delay to allow the event to be processed
-      setTimeout(() => {
-        document.dispatchEvent(new CustomEvent('save-website'));
-      }, 100);
-    } catch (error) {
-      console.error("Save error:", error);
-      toast.error("Failed to save website");
-    }
-  }, [currentPageId, website]);
+    return await saveManager.save();
+  }, [saveManager]);
 
   const handleSaveComplete = useCallback(async (updatedElements: BuilderElement[], updatedPageSettings: PageSettings) => {
     if (!currentPageId || !website) return;
@@ -133,15 +123,12 @@ const SimpleBuilder = () => {
       
       if (success) {
         toast.success("Changes saved successfully");
-        setSaveStatus('Saved just now');
       } else {
         toast.error("Failed to save changes");
-        setSaveStatus('Save failed');
       }
     } catch (error) {
       console.error("Save completion error:", error);
       toast.error("Failed to save changes");
-      setSaveStatus('Save failed');
     }
   }, [currentPageId, website, saveWebsite]);
   
@@ -193,11 +180,14 @@ const SimpleBuilder = () => {
           <BuilderLayout isPreviewMode={isPreviewMode} setIsPreviewMode={setIsPreviewMode}>
             <BuilderNavbar 
               websiteName={websiteName} 
-              setWebsiteName={setWebsiteName} 
+              setWebsiteName={(name) => {
+                setWebsiteName(name);
+                saveManager.markAsChanged();
+              }} 
               onSave={handleSave} 
               onPublish={publishWebsite}
               isPublished={website?.published}
-              isSaving={isSaving}
+              isSaving={saveManager.isSaving || isSaving}
               isPublishing={isPublishing}
               isPreviewMode={isPreviewMode}
               setIsPreviewMode={setIsPreviewMode}
@@ -207,7 +197,7 @@ const SimpleBuilder = () => {
               onShopLinkClick={handleShopLinkClick}
               onReturnToDashboard={handleReturnToDashboard}
               viewSiteUrl={`/view/${id}`}
-              saveStatus={saveStatus}
+              saveStatus={saveManager.getSaveStatus()}
             />
             <BuilderContent isPreviewMode={isPreviewMode} />
           </BuilderLayout>
