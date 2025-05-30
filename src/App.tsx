@@ -20,8 +20,18 @@ import ShippingSettingsManager from "./components/builder/ShippingSettingsManage
 import PayPalSettings from "./components/PayPalSettings";
 import SiteSettings from "./pages/builder/SiteSettings";
 import WebsiteViewer from "./pages/WebsiteViewer";
+import { PlanProvider } from "./contexts/PlanContext";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 3,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+    },
+  },
+});
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -43,31 +53,40 @@ function App() {
   }, []);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-12 w-12 border-4 border-t-indigo-600 border-r-indigo-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading application...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/builder/:id" element={<Builder />} />
-            <Route path="/builder/:id/shop" element={<BuilderShop />} />
-            <Route path="/builder/:id/pages" element={<BuilderPageSettings />} />
-            <Route path="/builder/:id/products" element={<SimpleProductManager />} />
-            <Route path="/builder/:id/orders" element={<OrderManager />} />
-            <Route path="/builder/:id/site-settings" element={<SiteSettings />} />
-            <Route path="/builder/:id/payment-settings" element={<PayPalSettings websiteId="" />} />
-            <Route path="/builder/:id/shipping-settings" element={<ShippingSettingsManager />} />
-            <Route path="/view/:id" element={<WebsiteViewer />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <PlanProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/builder/:id" element={<Builder />} />
+              <Route path="/builder/:id/shop" element={<BuilderShop />} />
+              <Route path="/builder/:id/pages" element={<BuilderPageSettings />} />
+              <Route path="/builder/:id/products" element={<SimpleProductManager />} />
+              <Route path="/builder/:id/orders" element={<OrderManager />} />
+              <Route path="/builder/:id/site-settings" element={<SiteSettings />} />
+              <Route path="/builder/:id/payment-settings" element={<PayPalSettings websiteId="" />} />
+              <Route path="/builder/:id/shipping-settings" element={<ShippingSettingsManager />} />
+              <Route path="/view/:id" element={<WebsiteViewer />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </PlanProvider>
     </QueryClientProvider>
   );
 }

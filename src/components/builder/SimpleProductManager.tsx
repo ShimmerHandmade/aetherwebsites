@@ -31,14 +31,20 @@ const SimpleProductManager: React.FC<SimpleProductManagerProps> = ({
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  console.log("SimpleProductManager mounted with websiteId:", effectiveWebsiteId);
+
   const refreshData = async () => {
     if (!effectiveWebsiteId) return;
     
     try {
+      console.log("Refreshing product data...");
       const result = await fetchProducts(effectiveWebsiteId);
       if (!result.error) {
         setProducts(result.products);
         setCategories(result.categories);
+        console.log("Product data refreshed successfully");
+      } else {
+        console.error("Error refreshing products:", result.error);
       }
     } catch (err) {
       console.error("Error refreshing:", err);
