@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
 import { toast } from "sonner";
@@ -45,7 +46,7 @@ export const updateWebsiteTemplate = async (
     // Get current website data
     const { data: website, error: fetchError } = await supabase
       .from("websites")
-      .select("settings")
+      .select("*")
       .eq("id", websiteId)
       .single();
       
@@ -58,11 +59,11 @@ export const updateWebsiteTemplate = async (
     }
     
     // Parse existing settings or initialize new settings object
-    const settings = website?.settings ? 
+    const existingSettings = website?.settings ? 
       (typeof website.settings === 'string' ? JSON.parse(website.settings) : website.settings) : 
       {};
     
-    console.log("Current website settings:", settings);
+    console.log("Current website settings:", existingSettings);
     
     // Create new pages array with uuids
     const pages = templateSettings.pages.map(page => ({
@@ -85,42 +86,64 @@ export const updateWebsiteTemplate = async (
     
     console.log("Home page found:", homePage);
     
-    // Update settings with template data
-    const updatedSettings = {
-      ...settings,
-      ...templateSettings,
-      pages, // Use the newly generated page IDs
-      pageSettings: templateSettings.pageSettings || settings.pageSettings || { title: "My Website" },
-    };
-    
-    // For each page in the template, add its content to pagesContent using the NEW page IDs
-    const pagesContent = { ...(settings.pagesContent || {}) };
-    
-    // Get the home page content from the template with proper type checking
-    const homePageContent = (templateContent.pages && typeof templateContent.pages === 'object' && 'homepage' in templateContent.pages) 
-      ? templateContent.pages.homepage 
-      : [];
+    // Get the home page content from the template
+    const homePageContent = templateContent.pages?.homepage || [];
     
     console.log("Home page content from template:", homePageContent);
     
     if (!Array.isArray(homePageContent) || homePageContent.length === 0) {
       console.warn("Home page content is empty or invalid");
+      return {
+        success: false,
+        error: "Template has no content defined"
+      };
     }
     
-    // Store this content under the new home page ID
-    pagesContent[homePage.id] = homePageContent;
+    // Ensure all elements have proper IDs
+    const processElements = (elements: any[]): BuilderElement[] => {
+      return elements.map(element => ({
+        ...element,
+        id: element.id || uuidv4(),
+        children: element.children ? processElements(element.children) : undefined
+      }));
+    };
     
-    // Add pagesContent to settings
-    updatedSettings.pagesContent = pagesContent;
+    const processedHomePageContent = processElements(homePageContent);
+    
+    // Initialize pagesContent with the new home page content
+    const pagesContent = {
+      [homePage.id]: processedHomePageContent
+    };
+    
+    // Initialize pagesSettings
+    const pagesSettings = {
+      [homePage.id]: {
+        title: homePage.title || "Home",
+        meta: {
+          description: `${homePage.title} page`
+        }
+      }
+    };
+    
+    // Update settings with template data, preserving existing settings where appropriate
+    const updatedSettings = {
+      ...existingSettings,
+      ...templateSettings,
+      pages, // Use the newly generated page IDs
+      pagesContent,
+      pagesSettings,
+      pageSettings: templateSettings.pageSettings || existingSettings.pageSettings || { title: website.name || "My Website" },
+    };
     
     console.log("Final updated settings:", updatedSettings);
+    console.log("Processed home page content:", processedHomePageContent);
     
     // Update website with template name, content and settings
     const { error } = await supabase
       .from("websites")
       .update({ 
         template,
-        content: homePageContent, // Set main content to home page content
+        content: processedHomePageContent, // Set main content to home page content
         settings: updatedSettings
       })
       .eq("id", websiteId);
@@ -134,6 +157,7 @@ export const updateWebsiteTemplate = async (
     }
     
     console.log("Template applied successfully with home page:", homePage);
+    console.log("Main content set to:", processedHomePageContent);
     return { success: true };
   } catch (error) {
     console.error("Error in updateWebsiteTemplate:", error);

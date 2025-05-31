@@ -87,15 +87,48 @@ const SimpleBuilder = () => {
     }
   }, [website, navigate, id]);
 
-  // Load page content
+  // Load page content when currentPageId changes
   useEffect(() => {
     if (!website || !currentPageId) return;
     
+    console.log(`Loading content for page ID: ${currentPageId}`);
+    console.log("Website content:", website.content);
+    console.log("Website settings:", website.settings);
+    
+    // Get content for current page
     const pagesContent = website.settings.pagesContent || {};
     const pageContent = pagesContent[currentPageId] || [];
     const pageSettings = website.settings.pagesSettings?.[currentPageId] || { title: websiteName };
     
-    setCurrentPageElements(pageContent.length ? pageContent : elements || []);
+    console.log("Page content from pagesContent:", pageContent);
+    console.log("Page settings:", pageSettings);
+    
+    // Check if this is the home page and if we should use main content
+    const homePage = website.settings.pages?.find(p => p.isHomePage);
+    const isHomePage = homePage && homePage.id === currentPageId;
+    
+    let finalPageElements: BuilderElement[] = [];
+    
+    if (pageContent.length > 0) {
+      // Use specific page content if it exists
+      console.log("Using specific page content:", pageContent);
+      finalPageElements = pageContent;
+    } else if (isHomePage && Array.isArray(website.content) && website.content.length > 0) {
+      // For home page, use main website content if no specific page content exists
+      console.log("Using main website content for home page:", website.content);
+      finalPageElements = website.content;
+    } else if (Array.isArray(elements) && elements.length > 0) {
+      // Fallback to elements from useWebsite hook
+      console.log("Using fallback elements:", elements);
+      finalPageElements = elements;
+    } else {
+      // No content available
+      console.log("No content available, using empty array");
+      finalPageElements = [];
+    }
+    
+    console.log("Final page elements to set:", finalPageElements);
+    setCurrentPageElements(finalPageElements);
     setCurrentPageSettings(pageSettings);
   }, [currentPageId, website, elements, websiteName]);
 
@@ -168,6 +201,12 @@ const SimpleBuilder = () => {
 
   const pages = website?.settings?.pages || [];
   const currentPage = pages.find(page => page.id === currentPageId);
+
+  console.log("Rendering SimpleBuilder with:", {
+    currentPageElements: currentPageElements.length,
+    currentPageSettings,
+    currentPage
+  });
 
   return (
     <ErrorBoundary>
