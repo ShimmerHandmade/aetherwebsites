@@ -302,7 +302,7 @@ export type Database = {
           {
             foreignKeyName: "shipping_settings_website_id_fkey"
             columns: ["website_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "websites"
             referencedColumns: ["id"]
           },

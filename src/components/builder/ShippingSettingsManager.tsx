@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -86,7 +85,10 @@ const ShippingSettingsManager = () => {
   };
 
   const saveShippingSettings = async () => {
-    if (!websiteId) return;
+    if (!websiteId) {
+      toast.error("Website ID is required");
+      return;
+    }
 
     try {
       setSaving(true);
@@ -97,7 +99,7 @@ const ShippingSettingsManager = () => {
         flat_rate_enabled: settings.flatRateEnabled,
         flat_rate_amount: settings.flatRateAmount,
         weight_based_enabled: settings.weightBasedEnabled,
-        weight_based_rates: settings.weightBasedRates as any,
+        weight_based_rates: settings.weightBasedRates,
         free_shipping_enabled: settings.freeShippingEnabled,
         free_shipping_minimum: settings.freeShippingMinimum,
         updated_at: new Date().toISOString(),
@@ -105,22 +107,41 @@ const ShippingSettingsManager = () => {
 
       console.log("Settings data to save:", settingsData);
 
-      const { error } = await supabase
+      // Use upsert with proper conflict resolution
+      const { data, error } = await supabase
         .from('shipping_settings')
         .upsert(settingsData, {
           onConflict: 'website_id'
-        });
+        })
+        .select()
+        .single();
 
       if (error) {
-        console.error("Error saving shipping settings:", error);
-        throw error;
+        console.error("Supabase error saving shipping settings:", error);
+        console.error("Error details:", {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        throw new Error(`Database error: ${error.message}`);
       }
 
-      console.log("Shipping settings saved successfully");
+      console.log("Shipping settings saved successfully:", data);
       toast.success('Shipping settings saved successfully');
+      
+      // Refresh the settings from the database to ensure consistency
+      await fetchShippingSettings();
     } catch (error: any) {
       console.error('Error saving shipping settings:', error);
-      toast.error(`Failed to save shipping settings: ${error.message}`);
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to save shipping settings';
+      if (error.message) {
+        errorMessage += `: ${error.message}`;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }
