@@ -86,8 +86,8 @@ export const updateWebsiteTemplate = async (
     
     console.log("Home page found:", homePage);
     
-    // Get the home page content from the template
-    const homePageContent = templateContent.pages?.homepage || [];
+    // Get the home page content from the template - handle both possible structures
+    const homePageContent = templateContent.pages?.homepage || templateContent.pages?.[homePage.id] || [];
     
     console.log("Home page content from template:", homePageContent);
     
@@ -138,12 +138,15 @@ export const updateWebsiteTemplate = async (
     console.log("Final updated settings:", updatedSettings);
     console.log("Processed home page content:", processedHomePageContent);
     
+    // Convert BuilderElement[] to Json-compatible format for Supabase
+    const contentAsJson = JSON.parse(JSON.stringify(processedHomePageContent));
+    
     // Update website with template name, content and settings
     const { error } = await supabase
       .from("websites")
       .update({ 
         template,
-        content: processedHomePageContent, // Set main content to home page content
+        content: contentAsJson, // Use JSON-compatible format
         settings: updatedSettings
       })
       .eq("id", websiteId);
