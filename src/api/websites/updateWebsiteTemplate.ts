@@ -87,7 +87,17 @@ export const updateWebsiteTemplate = async (
     console.log("Home page found:", homePage);
     
     // Get the home page content from the template - handle both possible structures
-    const homePageContent = templateContent.pages?.homepage || templateContent.pages?.[homePage.id] || [];
+    let homePageContent: any[] = [];
+    
+    // Check if templateContent.pages has the expected structure
+    if (templateContent.pages && typeof templateContent.pages === 'object') {
+      // Try to get homepage content from different possible locations
+      if ('homepage' in templateContent.pages && Array.isArray(templateContent.pages.homepage)) {
+        homePageContent = templateContent.pages.homepage;
+      } else if (homePage.id in templateContent.pages && Array.isArray(templateContent.pages[homePage.id])) {
+        homePageContent = templateContent.pages[homePage.id];
+      }
+    }
     
     console.log("Home page content from template:", homePageContent);
     
