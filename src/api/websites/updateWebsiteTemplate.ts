@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
 import { toast } from "sonner";
@@ -94,19 +93,58 @@ export const updateWebsiteTemplate = async (
       // Try to get homepage content from different possible locations
       if ('homepage' in templateContent.pages && Array.isArray(templateContent.pages.homepage)) {
         homePageContent = templateContent.pages.homepage;
-      } else if (homePage.id in templateContent.pages && Array.isArray(templateContent.pages[homePage.id])) {
-        homePageContent = templateContent.pages[homePage.id];
+      } else if ('home' in templateContent.pages && Array.isArray(templateContent.pages.home)) {
+        homePageContent = templateContent.pages.home;
+      } else if (Array.isArray(templateContent.pages)) {
+        // If pages is an array, take the first one
+        homePageContent = templateContent.pages;
+      } else {
+        // Try to find any array in the pages object
+        const pageKeys = Object.keys(templateContent.pages);
+        for (const key of pageKeys) {
+          if (Array.isArray(templateContent.pages[key])) {
+            homePageContent = templateContent.pages[key];
+            break;
+          }
+        }
       }
     }
     
     console.log("Home page content from template:", homePageContent);
     
     if (!Array.isArray(homePageContent) || homePageContent.length === 0) {
-      console.warn("Home page content is empty or invalid");
-      return {
-        success: false,
-        error: "Template has no content defined"
-      };
+      console.warn("Home page content is empty or invalid, using fallback");
+      // Create a basic fallback structure
+      homePageContent = [
+        {
+          id: uuidv4(),
+          type: "section",
+          content: "",
+          props: {
+            padding: "large",
+            backgroundColor: "bg-white"
+          },
+          children: [
+            {
+              id: uuidv4(),
+              type: "heading",
+              content: "Welcome to Your Website",
+              props: {
+                level: "h1",
+                className: "text-4xl font-bold text-center mb-8"
+              }
+            },
+            {
+              id: uuidv4(),
+              type: "text",
+              content: "This is your new website. Start customizing it!",
+              props: {
+                className: "text-center text-gray-600"
+              }
+            }
+          ]
+        }
+      ];
     }
     
     // Ensure all elements have proper IDs

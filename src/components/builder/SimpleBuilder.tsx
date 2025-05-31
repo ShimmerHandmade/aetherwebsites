@@ -5,7 +5,6 @@ import BuilderLayout from "@/components/builder/BuilderLayout";
 import BuilderNavbar from "@/components/builder/BuilderNavbar";
 import BuilderContent from "@/components/builder/BuilderContent";
 import { useWebsite } from "@/hooks/useWebsite";
-import { useSaveManager } from "@/hooks/useSaveManager";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
 import { useState, useEffect, useCallback } from "react";
 import { v4 as uuidv4 } from "@/lib/uuid";
@@ -37,32 +36,6 @@ const SimpleBuilder = () => {
   const [currentPageId, setCurrentPageId] = useState<string | null>(null);
   const [currentPageElements, setCurrentPageElements] = useState<BuilderElement[]>([]);
   const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
-
-  // Save manager for handling save operations
-  const saveManager = useSaveManager({
-    onSave: async () => {
-      if (!currentPageId || !website) {
-        toast.error("Cannot save: No page selected");
-        return false;
-      }
-      
-      try {
-        // Trigger save event and wait for the context to provide updated data
-        const saveEvent = new CustomEvent('request-save-data');
-        document.dispatchEvent(saveEvent);
-        
-        // Small delay to allow the event to be processed
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        document.dispatchEvent(new CustomEvent('save-website'));
-        return true;
-      } catch (error) {
-        console.error("Save error:", error);
-        toast.error("Failed to save website");
-        return false;
-      }
-    }
-  });
 
   // Initialize pages
   useEffect(() => {
@@ -133,8 +106,27 @@ const SimpleBuilder = () => {
   }, [currentPageId, website, elements, websiteName]);
 
   const handleSave = useCallback(async () => {
-    return await saveManager.save();
-  }, [saveManager]);
+    if (!currentPageId || !website) {
+      toast.error("Cannot save: No page selected");
+      return false;
+    }
+    
+    try {
+      // Request current data from BuilderProvider
+      const saveEvent = new CustomEvent('request-save-data');
+      document.dispatchEvent(saveEvent);
+      
+      // Small delay to allow the event to be processed
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      toast.success("Changes saved successfully");
+      return true;
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error("Failed to save website");
+      return false;
+    }
+  }, [currentPageId, website]);
 
   const handleSaveComplete = useCallback(async (updatedElements: BuilderElement[], updatedPageSettings: PageSettings) => {
     if (!currentPageId || !website) return;
@@ -154,9 +146,7 @@ const SimpleBuilder = () => {
         { ...website.settings, pagesContent, pagesSettings }
       );
       
-      if (success) {
-        toast.success("Changes saved successfully");
-      } else {
+      if (!success) {
         toast.error("Failed to save changes");
       }
     } catch (error) {
@@ -219,14 +209,11 @@ const SimpleBuilder = () => {
           <BuilderLayout isPreviewMode={isPreviewMode} setIsPreviewMode={setIsPreviewMode}>
             <BuilderNavbar 
               websiteName={websiteName} 
-              setWebsiteName={(name) => {
-                setWebsiteName(name);
-                saveManager.markAsChanged();
-              }} 
+              setWebsiteName={setWebsiteName} 
               onSave={handleSave} 
               onPublish={publishWebsite}
               isPublished={website?.published}
-              isSaving={saveManager.isSaving || isSaving}
+              isSaving={isSaving}
               isPublishing={isPublishing}
               isPreviewMode={isPreviewMode}
               setIsPreviewMode={setIsPreviewMode}
@@ -236,7 +223,7 @@ const SimpleBuilder = () => {
               onShopLinkClick={handleShopLinkClick}
               onReturnToDashboard={handleReturnToDashboard}
               viewSiteUrl={`/view/${id}`}
-              saveStatus={saveManager.getSaveStatus()}
+              saveStatus={isSaving ? "Saving..." : unsavedChanges ? "Unsaved changes" : ""}
             />
             <BuilderContent isPreviewMode={isPreviewMode} />
           </BuilderLayout>

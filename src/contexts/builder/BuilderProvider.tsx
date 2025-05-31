@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useCallback, ReactNode, useEffect } from "react";
 import { BuilderElement, PageSettings, BuilderContextType } from "./types";
 import { v4 as uuidv4 } from "@/lib/uuid";
@@ -22,6 +21,33 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
   const [elements, setElements] = useState<BuilderElement[]>(initialElements);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [pageSettings, setPageSettings] = useState<PageSettings>(initialPageSettings);
+
+  // Update elements when initialElements changes
+  useEffect(() => {
+    console.log("🔄 Updating elements from initialElements:", initialElements);
+    setElements(initialElements);
+  }, [initialElements]);
+
+  // Update page settings when initialPageSettings changes
+  useEffect(() => {
+    console.log("🔄 Updating page settings from initialPageSettings:", initialPageSettings);
+    setPageSettings(initialPageSettings);
+  }, [initialPageSettings]);
+
+  // Listen for save events
+  useEffect(() => {
+    const handleSaveRequest = () => {
+      console.log("💾 Save request received, triggering onSave with:", { elements, pageSettings });
+      if (onSave) {
+        onSave(elements, pageSettings);
+      }
+    };
+
+    document.addEventListener('request-save-data', handleSaveRequest);
+    return () => {
+      document.removeEventListener('request-save-data', handleSaveRequest);
+    };
+  }, [elements, pageSettings, onSave]);
 
   // Ensure elements are properly ordered whenever they change
   useEffect(() => {
