@@ -33,24 +33,25 @@ const HeroSection = () => {
 
       {/* Floating Icons */}
       <div className="absolute inset-0 pointer-events-none">
-        {[...Array(6)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute animate-float"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${i * 0.5}s`,
-              animationDuration: `${3 + Math.random() * 2}s`
-            }}
-          >
-            <div className="w-8 h-8 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 flex items-center justify-center">
-              {features[i % features.length].icon && (
-                <features[i % features.length].icon className="w-4 h-4 text-indigo-600" />
-              )}
+        {[...Array(6)].map((_, i) => {
+          const IconComponent = features[i % features.length].icon;
+          return (
+            <div
+              key={i}
+              className="absolute animate-float"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${i * 0.5}s`,
+                animationDuration: `${3 + Math.random() * 2}s`
+              }}
+            >
+              <div className="w-8 h-8 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 flex items-center justify-center">
+                <IconComponent className="w-4 h-4 text-indigo-600" />
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
@@ -79,19 +80,22 @@ const HeroSection = () => {
             <div className="text-xl md:text-2xl text-gray-600 flex items-center gap-3">
               <span>Create websites that are</span>
               <div className="relative">
-                {features.map((feature, index) => (
-                  <div
-                    key={index}
-                    className={`absolute left-0 flex items-center gap-2 transition-all duration-500 ${
-                      index === currentFeature
-                        ? "opacity-100 translate-y-0"
-                        : "opacity-0 translate-y-4"
-                    }`}
-                  >
-                    <feature.icon className="w-6 h-6 text-indigo-600" />
-                    <span className="font-semibold text-indigo-600">{feature.text}</span>
-                  </div>
-                ))}
+                {features.map((feature, index) => {
+                  const FeatureIcon = feature.icon;
+                  return (
+                    <div
+                      key={index}
+                      className={`absolute left-0 flex items-center gap-2 transition-all duration-500 ${
+                        index === currentFeature
+                          ? "opacity-100 translate-y-0"
+                          : "opacity-0 translate-y-4"
+                      }`}
+                    >
+                      <FeatureIcon className="w-6 h-6 text-indigo-600" />
+                      <span className="font-semibold text-indigo-600">{feature.text}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
