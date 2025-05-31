@@ -60,7 +60,6 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
           id={id}
           value={value}
           onChange={handleTextAreaChange}
-          richEditor={true}
           className="min-h-[200px] focus:outline-none px-4 py-3"
           {...props}
         />
