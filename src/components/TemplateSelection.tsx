@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,9 @@ import { usePlan } from "@/contexts/PlanContext";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Skeleton } from "@/components/ui/skeleton";
 import { checkThemeAccess } from "@/utils/planRestrictions";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import AITemplateGenerator from "./AITemplateGenerator";
+import { Sparkles, Wand2, Crown } from "lucide-react";
 
 // Template definitions with improved store types and fallback images
 const templates = [
@@ -73,8 +75,10 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
   const [imageLoading, setImageLoading] = useState<Record<string, boolean>>({});
   const [imageError, setImageError] = useState<Record<string, boolean>>({});
   const [templateApplying, setTemplateApplying] = useState(false);
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
+  const [aiGeneratedTemplates, setAiGeneratedTemplates] = useState<any[]>([]);
   const navigate = useNavigate();
-  const { isPremium, loading: planLoading } = usePlan();
+  const { isPremium, loading: planLoading, checkUpgrade } = usePlan();
   
   // Pre-load all template images
   useEffect(() => {
@@ -111,7 +115,8 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       return;
     }
 
-    const template = templates.find(t => t.id === selectedTemplate);
+    const allTemplates = [...templates, ...aiGeneratedTemplates];
+    const template = allTemplates.find(t => t.id === selectedTemplate);
     if (!template) {
       toast.error("Template not found");
       return;
@@ -121,29 +126,48 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       setIsLoading(true);
       setTemplateApplying(true);
 
-      // Check if theme is allowed for current plan
-      const hasAccess = await checkThemeAccess(template.id);
-      
-      if (!hasAccess) {
-        toast.error(`This template requires a ${template.isPremium ? 'Premium' : 'higher'} plan`);
-        setIsLoading(false);
-        setTemplateApplying(false);
-        return;
-      }
-      
-      console.log(`Applying template: ${template.name} (${template.id})`);
-      
-      toast.success("Applying template, please wait...", {
-        duration: 3000,
-      });
-      
-      const result = await updateWebsiteTemplate(websiteId, selectedTemplate);
-      
-      if (!result.success) {
-        console.error("Template application failed:", result.error);
-        toast.error(result.error || "Failed to apply template");
-        setTemplateApplying(false);
-        return;
+      // For AI generated templates, we need to handle them differently
+      if (template.isAIGenerated) {
+        // For now, use a base template and customize it
+        // In a real implementation, this would process the AI generated template
+        toast.success("Applying AI-generated template...", {
+          duration: 3000,
+        });
+        
+        // Use a base template for AI generated ones
+        const result = await updateWebsiteTemplate(websiteId, "business");
+        
+        if (!result.success) {
+          console.error("Template application failed:", result.error);
+          toast.error(result.error || "Failed to apply template");
+          setTemplateApplying(false);
+          return;
+        }
+      } else {
+        // Check if theme is allowed for current plan
+        const hasAccess = await checkThemeAccess(template.id);
+        
+        if (!hasAccess) {
+          toast.error(`This template requires a ${template.isPremium ? 'Premium' : 'higher'} plan`);
+          setIsLoading(false);
+          setTemplateApplying(false);
+          return;
+        }
+        
+        console.log(`Applying template: ${template.name} (${template.id})`);
+        
+        toast.success("Applying template, please wait...", {
+          duration: 3000,
+        });
+        
+        const result = await updateWebsiteTemplate(websiteId, selectedTemplate);
+        
+        if (!result.success) {
+          console.error("Template application failed:", result.error);
+          toast.error(result.error || "Failed to apply template");
+          setTemplateApplying(false);
+          return;
+        }
       }
       
       console.log("Template applied successfully");
@@ -167,6 +191,13 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
     console.log("User chose to start from scratch");
     toast.success("Starting from scratch!");
     onComplete();
+  };
+
+  const handleAITemplateGenerated = (template: any) => {
+    setAiGeneratedTemplates(prev => [...prev, template]);
+    setSelectedTemplate(template.id);
+    setShowAIGenerator(false);
+    toast.success("AI template added to your selection!");
   };
 
   const getImageSrc = (template: typeof templates[0]) => {
@@ -202,15 +233,59 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
     );
   }
 
+  const allTemplates = [...templates, ...aiGeneratedTemplates];
+
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">
       <h2 className="text-4xl font-bold text-center mb-3">Choose Your Store Template</h2>
-      <p className="text-gray-600 text-center text-lg mb-10 max-w-3xl mx-auto">
+      <p className="text-gray-600 text-center text-lg mb-8 max-w-3xl mx-auto">
         Select a template that matches your business needs. Each template is fully customizable after selection.
       </p>
 
+      {/* AI Template Generator Button */}
+      <div className="flex justify-center mb-8">
+        <Dialog open={showAIGenerator} onOpenChange={setShowAIGenerator}>
+          <DialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="lg"
+              className="group border-2 border-purple-200 hover:border-purple-400 hover:bg-purple-50 transition-all duration-300"
+              onClick={() => {
+                if (!checkUpgrade("AI Template Generator", true)) {
+                  return;
+                }
+                setShowAIGenerator(true);
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg group-hover:scale-110 transition-transform">
+                  <Wand2 className="h-5 w-5 text-white" />
+                </div>
+                <div className="text-left">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-gray-900">Generate Custom Template</span>
+                    <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs">
+                      <Crown className="h-3 w-3 mr-1" />
+                      Premium
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-gray-600">Let AI create a template tailored for your business</div>
+                </div>
+                <Sparkles className="h-5 w-5 text-purple-500 group-hover:rotate-12 transition-transform" />
+              </div>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <AITemplateGenerator
+              onTemplateGenerated={handleAITemplateGenerated}
+              onClose={() => setShowAIGenerator(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-        {templates.map((template) => (
+        {allTemplates.map((template) => (
           <div 
             key={template.id}
             className={`rounded-xl overflow-hidden cursor-pointer transition-all duration-300 bg-white
@@ -257,8 +332,16 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
                   </Badge>
                 </div>
               )}
+              {template.isAIGenerated && (
+                <div className="absolute top-0 left-0 m-3">
+                  <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm px-3 py-1 font-medium text-xs">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    AI Generated
+                  </Badge>
+                </div>
+              )}
               {selectedTemplate === template.id && (
-                <div className="absolute top-3 left-3">
+                <div className="absolute top-3 right-3">
                   <Badge className="bg-indigo-500 text-white shadow-sm px-3 py-1">
                     Selected
                   </Badge>
