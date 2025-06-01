@@ -20,11 +20,37 @@ export interface Template {
   updated_at: string;
 }
 
+// Type for saving to database (matches Supabase schema)
+interface TemplateInsert {
+  name: string;
+  description?: string;
+  image_url?: string;
+  category?: string;
+  is_premium: boolean;
+  is_ai_generated: boolean;
+  is_active: boolean;
+  metadata?: any;
+  template_data: any; // Json type for database
+}
+
 export const saveTemplate = async (template: Omit<Template, 'id' | 'created_at' | 'updated_at'>) => {
   try {
+    // Convert template to database format
+    const templateInsert: TemplateInsert = {
+      name: template.name,
+      description: template.description,
+      image_url: template.image_url,
+      category: template.category,
+      is_premium: template.is_premium,
+      is_ai_generated: template.is_ai_generated,
+      is_active: template.is_active,
+      metadata: template.metadata,
+      template_data: template.template_data as any, // Cast to Json for database
+    };
+
     const { data, error } = await supabase
       .from('templates')
-      .insert([template])
+      .insert([templateInsert])
       .select()
       .single();
 
@@ -58,7 +84,13 @@ export const getTemplates = async (includeInactive = false) => {
       throw new Error(`Failed to fetch templates: ${error.message}`);
     }
 
-    return { success: true, data: data || [] };
+    // Cast database response to Template type
+    const templates = (data || []).map(item => ({
+      ...item,
+      template_data: item.template_data as Template['template_data']
+    })) as Template[];
+
+    return { success: true, data: templates };
   } catch (error: any) {
     console.error('Error in getTemplates:', error);
     return { success: false, error: error.message };
@@ -101,7 +133,13 @@ export const getTemplateById = async (templateId: string) => {
       throw new Error(`Failed to fetch template: ${error.message}`);
     }
 
-    return { success: true, data };
+    // Cast database response to Template type
+    const template = {
+      ...data,
+      template_data: data.template_data as Template['template_data']
+    } as Template;
+
+    return { success: true, data: template };
   } catch (error: any) {
     console.error('Error in getTemplateById:', error);
     return { success: false, error: error.message };

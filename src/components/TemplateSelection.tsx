@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { usePlan } from "@/contexts/PlanContext";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
 import { checkThemeAccess } from "@/utils/planRestrictions";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import AITemplateGenerator from "./AITemplateGenerator";
@@ -254,7 +256,7 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
     
     // Also add to database templates since it's now saved there
     if (template.templateData) {
-      setDatabaseTemplates(prev => [...prev, {
+      const newDbTemplate: Template = {
         id: template.id,
         name: template.name,
         description: template.description,
@@ -267,7 +269,9 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
         template_data: template.templateData,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      }]);
+      };
+      
+      setDatabaseTemplates(prev => [...prev, newDbTemplate]);
     }
     
     setSelectedTemplate(template.id);

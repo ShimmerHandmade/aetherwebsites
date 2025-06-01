@@ -30,13 +30,7 @@ const AITemplateGenerator = ({ onTemplateGenerated, onClose }: AITemplateGenerat
       {
         id: 'hero-section',
         type: 'hero',
-        content: {
-          title: `Welcome to ${businessName}`,
-          subtitle: businessDescription,
-          backgroundImage: 'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1469&auto=format&fit=crop',
-          buttonText: 'Get Started',
-          buttonLink: '#contact',
-        },
+        content: `Welcome to ${businessName}`,
         styles: {
           textAlign: 'center',
           padding: '4rem 2rem',
@@ -50,10 +44,7 @@ const AITemplateGenerator = ({ onTemplateGenerated, onClose }: AITemplateGenerat
       {
         id: 'about-section',
         type: 'section',
-        content: {
-          title: `About ${businessName}`,
-          description: `${businessDescription} We specialize in ${industry.toLowerCase()} with a ${style.toLowerCase()} approach.`,
-        },
+        content: `About ${businessName}. ${businessDescription} We specialize in ${industry.toLowerCase()} with a ${style.toLowerCase()} approach.`,
         styles: {
           padding: '3rem 2rem',
           backgroundColor: '#f8f9fa',
@@ -65,10 +56,7 @@ const AITemplateGenerator = ({ onTemplateGenerated, onClose }: AITemplateGenerat
       {
         id: 'contact-section',
         type: 'section',
-        content: {
-          title: 'Contact Us',
-          description: 'Get in touch with our team today.',
-        },
+        content: 'Contact Us - Get in touch with our team today.',
         styles: {
           padding: '3rem 2rem',
           backgroundColor: '#ffffff',
