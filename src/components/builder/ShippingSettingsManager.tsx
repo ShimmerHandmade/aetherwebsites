@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -99,7 +100,7 @@ const ShippingSettingsManager = () => {
         flat_rate_enabled: settings.flatRateEnabled,
         flat_rate_amount: settings.flatRateAmount,
         weight_based_enabled: settings.weightBasedEnabled,
-        weight_based_rates: settings.weightBasedRates,
+        weight_based_rates: settings.weightBasedRates as any, // Cast to any to satisfy Json type
         free_shipping_enabled: settings.freeShippingEnabled,
         free_shipping_minimum: settings.freeShippingMinimum,
         updated_at: new Date().toISOString(),
@@ -376,6 +377,35 @@ const ShippingSettingsManager = () => {
       </Card>
     </div>
   );
+};
+
+const addWeightBasedRate = () => {
+  const newRate: WeightBasedRate = {
+    id: Math.random().toString(36).substr(2, 9),
+    minWeight: 0,
+    maxWeight: 1,
+    rate: 0,
+  };
+  setSettings(prev => ({
+    ...prev,
+    weightBasedRates: [...prev.weightBasedRates, newRate],
+  }));
+};
+
+const removeWeightBasedRate = (id: string) => {
+  setSettings(prev => ({
+    ...prev,
+    weightBasedRates: prev.weightBasedRates.filter(rate => rate.id !== id),
+  }));
+};
+
+const updateWeightBasedRate = (id: string, field: keyof Omit<WeightBasedRate, 'id'>, value: number) => {
+  setSettings(prev => ({
+    ...prev,
+    weightBasedRates: prev.weightBasedRates.map(rate =>
+      rate.id === id ? { ...rate, [field]: value } : rate
+    ),
+  }));
 };
 
 export default ShippingSettingsManager;
