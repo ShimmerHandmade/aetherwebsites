@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
 import { toast } from "sonner";
@@ -12,23 +13,67 @@ import { ecommerceTemplate } from "@/templates/ecommerce";
 import { portfolioTemplate } from "@/templates/portfolio";
 import { blogTemplate } from "@/templates/blog";
 import { businessTemplate } from "@/templates/business";
+import { getTemplateById } from "@/api/templates";
 
 /**
  * Updates a website with the selected template
  */
 export const updateWebsiteTemplate = async (
   websiteId: string, 
-  template: string
+  template: string,
+  databaseTemplateId?: string
 ): Promise<{
   success: boolean;
   error?: string;
 }> => {
   try {
-    console.log(`Starting template update for website ${websiteId} with template ${template}`);
+    console.log(`Starting template update for website ${websiteId} with template ${template}`, databaseTemplateId ? `and database template ID ${databaseTemplateId}` : '');
     
-    // Get template content based on template ID
-    const templateContent = getTemplateContent(template);
-    const templateSettings = getTemplateSettings(template);
+    let templateContent: any;
+    let templateSettings: any;
+    
+    // If we have a database template ID, use that instead of static templates
+    if (databaseTemplateId) {
+      console.log(`Fetching template from database: ${databaseTemplateId}`);
+      const dbTemplateResult = await getTemplateById(databaseTemplateId);
+      
+      if (!dbTemplateResult.success || !dbTemplateResult.data) {
+        console.error("Failed to fetch database template:", dbTemplateResult.error);
+        return {
+          success: false,
+          error: "Failed to fetch template from database"
+        };
+      }
+      
+      const dbTemplate = dbTemplateResult.data;
+      console.log("Database template fetched:", dbTemplate);
+      
+      // Use database template data
+      templateContent = {
+        pages: {
+          homepage: dbTemplate.template_data.content || []
+        }
+      };
+      
+      templateSettings = {
+        pages: [
+          {
+            id: "homepage",
+            title: "Home",
+            slug: "/",
+            isHomePage: true
+          }
+        ],
+        pageSettings: dbTemplate.template_data.settings || {
+          title: dbTemplate.name,
+          description: dbTemplate.description
+        }
+      };
+    } else {
+      // Use static template system as fallback
+      templateContent = getTemplateContent(template);
+      templateSettings = getTemplateSettings(template);
+    }
     
     console.log("Template content:", templateContent);
     console.log("Template settings:", templateSettings);
@@ -193,7 +238,7 @@ export const updateWebsiteTemplate = async (
     const { error } = await supabase
       .from("websites")
       .update({ 
-        template,
+        template: databaseTemplateId || template,
         content: contentAsJson, // Use JSON-compatible format
         settings: updatedSettings
       })

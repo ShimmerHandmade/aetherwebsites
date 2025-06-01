@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -175,8 +174,8 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
           return;
         }
         
-        // Apply the template using existing updateWebsiteTemplate function
-        const result = await updateWebsiteTemplate(websiteId, "business"); // Use base template for now
+        // Apply the template using the database template ID
+        const result = await updateWebsiteTemplate(websiteId, "custom", dbTemplate.id);
         
         if (!result.success) {
           console.error("Template application failed:", result.error);
