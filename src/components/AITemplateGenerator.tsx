@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Sparkles, Wand2, Loader2, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { usePlan } from "@/contexts/PlanContext";
+import { saveTemplate } from "@/api/templates";
+import { BuilderElement } from "@/contexts/builder/types";
 
 interface AITemplateGeneratorProps {
   onTemplateGenerated: (template: any) => void;
@@ -21,6 +23,64 @@ const AITemplateGenerator = ({ onTemplateGenerated, onClose }: AITemplateGenerat
   const [style, setStyle] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const { isPremium, isEnterprise, checkUpgrade } = usePlan();
+
+  const generateBasicTemplate = (businessName: string, businessDescription: string, industry: string, style: string): BuilderElement[] => {
+    // Generate a basic template structure based on user input
+    const templateElements: BuilderElement[] = [
+      {
+        id: 'hero-section',
+        type: 'hero',
+        content: {
+          title: `Welcome to ${businessName}`,
+          subtitle: businessDescription,
+          backgroundImage: 'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1469&auto=format&fit=crop',
+          buttonText: 'Get Started',
+          buttonLink: '#contact',
+        },
+        styles: {
+          textAlign: 'center',
+          padding: '4rem 2rem',
+          minHeight: '70vh',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white'
+        },
+        position: { x: 0, y: 0 },
+        size: { width: 100, height: 70 }
+      },
+      {
+        id: 'about-section',
+        type: 'section',
+        content: {
+          title: `About ${businessName}`,
+          description: `${businessDescription} We specialize in ${industry.toLowerCase()} with a ${style.toLowerCase()} approach.`,
+        },
+        styles: {
+          padding: '3rem 2rem',
+          backgroundColor: '#f8f9fa',
+          textAlign: 'center'
+        },
+        position: { x: 0, y: 70 },
+        size: { width: 100, height: 30 }
+      },
+      {
+        id: 'contact-section',
+        type: 'section',
+        content: {
+          title: 'Contact Us',
+          description: 'Get in touch with our team today.',
+        },
+        styles: {
+          padding: '3rem 2rem',
+          backgroundColor: '#ffffff',
+          textAlign: 'center'
+        },
+        position: { x: 0, y: 100 },
+        size: { width: 100, height: 25 }
+      }
+    ];
+
+    return templateElements;
+  };
 
   const handleGenerate = async () => {
     // Check if user has premium access
@@ -36,33 +96,64 @@ const AITemplateGenerator = ({ onTemplateGenerated, onClose }: AITemplateGenerat
     setIsGenerating(true);
     
     try {
-      // Simulate AI generation for now - this would be replaced with actual AI API call
       toast.success("Generating your custom template...", {
         duration: 3000,
       });
 
       // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Generate a mock template based on user input
-      const generatedTemplate = {
-        id: `ai-generated-${Date.now()}`,
+      // Generate template content
+      const templateContent = generateBasicTemplate(businessName, businessDescription, industry, style);
+      
+      // Create template object for database
+      const templateData = {
         name: `${businessName} Template`,
         description: `Custom AI-generated template for ${businessName}`,
-        image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1470&auto=format&fit=crop",
-        isPremium: true,
-        isAIGenerated: true,
+        image_url: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1470&auto=format&fit=crop",
+        category: industry || 'Business',
+        is_premium: true,
+        is_ai_generated: true,
+        is_active: true,
         metadata: {
           businessName,
           businessDescription,
           industry,
           style,
           generatedAt: new Date().toISOString()
+        },
+        template_data: {
+          content: templateContent,
+          settings: {
+            title: businessName,
+            description: businessDescription,
+            favicon: '',
+            customCSS: ''
+          }
         }
       };
 
+      // Save to database
+      const result = await saveTemplate(templateData);
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      // Create template object for immediate use
+      const generatedTemplate = {
+        id: result.data.id,
+        name: templateData.name,
+        description: templateData.description,
+        image: templateData.image_url,
+        isPremium: true,
+        isAIGenerated: true,
+        metadata: templateData.metadata,
+        templateData: templateData.template_data
+      };
+
       onTemplateGenerated(generatedTemplate);
-      toast.success("Template generated successfully!");
+      toast.success("Template generated and saved successfully!");
       
     } catch (error) {
       console.error("Error generating template:", error);

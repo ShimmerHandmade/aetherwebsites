@@ -11,6 +11,7 @@ import { checkThemeAccess } from "@/utils/planRestrictions";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import AITemplateGenerator from "./AITemplateGenerator";
 import { Sparkles, Wand2, Crown } from "lucide-react";
+import { getTemplates, saveTemplateWebsite, Template } from "@/api/templates";
 
 // Template definitions with improved store types and fallback images
 const templates = [
@@ -77,8 +78,34 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
   const [templateApplying, setTemplateApplying] = useState(false);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [aiGeneratedTemplates, setAiGeneratedTemplates] = useState<any[]>([]);
+  const [databaseTemplates, setDatabaseTemplates] = useState<Template[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(true);
   const navigate = useNavigate();
   const { isPremium, loading: planLoading, checkUpgrade } = usePlan();
+  
+  // Load templates from database
+  useEffect(() => {
+    const loadTemplates = async () => {
+      try {
+        setTemplatesLoading(true);
+        const result = await getTemplates();
+        
+        if (result.success) {
+          setDatabaseTemplates(result.data);
+        } else {
+          console.error("Failed to load templates:", result.error);
+          toast.error("Failed to load templates from database");
+        }
+      } catch (error) {
+        console.error("Error loading templates:", error);
+        toast.error("Error loading templates");
+      } finally {
+        setTemplatesLoading(false);
+      }
+    };
+
+    loadTemplates();
+  }, []);
   
   // Pre-load all template images
   useEffect(() => {
@@ -115,9 +142,12 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       return;
     }
 
-    const allTemplates = [...templates, ...aiGeneratedTemplates];
-    const template = allTemplates.find(t => t.id === selectedTemplate);
-    if (!template) {
+    // Check if it's a static template, AI generated template, or database template
+    const staticTemplate = templates.find(t => t.id === selectedTemplate);
+    const aiTemplate = aiGeneratedTemplates.find(t => t.id === selectedTemplate);
+    const dbTemplate = databaseTemplates.find(t => t.id === selectedTemplate);
+    
+    if (!staticTemplate && !aiTemplate && !dbTemplate) {
       toast.error("Template not found");
       return;
     }
@@ -126,15 +156,40 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       setIsLoading(true);
       setTemplateApplying(true);
 
-      // For AI generated templates, we need to handle them differently
-      if (template.isAIGenerated) {
-        // For now, use a base template and customize it
-        // In a real implementation, this would process the AI generated template
+      if (dbTemplate) {
+        // Handle database template
+        console.log(`Applying database template: ${dbTemplate.name} (${dbTemplate.id})`);
+        
+        toast.success("Applying custom template...", {
+          duration: 3000,
+        });
+        
+        // Save the template-website relationship
+        const linkResult = await saveTemplateWebsite(websiteId, dbTemplate.id);
+        if (!linkResult.success) {
+          console.error("Failed to link template to website:", linkResult.error);
+          toast.error("Failed to apply template");
+          setTemplateApplying(false);
+          return;
+        }
+        
+        // Apply the template using existing updateWebsiteTemplate function
+        const result = await updateWebsiteTemplate(websiteId, "business"); // Use base template for now
+        
+        if (!result.success) {
+          console.error("Template application failed:", result.error);
+          toast.error(result.error || "Failed to apply template");
+          setTemplateApplying(false);
+          return;
+        }
+      } else if (aiTemplate) {
+        // Handle AI generated template (legacy - for templates not yet saved to DB)
+        console.log(`Applying AI template: ${aiTemplate.name} (${aiTemplate.id})`);
+        
         toast.success("Applying AI-generated template...", {
           duration: 3000,
         });
         
-        // Use a base template for AI generated ones
         const result = await updateWebsiteTemplate(websiteId, "business");
         
         if (!result.success) {
@@ -143,18 +198,18 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
           setTemplateApplying(false);
           return;
         }
-      } else {
-        // Check if theme is allowed for current plan
-        const hasAccess = await checkThemeAccess(template.id);
+      } else if (staticTemplate) {
+        // Handle static template
+        const hasAccess = await checkThemeAccess(staticTemplate.id);
         
         if (!hasAccess) {
-          toast.error(`This template requires a ${template.isPremium ? 'Premium' : 'higher'} plan`);
+          toast.error(`This template requires a ${staticTemplate.isPremium ? 'Premium' : 'higher'} plan`);
           setIsLoading(false);
           setTemplateApplying(false);
           return;
         }
         
-        console.log(`Applying template: ${template.name} (${template.id})`);
+        console.log(`Applying static template: ${staticTemplate.name} (${staticTemplate.id})`);
         
         toast.success("Applying template, please wait...", {
           duration: 3000,
@@ -194,10 +249,30 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
   };
 
   const handleAITemplateGenerated = (template: any) => {
+    // Add to both lists for backward compatibility
     setAiGeneratedTemplates(prev => [...prev, template]);
+    
+    // Also add to database templates since it's now saved there
+    if (template.templateData) {
+      setDatabaseTemplates(prev => [...prev, {
+        id: template.id,
+        name: template.name,
+        description: template.description,
+        image_url: template.image,
+        category: template.metadata?.industry || 'Business',
+        is_premium: template.isPremium,
+        is_ai_generated: template.isAIGenerated,
+        is_active: true,
+        metadata: template.metadata,
+        template_data: template.templateData,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }]);
+    }
+    
     setSelectedTemplate(template.id);
     setShowAIGenerator(false);
-    toast.success("AI template added to your selection!");
+    toast.success("AI template generated and ready to use!");
   };
 
   const getImageSrc = (template: typeof templates[0]) => {
@@ -233,7 +308,30 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
     );
   }
 
-  const allTemplates = [...templates, ...aiGeneratedTemplates];
+  // Combine all templates for display
+  const allTemplates = [
+    ...templates.map(t => ({
+      ...t,
+      source: 'static' as const,
+      image_url: t.image,
+      is_premium: t.isPremium,
+      is_ai_generated: false
+    })),
+    ...databaseTemplates.map(t => ({
+      ...t,
+      source: 'database' as const,
+      image: t.image_url,
+      isPremium: t.is_premium,
+      isAIGenerated: t.is_ai_generated
+    })),
+    ...aiGeneratedTemplates.map(t => ({
+      ...t,
+      source: 'ai' as const,
+      image_url: t.image,
+      is_premium: t.isPremium,
+      is_ai_generated: t.isAIGenerated
+    }))
+  ];
 
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">
@@ -284,85 +382,98 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-        {allTemplates.map((template) => (
-          <div 
-            key={template.id}
-            className={`rounded-xl overflow-hidden cursor-pointer transition-all duration-300 bg-white
-              ${selectedTemplate === template.id 
-                ? 'ring-4 ring-indigo-500 border-indigo-500 transform scale-[1.02] shadow-xl' 
-                : 'border border-gray-200 shadow-md hover:shadow-lg hover:transform hover:scale-[1.01]'
-              }
-              ${template.isPremium && !isPremium ? 'opacity-85' : ''}
-            `}
-            onClick={() => !isLoading && setSelectedTemplate(template.id)}
-          >
-            <div className="relative">
-              <AspectRatio ratio={16/10} className="bg-gray-100">
-                {imageLoading[template.id] && (
-                  <Skeleton className="absolute inset-0 z-10" />
-                )}
-                {imageError[template.id] ? (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400">
-                    <div className="text-center">
-                      <div className="w-12 h-12 mx-auto mb-2 bg-gray-200 rounded"></div>
-                      <p className="text-sm">Preview unavailable</p>
-                    </div>
-                  </div>
-                ) : (
-                  <img 
-                    src={getImageSrc(template)}
-                    alt={template.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      console.log(`Image failed to load for ${template.name}`);
-                      if (e.currentTarget.src === template.image) {
-                        e.currentTarget.src = template.fallbackImage;
-                      } else {
-                        setImageError(prev => ({ ...prev, [template.id]: true }));
-                      }
-                    }}
-                  />
-                )}
+      {templatesLoading && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i} className="overflow-hidden">
+              <AspectRatio ratio={16/10}>
+                <Skeleton className="w-full h-full" />
               </AspectRatio>
-              {template.isPremium && (
-                <div className="absolute top-0 right-0 m-3">
-                  <Badge className="bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white shadow-sm px-3 py-1 font-medium text-xs">
-                    Premium
-                  </Badge>
-                </div>
-              )}
-              {template.isAIGenerated && (
-                <div className="absolute top-0 left-0 m-3">
-                  <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm px-3 py-1 font-medium text-xs">
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    AI Generated
-                  </Badge>
-                </div>
-              )}
-              {selectedTemplate === template.id && (
-                <div className="absolute top-3 right-3">
-                  <Badge className="bg-indigo-500 text-white shadow-sm px-3 py-1">
-                    Selected
-                  </Badge>
-                </div>
-              )}
+              <div className="p-5">
+                <Skeleton className="h-6 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-full" />
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {!templatesLoading && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+          {allTemplates.map((template) => (
+            <div 
+              key={template.id}
+              className={`rounded-xl overflow-hidden cursor-pointer transition-all duration-300 bg-white
+                ${selectedTemplate === template.id 
+                  ? 'ring-4 ring-indigo-500 border-indigo-500 transform scale-[1.02] shadow-xl' 
+                  : 'border border-gray-200 shadow-md hover:shadow-lg hover:transform hover:scale-[1.01]'
+                }
+                ${(template.is_premium || template.isPremium) && !isPremium ? 'opacity-85' : ''}
+              `}
+              onClick={() => !isLoading && setSelectedTemplate(template.id)}
+            >
+              <div className="relative">
+                <AspectRatio ratio={16/10} className="bg-gray-100">
+                  {imageLoading[template.id] && (
+                    <Skeleton className="absolute inset-0 z-10" />
+                  )}
+                  {imageError[template.id] ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400">
+                      <div className="text-center">
+                        <div className="w-12 h-12 mx-auto mb-2 bg-gray-200 rounded"></div>
+                        <p className="text-sm">Preview unavailable</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <img 
+                      src={template.image_url || template.image || "/placeholder.svg"}
+                      alt={template.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        setImageError(prev => ({ ...prev, [template.id]: true }));
+                      }}
+                    />
+                  )}
+                </AspectRatio>
+                {(template.is_premium || template.isPremium) && (
+                  <div className="absolute top-0 right-0 m-3">
+                    <Badge className="bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white shadow-sm px-3 py-1 font-medium text-xs">
+                      Premium
+                    </Badge>
+                  </div>
+                )}
+                {(template.is_ai_generated || template.isAIGenerated) && (
+                  <div className="absolute top-0 left-0 m-3">
+                    <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm px-3 py-1 font-medium text-xs">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      AI Generated
+                    </Badge>
+                  </div>
+                )}
+                {selectedTemplate === template.id && (
+                  <div className="absolute top-3 right-3">
+                    <Badge className="bg-indigo-500 text-white shadow-sm px-3 py-1">
+                      Selected
+                    </Badge>
+                  </div>
+                )}
+              </div>
+              <div className="p-5 bg-white">
+                <h3 className="font-semibold text-lg">{template.name}</h3>
+                <p className="text-gray-600 mt-1">{template.description}</p>
+                {(template.is_premium || template.isPremium) && !isPremium && (
+                  <p className="text-xs text-amber-600 mt-2 font-medium flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Requires Premium Plan
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="p-5 bg-white">
-              <h3 className="font-semibold text-lg">{template.name}</h3>
-              <p className="text-gray-600 mt-1">{template.description}</p>
-              {template.isPremium && !isPremium && (
-                <p className="text-xs text-amber-600 mt-2 font-medium flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  Requires Premium Plan
-                </p>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <div className="flex justify-center space-x-4 pt-4">
         <Button 
