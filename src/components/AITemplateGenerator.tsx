@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,39 +30,45 @@ const AITemplateGenerator = ({ onTemplateGenerated, onClose }: AITemplateGenerat
         id: 'hero-section',
         type: 'hero',
         content: `Welcome to ${businessName}`,
-        styles: {
-          textAlign: 'center',
-          padding: '4rem 2rem',
-          minHeight: '70vh',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white'
-        },
-        position: { x: 0, y: 0 },
-        size: { width: 100, height: 70 }
+        props: {
+          styles: {
+            textAlign: 'center',
+            padding: '4rem 2rem',
+            minHeight: '70vh',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white'
+          },
+          position: { x: 0, y: 0 },
+          size: { width: 100, height: 70 }
+        }
       },
       {
         id: 'about-section',
         type: 'section',
         content: `About ${businessName}. ${businessDescription} We specialize in ${industry.toLowerCase()} with a ${style.toLowerCase()} approach.`,
-        styles: {
-          padding: '3rem 2rem',
-          backgroundColor: '#f8f9fa',
-          textAlign: 'center'
-        },
-        position: { x: 0, y: 70 },
-        size: { width: 100, height: 30 }
+        props: {
+          styles: {
+            padding: '3rem 2rem',
+            backgroundColor: '#f8f9fa',
+            textAlign: 'center'
+          },
+          position: { x: 0, y: 70 },
+          size: { width: 100, height: 30 }
+        }
       },
       {
         id: 'contact-section',
         type: 'section',
         content: 'Contact Us - Get in touch with our team today.',
-        styles: {
-          padding: '3rem 2rem',
-          backgroundColor: '#ffffff',
-          textAlign: 'center'
-        },
-        position: { x: 0, y: 100 },
-        size: { width: 100, height: 25 }
+        props: {
+          styles: {
+            padding: '3rem 2rem',
+            backgroundColor: '#ffffff',
+            textAlign: 'center'
+          },
+          position: { x: 0, y: 100 },
+          size: { width: 100, height: 25 }
+        }
       }
     ];
 

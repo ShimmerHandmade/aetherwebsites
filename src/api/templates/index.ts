@@ -84,10 +84,10 @@ export const getTemplates = async (includeInactive = false) => {
       throw new Error(`Failed to fetch templates: ${error.message}`);
     }
 
-    // Cast database response to Template type
+    // Cast database response to Template type with proper type assertion
     const templates = (data || []).map(item => ({
       ...item,
-      template_data: item.template_data as Template['template_data']
+      template_data: item.template_data as unknown as Template['template_data']
     })) as Template[];
 
     return { success: true, data: templates };
@@ -133,10 +133,10 @@ export const getTemplateById = async (templateId: string) => {
       throw new Error(`Failed to fetch template: ${error.message}`);
     }
 
-    // Cast database response to Template type
+    // Cast database response to Template type with proper type assertion
     const template = {
       ...data,
-      template_data: data.template_data as Template['template_data']
+      template_data: data.template_data as unknown as Template['template_data']
     } as Template;
 
     return { success: true, data: template };
