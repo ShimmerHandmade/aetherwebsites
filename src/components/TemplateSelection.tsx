@@ -119,7 +119,7 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       setIsLoading(true);
       setTemplateApplying(true);
 
-      // Find the selected template
+      // Find the selected template from the combined list
       const staticTemplate = staticTemplates.find(t => t.id === selectedTemplate);
       const dbTemplate = databaseTemplates.find(t => t.id === selectedTemplate);
       const aiTemplate = aiGeneratedTemplates.find(t => t.id === selectedTemplate);
@@ -263,30 +263,43 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
     );
   }
 
-  // Combine all templates into a single array
-  const allTemplates = [
-    ...staticTemplates.map(t => ({
-      ...t,
+  // Create a unique list of templates, prioritizing database templates over static ones
+  const uniqueTemplates = new Map();
+  
+  // Add static templates first
+  staticTemplates.forEach(template => {
+    uniqueTemplates.set(template.id, {
+      ...template,
       source: 'static' as const,
-      image_url: t.image,
-      is_premium: t.isPremium,
+      image_url: template.image,
+      is_premium: template.isPremium,
       is_ai_generated: false
-    })),
-    ...databaseTemplates.map(t => ({
-      ...t,
+    });
+  });
+
+  // Add database templates (will override static ones with same ID)
+  databaseTemplates.forEach(template => {
+    uniqueTemplates.set(template.id, {
+      ...template,
       source: 'database' as const,
-      image: t.image_url,
-      isPremium: t.is_premium,
-      isAIGenerated: t.is_ai_generated
-    })),
-    ...aiGeneratedTemplates.map(t => ({
-      ...t,
+      image: template.image_url,
+      isPremium: template.is_premium,
+      isAIGenerated: template.is_ai_generated
+    });
+  });
+
+  // Add AI generated templates
+  aiGeneratedTemplates.forEach(template => {
+    uniqueTemplates.set(template.id, {
+      ...template,
       source: 'ai' as const,
-      image_url: t.image,
-      is_premium: t.isPremium,
-      is_ai_generated: t.isAIGenerated
-    }))
-  ];
+      image_url: template.image,
+      is_premium: template.isPremium,
+      is_ai_generated: template.isAIGenerated
+    });
+  });
+
+  const allTemplates = Array.from(uniqueTemplates.values());
 
   const handleAIGeneratorClick = () => {
     if (checkUpgrade) {

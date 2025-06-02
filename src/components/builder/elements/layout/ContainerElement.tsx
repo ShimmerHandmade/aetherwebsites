@@ -42,7 +42,7 @@ const ContainerElement: React.FC<ElementProps> = ({ element }) => {
 
   return (
     <div 
-      className={`${padding} ${background} ${borderRadius} border border-dashed border-gray-300 relative min-h-[100px] ${customClass}`}
+      className={`${padding} ${background} ${borderRadius} border border-dashed border-gray-300 hover:border-blue-300 transition-colors relative min-h-[120px] ${customClass}`}
       onClick={handleContainerClick}
       data-element-id={element.id}
       style={{ maxWidth, width: '100%' }}
@@ -54,6 +54,7 @@ const ContainerElement: React.FC<ElementProps> = ({ element }) => {
           isPreviewMode={false}
           onCanvasClick={(e) => e.stopPropagation()}
           className="min-h-[80px] w-full"
+          parentId={element.id}
         >
           {element.children && element.children.length > 0 ? (
             <div className="space-y-4">
@@ -69,8 +70,11 @@ const ContainerElement: React.FC<ElementProps> = ({ element }) => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-400">
-              Drop elements here to create content
+            <div className="flex items-center justify-center h-full min-h-[80px]">
+              <div className="text-center py-6 px-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50/50 w-full">
+                <p className="text-gray-500 font-medium">Drop elements here</p>
+                <p className="text-gray-400 text-sm mt-1">Create content inside this container</p>
+              </div>
             </div>
           )}
         </CanvasDragDropHandler>

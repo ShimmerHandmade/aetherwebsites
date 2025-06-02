@@ -90,6 +90,7 @@ const SimpleProductManager: React.FC<SimpleProductManagerProps> = ({
     handleDelete: internalHandleDelete,
     handleDeleteCategory,
     handleClearImage,
+    handleAddNew: productManagerHandleAddNew,
   } = useProductManager(effectiveWebsiteId, products, categories);
 
   // Save manager for handling save operations
@@ -114,19 +115,8 @@ const SimpleProductManager: React.FC<SimpleProductManagerProps> = ({
         return;
       }
       
-      setEditingProduct({
-        id: "",
-        name: "",
-        description: "",
-        price: 0,
-        sku: "",
-        stock: 0,
-        category: "",
-        is_featured: false,
-        is_sale: false,
-        is_new: true,
-        image_url: null
-      });
+      // Use the product manager's handleAddNew function to ensure proper state management
+      productManagerHandleAddNew();
     } catch (error) {
       console.error("Error checking product limit:", error);
       toast.error("Unable to verify product limits. Please try again.");
