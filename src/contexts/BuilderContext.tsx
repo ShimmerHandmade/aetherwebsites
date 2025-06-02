@@ -4,4 +4,8 @@
 export * from './builder';
 export { useBuilder } from './builder/useBuilder';
 export { hasRequiredStructure, getContentInsertionIndex, ensureElementsOrder } from './builder/pageStructureUtils';
-export interface BuilderContextType { selectedElement: ElementType | null; setSelectedElement: (el: ElementType | null) => void;  addElementToParent: (parentId: string, newElement: ElementType) => void;}
+export interface BuilderContextType { 
+  selectedElement: ElementType | null; 
+  setSelectedElement: (el: ElementType | null) => void;  
+  addElementToParent: (parentId: string, newElement: ElementType) => void;
+}
