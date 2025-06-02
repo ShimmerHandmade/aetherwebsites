@@ -4,3 +4,4 @@
 export * from './builder';
 export { useBuilder } from './builder/useBuilder';
 export { hasRequiredStructure, getContentInsertionIndex, ensureElementsOrder } from './builder/pageStructureUtils';
+export interface BuilderContextType { selectedElement: ElementType | null; setSelectedElement: (el: ElementType | null) => void;}
