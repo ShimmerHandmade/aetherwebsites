@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
-import PageEditorSidebar from "./PageEditorSidebar";
+import BuilderSidebar from "./BuilderSidebar";
 import BuilderCanvas from "./canvas/BuilderCanvas";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 interface BuilderLayoutProps {
@@ -18,7 +19,6 @@ const BuilderLayout: React.FC<BuilderLayoutProps> = ({
   isPreviewMode, 
   setIsPreviewMode 
 }) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Simulate initial loading
@@ -43,34 +43,27 @@ const BuilderLayout: React.FC<BuilderLayoutProps> = ({
 
   return (
     <ErrorBoundary>
-      <div className="flex h-screen bg-gray-50 overflow-hidden">
-        {/* Sidebar */}
-        {!isPreviewMode && (
-          <div className={`${sidebarCollapsed ? 'w-0' : 'w-80'} transition-all duration-300 border-r border-gray-200 bg-white flex-shrink-0 overflow-hidden`}>
-            <PageEditorSidebar isPreviewMode={isPreviewMode} />
-          </div>
-        )}
-
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Canvas Container */}
-          <div className="flex-1 overflow-auto">
-            {children || <BuilderCanvas isPreviewMode={isPreviewMode} />}
-          </div>
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full bg-gray-50">
+          {!isPreviewMode && <BuilderSidebar isPreviewMode={isPreviewMode} />}
+          
+          <SidebarInset className="flex-1">
+            {!isPreviewMode && (
+              <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+                <SidebarTrigger className="-ml-1" />
+                <div className="h-4 w-px bg-sidebar-border" />
+                <div className="flex-1">
+                  <h1 className="text-lg font-semibold">Website Builder</h1>
+                </div>
+              </header>
+            )}
+            
+            <div className="flex-1 overflow-auto">
+              {children || <BuilderCanvas isPreviewMode={isPreviewMode} />}
+            </div>
+          </SidebarInset>
         </div>
-
-        {/* Sidebar Toggle (when collapsed) */}
-        {!isPreviewMode && sidebarCollapsed && (
-          <Button
-            variant="outline"
-            size="icon"
-            className="fixed left-4 top-1/2 transform -translate-y-1/2 z-50 bg-white shadow-lg"
-            onClick={() => setSidebarCollapsed(false)}
-          >
-            <RefreshCw className="w-4 h-4" />
-          </Button>
-        )}
-      </div>
+      </SidebarProvider>
     </ErrorBoundary>
   );
 };

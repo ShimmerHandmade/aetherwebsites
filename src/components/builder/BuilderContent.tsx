@@ -1,10 +1,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import BuilderCanvas from "@/components/builder/canvas";
-import PageEditorSidebar from "./PageEditorSidebar";
-import { Button } from "@/components/ui/button";
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
-import { Edit } from "lucide-react";
 import { useBuilder } from "@/contexts/builder/useBuilder";
 
 // Extend the interface to include isLiveSite
@@ -30,8 +26,6 @@ const BuilderContent: React.FC<BuilderContentProps> = ({
   isPreviewMode = false,
   isLiveSite = false
 }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { elements } = useBuilder();
   const contentRef = useRef<HTMLDivElement>(null);
   const [contentLoaded, setContentLoaded] = useState(false);
@@ -60,15 +54,6 @@ const BuilderContent: React.FC<BuilderContentProps> = ({
     );
   }
 
-  // Regular preview mode or edit mode
-  if (isPreviewMode) {
-    return (
-      <div className="flex-1 bg-slate-100 overflow-auto" ref={contentRef}>
-        <BuilderCanvas isPreviewMode={true} isLiveSite={isLiveSite} />
-      </div>
-    );
-  }
-
   // Render only when content is ready
   if (!contentLoaded) {
     return (
@@ -82,36 +67,8 @@ const BuilderContent: React.FC<BuilderContentProps> = ({
   }
 
   return (
-    <div className="flex-1 flex" ref={contentRef}>
-      {/* Left sidebar - visible on desktop */}
-      <div className="hidden md:block w-[220px] bg-white border-r border-slate-200">
-        {/* This space is for the vertical sidebar managed by PageEditorSidebar */}
-        <PageEditorSidebar isPreviewMode={isPreviewMode} />
-      </div>
-
-      {/* Main content area */}
-      <div className="flex-1 bg-slate-100 overflow-auto relative">
-        <BuilderCanvas isPreviewMode={false} isLiveSite={isLiveSite} />
-        
-        {/* Mobile view: Bottom Drawer trigger */}
-        <Drawer open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
-          <DrawerTrigger asChild>
-            <Button 
-              variant="default"
-              size="sm" 
-              className="fixed bottom-4 right-4 z-10 bg-blue-500 hover:bg-blue-600 text-white shadow-md md:hidden rounded-full"
-            >
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </Button>
-          </DrawerTrigger>
-          <DrawerContent className="h-[80vh]">
-            <div className="px-4 pt-4 pb-8">
-              <PageEditorSidebar isPreviewMode={isPreviewMode} />
-            </div>
-          </DrawerContent>
-        </Drawer>
-      </div>
+    <div className="flex-1 bg-slate-100 overflow-auto" ref={contentRef}>
+      <BuilderCanvas isPreviewMode={isPreviewMode} isLiveSite={isLiveSite} />
     </div>
   );
 };

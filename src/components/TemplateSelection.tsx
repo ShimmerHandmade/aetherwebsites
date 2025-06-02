@@ -15,55 +15,55 @@ import AITemplateGenerator from "./AITemplateGenerator";
 import { Sparkles, Wand2, Crown } from "lucide-react";
 import { getTemplates, saveTemplateWebsite, Template } from "@/api/templates";
 
-// Template definitions with improved store types and fallback images
-const templates = [
+// Static templates with improved fallback handling
+const staticTemplates = [
   {
-    id: "3e7da3f2-1472-42b6-8f03-42d77e6fb2be",
+    id: "fashion",
     name: "Fashion Store",
     description: "Stylish template for clothing and accessories",
     image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=1470&auto=format&fit=crop",
-    fallbackImage: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1470&auto=format&fit=crop",
     isPremium: false,
+    isStatic: true,
   },
   {
-    id: "70a278d0-2650-4ab7-9e06-1a50365c82e7",
+    id: "electronics",
     name: "Electronics Shop",
     description: "Modern template for tech and gadgets",
     image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1470&auto=format&fit=crop", 
-    fallbackImage: "https://images.unsplash.com/photo-1498049794561-7780e7231661?q=80&w=1470&auto=format&fit=crop",
     isPremium: false,
+    isStatic: true,
   },
   {
-    id: "195754a7-fe9f-43ae-a1f8-440ae73ab357",
+    id: "beauty",
     name: "Beauty & Cosmetics",
     description: "Elegant design for beauty products",
     image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=1480&auto=format&fit=crop",
-    fallbackImage: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=1480&auto=format&fit=crop",
     isPremium: true,
+    isStatic: true,
   },
   {
-    id: "04803428-0f84-4ecb-b6b0-20ab28af611b",
+    id: "furniture",
     name: "Home & Furniture",
     description: "Sophisticated template for home decor",
     image: "https://images.unsplash.com/photo-1634712282287-14ed57b9cc89?q=80&w=1406&auto=format&fit=crop",
-    fallbackImage: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=1406&auto=format&fit=crop",
     isPremium: true,
+    isStatic: true,
   },
   {
-    id: "7fa8e7b3-7743-423b-8612-0182bd160b9b",
+    id: "food",
     name: "Gourmet Foods",
     description: "Appetizing template for food products",
     image: "https://images.unsplash.com/photo-1526470498-9ae73c665de8?q=80&w=1298&auto=format&fit=crop",
-    fallbackImage: "https://images.unsplash.com/photo-1606797461049-ac8c1b51bea1?q=80&w=1298&auto=format&fit=crop",
     isPremium: false,
+    isStatic: true,
   },
   {
-    id: "0db0e507-d7f3-4caa-9d84-1fb4ee703284",
+    id: "jewelry",
     name: "Luxury Jewelry",
     description: "Premium template for high-end jewelry",
     image: "https://images.unsplash.com/photo-1581252517866-6c03232384a4?q=80&w=1471&auto=format&fit=crop",
-    fallbackImage: "https://images.unsplash.com/photo-1573408301185-9146fe634ad0?q=80&w=1471&auto=format&fit=crop",
     isPremium: true,
+    isStatic: true,
   }
 ];
 
@@ -75,8 +75,6 @@ interface TemplateSelectionProps {
 const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) => {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [imageLoading, setImageLoading] = useState<Record<string, boolean>>({});
-  const [imageError, setImageError] = useState<Record<string, boolean>>({});
   const [templateApplying, setTemplateApplying] = useState(false);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [aiGeneratedTemplates, setAiGeneratedTemplates] = useState<any[]>([]);
@@ -90,49 +88,25 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
     const loadTemplates = async () => {
       try {
         setTemplatesLoading(true);
+        console.log("Loading templates from database...");
         const result = await getTemplates();
         
         if (result.success) {
+          console.log("Templates loaded successfully:", result.data);
           setDatabaseTemplates(result.data);
         } else {
           console.error("Failed to load templates:", result.error);
+          toast.error("Failed to load custom templates");
         }
       } catch (error) {
         console.error("Error loading templates:", error);
+        toast.error("Error loading templates");
       } finally {
         setTemplatesLoading(false);
       }
     };
 
     loadTemplates();
-  }, []);
-  
-  // Pre-load all template images
-  useEffect(() => {
-    templates.forEach(template => {
-      setImageLoading(prev => ({ ...prev, [template.id]: true }));
-      
-      const img = new Image();
-      img.onload = () => {
-        setImageLoading(prev => ({ ...prev, [template.id]: false }));
-        setImageError(prev => ({ ...prev, [template.id]: false }));
-      };
-      img.onerror = () => {
-        console.log(`Primary image failed for ${template.name}, trying fallback`);
-        const fallbackImg = new Image();
-        fallbackImg.onload = () => {
-          setImageLoading(prev => ({ ...prev, [template.id]: false }));
-          setImageError(prev => ({ ...prev, [template.id]: false }));
-        };
-        fallbackImg.onerror = () => {
-          console.error(`Both images failed for ${template.name}`);
-          setImageLoading(prev => ({ ...prev, [template.id]: false }));
-          setImageError(prev => ({ ...prev, [template.id]: true }));
-        };
-        fallbackImg.src = template.fallbackImage;
-      };
-      img.src = template.image;
-    });
   }, []);
 
   const handleSelectTemplate = async () => {
@@ -141,79 +115,72 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       return;
     }
 
-    const staticTemplate = templates.find(t => t.id === selectedTemplate);
-    const aiTemplate = aiGeneratedTemplates.find(t => t.id === selectedTemplate);
-    const dbTemplate = databaseTemplates.find(t => t.id === selectedTemplate);
-    
-    if (!staticTemplate && !aiTemplate && !dbTemplate) {
-      toast.error("Template not found");
-      return;
-    }
-
     try {
       setIsLoading(true);
       setTemplateApplying(true);
 
+      // Find the selected template
+      const staticTemplate = staticTemplates.find(t => t.id === selectedTemplate);
+      const dbTemplate = databaseTemplates.find(t => t.id === selectedTemplate);
+      const aiTemplate = aiGeneratedTemplates.find(t => t.id === selectedTemplate);
+      
+      if (!staticTemplate && !dbTemplate && !aiTemplate) {
+        toast.error("Template not found");
+        return;
+      }
+
+      console.log("Applying template:", selectedTemplate);
+
       if (dbTemplate) {
         console.log(`Applying database template: ${dbTemplate.name} (${dbTemplate.id})`);
         
-        toast.success("Applying custom template...", {
-          duration: 3000,
-        });
+        toast.success("Applying custom template...", { duration: 3000 });
         
+        // Link template to website
         const linkResult = await saveTemplateWebsite(websiteId, dbTemplate.id);
         if (!linkResult.success) {
           console.error("Failed to link template to website:", linkResult.error);
           toast.error("Failed to apply template");
-          setTemplateApplying(false);
           return;
         }
         
+        // Apply template
         const result = await updateWebsiteTemplate(websiteId, "custom", dbTemplate.id);
         
         if (!result.success) {
           console.error("Template application failed:", result.error);
           toast.error(result.error || "Failed to apply template");
-          setTemplateApplying(false);
-          return;
-        }
-      } else if (aiTemplate) {
-        console.log(`Applying AI template: ${aiTemplate.name} (${aiTemplate.id})`);
-        
-        toast.success("Applying AI-generated template...", {
-          duration: 3000,
-        });
-        
-        const result = await updateWebsiteTemplate(websiteId, "business");
-        
-        if (!result.success) {
-          console.error("Template application failed:", result.error);
-          toast.error(result.error || "Failed to apply template");
-          setTemplateApplying(false);
           return;
         }
       } else if (staticTemplate) {
-        const hasAccess = await checkThemeAccess(staticTemplate.id);
-        
-        if (!hasAccess) {
-          toast.error(`This template requires a ${staticTemplate.isPremium ? 'Premium' : 'higher'} plan`);
-          setIsLoading(false);
-          setTemplateApplying(false);
+        // Check access for premium templates
+        if (staticTemplate.isPremium && !isPremium) {
+          checkUpgrade(`${staticTemplate.name} template`);
           return;
         }
         
         console.log(`Applying static template: ${staticTemplate.name} (${staticTemplate.id})`);
         
-        toast.success("Applying template, please wait...", {
-          duration: 3000,
-        });
+        toast.success("Applying template, please wait...", { duration: 3000 });
         
         const result = await updateWebsiteTemplate(websiteId, selectedTemplate);
         
         if (!result.success) {
           console.error("Template application failed:", result.error);
           toast.error(result.error || "Failed to apply template");
-          setTemplateApplying(false);
+          return;
+        }
+      } else if (aiTemplate) {
+        console.log(`Applying AI template: ${aiTemplate.name} (${aiTemplate.id})`);
+        
+        toast.success("Applying AI-generated template...", { duration: 3000 });
+        
+        // For AI templates, use a default template as base for now
+        const result = await updateWebsiteTemplate(websiteId, "business");
+        
+        if (!result.success) {
+          console.error("Template application failed:", result.error);
+          toast.error(result.error || "Failed to apply template");
           return;
         }
       }
@@ -223,15 +190,14 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       setTimeout(() => {
         toast.success("Template applied successfully");
         onComplete();
-        setTemplateApplying(false);
       }, 1000);
       
     } catch (error) {
       console.error("Error selecting template:", error);
       toast.error("An unexpected error occurred");
-      setTemplateApplying(false);
     } finally {
       setIsLoading(false);
+      setTemplateApplying(false);
     }
   };
 
@@ -242,6 +208,7 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
   };
 
   const handleAITemplateGenerated = (template: any) => {
+    console.log("AI template generated:", template);
     setAiGeneratedTemplates(prev => [...prev, template]);
     
     if (template.templateData) {
@@ -266,13 +233,6 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
     setSelectedTemplate(template.id);
     setShowAIGenerator(false);
     toast.success("AI template generated and ready to use!");
-  };
-
-  const getImageSrc = (template: typeof templates[0]) => {
-    if (imageError[template.id]) {
-      return "/placeholder.svg";
-    }
-    return template.image;
   };
   
   if (templateApplying) {
@@ -299,8 +259,9 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
     );
   }
 
+  // Combine all templates into a single array
   const allTemplates = [
-    ...templates.map(t => ({
+    ...staticTemplates.map(t => ({
       ...t,
       source: 'static' as const,
       image_url: t.image,
@@ -323,6 +284,8 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
     }))
   ];
 
+  console.log("All templates:", allTemplates);
+
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">
       <h2 className="text-4xl font-bold text-center mb-3">Choose Your Store Template</h2>
@@ -330,6 +293,7 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
         Select a template that matches your business needs. Each template is fully customizable after selection.
       </p>
 
+      {/* AI Template Generator Button */}
       <div className="flex justify-center mb-8">
         <Dialog open={showAIGenerator} onOpenChange={setShowAIGenerator}>
           <DialogTrigger asChild>
@@ -371,6 +335,7 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
         </Dialog>
       </div>
 
+      {/* Templates Grid */}
       {templatesLoading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
           {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -403,34 +368,26 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
             >
               <div className="relative">
                 <AspectRatio ratio={16/10} className="bg-gray-100">
-                  {imageLoading[template.id] && (
-                    <Skeleton className="absolute inset-0 z-10" />
-                  )}
-                  {imageError[template.id] ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400">
-                      <div className="text-center">
-                        <div className="w-12 h-12 mx-auto mb-2 bg-gray-200 rounded"></div>
-                        <p className="text-sm">Preview unavailable</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <img 
-                      src={template.image_url || template.image || "/placeholder.svg"}
-                      alt={template.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        setImageError(prev => ({ ...prev, [template.id]: true }));
-                      }}
-                    />
-                  )}
+                  <img 
+                    src={template.image_url || template.image || "/placeholder.svg"}
+                    alt={template.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = "/placeholder.svg";
+                    }}
+                  />
                 </AspectRatio>
+                
+                {/* Premium Badge */}
                 {(template.is_premium || template.isPremium) && (
                   <div className="absolute top-0 right-0 m-3">
-                    <Badge className="bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white shadow-sm px-3 py-1 font-medium text-xs">
+                    <Badge className="bg-gradient-to-r from-amber-400 to-amber-600 text-white shadow-sm px-3 py-1 font-medium text-xs">
                       Premium
                     </Badge>
                   </div>
                 )}
+                
+                {/* AI Generated Badge */}
                 {(template.is_ai_generated || template.isAIGenerated) && (
                   <div className="absolute top-0 left-0 m-3">
                     <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm px-3 py-1 font-medium text-xs">
@@ -439,6 +396,8 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
                     </Badge>
                   </div>
                 )}
+                
+                {/* Selected Badge */}
                 {selectedTemplate === template.id && (
                   <div className="absolute top-3 right-3">
                     <Badge className="bg-indigo-500 text-white shadow-sm px-3 py-1">
@@ -447,14 +406,13 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
                   </div>
                 )}
               </div>
+              
               <div className="p-5 bg-white">
                 <h3 className="font-semibold text-lg">{template.name}</h3>
                 <p className="text-gray-600 mt-1">{template.description}</p>
                 {(template.is_premium || template.isPremium) && !isPremium && (
                   <p className="text-xs text-amber-600 mt-2 font-medium flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
+                    <Crown className="h-4 w-4 mr-1" />
                     Requires Premium Plan
                   </p>
                 )}
@@ -464,6 +422,7 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
         </div>
       )}
 
+      {/* Action Buttons */}
       <div className="flex justify-center space-x-4 pt-4">
         <Button 
           variant="outline" 
@@ -480,10 +439,7 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
         >
           {isLoading ? 
             <span className="flex items-center">
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
+              <div className="animate-spin -ml-1 mr-2 h-4 w-4 text-white border-2 border-t-transparent border-white rounded-full"></div>
               Applying...
             </span> : 
             "Use This Template"
