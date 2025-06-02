@@ -1,7 +1,7 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import BuilderCanvas from "@/components/builder/canvas";
 import PageEditorSidebar from "./PageEditorSidebar";
-import { PreviewModeProps } from "./BuilderLayout";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { Edit } from "lucide-react";
