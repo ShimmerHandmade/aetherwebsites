@@ -17,7 +17,7 @@ import { getTemplates, saveTemplateWebsite, Template } from "@/api/templates";
 // Template definitions with improved store types and fallback images
 const templates = [
   {
-    id: "Fashion",
+    id: "3e7da3f2-1472-42b6-8f03-42d77e6fb2be",
     name: "Fashion Store",
     description: "Stylish template for clothing and accessories",
     image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=1470&auto=format&fit=crop",
@@ -25,7 +25,7 @@ const templates = [
     isPremium: false,
   },
   {
-    id: "Electronics",
+    id: "70a278d0-2650-4ab7-9e06-1a50365c82e7",
     name: "Electronics Shop",
     description: "Modern template for tech and gadgets",
     image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1470&auto=format&fit=crop", 
@@ -33,7 +33,7 @@ const templates = [
     isPremium: false,
   },
   {
-    id: "Beauty",
+    id: "195754a7-fe9f-43ae-a1f8-440ae73ab357",
     name: "Beauty & Cosmetics",
     description: "Elegant design for beauty products",
     image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=1480&auto=format&fit=crop",
@@ -41,7 +41,7 @@ const templates = [
     isPremium: true,
   },
   {
-    id: "Furniture",
+    id: "04803428-0f84-4ecb-b6b0-20ab28af611b",
     name: "Home & Furniture",
     description: "Sophisticated template for home decor",
     image: "https://images.unsplash.com/photo-1634712282287-14ed57b9cc89?q=80&w=1406&auto=format&fit=crop",
@@ -49,7 +49,7 @@ const templates = [
     isPremium: true,
   },
   {
-    id: "Food",
+    id: "7fa8e7b3-7743-423b-8612-0182bd160b9b",
     name: "Gourmet Foods",
     description: "Appetizing template for food products",
     image: "https://images.unsplash.com/photo-1526470498-9ae73c665de8?q=80&w=1298&auto=format&fit=crop",
@@ -57,7 +57,7 @@ const templates = [
     isPremium: false,
   },
   {
-    id: "Jewelry",
+    id: "0db0e507-d7f3-4caa-9d84-1fb4ee703284",
     name: "Luxury Jewelry",
     description: "Premium template for high-end jewelry",
     image: "https://images.unsplash.com/photo-1581252517866-6c03232384a4?q=80&w=1471&auto=format&fit=crop",
