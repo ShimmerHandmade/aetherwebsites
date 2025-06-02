@@ -3,10 +3,8 @@ import React from "react";
 import { PropertyEditorProps } from "./PropertyEditor";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import ContentPropertyEditor from "./ContentPropertyEditor";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
+import ContentPropertyEditor from "./ContentPropertyEditor";
 
 const HeadingPropertyEditor: React.FC<PropertyEditorProps> = ({
   element,
@@ -27,8 +25,12 @@ const HeadingPropertyEditor: React.FC<PropertyEditorProps> = ({
           <ContentPropertyEditor 
             content={element.content} 
             onContentChange={onContentChange} 
+            label="Heading Text"
+            placeholder="Enter heading text..."
           />
-          
+        </TabsContent>
+        
+        <TabsContent value="style" className="pt-4 space-y-4">
           <div>
             <Label htmlFor="headingLevel" className="text-sm text-gray-600 block mb-1">
               Heading Level
@@ -41,74 +43,53 @@ const HeadingPropertyEditor: React.FC<PropertyEditorProps> = ({
                 <SelectValue placeholder="Select heading level" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="h1">H1</SelectItem>
-                <SelectItem value="h2">H2</SelectItem>
-                <SelectItem value="h3">H3</SelectItem>
-                <SelectItem value="h4">H4</SelectItem>
-                <SelectItem value="h5">H5</SelectItem>
-                <SelectItem value="h6">H6</SelectItem>
+                <SelectItem value="h1">H1 - Main title</SelectItem>
+                <SelectItem value="h2">H2 - Section title</SelectItem>
+                <SelectItem value="h3">H3 - Subsection</SelectItem>
+                <SelectItem value="h4">H4 - Minor heading</SelectItem>
+                <SelectItem value="h5">H5 - Small heading</SelectItem>
+                <SelectItem value="h6">H6 - Smallest heading</SelectItem>
               </SelectContent>
             </Select>
           </div>
-        </TabsContent>
-        
-        <TabsContent value="style" className="pt-4 space-y-4">
+          
           <div>
-            <Label htmlFor="alignment" className="text-sm text-gray-600 block mb-1">
-              Alignment
+            <Label htmlFor="textAlign" className="text-sm text-gray-600 block mb-1">
+              Text Alignment
             </Label>
             <Select 
-              value={properties.align || "left"}
-              onValueChange={(value) => onPropertyChange("align", value)}
+              value={properties.textAlign || "left"}
+              onValueChange={(value) => onPropertyChange("textAlign", value)}
             >
-              <SelectTrigger id="alignment">
-                <SelectValue placeholder="Select text alignment" />
+              <SelectTrigger id="textAlign">
+                <SelectValue placeholder="Select alignment" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="left">Left</SelectItem>
                 <SelectItem value="center">Center</SelectItem>
                 <SelectItem value="right">Right</SelectItem>
+                <SelectItem value="justify">Justify</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <Label htmlFor="fontSize" className="text-sm text-gray-600">
-                Font Size
-              </Label>
-              <span className="text-xs text-gray-500">
-                {properties.fontSize || 100}%
-              </span>
-            </div>
-            <Slider
-              id="fontSize"
-              min={50}
-              max={200}
-              step={5}
-              defaultValue={[properties.fontSize || 100]}
-              onValueChange={(value) => onPropertyChange("fontSize", value[0])}
-              className="w-full"
-            />
-          </div>
-          
           <div>
-            <Label htmlFor="fontWeight" className="text-sm text-gray-600 block mb-1">
-              Font Weight
+            <Label htmlFor="color" className="text-sm text-gray-600 block mb-1">
+              Text Color
             </Label>
             <Select 
-              value={properties.fontWeight || "normal"}
-              onValueChange={(value) => onPropertyChange("fontWeight", value)}
+              value={properties.color || "default"}
+              onValueChange={(value) => onPropertyChange("color", value)}
             >
-              <SelectTrigger id="fontWeight">
-                <SelectValue placeholder="Select font weight" />
+              <SelectTrigger id="color">
+                <SelectValue placeholder="Select color" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="light">Light</SelectItem>
-                <SelectItem value="normal">Normal</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="semibold">Semibold</SelectItem>
-                <SelectItem value="bold">Bold</SelectItem>
+                <SelectItem value="default">Default</SelectItem>
+                <SelectItem value="primary">Primary</SelectItem>
+                <SelectItem value="secondary">Secondary</SelectItem>
+                <SelectItem value="muted">Muted</SelectItem>
+                <SelectItem value="accent">Accent</SelectItem>
               </SelectContent>
             </Select>
           </div>

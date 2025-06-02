@@ -1,548 +1,498 @@
 
-import React, { useState } from "react";
-import {
-  LayoutDashboard,
-  List,
-  Text,
-  Heading,
-  ImageIcon,
-  Package,
-  Layout,
-  Layers,
-  Shield,
-  VideoIcon,
-  FormInput,
-  ListIcon,
-  CreditCard,
-  MessageSquare,
-  Star,
-  Columns,
-  LayoutGrid,
-  Tv2,
-  Globe2,
-  Menu,
-  Copyright,
-  ChevronDown,
-  ChevronRight,
-  Sparkles,
-  Lock,
-} from "lucide-react";
-import { v4 as uuidv4 } from "@/lib/uuid";
-import { BuilderElement } from "@/contexts/BuilderContext";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import React, { useState, useMemo } from "react";
+import { useBuilder } from "@/contexts/BuilderContext";
 import { usePlan } from "@/contexts/PlanContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { v4 as uuidv4 } from "@/lib/uuid";
+import {
+  Type,
+  Image,
+  Video,
+  Square,
+  FormInput,
+  FileText,
+  Package,
+  Users,
+  CreditCard,
+  Layout,
+  Grid,
+  Flex,
+  Navigation,
+  Star,
+  PlayCircle,
+  Sparkles,
+  Crown,
+  Lock,
+  Search,
+  Plus
+} from "lucide-react";
 import { toast } from "sonner";
 
-export interface ElementCategory {
+interface ElementTemplate {
+  id: string;
   name: string;
-  elements: ElementDefinition[];
-}
-
-export interface ElementDefinition {
   type: string;
-  name: string;
-  icon: keyof typeof LucideIcons;
+  icon: React.ComponentType<any>;
+  category: string;
   description: string;
-  defaultProps?: any;
+  isPremium: boolean;
+  isEnterprise: boolean;
+  props?: any;
+  children?: any[];
 }
 
-// Mapping of Lucide icon names to their corresponding React components
-const LucideIcons = {
-  "layout-dashboard": LayoutDashboard,
-  list: List,
-  text: Text,
-  heading: Heading,
-  "image-icon": ImageIcon,
-  "button": LayoutDashboard,
-  package: Package,
-  layout: Layout,
-  image: ImageIcon, // Changed from ImageIconComponent to ImageIcon
-  video: VideoIcon,
-  form: FormInput,
-  "list-icon": ListIcon,
-  "credit-card": CreditCard,
-  "message-square": MessageSquare,
-  star: Star,
-  columns: Columns,
-  "layout-grid": LayoutGrid,
-  tv2: Tv2,
-  "globe-2": Globe2,
-  menu: Menu,
-  copyright: Copyright,
-};
+const elementTemplates: ElementTemplate[] = [
+  // Layout Elements
+  {
+    id: "section",
+    name: "Section",
+    type: "section",
+    icon: Square,
+    category: "layout",
+    description: "Container section with padding",
+    isPremium: false,
+    isEnterprise: false,
+    props: { padding: "large", backgroundColor: "bg-white" }
+  },
+  {
+    id: "container",
+    name: "Container",
+    type: "container",
+    icon: Layout,
+    category: "layout",
+    description: "Flexible container for content",
+    isPremium: false,
+    isEnterprise: false,
+    props: { maxWidth: "container", padding: "medium" }
+  },
+  {
+    id: "grid",
+    name: "Grid",
+    type: "grid",
+    icon: Grid,
+    category: "layout",
+    description: "CSS Grid layout system",
+    isPremium: false,
+    isEnterprise: false,
+    props: { columns: 3, gap: "medium" }
+  },
+  {
+    id: "flex",
+    name: "Flex",
+    type: "flex",
+    icon: Flex,
+    category: "layout",
+    description: "Flexbox layout container",
+    isPremium: false,
+    isEnterprise: false,
+    props: { direction: "row", justify: "center", align: "center" }
+  },
+  {
+    id: "hero",
+    name: "Hero Section",
+    type: "hero",
+    icon: Star,
+    category: "layout",
+    description: "Large hero banner section",
+    isPremium: false,
+    isEnterprise: false,
+    props: { variant: "default", height: "large" }
+  },
 
-// Element definitions for the builder
-const elementCategories: ElementCategory[] = [
+  // Content Elements
   {
-    name: "Layout",
-    elements: [
-      {
-        type: "section",
-        name: "Section",
-        icon: "layout",
-        description: "A basic container for content",
-        defaultProps: {
-          padding: "medium",
-        },
-      },
-      {
-        type: "container",
-        name: "Container",
-        icon: "layout-dashboard",
-        description: "A fixed-width container for content",
-        defaultProps: {
-          maxWidth: "1200px",
-        },
-      },
-      {
-        type: "flex",
-        name: "Flex",
-        icon: "columns",
-        description: "A flexible layout container",
-        defaultProps: {
-          direction: "row",
-          justify: "start",
-          align: "stretch",
-        },
-      },
-      {
-        type: "grid",
-        name: "Grid",
-        icon: "layout-grid",
-        description: "A grid layout container",
-        defaultProps: {
-          columns: 3,
-          gap: "medium",
-        },
-      },
-      {
-        type: "hero",
-        name: "Hero",
-        icon: "tv2",
-        description: "A hero section for showcasing content",
-        defaultProps: {
-          variant: "default",
-        },
-      },
-      {
-        type: "spacer",
-        name: "Spacer",
-        icon: "globe-2",
-        description: "A spacing element",
-        defaultProps: {
-          size: "medium",
-        },
-      },
-      {
-        type: "divider",
-        name: "Divider",
-        icon: "menu",
-        description: "A horizontal divider line",
-        defaultProps: {
-          style: "solid",
-        },
-      },
-      {
-        type: "animatedSection",
-        name: "Animated Section",
-        icon: "layout",
-        description: "A section with premium animations (Premium)",
-        defaultProps: {
-          padding: "medium",
-          hasAnimation: true,
-          animationType: "premium",
-          animationEffect: "fade-in",
-          backgroundColor: "bg-white"
-        },
-      },
-    ],
+    id: "heading",
+    name: "Heading",
+    type: "heading",
+    icon: Type,
+    category: "content",
+    description: "Text heading (H1-H6)",
+    isPremium: false,
+    isEnterprise: false,
+    props: { level: "h2", className: "text-2xl font-bold" }
   },
   {
-    name: "Content",
-    elements: [
-      {
-        type: "heading",
-        name: "Heading",
-        icon: "heading",
-        description: "A title or heading text",
-        defaultProps: {
-          level: "h2",
-        },
-      },
-      {
-        type: "text",
-        name: "Text",
-        icon: "text",
-        description: "A paragraph of text",
-        defaultProps: {
-          fontSize: "medium",
-        },
-      },
-      {
-        type: "image",
-        name: "Image",
-        icon: "image",
-        description: "An image element",
-        defaultProps: {
-          src: "https://via.placeholder.com/300",
-          alt: "Placeholder Image",
-        },
-      },
-      {
-        type: "button",
-        name: "Button",
-        icon: "button",
-        description: "A clickable button",
-        defaultProps: {
-          label: "Click me",
-          variant: "primary",
-        },
-      },
-      {
-        type: "list",
-        name: "List",
-        icon: "list-icon",
-        description: "A list of items",
-        defaultProps: {
-          items: ["Item 1", "Item 2", "Item 3"],
-          style: "unordered",
-        },
-      },
-      {
-        type: "animatedHeading",
-        name: "Animated Heading",
-        icon: "heading",
-        description: "A heading with entrance animation (Premium)",
-        defaultProps: {
-          level: "h2",
-          hasAnimation: true,
-          animationType: "premium",
-          animationEffect: "fade-in"
-        },
-      },
-    ],
+    id: "text",
+    name: "Text",
+    type: "text",
+    icon: FileText,
+    category: "content",
+    description: "Paragraph text content",
+    isPremium: false,
+    isEnterprise: false,
+    props: { className: "text-gray-600" }
   },
   {
-    name: "Interactive",
-    elements: [
-      {
-        type: "form",
-        name: "Form",
-        icon: "form",
-        description: "A form for user input",
-        defaultProps: {
-          fields: ["Name", "Email", "Message"],
-        },
-      },
-    ],
+    id: "button",
+    name: "Button",
+    type: "button",
+    icon: Package,
+    category: "content",
+    description: "Interactive button element",
+    isPremium: false,
+    isEnterprise: false,
+    props: { variant: "primary", size: "default" }
   },
   {
-    name: "Animations",
-    elements: [
-      {
-        type: "fadeInElement",
-        name: "Fade In",
-        icon: "star",
-        description: "Element that fades in on page load (Premium)",
-        defaultProps: {
-          hasAnimation: true,
-          animationType: "premium",
-          animationEffect: "fade-in",
-          content: "This content will fade in"
-        },
-      },
-      {
-        type: "slideInElement",
-        name: "Slide In",
-        icon: "star",
-        description: "Element that slides in from the side (Premium)",
-        defaultProps: {
-          hasAnimation: true,
-          animationType: "premium",
-          animationEffect: "slide-in-right",
-          content: "This content will slide in"
-        },
-      },
-      {
-        type: "scaleInElement",
-        name: "Scale In",
-        icon: "star",
-        description: "Element that scales in on page load (Premium)",
-        defaultProps: {
-          hasAnimation: true,
-          animationType: "premium",
-          animationEffect: "scale-in",
-          content: "This content will scale in"
-        },
-      },
-      {
-        type: "particlesBackground",
-        name: "Particles Background",
-        icon: "star",
-        description: "Interactive particle animation background (Enterprise)",
-        defaultProps: {
-          hasAnimation: true,
-          animationType: "enterprise",
-          animationEffect: "particles",
-          particleColor: "#4f46e5",
-          particleCount: 50
-        },
-      },
-      {
-        type: "scrollReveal",
-        name: "Scroll Reveal",
-        icon: "star",
-        description: "Element that reveals on scroll (Enterprise)",
-        defaultProps: {
-          hasAnimation: true,
-          animationType: "enterprise",
-          animationEffect: "scroll-reveal",
-          content: "This content will reveal on scroll"
-        },
-      },
-    ],
+    id: "image",
+    name: "Image",
+    type: "image",
+    icon: Image,
+    category: "content",
+    description: "Image with alt text",
+    isPremium: false,
+    isEnterprise: false,
+    props: { src: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4", alt: "Placeholder image" }
+  },
+
+  // Interactive Elements
+  {
+    id: "form",
+    name: "Form",
+    type: "form",
+    icon: FormInput,
+    category: "interactive",
+    description: "Form container",
+    isPremium: false,
+    isEnterprise: false,
+    props: { method: "POST" }
   },
   {
-    name: "Complex",
-    elements: [
-      {
-        type: "feature",
-        name: "Feature",
-        icon: "star",
-        description: "A feature block with icon and text",
-        defaultProps: {
-          title: "Feature Title",
-          description: "Feature description goes here.",
-        },
-      },
-      {
-        type: "testimonial",
-        name: "Testimonial",
-        icon: "message-square",
-        description: "A testimonial block with author and quote",
-        defaultProps: {
-          quote: "This is a testimonial quote.",
-          author: "John Doe",
-        },
-      },
-      {
-        type: "pricing",
-        name: "Pricing",
-        icon: "credit-card",
-        description: "A pricing table",
-        defaultProps: {
-          title: "Basic",
-          price: "$9.99",
-          features: ["Feature 1", "Feature 2", "Feature 3"],
-        },
-      },
-      {
-        type: "card",
-        name: "Card",
-        icon: "credit-card",
-        description: "A card with title, description and image",
-        defaultProps: {
-          title: "Card Title",
-          description: "Card description goes here.",
-        },
-      },
-      {
-        type: "productsList",
-        name: "Products List",
-        icon: "package",
-        description: "Display products from your store",
-        defaultProps: {
-          columns: 4,
-          productsPerPage: 8,
-          showPagination: true,
-          cardStyle: "default"
-        }
-      },
-    ],
+    id: "input",
+    name: "Input",
+    type: "input",
+    icon: FormInput,
+    category: "interactive",
+    description: "Text input field",
+    isPremium: false,
+    isEnterprise: false,
+    props: { type: "text", placeholder: "Enter text..." }
+  },
+
+  // Complex Elements
+  {
+    id: "card",
+    name: "Card",
+    type: "card",
+    icon: Package,
+    category: "complex",
+    description: "Content card with title and description",
+    isPremium: false,
+    isEnterprise: false,
+    props: { showButton: true, buttonText: "Learn More" }
   },
   {
-    name: "Navigation",
-    elements: [
-      {
-        type: "navbar",
-        name: "Navbar",
-        icon: "menu",
-        description: "A navigation bar",
-        defaultProps: {
-          siteName: "Your Website",
-          links: [
-            { text: "Home", url: "#" },
-            { text: "About", url: "#" },
-            { text: "Services", url: "#" },
-            { text: "Contact", url: "#" },
-          ],
-          variant: "default",
-        },
-      },
-      {
-        type: "footer",
-        name: "Footer",
-        icon: "copyright",
-        description: "A footer section",
-        defaultProps: {
-          siteName: "Your Website",
-          links: [
-            { text: "Home", url: "#" },
-            { text: "About", url: "#" },
-            { text: "Services", url: "#" },
-            { text: "Contact", url: "#" },
-          ],
-          variant: "dark",
-        },
-      },
-    ],
+    id: "feature",
+    name: "Feature",
+    type: "feature",
+    icon: Star,
+    category: "complex",
+    description: "Feature showcase with icon",
+    isPremium: false,
+    isEnterprise: false,
+    props: { iconName: "star", layout: "vertical" }
   },
+  {
+    id: "testimonial",
+    name: "Testimonial",
+    type: "testimonial",
+    icon: Users,
+    category: "complex",
+    description: "Customer testimonial card",
+    isPremium: true,
+    isEnterprise: false,
+    props: { showAvatar: true, showRating: true }
+  },
+  {
+    id: "pricing",
+    name: "Pricing",
+    type: "pricing",
+    icon: CreditCard,
+    category: "complex",
+    description: "Pricing table component",
+    isPremium: true,
+    isEnterprise: false,
+    props: { featured: false, buttonText: "Get Started" }
+  },
+  {
+    id: "productsList",
+    name: "Products List",
+    type: "productsList",
+    icon: Package,
+    category: "ecommerce",
+    description: "Display products in a grid",
+    isPremium: false,
+    isEnterprise: false,
+    props: { columns: 3, showPagination: true }
+  },
+
+  // Media Elements
+  {
+    id: "video",
+    name: "Video",
+    type: "video",
+    icon: Video,
+    category: "media",
+    description: "Video player component",
+    isPremium: false,
+    isEnterprise: false,
+    props: { src: "", controls: true }
+  },
+  {
+    id: "carousel",
+    name: "Carousel",
+    type: "carousel",
+    icon: PlayCircle,
+    category: "media",
+    description: "Image carousel/slider",
+    isPremium: true,
+    isEnterprise: false,
+    props: { autoplay: false, showDots: true }
+  },
+
+  // Navigation Elements
+  {
+    id: "navbar",
+    name: "Navigation Bar",
+    type: "navbar",
+    icon: Navigation,
+    category: "navigation",
+    description: "Site navigation header",
+    isPremium: false,
+    isEnterprise: false,
+    props: { variant: "default", siteName: "My Website" }
+  },
+  {
+    id: "footer",
+    name: "Footer",
+    type: "footer",
+    icon: Navigation,
+    category: "navigation",
+    description: "Site footer section",
+    isPremium: false,
+    isEnterprise: false,
+    props: { variant: "dark", siteName: "My Website" }
+  },
+
+  // Animation Elements (Enterprise)
+  {
+    id: "fadeInElement",
+    name: "Fade In Animation",
+    type: "fadeInElement",
+    icon: Sparkles,
+    category: "animation",
+    description: "Fade in animation wrapper",
+    isPremium: false,
+    isEnterprise: true,
+    props: { duration: "0.5s", delay: "0s" }
+  },
+  {
+    id: "slideInElement",
+    name: "Slide In Animation",
+    type: "slideInElement",
+    icon: Sparkles,
+    category: "animation",
+    description: "Slide in animation wrapper",
+    isPremium: false,
+    isEnterprise: true,
+    props: { direction: "left", duration: "0.5s" }
+  }
 ];
 
-export const addElement = (type: string): BuilderElement => {
-  const elementDef = elementCategories
-    .flatMap((category) => category.elements)
-    .find((element) => element.type === type);
+const categories = [
+  { id: "all", name: "All Elements", icon: Grid },
+  { id: "layout", name: "Layout", icon: Layout },
+  { id: "content", name: "Content", icon: Type },
+  { id: "interactive", name: "Interactive", icon: FormInput },
+  { id: "complex", name: "Complex", icon: Package },
+  { id: "ecommerce", name: "E-commerce", icon: Package },
+  { id: "media", name: "Media", icon: Video },
+  { id: "navigation", name: "Navigation", icon: Navigation },
+  { id: "animation", name: "Animation", icon: Sparkles }
+];
 
-  if (!elementDef) {
-    console.warn(`No element definition found for type: ${type}`);
-    return {
-      id: uuidv4(),
-      type: "text",
-      content: `Unknown element type: ${type}`,
-    };
-  }
+const ElementPalette: React.FC = () => {
+  const { addElement } = useBuilder();
+  const { isPremium, isEnterprise, checkUpgrade } = usePlan();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeCategory, setActiveCategory] = useState("all");
 
-  return {
-    id: uuidv4(),
-    type: type,
-    content: "",
-    props: elementDef.defaultProps || {},
-  };
-};
+  const filteredElements = useMemo(() => {
+    return elementTemplates.filter(element => {
+      const matchesSearch = element.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          element.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = activeCategory === "all" || element.category === activeCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [searchTerm, activeCategory]);
 
-// Create a React component to render the element palette
-const ElementPaletteComponent: React.FC = () => {
-  // Track which categories are open
-  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>(() => {
-    // Start with all categories open
-    return elementCategories.reduce((acc, category) => {
-      acc[category.name] = true; // Set all categories to open by default
-      return acc;
-    }, {} as Record<string, boolean>);
-  });
-  
-  // Get plan info to check premium access
-  const { isPremium, isEnterprise } = usePlan();
-
-  // Toggle a category's open state
-  const toggleCategory = (categoryName: string) => {
-    setOpenCategories(prev => ({
-      ...prev,
-      [categoryName]: !prev[categoryName]
-    }));
-  };
-
-  // Check if an element is premium/enterprise
-  const isElementPremium = (element: ElementDefinition) => {
-    return element.defaultProps?.animationType === 'premium' || element.type.includes('animated');
-  };
-
-  const isElementEnterprise = (element: ElementDefinition) => {
-    return element.defaultProps?.animationType === 'enterprise';
-  };
-
-  // Handle drag start for an element
-  const handleDragStart = (event: React.DragEvent<HTMLButtonElement>, element: ElementDefinition) => {
+  const handleAddElement = (template: ElementTemplate) => {
     // Check plan restrictions
-    if (isElementPremium(element) && !isPremium) {
-      event.preventDefault();
-      toast.error("Premium feature not available", {
-        description: "Upgrade to Professional or Enterprise plan to use this element"
-      });
-      return false;
+    if (template.isPremium && !isPremium && !isEnterprise) {
+      checkUpgrade(`${template.name} element`, true);
+      return;
     }
 
-    if (isElementEnterprise(element) && !isEnterprise) {
-      event.preventDefault();
-      toast.error("Enterprise feature not available", {
-        description: "Upgrade to Enterprise plan to use this element"
-      });
-      return false;
+    if (template.isEnterprise && !isEnterprise) {
+      checkUpgrade(`${template.name} element`, true, "enterprise");
+      return;
     }
-    
-    // Create the data to transfer
-    const elementData = {
-      type: element.type,
-      props: element.defaultProps || {},
-      content: ""
+
+    const newElement = {
+      id: uuidv4(),
+      type: template.type,
+      content: template.name === "Heading" ? "Your Heading Here" : 
+               template.name === "Text" ? "Your content goes here..." :
+               template.name === "Button" ? "Click me" :
+               template.name === "Card" ? "Card Title" :
+               template.name === "Feature" ? "Feature Title" :
+               "",
+      props: { ...template.props },
+      children: template.children || undefined
     };
-    
-    // Set the drag data as JSON
-    event.dataTransfer.setData("application/json", JSON.stringify(elementData));
-    event.dataTransfer.effectAllowed = "copy";
+
+    addElement(newElement);
+    toast.success(`${template.name} added to canvas`);
+  };
+
+  const getElementIcon = (template: ElementTemplate) => {
+    if (template.isEnterprise && !isEnterprise) {
+      return <Lock className="h-4 w-4" />;
+    }
+    if (template.isPremium && !isPremium) {
+      return <Crown className="h-4 w-4" />;
+    }
+    return <Plus className="h-4 w-4" />;
+  };
+
+  const getElementBadge = (template: ElementTemplate) => {
+    if (template.isEnterprise) {
+      return (
+        <Badge variant="secondary" className="bg-purple-100 text-purple-800 text-xs">
+          <Crown className="h-3 w-3 mr-1" />
+          Enterprise
+        </Badge>
+      );
+    }
+    if (template.isPremium) {
+      return (
+        <Badge variant="secondary" className="bg-amber-100 text-amber-800 text-xs">
+          <Sparkles className="h-3 w-3 mr-1" />
+          Premium
+        </Badge>
+      );
+    }
+    return null;
   };
 
   return (
-    <div className="space-y-4 py-2">
-      {elementCategories.map((category) => (
-        <Collapsible
-          key={category.name}
-          open={openCategories[category.name]}
-          onOpenChange={() => toggleCategory(category.name)}
-          className="border border-gray-100 rounded-md overflow-hidden"
-        >
-          <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors">
-            <h3 className="text-sm font-medium text-gray-700">{category.name}</h3>
-            {openCategories[category.name] ? 
-              <ChevronDown className="h-4 w-4 text-gray-500" /> : 
-              <ChevronRight className="h-4 w-4 text-gray-500" />
-            }
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="grid grid-cols-2 gap-2 p-3 bg-white">
-              {category.elements.map((element) => {
-                const IconComponent = LucideIcons[element.icon];
-                const isPremiumElement = isElementPremium(element);
-                const isEnterpriseElement = isElementEnterprise(element);
-                const isLocked = (isPremiumElement && !isPremium) || (isEnterpriseElement && !isEnterprise);
-                
-                return (
-                  <button
-                    key={element.type}
-                    className={`relative flex flex-col items-center justify-center p-3 text-center bg-white border border-gray-200 rounded-lg ${isLocked ? 'opacity-75 cursor-not-allowed' : 'hover:bg-blue-50 hover:border-blue-200'} transition-colors`}
-                    title={`${element.description}${isLocked ? ' - Requires upgrade' : ''}`}
-                    draggable={!isLocked}
-                    onDragStart={(e) => handleDragStart(e, element)}
-                    onClick={() => {
-                      if (isLocked) {
-                        toast.error(`${isEnterpriseElement ? 'Enterprise' : 'Premium'} feature not available`, {
-                          description: `Upgrade to ${isEnterpriseElement ? 'Enterprise' : 'Professional or Enterprise'} plan to use this element`
-                        });
-                      }
-                    }}
+    <div className="h-full flex flex-col">
+      {/* Search */}
+      <div className="p-4 border-b">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search elements..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      </div>
+
+      {/* Categories */}
+      <Tabs value={activeCategory} onValueChange={setActiveCategory} className="flex-1 flex flex-col">
+        <div className="px-4 pt-4">
+          <TabsList className="grid grid-cols-3 gap-1 h-auto p-1">
+            {categories.slice(0, 3).map((category) => (
+              <TabsTrigger
+                key={category.id}
+                value={category.id}
+                className="text-xs p-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+              >
+                <category.icon className="h-3 w-3 mr-1" />
+                {category.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <TabsList className="grid grid-cols-3 gap-1 h-auto p-1 mt-1">
+            {categories.slice(3, 6).map((category) => (
+              <TabsTrigger
+                key={category.id}
+                value={category.id}
+                className="text-xs p-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+              >
+                <category.icon className="h-3 w-3 mr-1" />
+                {category.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <TabsList className="grid grid-cols-3 gap-1 h-auto p-1 mt-1">
+            {categories.slice(6).map((category) => (
+              <TabsTrigger
+                key={category.id}
+                value={category.id}
+                className="text-xs p-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+              >
+                <category.icon className="h-3 w-3 mr-1" />
+                {category.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+
+        {/* Elements Grid */}
+        <ScrollArea className="flex-1 px-4">
+          <div className="py-4 space-y-2">
+            {filteredElements.map((template) => {
+              const Icon = template.icon;
+              const isLocked = (template.isPremium && !isPremium) || (template.isEnterprise && !isEnterprise);
+              
+              return (
+                <div key={template.id} className="relative">
+                  <Button
+                    variant="outline"
+                    className={`w-full justify-start p-3 h-auto ${
+                      isLocked ? 'opacity-60 hover:opacity-80' : 'hover:bg-blue-50 hover:border-blue-300'
+                    }`}
+                    onClick={() => handleAddElement(template)}
                   >
-                    {/* Premium badge */}
-                    {(isPremiumElement || isEnterpriseElement) && (
-                      <div className="absolute -top-1 -right-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
-                        {isLocked ? <Lock className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
-                        <span>{isEnterpriseElement ? "Enterprise" : "Premium"}</span>
+                    <div className="flex items-start space-x-3 w-full">
+                      <div className={`p-2 rounded ${isLocked ? 'bg-gray-100' : 'bg-blue-100'}`}>
+                        <Icon className={`h-4 w-4 ${isLocked ? 'text-gray-400' : 'text-blue-600'}`} />
                       </div>
-                    )}
-                    
-                    {IconComponent && <IconComponent className={`h-5 w-5 mb-1 ${isLocked ? 'text-gray-400' : 'text-blue-600'}`} />}
-                    <span className="text-xs mt-1">{element.name}</span>
-                  </button>
-                );
-              })}
+                      <div className="flex-1 text-left">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">{template.name}</span>
+                          {getElementIcon(template)}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">{template.description}</p>
+                        {getElementBadge(template) && (
+                          <div className="mt-2">
+                            {getElementBadge(template)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+
+          {filteredElements.length === 0 && (
+            <div className="text-center py-8">
+              <p className="text-gray-500 text-sm">No elements found</p>
             </div>
-          </CollapsibleContent>
-        </Collapsible>
-      ))}
+          )}
+        </ScrollArea>
+      </Tabs>
     </div>
   );
 };
 
-// Export both the component and the categories
-export default ElementPaletteComponent;
-export { elementCategories };
+export default ElementPalette;

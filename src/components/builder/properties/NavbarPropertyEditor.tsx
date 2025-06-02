@@ -6,16 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Plus, X } from "lucide-react";
-import ContentPropertyEditor from "./ContentPropertyEditor";
-import { Switch } from "@/components/ui/switch";
 
 const NavbarPropertyEditor: React.FC<PropertyEditorProps> = ({
   element,
   onPropertyChange,
-  onContentChange,
 }) => {
   const links = element.props?.links || [];
-  const showCartButton = element.props?.showCartButton !== false;
   
   const handleAddLink = () => {
     const newLinks = [...links, { text: "New Link", url: "#" }];
@@ -37,31 +33,13 @@ const NavbarPropertyEditor: React.FC<PropertyEditorProps> = ({
     onPropertyChange("links", newLinks);
   };
 
-  const handleShowCartButtonChange = (checked: boolean) => {
-    onPropertyChange("showCartButton", checked);
-  };
-
   return (
     <div className="space-y-4">
-      <ContentPropertyEditor 
-        content={element.content} 
-        onContentChange={onContentChange} 
-      />
-      
       <div className="space-y-2">
         <Label>Site Name</Label>
         <Input
-          value={element.props?.siteName || "Your Website"}
+          value={element.props?.siteName || "My Website"}
           onChange={(e) => onPropertyChange("siteName", e.target.value)}
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label>Logo URL</Label>
-        <Input
-          value={element.props?.logo || ""}
-          onChange={(e) => onPropertyChange("logo", e.target.value)}
-          placeholder="https://example.com/logo.png"
         />
       </div>
       
@@ -76,19 +54,11 @@ const NavbarPropertyEditor: React.FC<PropertyEditorProps> = ({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="default">Default</SelectItem>
-            <SelectItem value="transparent">Transparent</SelectItem>
             <SelectItem value="dark">Dark</SelectItem>
+            <SelectItem value="transparent">Transparent</SelectItem>
+            <SelectItem value="brand">Brand</SelectItem>
           </SelectContent>
         </Select>
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <Switch
-          id="showCartButton"
-          checked={showCartButton}
-          onCheckedChange={handleShowCartButtonChange}
-        />
-        <Label htmlFor="showCartButton">Show Cart Button</Label>
       </div>
 
       <div className="space-y-2">

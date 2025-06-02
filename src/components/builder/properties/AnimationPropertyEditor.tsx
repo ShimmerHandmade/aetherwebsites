@@ -1,116 +1,117 @@
+
 import React from "react";
-import { BuilderElement } from "@/contexts/BuilderContext";
+import { PropertyEditorProps } from "./PropertyEditor";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { usePlan } from "@/contexts/PlanContext";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Crown, Sparkles } from "lucide-react";
 
-interface AnimationPropertyEditorProps {
-  element: BuilderElement;
-  onPropertyChange: (property: string, value: any) => void;
-  onContentChange: (value: string) => void;
-}
-
-const AnimationPropertyEditor: React.FC<AnimationPropertyEditorProps> = ({
+const AnimationPropertyEditor: React.FC<PropertyEditorProps> = ({
   element,
   onPropertyChange,
-  onContentChange,
 }) => {
-  const { isPremium, isEnterprise } = usePlan();
-  const props = element.props || {};
+  const properties = element.props || {};
   
-  // Check if this user has access to this element
-  const isEnterpriseElement = props.animationType === 'enterprise';
-  const isPremiumElement = props.animationType === 'premium';
-  const hasAccess = 
-    (isPremiumElement && (isPremium || isEnterprise)) || 
-    (isEnterpriseElement && isEnterprise) ||
-    (!isPremiumElement && !isEnterpriseElement);
-
   return (
     <div className="space-y-4">
-      {!hasAccess && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            This is a {isEnterpriseElement ? 'Enterprise' : 'Premium'} feature. Upgrade your plan to use it.
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      <div>
-        <Label htmlFor="content">Content</Label>
-        <Textarea
-          id="content"
-          value={props.content || element.content || ""}
-          onChange={(e) => onPropertyChange("content", e.target.value)}
-          className="min-h-[100px]"
-        />
+      <div className="flex items-center gap-2 mb-4">
+        <Badge className="bg-purple-100 text-purple-800">
+          <Crown className="h-3 w-3 mr-1" />
+          Enterprise Feature
+        </Badge>
       </div>
       
-      <div>
-        <Label htmlFor="animation-effect">Animation Effect</Label>
-        <Select
-          value={props.animationEffect || "fade-in"}
-          onValueChange={(value) => onPropertyChange("animationEffect", value)}
-          disabled={!hasAccess}
+      <div className="space-y-2">
+        <Label>Animation Type</Label>
+        <Select 
+          value={properties.animationType || "fade"}
+          onValueChange={(value) => onPropertyChange("animationType", value)}
         >
-          <SelectTrigger id="animation-effect">
-            <SelectValue placeholder="Select animation effect" />
+          <SelectTrigger>
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="fade-in">Fade In</SelectItem>
-            <SelectItem value="slide-in-right">Slide In</SelectItem>
-            <SelectItem value="scale-in">Scale In</SelectItem>
-            {element.type === 'particlesBackground' && (
-              <SelectItem value="particles">Particles</SelectItem>
-            )}
-            {element.type === 'scrollReveal' && (
-              <SelectItem value="scroll-reveal">Scroll Reveal</SelectItem>
-            )}
+            <SelectItem value="fade">Fade In</SelectItem>
+            <SelectItem value="slide">Slide In</SelectItem>
+            <SelectItem value="scale">Scale In</SelectItem>
+            <SelectItem value="bounce">Bounce</SelectItem>
+            <SelectItem value="rotate">Rotate</SelectItem>
           </SelectContent>
         </Select>
       </div>
       
-      {element.type === 'particlesBackground' && (
-        <>
-          <div>
-            <Label htmlFor="particle-color">Particle Color</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="color"
-                id="particle-color"
-                value={props.particleColor || "#4f46e5"}
-                onChange={(e) => onPropertyChange("particleColor", e.target.value)}
-                className="w-20"
-                disabled={!hasAccess}
-              />
-              <Input
-                type="text"
-                value={props.particleColor || "#4f46e5"}
-                onChange={(e) => onPropertyChange("particleColor", e.target.value)}
-                disabled={!hasAccess}
-              />
-            </div>
-          </div>
-          
-          <div>
-            <Label htmlFor="particle-count">Particle Count</Label>
-            <Input
-              type="number"
-              id="particle-count"
-              value={props.particleCount || 50}
-              onChange={(e) => onPropertyChange("particleCount", parseInt(e.target.value))}
-              min={10}
-              max={200}
-              disabled={!hasAccess}
-            />
-          </div>
-        </>
+      {properties.animationType === "slide" && (
+        <div className="space-y-2">
+          <Label>Slide Direction</Label>
+          <Select 
+            value={properties.direction || "left"}
+            onValueChange={(value) => onPropertyChange("direction", value)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="left">From Left</SelectItem>
+              <SelectItem value="right">From Right</SelectItem>
+              <SelectItem value="top">From Top</SelectItem>
+              <SelectItem value="bottom">From Bottom</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       )}
+      
+      <div className="space-y-2">
+        <Label>Duration (seconds)</Label>
+        <Input
+          type="number"
+          value={parseFloat(properties.duration?.replace('s', '') || '0.5')}
+          onChange={(e) => onPropertyChange("duration", `${e.target.value}s`)}
+          min={0.1}
+          max={5}
+          step={0.1}
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label>Delay (seconds)</Label>
+        <Input
+          type="number"
+          value={parseFloat(properties.delay?.replace('s', '') || '0')}
+          onChange={(e) => onPropertyChange("delay", `${e.target.value}s`)}
+          min={0}
+          max={5}
+          step={0.1}
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label>Trigger</Label>
+        <Select 
+          value={properties.trigger || "scroll"}
+          onValueChange={(value) => onPropertyChange("trigger", value)}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="scroll">On Scroll</SelectItem>
+            <SelectItem value="hover">On Hover</SelectItem>
+            <SelectItem value="click">On Click</SelectItem>
+            <SelectItem value="immediate">Immediate</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <div className="flex items-center space-x-2">
+        <Checkbox 
+          id="repeat" 
+          checked={properties.repeat || false} 
+          onCheckedChange={(checked) => onPropertyChange("repeat", checked)}
+        />
+        <Label htmlFor="repeat">Repeat Animation</Label>
+      </div>
     </div>
   );
 };

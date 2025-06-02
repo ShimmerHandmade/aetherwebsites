@@ -1,259 +1,128 @@
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { useBuilder } from "@/contexts/builder/useBuilder";
 import { v4 as uuidv4 } from "@/lib/uuid";
-import { toast } from "@/components/ui/use-toast";
-import { getContentInsertionIndex } from "@/contexts/builder/pageStructureUtils";
+import { toast } from "sonner";
 
 interface CanvasDragDropHandlerProps {
   children: React.ReactNode;
   isPreviewMode: boolean;
-  onCanvasClick: (e: React.MouseEvent) => void;
-  className: string;
-  containerId?: string; 
+  onCanvasClick?: (e: React.MouseEvent) => void;
+  className?: string;
 }
 
-const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({ 
-  children, 
-  isPreviewMode, 
+const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
+  children,
+  isPreviewMode,
   onCanvasClick,
-  className,
-  containerId
+  className = ""
 }) => {
-  const { addElement, moveElement, elements, findElementById, removeElement } = useBuilder();
-  const [isDraggingOver, setIsDraggingOver] = useState(false);
-  const [dropTarget, setDropTarget] = useState<{top: boolean, element: string | null}>({top: true, element: null});
-  
-  const handleDragOver = (e: React.DragEvent) => {
+  const { addElement, moveElement, elements } = useBuilder();
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     if (isPreviewMode) return;
     
     e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = "copy";
-    
-    if (!isDraggingOver) {
-      setIsDraggingOver(true);
-    }
+    e.dataTransfer.dropEffect = "move";
+    setIsDragOver(true);
 
-    const targetElement = findDropTarget(e);
-    if (targetElement) {
-      setDropTarget(targetElement);
+    // Calculate drop position based on mouse position
+    if (dropZoneRef.current) {
+      const rect = dropZoneRef.current.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+      const elementHeight = 100; // Approximate element height
+      const index = Math.floor(y / elementHeight);
+      setDragOverIndex(Math.min(index, elements.length));
     }
-  };
+  }, [isPreviewMode, elements.length]);
 
-  const findDropTarget = (e: React.DragEvent): {top: boolean, element: string | null} => {
-    const elementsFromPoint = document.elementsFromPoint(e.clientX, e.clientY);
-    
-    for (const el of elementsFromPoint) {
-      const elementId = (el as HTMLElement).dataset?.elementId;
-      if (elementId) {
-        const rect = el.getBoundingClientRect();
-        const isTopHalf = e.clientY < rect.top + rect.height / 2;
-        return {
-          top: isTopHalf,
-          element: elementId
-        };
-      }
-    }
-    
-    return {top: true, element: null};
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingOver(false);
-    setDropTarget({top: true, element: null});
-  };
-
-  const findElementIndex = (elementId: string, parentId?: string): number => {
-    if (!parentId) {
-      return elements.findIndex(el => el.id === elementId);
-    }
-    
-    const parent = findElementById(parentId);
-    if (parent?.children) {
-      return parent.children.findIndex(el => el.id === elementId);
-    }
-    
-    return -1;
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingOver(false);
-    setDropTarget({top: true, element: null});
-    
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
     if (isPreviewMode) return;
     
+    // Only hide drag indicator if we're leaving the drop zone entirely
+    if (!dropZoneRef.current?.contains(e.relatedTarget as Node)) {
+      setIsDragOver(false);
+      setDragOverIndex(null);
+    }
+  }, [isPreviewMode]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    if (isPreviewMode) return;
+    
+    e.preventDefault();
+    setIsDragOver(false);
+    setDragOverIndex(null);
+
     try {
-      const data = e.dataTransfer.getData("application/json");
-      if (!data) {
-        console.log("No data in drop event");
+      const dataString = e.dataTransfer.getData("application/json");
+      if (!dataString) {
+        console.warn("No drag data found");
         return;
       }
-      
-      const elementData = JSON.parse(data);
-      console.log("Dropped element data:", elementData);
-      
-      // Add new element from palette
-      if (!elementData.id) {
-        let newElement = {
-          id: uuidv4(),
-          type: elementData.type,
-          content: elementData.content || "",
-          props: elementData.props || {},
-          children: elementData.children || []
-        };
-        
-        // Special handling for container elements
-        if (['flex', 'grid', 'container'].includes(elementData.type)) {
-          newElement.children = [];
-          console.log(`Creating container element: ${elementData.type}`);
-        }
-        
-        // Special handling for certain element types
-        if (elementData.type === 'productsList') {
-          newElement.props = {
-            columns: 3,
-            productsPerPage: 6,
-            showPagination: true,
-            cardStyle: 'default',
-            sortBy: 'created_at',
-            sortOrder: 'desc',
-            categoryFilter: 'all',
-            ...newElement.props
-          };
-        }
 
-        let insertIndex;
+      const data = JSON.parse(dataString);
+      console.log("Drop data:", data);
+
+      if (data.isNewElement) {
+        // Adding new element from palette
+        const newElement = {
+          id: uuidv4(),
+          type: data.type,
+          content: data.content || "",
+          props: { ...data.props }
+        };
+
+        const dropIndex = dragOverIndex !== null ? dragOverIndex : elements.length;
+        addElement(newElement, dropIndex);
+        toast.success(`${data.type} added to canvas`);
+      } else if (data.id) {
+        // Moving existing element
+        const currentIndex = elements.findIndex(el => el.id === data.id);
+        const newIndex = dragOverIndex !== null ? dragOverIndex : elements.length - 1;
         
-        // If we have a container, add to it
-        if (containerId) {
-          const container = findElementById(containerId);
-          if (container) {
-            if (dropTarget.element && dropTarget.element !== containerId) {
-              const targetIndex = findElementIndex(dropTarget.element, containerId);
-              if (targetIndex !== -1) {
-                insertIndex = dropTarget.top ? targetIndex : targetIndex + 1;
-              }
-            }
-            console.log(`Adding new element to container ${containerId} at position ${insertIndex || 'end'}`);
-            addElement(newElement, insertIndex, containerId);
-          }
-        } else {
-          // Adding to root - ensure proper ordering between header and footer
-          if (dropTarget.element) {
-            const targetIndex = findElementIndex(dropTarget.element);
-            if (targetIndex !== -1) {
-              insertIndex = dropTarget.top ? targetIndex : targetIndex + 1;
-            }
-          }
-          
-          // If no specific target, use content insertion logic
-          if (insertIndex === undefined) {
-            insertIndex = getContentInsertionIndex(elements);
-          }
-          
-          console.log(`Adding new element to root at position ${insertIndex}`);
-          addElement(newElement, insertIndex);
-        }
-        
-        toast({
-          title: "Element Added",
-          description: `Added new ${elementData.type} element`
-        });
-        
-        return;
-      }
-      
-      // Handle moving existing elements
-      if (elementData.id) {
-        const sourceElement = findElementById(elementData.id);
-        if (!sourceElement) {
-          console.log("Source element not found:", elementData.id);
-          return;
-        }
-        
-        const sourceParentId = elementData.parentId;
-        const sourceIndex = elementData.sourceIndex !== undefined ? Number(elementData.sourceIndex) : -1;
-        
-        // Moving within the same container
-        if (sourceParentId === containerId) {
-          if (dropTarget.element && dropTarget.element !== elementData.id) {
-            const targetIndex = findElementIndex(dropTarget.element, containerId);
-            if (targetIndex !== -1) {
-              const adjustedTargetIndex = dropTarget.top ? targetIndex : targetIndex + 1;
-              const destinationIndex = 
-                sourceIndex !== -1 && sourceIndex < targetIndex ? 
-                  adjustedTargetIndex - 1 : adjustedTargetIndex;
-              
-              console.log(`Moving element from ${sourceIndex} to ${destinationIndex} in same container`);
-              moveElement(sourceIndex, destinationIndex, sourceParentId);
-              return;
-            }
-          }
-          
-          if (!containerId && sourceIndex !== -1) {
-            const dropIndex = elements.length - 1;
-            moveElement(sourceIndex, dropIndex);
-            console.log(`Moving element from ${sourceIndex} to ${dropIndex} at root level`);
-            return;
-          }
-        }
-        
-        // Moving between different containers
-        const elementCopy = { ...sourceElement };
-        
-        let insertIndex;
-        if (dropTarget.element) {
-          const targetIndex = findElementIndex(dropTarget.element, containerId);
-          if (targetIndex !== -1) {
-            insertIndex = dropTarget.top ? targetIndex : targetIndex + 1;
-          }
-        }
-        
-        // For root level drops, ensure proper ordering
-        if (!containerId && insertIndex === undefined) {
-          insertIndex = getContentInsertionIndex(elements);
-        }
-        
-        addElement(elementCopy, insertIndex, containerId || null);
-        console.log(`Added element to new container at position ${insertIndex || 'end'}`);
-        
-        // Remove from the original location
-        if (sourceIndex !== -1) {
-          setTimeout(() => {
-            removeElement(elementData.id);
-          }, 50);
+        if (currentIndex !== -1 && currentIndex !== newIndex) {
+          moveElement(currentIndex, newIndex);
+          toast.success("Element moved");
         }
       }
     } catch (error) {
       console.error("Error handling drop:", error);
-      toast({
-        title: "Error",
-        description: "Error adding element. Please try again."
-      });
+      toast.error("Failed to drop element");
     }
-  };
+  }, [isPreviewMode, dragOverIndex, elements, addElement, moveElement]);
 
-  const canvasClassName = `${className} transition-colors duration-150 ${
-    isDraggingOver && !isPreviewMode 
-      ? 'bg-indigo-50 border-indigo-300 border-2 border-dashed shadow-inner' 
-      : ''
-  }`;
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    if (onCanvasClick) {
+      onCanvasClick(e);
+    }
+  }, [onCanvasClick]);
 
   return (
-    <div 
-      className={canvasClassName}
-      onClick={onCanvasClick}
+    <div
+      ref={dropZoneRef}
+      className={`relative ${className}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      data-container-id={containerId}
+      onClick={handleClick}
     >
-      {children}
+      {/* Drop indicator */}
+      {isDragOver && !isPreviewMode && (
+        <div 
+          className="absolute left-0 right-0 h-1 bg-blue-500 z-50 transition-all duration-150"
+          style={{
+            top: dragOverIndex !== null ? `${dragOverIndex * 100}px` : '0px'
+          }}
+        />
+      )}
+      
+      {/* Canvas background with drop zone styling */}
+      <div className={`min-h-screen ${isDragOver && !isPreviewMode ? 'bg-blue-50 border-2 border-dashed border-blue-300' : ''}`}>
+        {children}
+      </div>
     </div>
   );
 };

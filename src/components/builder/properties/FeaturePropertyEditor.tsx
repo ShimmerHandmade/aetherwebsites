@@ -1,11 +1,12 @@
+
 import React from "react";
 import { PropertyEditorProps } from "./PropertyEditor";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ContentPropertyEditor from "./ContentPropertyEditor";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const FeaturePropertyEditor: React.FC<PropertyEditorProps> = ({
   element,
@@ -23,100 +24,77 @@ const FeaturePropertyEditor: React.FC<PropertyEditorProps> = ({
         </TabsList>
         
         <TabsContent value="content" className="pt-4 space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="featureTitle" className="text-sm text-gray-600 block">
-              Title
-            </Label>
-            <ContentPropertyEditor 
-              content={element.content} 
-              onContentChange={onContentChange} 
-            />
-          </div>
+          <ContentPropertyEditor 
+            content={element.content} 
+            onContentChange={onContentChange} 
+            label="Feature Title"
+            placeholder="Enter feature title..."
+          />
           
           <div className="space-y-2">
-            <Label htmlFor="featureDescription" className="text-sm text-gray-600 block mb-1">
-              Description
-            </Label>
+            <Label>Description</Label>
             <Textarea
-              id="featureDescription"
               value={properties.description || ""}
               onChange={(e) => onPropertyChange("description", e.target.value)}
-              placeholder="Feature description"
-              className="w-full"
+              placeholder="Describe this feature..."
+              rows={3}
             />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="featureIcon" className="text-sm text-gray-600 block mb-1">
-              Icon
-            </Label>
-            <Input
-              id="featureIcon"
-              value={properties.icon || ""}
-              onChange={(e) => onPropertyChange("icon", e.target.value)}
-              placeholder="★"
-              className="w-full"
-            />
+            <Label>Icon Name</Label>
+            <Select 
+              value={properties.iconName || "star"}
+              onValueChange={(value) => onPropertyChange("iconName", value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="star">Star</SelectItem>
+                <SelectItem value="heart">Heart</SelectItem>
+                <SelectItem value="shield">Shield</SelectItem>
+                <SelectItem value="zap">Zap</SelectItem>
+                <SelectItem value="award">Award</SelectItem>
+                <SelectItem value="check">Check</SelectItem>
+                <SelectItem value="target">Target</SelectItem>
+                <SelectItem value="trending-up">Trending Up</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </TabsContent>
         
         <TabsContent value="style" className="pt-4 space-y-4">
           <div>
-            <Label htmlFor="iconPosition" className="text-sm text-gray-600 block mb-1">
-              Icon Position
-            </Label>
+            <Label>Layout</Label>
             <Select 
-              value={properties.iconPosition || "top"}
-              onValueChange={(value) => onPropertyChange("iconPosition", value)}
+              value={properties.layout || "vertical"}
+              onValueChange={(value) => onPropertyChange("layout", value)}
             >
-              <SelectTrigger id="iconPosition">
-                <SelectValue placeholder="Select position" />
+              <SelectTrigger>
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="top">Top</SelectItem>
-                <SelectItem value="left">Left</SelectItem>
-                <SelectItem value="right">Right</SelectItem>
-                <SelectItem value="none">No Icon</SelectItem>
+                <SelectItem value="vertical">Vertical</SelectItem>
+                <SelectItem value="horizontal">Horizontal</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
           <div>
-            <Label htmlFor="iconSize" className="text-sm text-gray-600 block mb-1">
-              Icon Size
-            </Label>
+            <Label>Icon Style</Label>
             <Select 
-              value={properties.iconSize || "medium"}
-              onValueChange={(value) => onPropertyChange("iconSize", value)}
+              value={properties.iconStyle || "default"}
+              onValueChange={(value) => onPropertyChange("iconStyle", value)}
             >
-              <SelectTrigger id="iconSize">
-                <SelectValue placeholder="Select size" />
+              <SelectTrigger>
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="small">Small</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="large">Large</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
-            <Label htmlFor="iconColor" className="text-sm text-gray-600 block mb-1">
-              Icon Color
-            </Label>
-            <Select 
-              value={properties.iconColor || "primary"}
-              onValueChange={(value) => onPropertyChange("iconColor", value)}
-            >
-              <SelectTrigger id="iconColor">
-                <SelectValue placeholder="Select color" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="primary">Primary</SelectItem>
-                <SelectItem value="secondary">Secondary</SelectItem>
-                <SelectItem value="accent">Accent</SelectItem>
-                <SelectItem value="gray">Gray</SelectItem>
-                <SelectItem value="dark">Dark</SelectItem>
+                <SelectItem value="default">Default</SelectItem>
+                <SelectItem value="filled">Filled Circle</SelectItem>
+                <SelectItem value="outlined">Outlined Circle</SelectItem>
+                <SelectItem value="square">Square</SelectItem>
               </SelectContent>
             </Select>
           </div>
