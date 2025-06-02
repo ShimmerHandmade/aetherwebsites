@@ -46,7 +46,6 @@ const GridElement: React.FC<ElementProps> = ({ element }) => {
         isPreviewMode={false}
         onCanvasClick={(e) => e.stopPropagation()}
         className="min-h-[80px] w-full"
-        containerId={element.id}
       >
         {element.children && element.children.length > 0 ? (
           <div className={`grid ${columnClass} ${gap} w-full`}>

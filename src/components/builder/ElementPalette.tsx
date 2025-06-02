@@ -20,7 +20,7 @@ import {
   CreditCard,
   Layout,
   Grid,
-  Flex,
+  Move,
   Navigation,
   Star,
   PlayCircle,
@@ -84,7 +84,7 @@ const elementTemplates: ElementTemplate[] = [
     id: "flex",
     name: "Flex",
     type: "flex",
-    icon: Flex,
+    icon: Move,
     category: "layout",
     description: "Flexbox layout container",
     isPremium: false,
@@ -333,12 +333,12 @@ const ElementPalette: React.FC = () => {
   const handleAddElement = (template: ElementTemplate) => {
     // Check plan restrictions
     if (template.isPremium && !isPremium && !isEnterprise) {
-      checkUpgrade(`${template.name} element`, true);
+      checkUpgrade(`${template.name} element`);
       return;
     }
 
     if (template.isEnterprise && !isEnterprise) {
-      checkUpgrade(`${template.name} element`, true, "enterprise");
+      checkUpgrade(`${template.name} element`);
       return;
     }
 
