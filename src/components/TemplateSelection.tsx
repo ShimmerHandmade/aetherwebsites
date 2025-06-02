@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -95,11 +96,9 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
           setDatabaseTemplates(result.data);
         } else {
           console.error("Failed to load templates:", result.error);
-          toast.error("Failed to load templates from database");
         }
       } catch (error) {
         console.error("Error loading templates:", error);
-        toast.error("Error loading templates");
       } finally {
         setTemplatesLoading(false);
       }
@@ -120,7 +119,6 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       };
       img.onerror = () => {
         console.log(`Primary image failed for ${template.name}, trying fallback`);
-        // Try fallback image
         const fallbackImg = new Image();
         fallbackImg.onload = () => {
           setImageLoading(prev => ({ ...prev, [template.id]: false }));
@@ -143,7 +141,6 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       return;
     }
 
-    // Check if it's a static template, AI generated template, or database template
     const staticTemplate = templates.find(t => t.id === selectedTemplate);
     const aiTemplate = aiGeneratedTemplates.find(t => t.id === selectedTemplate);
     const dbTemplate = databaseTemplates.find(t => t.id === selectedTemplate);
@@ -158,14 +155,12 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       setTemplateApplying(true);
 
       if (dbTemplate) {
-        // Handle database template
         console.log(`Applying database template: ${dbTemplate.name} (${dbTemplate.id})`);
         
         toast.success("Applying custom template...", {
           duration: 3000,
         });
         
-        // Save the template-website relationship
         const linkResult = await saveTemplateWebsite(websiteId, dbTemplate.id);
         if (!linkResult.success) {
           console.error("Failed to link template to website:", linkResult.error);
@@ -174,7 +169,6 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
           return;
         }
         
-        // Apply the template using the database template ID
         const result = await updateWebsiteTemplate(websiteId, "custom", dbTemplate.id);
         
         if (!result.success) {
@@ -184,7 +178,6 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
           return;
         }
       } else if (aiTemplate) {
-        // Handle AI generated template (legacy - for templates not yet saved to DB)
         console.log(`Applying AI template: ${aiTemplate.name} (${aiTemplate.id})`);
         
         toast.success("Applying AI-generated template...", {
@@ -200,7 +193,6 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
           return;
         }
       } else if (staticTemplate) {
-        // Handle static template
         const hasAccess = await checkThemeAccess(staticTemplate.id);
         
         if (!hasAccess) {
@@ -250,10 +242,8 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
   };
 
   const handleAITemplateGenerated = (template: any) => {
-    // Add to both lists for backward compatibility
     setAiGeneratedTemplates(prev => [...prev, template]);
     
-    // Also add to database templates since it's now saved there
     if (template.templateData) {
       const newDbTemplate: Template = {
         id: template.id,
@@ -285,7 +275,6 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
     return template.image;
   };
   
-  // Show loading state if template is being applied
   if (templateApplying) {
     return (
       <div className="py-8 px-4 min-h-[60vh] flex items-center justify-center">
@@ -298,7 +287,6 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
     );
   }
 
-  // Show loading state while plan is loading
   if (planLoading) {
     return (
       <div className="py-8 px-4 min-h-[60vh] flex items-center justify-center">
@@ -311,7 +299,6 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
     );
   }
 
-  // Combine all templates for display
   const allTemplates = [
     ...templates.map(t => ({
       ...t,
@@ -343,7 +330,6 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
         Select a template that matches your business needs. Each template is fully customizable after selection.
       </p>
 
-      {/* AI Template Generator Button */}
       <div className="flex justify-center mb-8">
         <Dialog open={showAIGenerator} onOpenChange={setShowAIGenerator}>
           <DialogTrigger asChild>
@@ -406,10 +392,10 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
           {allTemplates.map((template) => (
             <div 
               key={template.id}
-              className={`rounded-xl overflow-hidden cursor-pointer transition-all duration-300 bg-white
+              className={`rounded-xl overflow-hidden cursor-pointer transition-all duration-300 bg-white border shadow-md hover:shadow-lg hover:transform hover:scale-[1.01]
                 ${selectedTemplate === template.id 
                   ? 'ring-4 ring-indigo-500 border-indigo-500 transform scale-[1.02] shadow-xl' 
-                  : 'border border-gray-200 shadow-md hover:shadow-lg hover:transform hover:scale-[1.01]'
+                  : 'border-gray-200'
                 }
                 ${(template.is_premium || template.isPremium) && !isPremium ? 'opacity-85' : ''}
               `}

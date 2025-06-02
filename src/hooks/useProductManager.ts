@@ -19,7 +19,6 @@ export function useProductManager(
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<"grid" | "list">("grid");
 
-  // Filter products based on search term and active tab
   const filteredProducts = products.filter(product => {
     const matchesSearch = 
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -77,7 +76,10 @@ export function useProductManager(
   }, [newCategory, categories]);
 
   const handleSave = useCallback(async () => {
-    if (!editingProduct || !websiteId) return { success: false };
+    if (!editingProduct || !websiteId) {
+      toast.error("Missing product or website information");
+      return { success: false };
+    }
     
     if (!editingProduct.name.trim()) {
       toast.error("Product name is required");
@@ -92,6 +94,10 @@ export function useProductManager(
     setIsSaving(true);
 
     try {
+      console.log("Saving product:", editingProduct);
+      console.log("Is adding new:", isAddingNew);
+      console.log("Website ID:", websiteId);
+      
       const result = await saveProduct(
         editingProduct, 
         websiteId, 
@@ -104,12 +110,15 @@ export function useProductManager(
         setEditingProduct(null);
         setImagePreview(null);
         setImageFile(null);
+        setIsAddingNew(false);
         return { success: true, product: result.product };
       } else {
+        console.error("Save product failed:", result.error);
         toast.error(result.error || "Failed to save product");
         return { success: false, error: result.error };
       }
     } catch (error) {
+      console.error("Error saving product:", error);
       toast.error("Failed to save product");
       return { success: false, error: String(error) };
     } finally {
@@ -125,23 +134,29 @@ export function useProductManager(
   }, []);
 
   const handleDelete = useCallback(async (id: string) => {
-    if (!websiteId) return { success: false };
+    if (!websiteId) {
+      toast.error("Website ID is missing");
+      return { success: false };
+    }
     
     if (!confirm("Are you sure you want to delete this product?")) {
       return { success: false };
     }
     
     try {
+      console.log("Deleting product:", id);
       const result = await deleteProduct(id, websiteId);
       
       if (result.success) {
         toast.success("Product deleted");
         return { success: true };
       } else {
+        console.error("Delete product failed:", result.error);
         toast.error(result.error || "Failed to delete product");
         return { success: false, error: result.error };
       }
     } catch (error) {
+      console.error("Error deleting product:", error);
       toast.error("An unexpected error occurred");
       return { success: false, error: String(error) };
     }
@@ -158,6 +173,25 @@ export function useProductManager(
       setEditingProduct({...editingProduct, image_url: null});
     }
   }, [editingProduct]);
+
+  const handleAddNew = useCallback(() => {
+    setEditingProduct({
+      id: "",
+      name: "",
+      description: "",
+      price: 0,
+      sku: "",
+      stock: 0,
+      category: "",
+      is_featured: false,
+      is_sale: false,
+      is_new: true,
+      image_url: null
+    });
+    setImagePreview(null);
+    setImageFile(null);
+    setIsAddingNew(true);
+  }, []);
 
   return {
     searchTerm,
@@ -183,5 +217,6 @@ export function useProductManager(
     handleDelete,
     handleDeleteCategory,
     handleClearImage,
+    handleAddNew,
   };
 }
