@@ -155,7 +155,11 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       } else if (staticTemplate) {
         // Check access for premium templates
         if (staticTemplate.isPremium && !isPremium) {
-          checkUpgrade(`${staticTemplate.name} template`);
+          if (checkUpgrade) {
+            checkUpgrade(`${staticTemplate.name} template`);
+          } else {
+            toast.error("Premium plan required for this template");
+          }
           return;
         }
         
@@ -284,7 +288,13 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
     }))
   ];
 
-  console.log("All templates:", allTemplates);
+  const handleAIGeneratorClick = () => {
+    if (checkUpgrade) {
+      checkUpgrade("AI Template Generator");
+    } else {
+      setShowAIGenerator(true);
+    }
+  };
 
   return (
     <div className="py-8 px-4 max-w-6xl mx-auto">
@@ -301,12 +311,7 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
               variant="outline"
               size="lg"
               className="group border-2 border-purple-200 hover:border-purple-400 hover:bg-purple-50 transition-all duration-300"
-              onClick={() => {
-                if (!checkUpgrade("AI Template Generator", true)) {
-                  return;
-                }
-                setShowAIGenerator(true);
-              }}
+              onClick={handleAIGeneratorClick}
             >
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg group-hover:scale-110 transition-transform">

@@ -304,15 +304,15 @@ const elementTemplates: ElementTemplate[] = [
 ];
 
 const categories = [
-  { id: "all", name: "All Elements", icon: Grid },
+  { id: "all", name: "All", icon: Grid },
   { id: "layout", name: "Layout", icon: Layout },
   { id: "content", name: "Content", icon: Type },
-  { id: "interactive", name: "Interactive", icon: FormInput },
+  { id: "interactive", name: "Forms", icon: FormInput },
   { id: "complex", name: "Complex", icon: Package },
-  { id: "ecommerce", name: "E-commerce", icon: Package },
+  { id: "ecommerce", name: "Shop", icon: Package },
   { id: "media", name: "Media", icon: Video },
-  { id: "navigation", name: "Navigation", icon: Navigation },
-  { id: "animation", name: "Animation", icon: Sparkles }
+  { id: "navigation", name: "Nav", icon: Navigation },
+  { id: "animation", name: "FX", icon: Sparkles }
 ];
 
 const ElementPalette: React.FC = () => {
@@ -390,107 +390,90 @@ const ElementPalette: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Search */}
-      <div className="p-4 border-b">
+      <div className="flex-shrink-0 p-3 border-b border-gray-200">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             placeholder="Search elements..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
+            className="pl-9 h-9 text-sm"
           />
         </div>
       </div>
 
       {/* Categories */}
-      <Tabs value={activeCategory} onValueChange={setActiveCategory} className="flex-1 flex flex-col">
-        <div className="px-4 pt-4">
-          <TabsList className="grid grid-cols-3 gap-1 h-auto p-1">
-            {categories.slice(0, 3).map((category) => (
-              <TabsTrigger
+      <div className="flex-shrink-0 p-3 border-b border-gray-200">
+        <div className="grid grid-cols-3 gap-1">
+          {categories.map((category) => {
+            const Icon = category.icon;
+            const isActive = activeCategory === category.id;
+            return (
+              <button
                 key={category.id}
-                value={category.id}
-                className="text-xs p-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+                onClick={() => setActiveCategory(category.id)}
+                className={`text-xs p-2 rounded-md flex flex-col items-center gap-1 transition-colors ${
+                  isActive 
+                    ? 'bg-blue-500 text-white' 
+                    : 'hover:bg-gray-100 text-gray-600'
+                }`}
               >
-                <category.icon className="h-3 w-3 mr-1" />
-                {category.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <TabsList className="grid grid-cols-3 gap-1 h-auto p-1 mt-1">
-            {categories.slice(3, 6).map((category) => (
-              <TabsTrigger
-                key={category.id}
-                value={category.id}
-                className="text-xs p-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
-              >
-                <category.icon className="h-3 w-3 mr-1" />
-                {category.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <TabsList className="grid grid-cols-3 gap-1 h-auto p-1 mt-1">
-            {categories.slice(6).map((category) => (
-              <TabsTrigger
-                key={category.id}
-                value={category.id}
-                className="text-xs p-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
-              >
-                <category.icon className="h-3 w-3 mr-1" />
-                {category.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+                <Icon className="h-3 w-3" />
+                <span className="font-medium">{category.name}</span>
+              </button>
+            );
+          })}
         </div>
+      </div>
 
-        {/* Elements Grid */}
-        <ScrollArea className="flex-1 px-4">
-          <div className="py-4 space-y-2">
+      {/* Elements List */}
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full">
+          <div className="p-3 space-y-2">
             {filteredElements.map((template) => {
               const Icon = template.icon;
               const isLocked = (template.isPremium && !isPremium) || (template.isEnterprise && !isEnterprise);
               
               return (
-                <div key={template.id} className="relative">
-                  <Button
-                    variant="outline"
-                    className={`w-full justify-start p-3 h-auto ${
-                      isLocked ? 'opacity-60 hover:opacity-80' : 'hover:bg-blue-50 hover:border-blue-300'
-                    }`}
-                    onClick={() => handleAddElement(template)}
-                  >
-                    <div className="flex items-start space-x-3 w-full">
-                      <div className={`p-2 rounded ${isLocked ? 'bg-gray-100' : 'bg-blue-100'}`}>
-                        <Icon className={`h-4 w-4 ${isLocked ? 'text-gray-400' : 'text-blue-600'}`} />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm">{template.name}</span>
-                          {getElementIcon(template)}
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">{template.description}</p>
-                        {getElementBadge(template) && (
-                          <div className="mt-2">
-                            {getElementBadge(template)}
-                          </div>
-                        )}
-                      </div>
+                <Button
+                  key={template.id}
+                  variant="outline"
+                  className={`w-full h-auto p-3 justify-start ${
+                    isLocked ? 'opacity-60 hover:opacity-80' : 'hover:bg-blue-50 hover:border-blue-300'
+                  }`}
+                  onClick={() => handleAddElement(template)}
+                >
+                  <div className="flex items-start space-x-3 w-full text-left">
+                    <div className={`p-2 rounded-md flex-shrink-0 ${isLocked ? 'bg-gray-100' : 'bg-blue-100'}`}>
+                      <Icon className={`h-4 w-4 ${isLocked ? 'text-gray-400' : 'text-blue-600'}`} />
                     </div>
-                  </Button>
-                </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-sm truncate">{template.name}</span>
+                        {getElementIcon(template)}
+                      </div>
+                      <p className="text-xs text-gray-500 line-clamp-2">{template.description}</p>
+                      {getElementBadge(template) && (
+                        <div className="mt-1">
+                          {getElementBadge(template)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Button>
               );
             })}
-          </div>
 
-          {filteredElements.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-500 text-sm">No elements found</p>
-            </div>
-          )}
+            {filteredElements.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-gray-500 text-sm">No elements found</p>
+              </div>
+            )}
+          </div>
         </ScrollArea>
-      </Tabs>
+      </div>
     </div>
   );
 };
