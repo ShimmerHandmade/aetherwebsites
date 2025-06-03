@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { useBuilder } from "@/contexts/builder/useBuilder";
 import { usePlan } from "@/contexts/PlanContext";
@@ -16,7 +15,7 @@ interface BuilderElementProps {
   canUseAnimations?: boolean;
   canUseEnterpriseAnimations?: boolean;
   isLiveSite?: boolean;
-  onElementReady?: () => void; // Added this property
+  onElementReady?: () => void;
 }
 
 export const ElementWrapper: React.FC<BuilderElementProps> = ({
@@ -28,9 +27,9 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   canUseAnimations,
   canUseEnterpriseAnimations,
   isLiveSite = false,
-  onElementReady, // Add the prop here
+  onElementReady,
 }) => {
-  const { selectElement, removeElement, duplicateElement, moveElementUp, moveElementDown } = useBuilder();
+  const { selectElement, removeElement, duplicateElement, moveElementUp, moveElementDown, previewBreakpoint } = useBuilder();
   const { isPremium, isEnterprise } = usePlan();
   const [isDragging, setIsDragging] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
@@ -42,6 +41,35 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
       onElementReady();
     }
   }, [onElementReady]);
+
+  // Get responsive settings for current preview breakpoint
+  const getResponsiveSettings = () => {
+    if (!element.responsiveSettings) return {};
+    
+    // Get settings for current breakpoint and merge with base settings
+    const mobileSettings = element.responsiveSettings.mobile || {};
+    const tabletSettings = element.responsiveSettings.tablet || {};
+    const desktopSettings = element.responsiveSettings.desktop || {};
+    
+    // Apply cascading responsive settings
+    let settings = {};
+    if (previewBreakpoint === 'mobile') {
+      settings = mobileSettings;
+    } else if (previewBreakpoint === 'tablet') {
+      settings = { ...mobileSettings, ...tabletSettings };
+    } else {
+      settings = { ...mobileSettings, ...tabletSettings, ...desktopSettings };
+    }
+    
+    return settings;
+  };
+
+  const responsiveSettings = getResponsiveSettings();
+  
+  // Check if element should be hidden on current breakpoint
+  if (responsiveSettings.hidden && (isPreviewMode || isLiveSite)) {
+    return null;
+  }
 
   // Check if this is a premium animation element
   const isPremiumAnimationElement = element.props?.hasAnimation && (element.props?.animationType === 'premium' || element.props?.animationType === 'enterprise');
@@ -141,6 +169,21 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   const getElementStyle = () => {
     // Basic style for all elements
     let style = "transition-all duration-150 relative";
+    
+    // Apply responsive classes
+    if (responsiveSettings.className) {
+      style += ` ${responsiveSettings.className}`;
+    }
+    
+    // Add responsive order if specified
+    if (responsiveSettings.order !== undefined) {
+      style += ` order-${responsiveSettings.order}`;
+    }
+    
+    // Add preview mode indication for hidden elements
+    if (responsiveSettings.hidden && !isPreviewMode && !isLiveSite) {
+      style += " opacity-50 border-2 border-dashed border-orange-300";
+    }
     
     // Add animation classes if available for this plan
     if (!isPreviewMode && !isLiveSite) {
@@ -264,7 +307,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
     </div>
   ) : null;
 
-  // Create the element content
+  // Create the element content with responsive container
   const content = (
     <div
       ref={elementRef}
@@ -275,11 +318,20 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
       onDragEnd={handleDragEnd}
       data-element-id={element.id}
       data-element-type={element.type}
+      data-breakpoint={previewBreakpoint}
       style={{
         maxWidth: '100%',
-        maxHeight: '100%'
+        maxHeight: '100%',
+        order: responsiveSettings.order || 'initial'
       }}
     >
+      {/* Show responsive indicator in builder mode */}
+      {!isPreviewMode && !isLiveSite && responsiveSettings.hidden && (
+        <div className="absolute top-0 right-0 z-10 bg-orange-500 text-white text-xs px-2 py-1 rounded-bl flex items-center gap-1">
+          <span>Hidden on {previewBreakpoint}</span>
+        </div>
+      )}
+
       {/* Show premium badge with improved styling */}
       {isPremiumAnimationElement && !isPreviewMode && !isLiveSite && (
         <div className="absolute top-0 left-0 z-10 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs px-2 py-1 rounded-br flex items-center gap-1 shadow-sm">

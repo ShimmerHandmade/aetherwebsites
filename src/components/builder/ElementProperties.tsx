@@ -2,7 +2,10 @@
 import React, { useState, useEffect } from "react";
 import { useBuilder } from "@/contexts/BuilderContext";
 import PropertyEditorManager from "./properties/PropertyEditorManager";
+import ResponsivePropertyEditor from "./properties/ResponsivePropertyEditor";
+import ResponsiveControls from "./ResponsiveControls";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2, Copy, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
@@ -74,13 +77,18 @@ const ElementProperties = () => {
   if (!selectedElement) {
     return (
       <div className="p-4 text-center">
-        <p className="text-gray-500 text-sm py-8">Select an element to edit its properties</p>
+        <ResponsiveControls />
+        <p className="text-gray-500 text-sm py-8 mt-4">Select an element to edit its properties</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col h-full">
+      <div className="p-4 border-b border-gray-200 bg-gray-50">
+        <ResponsiveControls />
+      </div>
+      
       <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
         <h3 className="font-medium text-gray-800">
           {selectedElement.type.charAt(0).toUpperCase() + selectedElement.type.slice(1)} Properties
@@ -101,12 +109,25 @@ const ElementProperties = () => {
         </div>
       </div>
       
-      <ScrollArea className="flex-1 p-4">
-        <PropertyEditorManager
-          element={selectedElement}
-          onPropertyChange={handlePropertyChange}
-          onContentChange={handleContentChange}
-        />
+      <ScrollArea className="flex-1">
+        <Tabs defaultValue="general" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mx-4 my-2">
+            <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="responsive">Responsive</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="general" className="p-4">
+            <PropertyEditorManager
+              element={selectedElement}
+              onPropertyChange={handlePropertyChange}
+              onContentChange={handleContentChange}
+            />
+          </TabsContent>
+          
+          <TabsContent value="responsive" className="p-4">
+            <ResponsivePropertyEditor element={selectedElement} />
+          </TabsContent>
+        </Tabs>
       </ScrollArea>
     </div>
   );

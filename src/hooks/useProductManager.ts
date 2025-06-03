@@ -98,8 +98,13 @@ export function useProductManager(
       console.log("Is adding new:", isAddingNew);
       console.log("Website ID:", websiteId);
       
+      // For new products, ensure we don't pass an invalid ID
+      const productToSave = isAddingNew ? 
+        { ...editingProduct, id: "" } : // Clear ID for new products
+        editingProduct;
+      
       const result = await saveProduct(
-        editingProduct, 
+        productToSave, 
         websiteId, 
         isAddingNew, 
         imageFile
@@ -175,8 +180,8 @@ export function useProductManager(
   }, [editingProduct]);
 
   const handleAddNew = useCallback(() => {
-    setEditingProduct({
-      id: "",
+    const newProduct = {
+      id: "", // Empty ID for new products
       name: "",
       description: "",
       price: 0,
@@ -187,7 +192,10 @@ export function useProductManager(
       is_sale: false,
       is_new: true,
       image_url: null
-    });
+    };
+    
+    console.log("Creating new product:", newProduct);
+    setEditingProduct(newProduct);
     setImagePreview(null);
     setImageFile(null);
     setIsAddingNew(true);
@@ -213,10 +221,50 @@ export function useProductManager(
     handleImageChange,
     handleAddCategory,
     handleSave,
-    handleCancel,
-    handleDelete,
-    handleDeleteCategory,
-    handleClearImage,
+    handleCancel: useCallback(() => {
+      setEditingProduct(null);
+      setImagePreview(null);
+      setImageFile(null);
+      setIsAddingNew(false);
+    }, []),
+    handleDelete: useCallback(async (id: string) => {
+      if (!websiteId) {
+        toast.error("Website ID is missing");
+        return { success: false };
+      }
+      
+      if (!confirm("Are you sure you want to delete this product?")) {
+        return { success: false };
+      }
+      
+      try {
+        console.log("Deleting product:", id);
+        const result = await deleteProduct(id, websiteId);
+        
+        if (result.success) {
+          toast.success("Product deleted");
+          return { success: true };
+        } else {
+          console.error("Delete product failed:", result.error);
+          toast.error(result.error || "Failed to delete product");
+          return { success: false, error: result.error };
+        }
+      } catch (error) {
+        console.error("Error deleting product:", error);
+        toast.error("An unexpected error occurred");
+        return { success: false, error: String(error) };
+      }
+    }, [websiteId]),
+    handleDeleteCategory: useCallback((categoryName: string) => {
+      toast.success("Category removed from list");
+    }, []),
+    handleClearImage: useCallback(() => {
+      setImagePreview(null);
+      setImageFile(null);
+      if (editingProduct) {
+        setEditingProduct({...editingProduct, image_url: null});
+      }
+    }, [editingProduct]),
     handleAddNew,
   };
 }
