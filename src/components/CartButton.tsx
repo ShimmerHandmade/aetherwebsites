@@ -2,7 +2,7 @@
 import React from 'react';
 import { ShoppingCart } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from "@/hooks/useCart";
 
 interface CartButtonProps {
@@ -19,14 +19,35 @@ const CartButton: React.FC<CartButtonProps> = ({
   siteCartUrl
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { totalItems } = useCart();
 
   const handleClick = () => {
     if (siteCartUrl) {
-      // For site-specific cart URLs, we use window.location 
-      // because they might be in a different router context
-      window.location.href = siteCartUrl;
+      // For site-specific cart URLs, navigate directly
+      navigate(siteCartUrl);
     } else {
+      // Try to detect if we're in a site context from the current URL
+      const currentPath = location.pathname;
+      if (currentPath.includes('/site/')) {
+        // Extract site ID and navigate to site-specific cart
+        const siteIdMatch = currentPath.match(/\/site\/([^\/]+)/);
+        if (siteIdMatch) {
+          const siteId = siteIdMatch[1];
+          navigate(`/site/${siteId}/cart`);
+          return;
+        }
+      }
+      if (currentPath.includes('/view/')) {
+        // Extract site ID and navigate to site-specific cart
+        const siteIdMatch = currentPath.match(/\/view\/([^\/]+)/);
+        if (siteIdMatch) {
+          const siteId = siteIdMatch[1];
+          navigate(`/view/${siteId}/cart`);
+          return;
+        }
+      }
+      
       // For regular cart navigation within the main app
       navigate('/cart');
     }

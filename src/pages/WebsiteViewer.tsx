@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, Suspense } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
@@ -31,16 +32,20 @@ const WebsiteViewer = () => {
   const [currentPageElements, setCurrentPageElements] = useState<BuilderElement[]>([]);
   const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
 
-  // Route detection
+  // Route detection - Enhanced to handle both /site and /view routes
   const isViewRoute = location.pathname.startsWith(`/view/${id}`);
   const isSiteRoute = location.pathname.startsWith(`/site/${id}`);
   const isCustomDomain = window.location.hostname !== 'localhost' && 
                          !window.location.hostname.includes('lovable.app');
   const isLiveSite = isSiteRoute || isViewRoute || isCustomDomain;
 
-  let currentPath = location.pathname.replace(`/site/${id}`, '').replace(`/view/${id}`, '') || '/';
-  
-  if (isCustomDomain) {
+  // Extract the current path after the site/view prefix
+  let currentPath = location.pathname;
+  if (isSiteRoute) {
+    currentPath = currentPath.replace(`/site/${id}`, '') || '/';
+  } else if (isViewRoute) {
+    currentPath = currentPath.replace(`/view/${id}`, '') || '/';
+  } else if (isCustomDomain) {
     currentPath = location.pathname || '/';
   }
   
@@ -50,13 +55,25 @@ const WebsiteViewer = () => {
   const isProductPage = !!productMatch;
   const productId = productMatch ? productMatch[1] : null;
 
+  console.log("Route detection:", {
+    isViewRoute,
+    isSiteRoute,
+    isCustomDomain,
+    isLiveSite,
+    currentPath,
+    isCartPage,
+    isCheckoutPage,
+    isProductPage,
+    productId
+  });
+
   // Debug logging for website data
   useEffect(() => {
     if (website) {
       console.log("Website data loaded:", {
         id: website.id,
         name: website.name,
-        template: (website as any).template, // Safe access with type assertion
+        template: (website as any).template,
         content: website.content,
         settings: website.settings,
         contentLength: website.content?.length || 0,
@@ -218,6 +235,7 @@ const WebsiteViewer = () => {
 
   const renderContent = () => {
     if (isCartPage) {
+      console.log("Rendering Cart page with siteId:", id);
       return (
         <div className="w-full min-h-screen">
           <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
@@ -228,6 +246,7 @@ const WebsiteViewer = () => {
     }
     
     if (isProductPage) {
+      console.log("Rendering ProductDetails page with productId:", productId, "siteId:", id);
       return (
         <div className="w-full min-h-screen">
           <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
@@ -238,6 +257,7 @@ const WebsiteViewer = () => {
     }
     
     if (isCheckoutPage) {
+      console.log("Rendering Checkout page");
       return (
         <div className="w-full min-h-screen">
           <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">

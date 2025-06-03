@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { BuilderElement } from "@/contexts/BuilderContext";
 import { Menu, X } from "lucide-react";
@@ -59,14 +60,35 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
 
   // Get the current site URL to build site-specific cart URL
   const getSiteCartUrl = () => {
-    // When in the website viewer, we use relative path
-    // The route structure is /site/:id/* so we want to maintain that base
-    const currentPath = window.location.pathname;
+    const currentPath = location.pathname;
+    
+    // Check if we're in a site context and extract the site ID
     if (currentPath.includes('/site/')) {
-      // Extract the base site path (e.g., /site/123)
-      const baseSitePath = currentPath.split('/').slice(0, 3).join('/');
-      return `${baseSitePath}/cart`;
+      const siteIdMatch = currentPath.match(/\/site\/([^\/]+)/);
+      if (siteIdMatch) {
+        const siteId = siteIdMatch[1];
+        return `/site/${siteId}/cart`;
+      }
     }
+    
+    if (currentPath.includes('/view/')) {
+      const siteIdMatch = currentPath.match(/\/view\/([^\/]+)/);
+      if (siteIdMatch) {
+        const siteId = siteIdMatch[1];
+        return `/view/${siteId}/cart`;
+      }
+    }
+    
+    // Check global site settings for site ID
+    if (typeof window !== 'undefined' && window.__SITE_SETTINGS__?.siteId) {
+      const siteId = window.__SITE_SETTINGS__.siteId;
+      // Determine if we're in view or site mode based on current path structure
+      if (currentPath.includes('/view/') || window.__SITE_SETTINGS__.isLiveSite) {
+        return `/view/${siteId}/cart`;
+      }
+      return `/site/${siteId}/cart`;
+    }
+    
     // Fallback to regular cart path
     return '/cart';
   };
