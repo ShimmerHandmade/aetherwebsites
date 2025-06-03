@@ -19,7 +19,7 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
   className = "",
   parentId
 }) => {
-  const { addElement, moveElement, elements, addElementToParent } = useBuilder();
+  const { addElement, moveElement, elements } = useBuilder();
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
@@ -84,15 +84,9 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
 
         const dropIndex = dragOverIndex !== null ? dragOverIndex : 0;
         
-        if (parentId) {
-          // Adding to a parent element (container, section, etc.)
-          console.log(`Adding element to parent ${parentId} at index ${dropIndex}`);
-          addElementToParent(parentId, newElement, dropIndex);
-        } else {
-          // Adding to root level
-          console.log(`Adding element to root at index ${dropIndex}`);
-          addElement(newElement, dropIndex);
-        }
+        // Use the existing addElement method with parentId parameter
+        console.log(`Adding element ${parentId ? `to parent ${parentId}` : 'to root'} at index ${dropIndex}`);
+        addElement(newElement, dropIndex, parentId);
         
         toast.success(`${data.type} added to canvas`);
       } else if (data.id) {
@@ -114,7 +108,7 @@ const CanvasDragDropHandler: React.FC<CanvasDragDropHandlerProps> = ({
       console.error("Error handling drop:", error);
       toast.error("Failed to drop element");
     }
-  }, [isPreviewMode, dragOverIndex, elements, addElement, moveElement, addElementToParent, parentId]);
+  }, [isPreviewMode, dragOverIndex, elements, addElement, moveElement, parentId]);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     if (onCanvasClick) {
