@@ -16,6 +16,7 @@ import Orders from "@/pages/builder/Orders";
 import ShippingSettings from "@/pages/builder/ShippingSettings";
 import SiteSettings from "@/pages/builder/SiteSettings";
 import PageSettings from "@/pages/builder/PageSettings";
+import BuilderPages from "@/pages/builder/Pages";
 import PaymentSettings from "@/pages/builder/PaymentSettings";
 import Website from "@/pages/WebsiteViewer";
 import Cart from "@/pages/Cart";
@@ -45,16 +46,18 @@ function App() {
               <Route path="/builder/:id/orders" element={<Orders />} />
               <Route path="/builder/:id/shipping-settings" element={<ShippingSettings />} />
               <Route path="/builder/:id/site-settings" element={<SiteSettings />} />
-              <Route path="/builder/:id/pages" element={<PageSettings />} />
+              <Route path="/builder/:id/pages" element={<BuilderPages />} />
               <Route path="/builder/:id/payment-settings" element={<PaymentSettings />} />
               <Route path="/view/:id" element={<Website />} />
               <Route path="/view/:id/cart" element={<Website />} />
               <Route path="/view/:id/product/:productId" element={<Website />} />
               <Route path="/view/:id/checkout" element={<Website />} />
+              <Route path="/view/:id/order-confirmation" element={<Website />} />
               <Route path="/site/:id" element={<Website />} />
               <Route path="/site/:id/cart" element={<Website />} />
               <Route path="/site/:id/product/:productId" element={<Website />} />
               <Route path="/site/:id/checkout" element={<Website />} />
+              <Route path="/site/:id/order-confirmation" element={<Website />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/product/:productId" element={<ProductDetails />} />
               <Route path="/checkout" element={<Checkout />} />

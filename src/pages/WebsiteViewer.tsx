@@ -8,6 +8,7 @@ import { BuilderElement, PageSettings } from "@/contexts/BuilderContext";
 import Cart from "@/pages/Cart";
 import ProductDetails from "@/pages/ProductDetails";
 import Checkout from "@/pages/Checkout";
+import OrderConfirmation from "@/pages/OrderConfirmation";
 import { CartProvider } from "@/contexts/CartContext";
 import { PlanProvider } from "@/contexts/PlanContext";
 import { useIsMobile } from "@/hooks/use-mobile";
