@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
 import Stripe from "https://esm.sh/stripe@14.21.0"
@@ -108,6 +109,7 @@ serve(async (req) => {
     
     // Check if this website has a Stripe Connect account for online payments
     let stripeConnectAccountId = null;
+    let actualPaymentMethod = paymentMethod;
     
     if (paymentMethod === "stripe") {
       console.log("Checking for Stripe Connect account...");
@@ -129,12 +131,12 @@ serve(async (req) => {
         } else {
           // No valid Stripe Connect account, fall back to COD
           console.log(`No valid Stripe Connect account for website ${websiteId}, falling back to COD`);
-          paymentMethod = "cod";
+          actualPaymentMethod = "cod";
         }
       } catch (error) {
         console.error("Error checking for Stripe Connect account:", error);
         // Fall back to COD if there's an error
-        paymentMethod = "cod";
+        actualPaymentMethod = "cod";
       }
     }
     
@@ -151,12 +153,12 @@ serve(async (req) => {
           shipping_address: shippingAddress || null,
           billing_address: billingAddress || null,
           payment_info: {
-            method: paymentMethod,
+            method: actualPaymentMethod,
             customer_info: customerInfo,
             notes: notes || null,
             stripe_connect_account_id: stripeConnectAccountId
           },
-          status: paymentMethod === "cod" ? "pending" : "awaiting_payment"
+          status: actualPaymentMethod === "cod" ? "pending" : "awaiting_payment"
         })
         .select()
         .single();
@@ -205,7 +207,7 @@ serve(async (req) => {
       console.log("Order items created successfully");
       
       // If using Stripe, create a checkout session
-      if (paymentMethod === "stripe" && stripeConnectAccountId) {
+      if (actualPaymentMethod === "stripe" && stripeConnectAccountId) {
         try {
           console.log("Creating Stripe checkout session for Connect account:", stripeConnectAccountId);
           
@@ -245,8 +247,9 @@ serve(async (req) => {
                 order_id: order.id,
                 website_id: websiteId
               },
-              // Use the Stripe Connect account for the payment
-              stripe_account: stripeConnectAccountId,
+            }, {
+              // Pass the Stripe Connect account in the request options
+              stripeAccount: stripeConnectAccountId,
             });
             
             console.log("Stripe checkout session created:", session.id);
@@ -342,8 +345,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ error: "An unexpected error occurred", details: error.message }),
       {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
   }
