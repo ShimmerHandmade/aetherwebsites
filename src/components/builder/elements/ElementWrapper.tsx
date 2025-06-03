@@ -18,6 +18,13 @@ interface BuilderElementProps {
   onElementReady?: () => void;
 }
 
+interface ResponsiveSettings {
+  hidden?: boolean;
+  order?: number;
+  className?: string;
+  props?: Record<string, any>;
+}
+
 export const ElementWrapper: React.FC<BuilderElementProps> = ({
   element,
   index,
@@ -43,7 +50,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   }, [onElementReady]);
 
   // Get responsive settings for current preview breakpoint
-  const getResponsiveSettings = () => {
+  const getResponsiveSettings = (): ResponsiveSettings => {
     if (!element.responsiveSettings) return {};
     
     // Get settings for current breakpoint and merge with base settings
@@ -52,7 +59,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
     const desktopSettings = element.responsiveSettings.desktop || {};
     
     // Apply cascading responsive settings
-    let settings = {};
+    let settings: ResponsiveSettings = {};
     if (previewBreakpoint === 'mobile') {
       settings = mobileSettings;
     } else if (previewBreakpoint === 'tablet') {
