@@ -34,6 +34,18 @@ export interface PageSettings {
   favicon?: string;
   customCSS?: string;
   customJS?: string;
+  visible?: boolean;
+  passwordProtected?: boolean;
+  meta?: {
+    title?: string;
+    description?: string;
+    canonical?: string;
+    indexable?: boolean;
+    ogTitle?: string;
+    ogDescription?: string;
+    ogImage?: string;
+    redirectUrl?: string;
+  };
   seoSettings?: {
     metaTitle?: string;
     metaDescription?: string;

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, Suspense } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
@@ -274,8 +275,8 @@ const WebsiteViewer = () => {
           <PlanDebugInfo />
         </CartProvider>
       </PlanProvider>
-    </ErrorBoundary>
-  );
+    );
+  };
 };
 
 export default WebsiteViewer;
