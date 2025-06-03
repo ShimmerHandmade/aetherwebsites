@@ -55,7 +55,7 @@ const WebsiteViewer = () => {
   const isProductPage = !!productMatch;
   const productId = productMatch ? productMatch[1] : null;
 
-  console.log("Route detection:", {
+  console.log("WebsiteViewer route detection:", {
     isViewRoute,
     isSiteRoute,
     isCustomDomain,
@@ -64,7 +64,8 @@ const WebsiteViewer = () => {
     isCartPage,
     isCheckoutPage,
     isProductPage,
-    productId
+    productId,
+    fullPath: location.pathname
   });
 
   // Debug logging for website data

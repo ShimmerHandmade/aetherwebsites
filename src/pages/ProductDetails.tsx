@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { fetchProducts } from "@/api/products";
 import { Product } from "@/types/product";
@@ -17,6 +17,7 @@ interface ProductDetailsProps {
 const ProductDetails: React.FC<ProductDetailsProps> = ({ productId: propProductId, siteId: propSiteId }) => {
   const params = useParams<{ id?: string; productId?: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Get IDs either from props or from URL params
   const siteId = propSiteId || params.id;
@@ -27,10 +28,17 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId: propProductI
   const [error, setError] = useState<string | null>(null);
   const { addToCart } = useCart();
   
+  console.log("ProductDetails component loaded with:", {
+    siteId,
+    productId,
+    currentPath: location.pathname
+  });
+  
   // Fetch product details
   useEffect(() => {
     const loadProduct = async () => {
       if (!siteId || !productId) {
+        console.error("Missing product or website information:", { siteId, productId });
         setError("Missing product or website information");
         setIsLoading(false);
         return;
@@ -39,22 +47,27 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId: propProductI
       setIsLoading(true);
       
       try {
+        console.log(`Fetching products for site: ${siteId}`);
         const result = await fetchProducts(siteId);
         
         if (result.error) {
+          console.error("Failed to load products:", result.error);
           setError("Failed to load products");
           setIsLoading(false);
           return;
         }
         
+        console.log(`Found ${result.products.length} products, looking for product: ${productId}`);
         const foundProduct = result.products.find(p => p.id === productId);
         
         if (!foundProduct) {
+          console.error("Product not found in results");
           setError("Product not found");
           setIsLoading(false);
           return;
         }
         
+        console.log("Product found:", foundProduct);
         setProduct(foundProduct);
       } catch (err) {
         console.error("Error loading product:", err);
@@ -80,7 +93,14 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ productId: propProductI
   };
   
   const handleBackToProducts = () => {
-    navigate(`/site/${siteId}`);
+    const currentPath = location.pathname;
+    if (currentPath.includes('/view/')) {
+      navigate(`/view/${siteId}`);
+    } else if (currentPath.includes('/site/')) {
+      navigate(`/site/${siteId}`);
+    } else {
+      navigate('/');
+    }
   };
   
   if (isLoading) {

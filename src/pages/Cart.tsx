@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, ShoppingCart, Trash2 } from "lucide-react";
@@ -16,6 +16,7 @@ interface CartProps {
 const Cart: React.FC<CartProps> = ({ siteName, siteId }) => {
   const { items, clearCart, totalItems, subtotal } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Determine if this is a site-specific cart (viewed in WebsiteViewer)
   const isSiteSpecificCart = !!siteId;
@@ -24,7 +25,12 @@ const Cart: React.FC<CartProps> = ({ siteName, siteId }) => {
   const handleBackNavigation = () => {
     if (isSiteSpecificCart) {
       // Go back to the site home
-      window.location.href = `/site/${siteId}`;
+      const currentPath = location.pathname;
+      if (currentPath.includes('/view/')) {
+        navigate(`/view/${siteId}`);
+      } else {
+        navigate(`/site/${siteId}`);
+      }
     } else {
       // Go to main app home
       navigate('/');
@@ -35,7 +41,12 @@ const Cart: React.FC<CartProps> = ({ siteName, siteId }) => {
   const handleCheckout = () => {
     if (isSiteSpecificCart) {
       // For site-specific checkout
-      navigate(`/site/${siteId}/checkout`);
+      const currentPath = location.pathname;
+      if (currentPath.includes('/view/')) {
+        navigate(`/view/${siteId}/checkout`);
+      } else {
+        navigate(`/site/${siteId}/checkout`);
+      }
     } else {
       // For main app checkout
       navigate('/checkout');
