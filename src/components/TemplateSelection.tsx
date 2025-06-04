@@ -9,63 +9,10 @@ import { usePlan } from "@/contexts/PlanContext";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
-import { checkThemeAccess } from "@/utils/planRestrictions";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import AITemplateGenerator from "./AITemplateGenerator";
 import { Sparkles, Wand2, Crown } from "lucide-react";
 import { getTemplates, saveTemplateWebsite, Template } from "@/api/templates";
-
-// Static templates with improved fallback handling
-const staticTemplates = [
-  {
-    id: "fashion",
-    name: "Fashion Store",
-    description: "Stylish template for clothing and accessories",
-    image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=1470&auto=format&fit=crop",
-    isPremium: false,
-    isStatic: true,
-  },
-  {
-    id: "electronics",
-    name: "Electronics Shop",
-    description: "Modern template for tech and gadgets",
-    image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1470&auto=format&fit=crop", 
-    isPremium: false,
-    isStatic: true,
-  },
-  {
-    id: "beauty",
-    name: "Beauty & Cosmetics",
-    description: "Elegant design for beauty products",
-    image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=1480&auto=format&fit=crop",
-    isPremium: true,
-    isStatic: true,
-  },
-  {
-    id: "furniture",
-    name: "Home & Furniture",
-    description: "Sophisticated template for home decor",
-    image: "https://images.unsplash.com/photo-1634712282287-14ed57b9cc89?q=80&w=1406&auto=format&fit=crop",
-    isPremium: true,
-    isStatic: true,
-  },
-  {
-    id: "food",
-    name: "Gourmet Foods",
-    description: "Appetizing template for food products",
-    image: "https://images.unsplash.com/photo-1526470498-9ae73c665de8?q=80&w=1298&auto=format&fit=crop",
-    isPremium: false,
-    isStatic: true,
-  },
-  {
-    id: "jewelry",
-    name: "Luxury Jewelry",
-    description: "Premium template for high-end jewelry",
-    image: "https://images.unsplash.com/photo-1581252517866-6c03232384a4?q=80&w=1471&auto=format&fit=crop",
-    isPremium: true,
-    isStatic: true,
-  }
-];
 
 interface TemplateSelectionProps {
   websiteId: string;
@@ -88,7 +35,7 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
     const loadTemplates = async () => {
       try {
         setTemplatesLoading(true);
-        console.log("Loading templates from database...");
+        console.log("Loading templates from Supabase database...");
         const result = await getTemplates();
         
         if (result.success) {
@@ -96,7 +43,7 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
           setDatabaseTemplates(result.data);
         } else {
           console.error("Failed to load templates:", result.error);
-          toast.error("Failed to load custom templates");
+          toast.error("Failed to load templates");
         }
       } catch (error) {
         console.error("Error loading templates:", error);
@@ -120,11 +67,10 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
       setTemplateApplying(true);
 
       // Find the selected template from the combined list
-      const staticTemplate = staticTemplates.find(t => t.id === selectedTemplate);
       const dbTemplate = databaseTemplates.find(t => t.id === selectedTemplate);
       const aiTemplate = aiGeneratedTemplates.find(t => t.id === selectedTemplate);
       
-      if (!staticTemplate && !dbTemplate && !aiTemplate) {
+      if (!dbTemplate && !aiTemplate) {
         toast.error("Template not found");
         return;
       }
@@ -133,6 +79,16 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
 
       if (dbTemplate) {
         console.log(`Applying database template: ${dbTemplate.name} (${dbTemplate.id})`);
+        
+        // Check access for premium templates
+        if (dbTemplate.is_premium && !isPremium) {
+          if (checkUpgrade) {
+            checkUpgrade(`${dbTemplate.name} template`);
+          } else {
+            toast.error("Premium plan required for this template");
+          }
+          return;
+        }
         
         toast.success("Applying custom template...", { duration: 3000 });
         
@@ -152,30 +108,18 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
           toast.error(result.error || "Failed to apply template");
           return;
         }
-      } else if (staticTemplate) {
+      } else if (aiTemplate) {
+        console.log(`Applying AI template: ${aiTemplate.name} (${aiTemplate.id})`);
+        
         // Check access for premium templates
-        if (staticTemplate.isPremium && !isPremium) {
+        if (aiTemplate.isPremium && !isPremium) {
           if (checkUpgrade) {
-            checkUpgrade(`${staticTemplate.name} template`);
+            checkUpgrade(`${aiTemplate.name} template`);
           } else {
             toast.error("Premium plan required for this template");
           }
           return;
         }
-        
-        console.log(`Applying static template: ${staticTemplate.name} (${staticTemplate.id})`);
-        
-        toast.success("Applying template, please wait...", { duration: 3000 });
-        
-        const result = await updateWebsiteTemplate(websiteId, selectedTemplate);
-        
-        if (!result.success) {
-          console.error("Template application failed:", result.error);
-          toast.error(result.error || "Failed to apply template");
-          return;
-        }
-      } else if (aiTemplate) {
-        console.log(`Applying AI template: ${aiTemplate.name} (${aiTemplate.id})`);
         
         toast.success("Applying AI-generated template...", { duration: 3000 });
         
@@ -263,21 +207,10 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
     );
   }
 
-  // Create a unique list of templates, prioritizing database templates over static ones
+  // Create a unique list of templates from database and AI generated
   const uniqueTemplates = new Map();
   
-  // Add static templates first
-  staticTemplates.forEach(template => {
-    uniqueTemplates.set(template.id, {
-      ...template,
-      source: 'static' as const,
-      image_url: template.image,
-      is_premium: template.isPremium,
-      is_ai_generated: false
-    });
-  });
-
-  // Add database templates (will override static ones with same ID)
+  // Add database templates
   databaseTemplates.forEach(template => {
     uniqueTemplates.set(template.id, {
       ...template,
@@ -370,7 +303,14 @@ const TemplateSelection = ({ websiteId, onComplete }: TemplateSelectionProps) =>
         </div>
       )}
 
-      {!templatesLoading && (
+      {!templatesLoading && allTemplates.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg mb-4">No templates available yet.</p>
+          <p className="text-gray-400">Generate an AI template or contact support to add templates.</p>
+        </div>
+      )}
+
+      {!templatesLoading && allTemplates.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
           {allTemplates.map((template) => (
             <div 
