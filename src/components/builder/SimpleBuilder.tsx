@@ -2,7 +2,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import { SidebarProvider } from "@/contexts/sidebar/SidebarProvider";
-import BuilderLayout from "@/components/layout/BuilderLayout";
 import BuilderSidebar from "@/components/builder/BuilderSidebar";
 import BuilderNavbar from "@/components/builder/BuilderNavbar";
 import BuilderContent from "@/components/builder/BuilderContent";
@@ -12,15 +11,12 @@ import { toast } from "sonner";
 import { v4 as uuidv4 } from "@/lib/uuid";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
 
-interface SimpleBuilderProps {
-  // Add any props you want to pass to the builder here
-}
-
 const SimpleBuilder = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string>('');
+  const [isInitialized, setIsInitialized] = useState(false);
   
   const { 
     website,
@@ -37,18 +33,28 @@ const SimpleBuilder = () => {
     refreshWebsite,
     lastSaved,
     unsavedChanges
-  } = useWebsite(id, navigate, { autoSave: true, autoSaveInterval: 60000 });
+  } = useWebsite(id, navigate, { autoSave: false }); // Disable auto-save to prevent loops
   
   const [currentPage, setCurrentPage] = useState<{ id: string; title: string; slug: string; isHomePage?: boolean; } | null>(null);
   const pages = website?.settings?.pages || [];
+
+  // Initialize the builder once website data is loaded
+  useEffect(() => {
+    if (website && !isInitialized) {
+      console.log("Initializing SimpleBuilder with website data:", website);
+      setIsInitialized(true);
+    }
+  }, [website, isInitialized]);
 
   useEffect(() => {
     if (website && website.settings?.pages && website.settings.pages.length > 0) {
       // Find the home page or default to the first page
       const homePage = website.settings.pages.find(page => page.isHomePage) || website.settings.pages[0];
-      setCurrentPage(homePage);
+      if (!currentPage || currentPage.id !== homePage.id) {
+        setCurrentPage(homePage);
+      }
     }
-  }, [website]);
+  }, [website, currentPage]);
 
   useEffect(() => {
     if (lastSaved) {
@@ -102,10 +108,6 @@ const SimpleBuilder = () => {
     // Load content for the selected page
     const pageContent = website?.settings?.pagesContent?.[pageId] || [];
     updateElements(pageContent);
-    
-    // Load page settings for the selected page
-    const pageSettings = website?.settings?.pagesSettings?.[pageId] || { title: selectedPage.title };
-    // setPageSettings(pageSettings); // TODO: Implement setPageSettings
   };
 
   const handleTemplateSelect = useCallback((templateData: any) => {
@@ -134,6 +136,18 @@ const SimpleBuilder = () => {
     }
   }, [updateElements]);
 
+  // Show loading state until builder is initialized
+  if (isLoading || !isInitialized) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-12 w-12 border-4 border-t-blue-600 border-r-blue-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading builder...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen flex">
       <BuilderProvider 
@@ -142,7 +156,7 @@ const SimpleBuilder = () => {
         onSave={handleBuilderSave}
       >
         <SidebarProvider>
-          <BuilderLayout>
+          <div className="h-screen flex">
             <BuilderSidebar isPreviewMode={isPreviewMode} />
             <main className="flex-1 flex flex-col">
               <BuilderNavbar
@@ -167,7 +181,7 @@ const SimpleBuilder = () => {
                 />
               </div>
             </main>
-          </BuilderLayout>
+          </div>
         </SidebarProvider>
       </BuilderProvider>
     </div>
