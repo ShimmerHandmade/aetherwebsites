@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { useBuilder } from "@/contexts/builder/useBuilder";
 import { usePlan } from "@/contexts/PlanContext";
@@ -256,59 +257,59 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   // Some elements can't or shouldn't be draggable/editable
   const isDraggable = !isPreviewMode && !isLiveSite && !["navbar", "footer"].includes(element.type) && !isElementLocked;
 
-  // Always show element controls for selected elements in builder mode
+  // Always show element controls for selected elements in builder mode - Fixed positioning
   const controlsBar = !isPreviewMode && !isLiveSite && selected ? (
-    <div className="absolute -top-10 right-0 flex space-x-1 bg-white p-1 rounded shadow-sm z-50">
+    <div className="absolute -top-8 left-0 flex space-x-1 bg-white p-1 rounded shadow-lg border z-50 min-w-max">
       <Button
         variant="outline"
         size="icon"
-        className="h-8 w-8"
+        className="h-6 w-6"
         onClick={handleMoveUpClick}
         title="Move element up"
       >
-        <ArrowUp className="h-4 w-4" />
+        <ArrowUp className="h-3 w-3" />
       </Button>
       
       <Button
         variant="outline"
         size="icon"
-        className="h-8 w-8"
+        className="h-6 w-6"
         onClick={handleMoveDownClick}
         title="Move element down"
       >
-        <ArrowDown className="h-4 w-4" />
+        <ArrowDown className="h-3 w-3" />
       </Button>
       
       {isDraggable && (
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8 cursor-grab"
+          className="h-6 w-6 cursor-grab"
           title="Drag to reposition"
         >
-          <GripVertical className="h-4 w-4" />
+          <GripVertical className="h-3 w-3" />
         </Button>
       )}
       
       <Button
         variant="outline"
         size="icon"
-        className="h-8 w-8"
+        className="h-6 w-6"
         onClick={handleDuplicateClick}
         title="Duplicate element"
       >
-        <Copy className="h-4 w-4" />
+        <Copy className="h-3 w-3" />
       </Button>
       
       {!["navbar", "footer"].includes(element.type) && (
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="h-6 w-6"
           onClick={handleDeleteClick}
           title="Remove element"
         >
-          <Trash className="h-4 w-4" />
+          <Trash className="h-3 w-3 text-red-500" />
         </Button>
       )}
     </div>
@@ -367,7 +368,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   // If the element is resizable and not in preview or live site mode, wrap it in ResizableWrapper
   if (isResizable && !isPreviewMode && !isLiveSite) {
     return (
-      <div className="relative mt-12 mb-4"> {/* Added mb-4 to create proper spacing between elements */}
+      <div className="relative mt-10 mb-4"> {/* Increased top margin for controls */}
         {controlsBar}
         <ResizableWrapper
           elementId={element.id}
@@ -376,7 +377,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
           maintainAspectRatio={maintainAspectRatio}
           minWidth={50}
           minHeight={50}
-          showHandles={false} // Set to false to hide resize dots
+          showHandles={false}
           className="resize-wrapper"
         >
           {content}
@@ -387,7 +388,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
 
   // Otherwise, return the content directly with controls
   return (
-    <div className={`relative ${!isPreviewMode && !isLiveSite ? "mt-12" : ""} mb-4`}> {/* Added mb-4 for consistent spacing */}
+    <div className={`relative ${!isPreviewMode && !isLiveSite ? "mt-10" : ""} mb-4`}> {/* Increased top margin for controls */}
       {controlsBar}
       {content}
     </div>

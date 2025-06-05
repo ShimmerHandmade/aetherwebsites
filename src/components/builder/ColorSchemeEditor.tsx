@@ -108,10 +108,27 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
     }
   ];
 
-  // Apply color scheme to CSS variables
-  const applyColorScheme = (scheme: ColorScheme) => {
-    const root = document.documentElement;
+  // Apply color scheme to the preview area ONLY (not the builder interface)
+  const applyColorSchemeToPreview = (scheme: ColorScheme) => {
+    // Target only the preview/canvas area, not the entire builder
+    const previewElement = document.querySelector('[data-builder-canvas]') || 
+                          document.querySelector('.builder-canvas') ||
+                          document.querySelector('[data-preview]');
     
+    if (!previewElement) {
+      console.warn("Preview element not found, applying to iframe if present");
+      // Try to find iframe for preview
+      const iframe = document.querySelector('iframe');
+      if (iframe && iframe.contentDocument) {
+        applySchemeToElement(iframe.contentDocument.documentElement, scheme);
+      }
+      return;
+    }
+    
+    applySchemeToElement(previewElement as HTMLElement, scheme);
+  };
+
+  const applySchemeToElement = (element: HTMLElement, scheme: ColorScheme) => {
     // Convert hex to HSL for CSS variables
     const hexToHsl = (hex: string) => {
       const r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -136,14 +153,14 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
       return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
     };
 
-    root.style.setProperty('--primary', hexToHsl(scheme.primary));
-    root.style.setProperty('--secondary', hexToHsl(scheme.secondary));
-    root.style.setProperty('--accent', hexToHsl(scheme.accent));
-    root.style.setProperty('--background', hexToHsl(scheme.background));
-    root.style.setProperty('--card', hexToHsl(scheme.surface));
-    root.style.setProperty('--foreground', hexToHsl(scheme.text));
-    root.style.setProperty('--muted-foreground', hexToHsl(scheme.textSecondary));
-    root.style.setProperty('--border', hexToHsl(scheme.border));
+    element.style.setProperty('--primary', hexToHsl(scheme.primary));
+    element.style.setProperty('--secondary', hexToHsl(scheme.secondary));
+    element.style.setProperty('--accent', hexToHsl(scheme.accent));
+    element.style.setProperty('--background', hexToHsl(scheme.background));
+    element.style.setProperty('--card', hexToHsl(scheme.surface));
+    element.style.setProperty('--foreground', hexToHsl(scheme.text));
+    element.style.setProperty('--muted-foreground', hexToHsl(scheme.textSecondary));
+    element.style.setProperty('--border', hexToHsl(scheme.border));
   };
 
   // Handle color change
@@ -152,7 +169,7 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
     setCurrentScheme(newScheme);
     
     if (previewMode) {
-      applyColorScheme(newScheme);
+      applyColorSchemeToPreview(newScheme);
     }
   };
 
@@ -160,14 +177,14 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
   const applyPreset = (preset: ColorScheme) => {
     setCurrentScheme(preset);
     if (previewMode) {
-      applyColorScheme(preset);
+      applyColorSchemeToPreview(preset);
     }
     toast.success("Color scheme applied!");
   };
 
   // Save scheme
   const handleSave = () => {
-    applyColorScheme(currentScheme);
+    applyColorSchemeToPreview(currentScheme);
     if (onSave) {
       onSave(currentScheme);
     }
@@ -187,7 +204,7 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
       border: "#e2e8f0"
     };
     setCurrentScheme(defaultScheme);
-    applyColorScheme(defaultScheme);
+    applyColorSchemeToPreview(defaultScheme);
     toast.success("Reset to default colors");
   };
 
@@ -210,7 +227,7 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
 
     setCurrentScheme(newScheme);
     if (previewMode) {
-      applyColorScheme(newScheme);
+      applyColorSchemeToPreview(newScheme);
     }
     toast.success("Random color scheme generated!");
   };
@@ -219,10 +236,9 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
   const togglePreview = () => {
     setPreviewMode(!previewMode);
     if (!previewMode) {
-      applyColorScheme(currentScheme);
-      toast.success("Preview mode enabled");
+      applyColorSchemeToPreview(currentScheme);
+      toast.success("Preview mode enabled - colors applied to website preview");
     } else {
-      // Reset to original colors if needed
       toast.success("Preview mode disabled");
     }
   };
@@ -241,7 +257,7 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
             onClick={togglePreview}
           >
             <Eye className="h-4 w-4 mr-2" />
-            {previewMode ? "Previewing" : "Preview"}
+            {previewMode ? "Previewing Website" : "Preview on Website"}
           </Button>
           {onClose && (
             <Button variant="outline" size="sm" onClick={onClose}>
@@ -311,7 +327,7 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
                     Color Preview
                   </h3>
                   <p style={{ color: currentScheme.textSecondary }} className="text-sm">
-                    This is how your colors will look in the interface.
+                    This is how your colors will look on your website.
                   </p>
                   <div className="flex gap-3 flex-wrap">
                     <Button style={{ backgroundColor: currentScheme.primary }} className="text-white">
@@ -397,7 +413,7 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
         </Button>
         <Button onClick={handleSave} className="bg-primary hover:bg-primary/90">
           <Save className="h-4 w-4 mr-2" />
-          Save Color Scheme
+          Apply to Website
         </Button>
       </div>
     </div>
