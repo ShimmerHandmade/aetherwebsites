@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,26 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Crown, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { usePlan } from "@/contexts/PlanContext";
-import { businessTemplate } from "@/templates/business";
-import { ecommerceTemplate } from "@/templates/ecommerce";
-import { portfolioTemplate } from "@/templates/portfolio";
-import { blogTemplate } from "@/templates/blog";
-import { fashionTemplate } from "@/templates/fashion";
-import { electronicsTemplate } from "@/templates/electronics";
-import { foodTemplate } from "@/templates/food";
-import { beautyTemplate } from "@/templates/beauty";
-import { jewelryTemplate } from "@/templates/jewelry";
-import { furnitureTemplate } from "@/templates/furniture";
-
-interface Template {
-  id: string;
-  name: string;
-  description: string;
-  image: string;
-  category: string;
-  isPremium?: boolean;
-  elements: any[];
-}
+import { getTemplates, Template } from "@/api/templates";
 
 interface TemplateSelectionProps {
   onSelectTemplate: (templateData: any) => void;
@@ -42,110 +24,47 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
   const { isPremium, isEnterprise, checkUpgrade } = usePlan();
   const [isApplying, setIsApplying] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Convert template modules to template objects
-  const availableTemplates: Template[] = [
-    {
-      id: "business",
-      name: "Business",
-      description: "Professional business website with hero, services, and contact sections",
-      image: "/templates/business.png",
-      category: "business",
-      isPremium: false,
-      elements: businessTemplate.pages.homepage
-    },
-    {
-      id: "ecommerce",
-      name: "E-commerce",
-      description: "Online store with product showcase and shopping features",
-      image: "/templates/ecommerce.png",
-      category: "ecommerce",
-      isPremium: true,
-      elements: ecommerceTemplate.pages.homepage
-    },
-    {
-      id: "portfolio",
-      name: "Portfolio",
-      description: "Creative portfolio showcasing your work and skills",
-      image: "/templates/portfolio.png",
-      category: "portfolio",
-      isPremium: false,
-      elements: portfolioTemplate.pages.homepage
-    },
-    {
-      id: "blog",
-      name: "Blog",
-      description: "Content-focused blog with article layouts",
-      image: "/templates/blog.png",
-      category: "blog",
-      isPremium: false,
-      elements: blogTemplate.pages.homepage
-    },
-    {
-      id: "fashion",
-      name: "Fashion",
-      description: "Stylish fashion store template",
-      image: "/templates/fashion.png",
-      category: "fashion",
-      isPremium: true,
-      elements: fashionTemplate.pages.homepage
-    },
-    {
-      id: "electronics",
-      name: "Electronics",
-      description: "Tech and electronics store",
-      image: "/templates/electronics.png",
-      category: "electronics",
-      isPremium: true,
-      elements: electronicsTemplate.pages.homepage
-    },
-    {
-      id: "food",
-      name: "Food & Restaurant",
-      description: "Restaurant and food business template",
-      image: "/templates/food.png",
-      category: "food",
-      isPremium: true,
-      elements: foodTemplate.pages.homepage
-    },
-    {
-      id: "beauty",
-      name: "Beauty & Cosmetics",
-      description: "Beauty and cosmetics store",
-      image: "/templates/beauty.png",
-      category: "beauty",
-      isPremium: true,
-      elements: beautyTemplate.pages.homepage
-    },
-    {
-      id: "jewelry",
-      name: "Jewelry",
-      description: "Elegant jewelry store template",
-      image: "/templates/jewelry.png",
-      category: "jewelry",
-      isPremium: true,
-      elements: jewelryTemplate.pages.homepage
-    },
-    {
-      id: "furniture",
-      name: "Furniture",
-      description: "Modern furniture store template",
-      image: "/templates/furniture.png",
-      category: "furniture",
-      isPremium: true,
-      elements: furnitureTemplate.pages.homepage
-    }
-  ];
+  // Fetch templates from Supabase on component mount
+  useEffect(() => {
+    const fetchTemplatesData = async () => {
+      try {
+        setIsLoadingTemplates(true);
+        setError(null);
+        
+        const result = await getTemplates(false); // Only get active templates
+        
+        if (result.success && result.data) {
+          setTemplates(result.data);
+          console.log("Fetched templates from Supabase:", result.data);
+        } else {
+          setError(result.error || "Failed to fetch templates");
+          console.error("Error fetching templates:", result.error);
+        }
+      } catch (err) {
+        console.error("Error in fetchTemplatesData:", err);
+        setError("An unexpected error occurred while loading templates");
+      } finally {
+        setIsLoadingTemplates(false);
+      }
+    };
 
-  const categories = ["all", "business", "ecommerce", "portfolio", "blog", "fashion", "electronics", "food", "beauty", "jewelry", "furniture"];
+    fetchTemplatesData();
+  }, []);
+
+  // Get unique categories from templates
+  const categories = ["all", ...new Set(templates.map(template => template.category).filter(Boolean))];
 
   const filteredTemplates = selectedCategory === "all" 
-    ? availableTemplates 
-    : availableTemplates.filter(template => template.category === selectedCategory);
+    ? templates 
+    : templates.filter(template => template.category === selectedCategory);
 
   const handleApplyTemplate = async (template: Template) => {
     // Check if template is premium and user doesn't have access
-    if (template.isPremium && !isPremium && !isEnterprise) {
+    if (template.is_premium && !isPremium && !isEnterprise) {
       if (checkUpgrade) {
         checkUpgrade(`${template.name} Template`);
       }
@@ -155,11 +74,14 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
     setIsApplying(true);
     
     try {
-      console.log("Applying template:", template.name, template.elements);
+      console.log("Applying template:", template.name, template.template_data);
+      
+      // Extract elements from template data
+      const templateElements = template.template_data?.content || [];
       
       // Apply the template elements
       onSelectTemplate({
-        elements: template.elements,
+        elements: templateElements,
         templateId: template.id,
         templateName: template.name
       });
@@ -180,6 +102,32 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
       setIsApplying(false);
     }
   };
+
+  // Show loading state while fetching templates
+  if (isLoadingTemplates) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading templates...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if templates failed to load
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -208,61 +156,67 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
       </div>
 
       {/* Templates Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredTemplates.map((template) => (
-          <Card key={template.id} className="relative overflow-hidden hover:shadow-lg transition-shadow">
-            {template.isPremium && (
-              <Badge className="absolute top-2 right-2 z-10 bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                <Crown className="h-3 w-3 mr-1" />
-                Premium
-              </Badge>
-            )}
-            
-            <div className="aspect-video bg-gray-100 overflow-hidden">
-              <img 
-                src={template.image} 
-                alt={template.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = "/placeholder.svg";
-                }}
-              />
-            </div>
-            
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">{template.name}</CardTitle>
-            </CardHeader>
-            
-            <CardContent className="pt-0">
-              <p className="text-sm text-gray-600 mb-4">{template.description}</p>
+      {filteredTemplates.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-600">No templates found for the selected category.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredTemplates.map((template) => (
+            <Card key={template.id} className="relative overflow-hidden hover:shadow-lg transition-shadow">
+              {template.is_premium && (
+                <Badge className="absolute top-2 right-2 z-10 bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                  <Crown className="h-3 w-3 mr-1" />
+                  Premium
+                </Badge>
+              )}
               
-              <Button 
-                onClick={() => handleApplyTemplate(template)}
-                disabled={isApplying}
-                className="w-full"
-                variant={template.isPremium && !isPremium && !isEnterprise ? "outline" : "default"}
-              >
-                {isApplying ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Applying...
-                  </>
-                ) : template.isPremium && !isPremium && !isEnterprise ? (
-                  <>
-                    <Crown className="h-4 w-4 mr-2" />
-                    Upgrade to Use
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="h-4 w-4 mr-2" />
-                    Apply Template
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              <div className="aspect-video bg-gray-100 overflow-hidden">
+                <img 
+                  src={template.image_url || "/placeholder.svg"} 
+                  alt={template.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = "/placeholder.svg";
+                  }}
+                />
+              </div>
+              
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">{template.name}</CardTitle>
+              </CardHeader>
+              
+              <CardContent className="pt-0">
+                <p className="text-sm text-gray-600 mb-4">{template.description || "No description available"}</p>
+                
+                <Button 
+                  onClick={() => handleApplyTemplate(template)}
+                  disabled={isApplying}
+                  className="w-full"
+                  variant={template.is_premium && !isPremium && !isEnterprise ? "outline" : "default"}
+                >
+                  {isApplying ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Applying...
+                    </>
+                  ) : template.is_premium && !isPremium && !isEnterprise ? (
+                    <>
+                      <Crown className="h-4 w-4 mr-2" />
+                      Upgrade to Use
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="h-4 w-4 mr-2" />
+                      Apply Template
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
