@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -108,24 +107,55 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
     }
   ];
 
-  // Apply color scheme to the preview area ONLY (not the builder interface)
-  const applyColorSchemeToPreview = (scheme: ColorScheme) => {
-    // Target only the preview/canvas area, not the entire builder
-    const previewElement = document.querySelector('[data-builder-canvas]') || 
-                          document.querySelector('.builder-canvas') ||
-                          document.querySelector('[data-preview]');
+  // Apply color scheme ONLY to the canvas/preview area
+  const applyColorSchemeToCanvas = (scheme: ColorScheme) => {
+    // Target specifically the canvas elements, not the builder interface
+    const canvasSelectors = [
+      '[data-builder-canvas]',
+      '.builder-canvas', 
+      '[data-preview]',
+      '.main-content',
+      '.canvas-container',
+      '[data-element-id]' // Target individual elements
+    ];
+
+    let canvasElement = null;
     
-    if (!previewElement) {
-      console.warn("Preview element not found, applying to iframe if present");
+    // Try to find the canvas element
+    for (const selector of canvasSelectors) {
+      canvasElement = document.querySelector(selector);
+      if (canvasElement) break;
+    }
+
+    if (!canvasElement) {
       // Try to find iframe for preview
       const iframe = document.querySelector('iframe');
       if (iframe && iframe.contentDocument) {
         applySchemeToElement(iframe.contentDocument.documentElement, scheme);
+        return;
       }
-      return;
+      
+      // Fallback: try to find the right-side preview area
+      const previewArea = document.querySelector('.preview-area') || 
+                         document.querySelector('[class*="preview"]') ||
+                         document.querySelector('.w-full.h-full');
+      
+      if (previewArea) {
+        canvasElement = previewArea;
+      } else {
+        console.warn("Canvas element not found for color scheme application");
+        return;
+      }
     }
     
-    applySchemeToElement(previewElement as HTMLElement, scheme);
+    console.log("Applying color scheme to canvas:", canvasElement);
+    applySchemeToElement(canvasElement as HTMLElement, scheme);
+    
+    // Also apply to all child elements with data-element-id
+    const childElements = canvasElement.querySelectorAll('[data-element-id]');
+    childElements.forEach(element => {
+      applySchemeToElement(element as HTMLElement, scheme);
+    });
   };
 
   const applySchemeToElement = (element: HTMLElement, scheme: ColorScheme) => {
@@ -153,6 +183,7 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
       return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
     };
 
+    // Apply CSS custom properties to the element
     element.style.setProperty('--primary', hexToHsl(scheme.primary));
     element.style.setProperty('--secondary', hexToHsl(scheme.secondary));
     element.style.setProperty('--accent', hexToHsl(scheme.accent));
@@ -161,6 +192,16 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
     element.style.setProperty('--foreground', hexToHsl(scheme.text));
     element.style.setProperty('--muted-foreground', hexToHsl(scheme.textSecondary));
     element.style.setProperty('--border', hexToHsl(scheme.border));
+    
+    // Also apply direct color styles for immediate effect
+    element.style.setProperty('--color-primary', scheme.primary);
+    element.style.setProperty('--color-secondary', scheme.secondary);
+    element.style.setProperty('--color-accent', scheme.accent);
+    element.style.setProperty('--color-background', scheme.background);
+    element.style.setProperty('--color-surface', scheme.surface);
+    element.style.setProperty('--color-text', scheme.text);
+    element.style.setProperty('--color-text-secondary', scheme.textSecondary);
+    element.style.setProperty('--color-border', scheme.border);
   };
 
   // Handle color change
@@ -169,7 +210,7 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
     setCurrentScheme(newScheme);
     
     if (previewMode) {
-      applyColorSchemeToPreview(newScheme);
+      applyColorSchemeToCanvas(newScheme);
     }
   };
 
@@ -177,14 +218,14 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
   const applyPreset = (preset: ColorScheme) => {
     setCurrentScheme(preset);
     if (previewMode) {
-      applyColorSchemeToPreview(preset);
+      applyColorSchemeToCanvas(preset);
     }
     toast.success("Color scheme applied!");
   };
 
   // Save scheme
   const handleSave = () => {
-    applyColorSchemeToPreview(currentScheme);
+    applyColorSchemeToCanvas(currentScheme);
     if (onSave) {
       onSave(currentScheme);
     }
@@ -204,7 +245,7 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
       border: "#e2e8f0"
     };
     setCurrentScheme(defaultScheme);
-    applyColorSchemeToPreview(defaultScheme);
+    applyColorSchemeToCanvas(defaultScheme);
     toast.success("Reset to default colors");
   };
 
@@ -227,7 +268,7 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
 
     setCurrentScheme(newScheme);
     if (previewMode) {
-      applyColorSchemeToPreview(newScheme);
+      applyColorSchemeToCanvas(newScheme);
     }
     toast.success("Random color scheme generated!");
   };
@@ -236,8 +277,8 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
   const togglePreview = () => {
     setPreviewMode(!previewMode);
     if (!previewMode) {
-      applyColorSchemeToPreview(currentScheme);
-      toast.success("Preview mode enabled - colors applied to website preview");
+      applyColorSchemeToCanvas(currentScheme);
+      toast.success("Preview mode enabled - colors applied to website canvas");
     } else {
       toast.success("Preview mode disabled");
     }
@@ -257,7 +298,7 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
             onClick={togglePreview}
           >
             <Eye className="h-4 w-4 mr-2" />
-            {previewMode ? "Previewing Website" : "Preview on Website"}
+            {previewMode ? "Previewing Canvas" : "Preview on Canvas"}
           </Button>
           {onClose && (
             <Button variant="outline" size="sm" onClick={onClose}>

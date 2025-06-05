@@ -1,235 +1,176 @@
-
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useState, useCallback, useEffect } from "react";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
-import BuilderLayout from "@/components/builder/BuilderLayout";
+import { SidebarProvider } from "@/contexts/sidebar/SidebarProvider";
+import BuilderLayout from "@/components/layout/BuilderLayout";
+import BuilderSidebar from "@/components/builder/BuilderSidebar";
 import BuilderNavbar from "@/components/builder/BuilderNavbar";
 import BuilderContent from "@/components/builder/BuilderContent";
 import { useWebsite } from "@/hooks/useWebsite";
-import { BuilderElement, PageSettings } from "@/contexts/builder/types";
-import { useState, useEffect, useCallback } from "react";
-import { v4 as uuidv4 } from "@/lib/uuid";
+import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { CartProvider } from "@/contexts/CartContext";
-import ErrorBoundary from "@/components/ErrorBoundary";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import { v4 as uuidv4 } from "@/lib/uuid";
+import { BuilderElement, PageSettings } from "@/contexts/builder/types";
+
+interface SimpleBuilderProps {
+  // Add any props you want to pass to the builder here
+}
 
 const SimpleBuilder = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<string>('');
   
   const { 
-    website, 
-    isLoading, 
+    website,
+    isLoading,
     isSaving,
     isPublishing,
-    websiteName, 
+    websiteName,
     elements,
     pageSettings,
-    setWebsiteName, 
-    saveWebsite, 
+    setWebsiteName,
+    saveWebsite,
     publishWebsite,
+    updateElements,
+    refreshWebsite,
     lastSaved,
     unsavedChanges
-  } = useWebsite(id, navigate, { autoSave: false });
+  } = useWebsite(id, navigate, { autoSave: true, autoSaveInterval: 60000 });
   
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [currentPageId, setCurrentPageId] = useState<string | null>(null);
-  const [currentPageElements, setCurrentPageElements] = useState<BuilderElement[]>([]);
-  const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
+  const [currentPage, setCurrentPage] = useState<{ id: string; title: string; slug: string; isHomePage?: boolean; } | null>(null);
+  const pages = website?.settings?.pages || [];
 
-  // Initialize pages
   useEffect(() => {
-    if (!website?.settings?.pages || website.settings.pages.length === 0) return;
+    if (website && website.settings?.pages && website.settings.pages.length > 0) {
+      // Find the home page or default to the first page
+      const homePage = website.settings.pages.find(page => page.isHomePage) || website.settings.pages[0];
+      setCurrentPage(homePage);
+    }
+  }, [website]);
+
+  useEffect(() => {
+    if (lastSaved) {
+      setSaveStatus(`Last saved ${lastSaved.toLocaleTimeString()}`);
+    } else {
+      setSaveStatus('');
+    }
+  }, [lastSaved]);
+
+  useEffect(() => {
+    if (isLoading) {
+      toast.loading("Loading website data...", { id: "load-data" });
+    } else {
+      toast.dismiss("load-data");
+    }
+  }, [isLoading]);
+
+  useEffect(() => {
+    if (unsavedChanges) {
+      setSaveStatus("Unsaved changes");
+    }
+  }, [unsavedChanges]);
+
+  const handleSave = async () => {
+    const success = await saveWebsite();
+    if (success) {
+      setSaveStatus(`Last saved ${new Date().toLocaleTimeString()}`);
+    }
+  };
+
+  const handlePublish = async () => {
+    await publishWebsite();
+  };
+
+  const handleBuilderSave = async (elements: BuilderElement[], pageSettings: PageSettings) => {
+    await saveWebsite(elements, pageSettings);
+  };
+
+  const handlePageChange = (pageId: string) => {
+    console.log("Page changed to:", pageId);
     
-    const urlParams = new URLSearchParams(window.location.search);
-    const pageId = urlParams.get('pageId');
-    
-    if (pageId && website.settings.pages.find(p => p.id === pageId)) {
-      setCurrentPageId(pageId);
+    // Find the selected page
+    const selectedPage = pages.find(page => page.id === pageId);
+    if (!selectedPage) {
+      console.error("Page not found:", pageId);
       return;
     }
     
-    const homePage = website.settings.pages.find(page => page.isHomePage);
-    const targetPageId = homePage?.id || website.settings.pages[0]?.id;
+    setCurrentPage(selectedPage);
     
-    if (targetPageId) {
-      setCurrentPageId(targetPageId);
-      if (!pageId) {
-        navigate(`/builder/${id}?pageId=${targetPageId}`, { replace: true });
-      }
-    }
-  }, [website, navigate, id]);
+    // Load content for the selected page
+    const pageContent = website?.settings?.pagesContent?.[pageId] || [];
+    updateElements(pageContent);
+    
+    // Load page settings for the selected page
+    const pageSettings = website?.settings?.pagesSettings?.[pageId] || { title: selectedPage.title };
+    // setPageSettings(pageSettings); // TODO: Implement setPageSettings
+  };
 
-  // Load page content when currentPageId changes
-  useEffect(() => {
-    if (!website || !currentPageId) return;
+  const handleTemplateSelect = useCallback((templateData: any) => {
+    console.log("Template selected:", templateData);
     
-    console.log(`Loading content for page ID: ${currentPageId}`);
-    console.log("Website content:", website.content);
-    console.log("Website settings:", website.settings);
-    
-    // Get content for current page
-    const pagesContent = website.settings.pagesContent || {};
-    const pageContent = pagesContent[currentPageId] || [];
-    const pageSettings = website.settings.pagesSettings?.[currentPageId] || { title: websiteName };
-    
-    console.log("Page content from pagesContent:", pageContent);
-    console.log("Page settings:", pageSettings);
-    
-    // Check if this is the home page and if we should use main content
-    const homePage = website.settings.pages?.find(p => p.isHomePage);
-    const isHomePage = homePage && homePage.id === currentPageId;
-    
-    let finalPageElements: BuilderElement[] = [];
-    
-    if (pageContent.length > 0) {
-      // Use specific page content if it exists
-      console.log("Using specific page content:", pageContent);
-      finalPageElements = pageContent;
-    } else if (isHomePage && Array.isArray(website.content) && website.content.length > 0) {
-      // For home page, use main website content if no specific page content exists
-      console.log("Using main website content for home page:", website.content);
-      finalPageElements = website.content;
-    } else if (Array.isArray(elements) && elements.length > 0) {
-      // Fallback to elements from useWebsite hook
-      console.log("Using fallback elements:", elements);
-      finalPageElements = elements;
+    if (templateData.elements && Array.isArray(templateData.elements)) {
+      console.log("Applying template elements:", templateData.elements);
+      
+      // Clear existing elements and apply template
+      updateElements([]);
+      
+      // Add elements with proper IDs
+      const elementsWithIds = templateData.elements.map((element: any) => ({
+        ...element,
+        id: element.id || uuidv4()
+      }));
+      
+      setTimeout(() => {
+        updateElements(elementsWithIds);
+        console.log("Template applied successfully");
+        toast.success(`${templateData.templateName || 'Template'} applied successfully!`);
+      }, 100);
     } else {
-      // No content available
-      console.log("No content available, using empty array");
-      finalPageElements = [];
+      console.error("Invalid template data:", templateData);
+      toast.error("Failed to apply template - invalid data");
     }
-    
-    console.log("Final page elements to set:", finalPageElements);
-    setCurrentPageElements(finalPageElements);
-    setCurrentPageSettings(pageSettings);
-  }, [currentPageId, website, elements, websiteName]);
-
-  const handleSave = useCallback(async () => {
-    if (!currentPageId || !website) {
-      toast.error("Cannot save: No page selected");
-      return false;
-    }
-    
-    try {
-      // Request current data from BuilderProvider
-      const saveEvent = new CustomEvent('request-save-data');
-      document.dispatchEvent(saveEvent);
-      
-      // Small delay to allow the event to be processed
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      toast.success("Changes saved successfully");
-      return true;
-    } catch (error) {
-      console.error("Save error:", error);
-      toast.error("Failed to save website");
-      return false;
-    }
-  }, [currentPageId, website]);
-
-  const handleSaveComplete = useCallback(async (updatedElements: BuilderElement[], updatedPageSettings: PageSettings) => {
-    if (!currentPageId || !website) return;
-
-    try {
-      const pagesContent = { ...(website.settings.pagesContent || {}) };
-      const pagesSettings = { ...(website.settings.pagesSettings || {}) };
-      
-      pagesContent[currentPageId] = updatedElements;
-      pagesSettings[currentPageId] = updatedPageSettings;
-      
-      const isHomePage = website.settings.pages?.find(p => p.isHomePage)?.id === currentPageId;
-      
-      const success = await saveWebsite(
-        isHomePage ? updatedElements : website.content, 
-        updatedPageSettings, 
-        { ...website.settings, pagesContent, pagesSettings }
-      );
-      
-      if (!success) {
-        toast.error("Failed to save changes");
-      }
-    } catch (error) {
-      console.error("Save completion error:", error);
-      toast.error("Failed to save changes");
-    }
-  }, [currentPageId, website, saveWebsite]);
-  
-  const handleChangePage = useCallback((pageId: string) => {
-    navigate(`/builder/${id}?pageId=${pageId}`);
-  }, [id, navigate]);
-
-  const handleShopLinkClick = useCallback(() => {
-    navigate(`/builder/${id}/shop`);
-  }, [id, navigate]);
-  
-  const handleReturnToDashboard = useCallback(() => {
-    navigate('/dashboard');
-  }, [navigate]);
-
-  if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" text="Loading builder..." />
-      </div>
-    );
-  }
-
-  if (!website) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-700 mb-2">Website not found</h2>
-          <p className="text-gray-600 mb-6">The website you're looking for doesn't exist.</p>
-          <button onClick={handleReturnToDashboard} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-            Back to Dashboard
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const pages = website?.settings?.pages || [];
-  const currentPage = pages.find(page => page.id === currentPageId);
-
-  console.log("Rendering SimpleBuilder with:", {
-    currentPageElements: currentPageElements.length,
-    currentPageSettings,
-    currentPage
-  });
+  }, [updateElements]);
 
   return (
-    <ErrorBoundary>
-      <CartProvider>
-        <BuilderProvider 
-          initialElements={currentPageElements} 
-          initialPageSettings={currentPageSettings || { title: currentPage?.title || websiteName }}
-          onSave={handleSaveComplete}
-        >
-          <BuilderLayout isPreviewMode={isPreviewMode} setIsPreviewMode={setIsPreviewMode}>
-            <BuilderNavbar 
-              websiteName={websiteName} 
-              setWebsiteName={setWebsiteName} 
-              onSave={handleSave} 
-              onPublish={publishWebsite}
-              isPublished={website?.published}
-              isSaving={isSaving}
-              isPublishing={isPublishing}
-              isPreviewMode={isPreviewMode}
-              setIsPreviewMode={setIsPreviewMode}
-              currentPage={currentPage}
-              pages={pages}
-              onChangePage={handleChangePage}
-              onShopLinkClick={handleShopLinkClick}
-              onReturnToDashboard={handleReturnToDashboard}
-              viewSiteUrl={`/view/${id}`}
-              saveStatus={isSaving ? "Saving..." : unsavedChanges ? "Unsaved changes" : ""}
-            />
-            <BuilderContent isPreviewMode={isPreviewMode} />
+    <div className="h-screen flex">
+      <BuilderProvider 
+        initialElements={elements}
+        initialPageSettings={pageSettings}
+        onSave={handleBuilderSave}
+      >
+        <SidebarProvider>
+          <BuilderLayout>
+            <BuilderSidebar isPreviewMode={isPreviewMode} />
+            <main className="flex-1 flex flex-col">
+              <BuilderNavbar
+                websiteName={websiteName}
+                setWebsiteName={setWebsiteName}
+                onSave={handleSave}
+                onPublish={handlePublish}
+                isPublished={website?.published}
+                isSaving={isSaving}
+                isPublishing={isPublishing}
+                isPreviewMode={isPreviewMode}
+                setIsPreviewMode={setIsPreviewMode}
+                currentPage={currentPage}
+                pages={pages}
+                onChangePage={handlePageChange}
+                viewSiteUrl={`https://${id}.aetherwebsites.com`}
+                saveStatus={saveStatus}
+              />
+              <div className="flex-1 flex overflow-hidden">
+                <BuilderContent 
+                  isPreviewMode={isPreviewMode}
+                  onTemplateSelect={handleTemplateSelect}
+                />
+              </div>
+            </main>
           </BuilderLayout>
-        </BuilderProvider>
-      </CartProvider>
-    </ErrorBoundary>
+        </SidebarProvider>
+      </BuilderProvider>
+    </div>
   );
 };
 
