@@ -25,9 +25,13 @@ import {
   ExternalLink,
   ShoppingBag,
   CreditCard,
-  Truck
+  Truck,
+  Smartphone,
+  Tablet,
+  Monitor
 } from "lucide-react";
 import { toast } from "sonner";
+import { useBuilder } from "@/contexts/BuilderContext";
 
 interface Page {
   id: string;
@@ -75,6 +79,7 @@ const BuilderNavbar = ({
 }: BuilderNavbarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { previewBreakpoint, setPreviewBreakpoint } = useBuilder();
   
   // Determine active tab based on current route
   const getActiveTabFromRoute = () => {
@@ -149,6 +154,16 @@ const BuilderNavbar = ({
     }
   };
 
+  const breakpoints = [
+    { type: 'mobile', icon: Smartphone, label: 'Mobile', width: '375px' },
+    { type: 'tablet', icon: Tablet, label: 'Tablet', width: '768px' },
+    { type: 'desktop', icon: Monitor, label: 'Desktop', width: '100%' }
+  ];
+
+  const handleBreakpointChange = (breakpoint: string) => {
+    setPreviewBreakpoint(breakpoint as any);
+  };
+
   return (
     <div className="w-full flex flex-col bg-white border-b border-slate-200">
       {/* Top bar */}
@@ -195,6 +210,26 @@ const BuilderNavbar = ({
         </div>
 
         <div className="flex items-center space-x-2">
+          {/* Responsive Controls */}
+          {activeTab === "edit" && (
+            <div className="flex items-center space-x-1 bg-gray-50 border rounded-lg p-1">
+              <span className="text-xs text-gray-600 px-2">View:</span>
+              {breakpoints.map(({ type, icon: Icon, label }) => (
+                <Button
+                  key={type}
+                  variant={previewBreakpoint === type ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => handleBreakpointChange(type)}
+                  className="flex items-center space-x-1 h-7 px-2"
+                  title={`Switch to ${label} view`}
+                >
+                  <Icon className="h-3 w-3" />
+                  <span className="hidden sm:inline text-xs">{label}</span>
+                </Button>
+              ))}
+            </div>
+          )}
+
           <Button
             variant="outline"
             size="sm"

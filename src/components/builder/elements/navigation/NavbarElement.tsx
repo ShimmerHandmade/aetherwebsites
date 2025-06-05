@@ -120,12 +120,20 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
   };
 
   return (
-    <header className={navbarStyles[variant as keyof typeof navbarStyles]}>
+    <header className={cn(navbarStyles[variant as keyof typeof navbarStyles], "relative z-50")}>
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-3">
             {logo ? (
-              <img src={logo} alt={`${siteName} logo`} className="h-6 sm:h-8" />
+              <img 
+                src={logo} 
+                alt={`${siteName} logo`} 
+                className="h-6 sm:h-8 object-contain" 
+                onError={(e) => {
+                  // Hide broken images
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
             ) : (
               <div className={cn(
                 "w-6 h-6 sm:w-8 sm:h-8 rounded flex items-center justify-center text-white font-bold text-sm",

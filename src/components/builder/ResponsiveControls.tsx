@@ -20,35 +20,51 @@ const ResponsiveControls: React.FC = () => {
   ];
 
   return (
-    <div className="flex items-center space-x-2 bg-white border rounded-lg p-1">
-      <span className="text-sm text-gray-600 px-2">View:</span>
-      {breakpoints.map(({ type, icon: Icon, label }) => (
-        <Button
-          key={type}
-          variant={previewBreakpoint === type ? "default" : "ghost"}
-          size="sm"
-          onClick={() => setPreviewBreakpoint(type)}
-          className="flex items-center space-x-1"
-        >
-          <Icon className="h-4 w-4" />
-          <span className="hidden sm:inline">{label}</span>
-        </Button>
-      ))}
+    <div className="flex flex-col space-y-3 bg-white border rounded-lg p-3">
+      {/* Preview Controls */}
+      <div className="flex items-center space-x-2">
+        <span className="text-sm text-gray-600 font-medium">Preview:</span>
+        <div className="flex space-x-1">
+          {breakpoints.map(({ type, icon: Icon, label }) => (
+            <Button
+              key={type}
+              variant={previewBreakpoint === type ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setPreviewBreakpoint(type)}
+              className="flex items-center space-x-1 h-8 px-2"
+              title={`Preview in ${label} mode`}
+            >
+              <Icon className="h-3 w-3" />
+              <span className="hidden sm:inline text-xs">{label}</span>
+            </Button>
+          ))}
+        </div>
+      </div>
       
-      <div className="border-l pl-2 ml-2">
-        <span className="text-sm text-gray-600 px-2">Edit:</span>
-        {breakpoints.map(({ type, icon: Icon, label }) => (
-          <Button
-            key={`edit-${type}`}
-            variant={currentBreakpoint === type ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setCurrentBreakpoint(type)}
-            className="flex items-center space-x-1"
-          >
-            <Icon className="h-4 w-4" />
-            <span className="hidden sm:inline">{label}</span>
-          </Button>
-        ))}
+      {/* Edit Controls */}
+      <div className="flex items-center space-x-2 border-t pt-3">
+        <span className="text-sm text-gray-600 font-medium">Edit:</span>
+        <div className="flex space-x-1">
+          {breakpoints.map(({ type, icon: Icon, label }) => (
+            <Button
+              key={`edit-${type}`}
+              variant={currentBreakpoint === type ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setCurrentBreakpoint(type)}
+              className="flex items-center space-x-1 h-8 px-2"
+              title={`Edit ${label} styles`}
+            >
+              <Icon className="h-3 w-3" />
+              <span className="hidden sm:inline text-xs">{label}</span>
+            </Button>
+          ))}
+        </div>
+      </div>
+      
+      {/* Current State Info */}
+      <div className="text-xs text-gray-500 bg-gray-50 rounded p-2">
+        <div>Viewing: <span className="font-medium capitalize">{previewBreakpoint}</span></div>
+        <div>Editing: <span className="font-medium capitalize">{currentBreakpoint}</span></div>
       </div>
     </div>
   );
