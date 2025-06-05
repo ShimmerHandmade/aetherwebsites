@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,7 +52,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
       image: "/templates/business.png",
       category: "business",
       isPremium: false,
-      elements: businessTemplate.elements
+      elements: businessTemplate.pages.homepage
     },
     {
       id: "ecommerce",
@@ -62,7 +61,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
       image: "/templates/ecommerce.png",
       category: "ecommerce",
       isPremium: true,
-      elements: ecommerceTemplate.elements
+      elements: ecommerceTemplate.pages.homepage
     },
     {
       id: "portfolio",
@@ -71,7 +70,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
       image: "/templates/portfolio.png",
       category: "portfolio",
       isPremium: false,
-      elements: portfolioTemplate.elements
+      elements: portfolioTemplate.pages.homepage
     },
     {
       id: "blog",
@@ -80,7 +79,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
       image: "/templates/blog.png",
       category: "blog",
       isPremium: false,
-      elements: blogTemplate.elements
+      elements: blogTemplate.pages.homepage
     },
     {
       id: "fashion",
@@ -89,7 +88,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
       image: "/templates/fashion.png",
       category: "fashion",
       isPremium: true,
-      elements: fashionTemplate.elements
+      elements: fashionTemplate.pages.homepage
     },
     {
       id: "electronics",
@@ -98,7 +97,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
       image: "/templates/electronics.png",
       category: "electronics",
       isPremium: true,
-      elements: electronicsTemplate.elements
+      elements: electronicsTemplate.pages.homepage
     },
     {
       id: "food",
@@ -107,7 +106,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
       image: "/templates/food.png",
       category: "food",
       isPremium: true,
-      elements: foodTemplate.elements
+      elements: foodTemplate.pages.homepage
     },
     {
       id: "beauty",
@@ -116,7 +115,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
       image: "/templates/beauty.png",
       category: "beauty",
       isPremium: true,
-      elements: beautyTemplate.elements
+      elements: beautyTemplate.pages.homepage
     },
     {
       id: "jewelry",
@@ -125,7 +124,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
       image: "/templates/jewelry.png",
       category: "jewelry",
       isPremium: true,
-      elements: jewelryTemplate.elements
+      elements: jewelryTemplate.pages.homepage
     },
     {
       id: "furniture",
@@ -134,7 +133,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
       image: "/templates/furniture.png",
       category: "furniture",
       isPremium: true,
-      elements: furnitureTemplate.elements
+      elements: furnitureTemplate.pages.homepage
     }
   ];
 
