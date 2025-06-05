@@ -114,9 +114,6 @@ const BuilderNavbar = ({
       case "pages":
         navigate(`/builder/${websiteId}/pages`);
         break;
-      case "settings":
-        navigate(`/builder/${websiteId}/site-settings`);
-        break;
       case "payment-settings":
         navigate(`/builder/${websiteId}/payment-settings`);
         break;
@@ -292,13 +289,6 @@ const BuilderNavbar = ({
             </TabsTrigger>
             <TabsTrigger 
               value="settings" 
-              className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Site Settings
-            </TabsTrigger>
-            <TabsTrigger 
-              value="payment-settings" 
               className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
             >
               <CreditCard className="h-4 w-4 mr-2" />
