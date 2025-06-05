@@ -186,18 +186,6 @@ const BuilderNavbar = ({
               ))}
             </SelectContent>
           </Select>
-
-          {onShopLinkClick && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="flex items-center gap-1" 
-              onClick={onShopLinkClick}
-            >
-              <Store className="h-4 w-4" />
-              Shop
-            </Button>
-          )}
           
           {saveStatus && (
             <span className="text-xs text-gray-500 ml-2">
