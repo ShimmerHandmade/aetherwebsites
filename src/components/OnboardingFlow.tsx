@@ -76,6 +76,13 @@ const OnboardingFlow = ({ websiteId, onComplete }: OnboardingFlowProps) => {
     }, 800);
   };
 
+  const handleTemplateSelect = (templateData: any) => {
+    console.log("Template selected in onboarding:", templateData);
+    // Handle template selection logic here if needed
+    // For now, just proceed to next step
+    handleTemplateComplete();
+  };
+
   // Show initial loading indicator with animated appearance
   if (!isLoadingComplete) {
     return (
@@ -105,6 +112,7 @@ const OnboardingFlow = ({ websiteId, onComplete }: OnboardingFlowProps) => {
     <div className="min-h-screen bg-gray-50 animate-in fade-in duration-300">
       {currentStep === OnboardingStep.TEMPLATES && (
         <TemplateSelection 
+          onSelectTemplate={handleTemplateSelect}
           websiteId={websiteId} 
           onComplete={handleTemplateComplete} 
         />

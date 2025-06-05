@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from "react";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import { SidebarProvider } from "@/contexts/sidebar/SidebarProvider";
@@ -163,7 +164,6 @@ const SimpleBuilder = () => {
               <div className="flex-1 flex overflow-hidden">
                 <BuilderContent 
                   isPreviewMode={isPreviewMode}
-                  onTemplateSelect={handleTemplateSelect}
                 />
               </div>
             </main>
