@@ -1,7 +1,7 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
-import { SidebarProvider } from "@/contexts/sidebar/SidebarProvider";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import BuilderSidebar from "@/components/builder/BuilderSidebar";
 import BuilderNavbar from "@/components/builder/BuilderNavbar";
 import BuilderContent from "@/components/builder/BuilderContent";
@@ -190,7 +190,7 @@ const SimpleBuilder = () => {
       onSave={handleBuilderSave}
     >
       <SidebarProvider>
-        <div className="h-screen flex bg-gray-50">
+        <div className="h-screen flex bg-gray-50 w-full">
           <BuilderSidebar isPreviewMode={isPreviewMode} />
           <div className="flex-1 flex flex-col">
             <BuilderNavbar
