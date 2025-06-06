@@ -18,25 +18,33 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = memo(({
   const [canvasReady, setCanvasReady] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   
-  // Single initialization to prevent flickering
   useEffect(() => {
-    if (!canvasReady) {
-      // Set canvas ready once and don't change it
+    const timer = setTimeout(() => {
       setCanvasReady(true);
-    }
-  }, [canvasReady]);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, []);
   
   const handleCanvasClick = (e: React.MouseEvent) => {
-    // Only handle direct canvas clicks (not bubbled from elements)
     if (e.target === e.currentTarget) {
-      // Deselect any element when clicking the canvas directly
       selectElement(null);
     }
   };
 
+  if (!canvasReady) {
+    return (
+      <div className="w-full min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 border-4 border-t-blue-600 border-r-blue-600 border-b-gray-200 border-l-gray-200 rounded-full animate-spin mx-auto mb-2"></div>
+          <p className="text-gray-500 text-sm">Initializing canvas...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
-      className={`w-full min-h-screen pb-20 relative ${canvasReady ? 'opacity-100' : 'opacity-0'}`}
+      className="w-full min-h-screen pb-20 relative"
       data-testid="builder-canvas"
       ref={canvasRef}
     >
@@ -58,7 +66,6 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = memo(({
         </CanvasDragDropHandler>
       )}
       
-      {/* When in preview mode, we directly render without the drag-drop handler */}
       {isPreviewMode && (
         elements.length === 0 ? (
           <EmptyCanvasPlaceholder isPreviewMode={isPreviewMode} />
@@ -74,7 +81,6 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = memo(({
   );
 });
 
-// Add display name for React DevTools
 BuilderCanvas.displayName = 'BuilderCanvas';
 
 export default BuilderCanvas;

@@ -16,7 +16,6 @@ const SimpleBuilder = () => {
   const navigate = useNavigate();
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string>('');
-  const [isInitialized, setIsInitialized] = useState(false);
   
   const { 
     website,
@@ -33,22 +32,13 @@ const SimpleBuilder = () => {
     refreshWebsite,
     lastSaved,
     unsavedChanges
-  } = useWebsite(id, navigate, { autoSave: false }); // Disable auto-save to prevent loops
+  } = useWebsite(id, navigate, { autoSave: false });
   
   const [currentPage, setCurrentPage] = useState<{ id: string; title: string; slug: string; isHomePage?: boolean; } | null>(null);
   const pages = website?.settings?.pages || [];
 
-  // Initialize the builder once website data is loaded
-  useEffect(() => {
-    if (website && !isInitialized) {
-      console.log("Initializing SimpleBuilder with website data:", website);
-      setIsInitialized(true);
-    }
-  }, [website, isInitialized]);
-
   useEffect(() => {
     if (website && website.settings?.pages && website.settings.pages.length > 0) {
-      // Find the home page or default to the first page
       const homePage = website.settings.pages.find(page => page.isHomePage) || website.settings.pages[0];
       if (!currentPage || currentPage.id !== homePage.id) {
         setCurrentPage(homePage);
@@ -63,14 +53,6 @@ const SimpleBuilder = () => {
       setSaveStatus('');
     }
   }, [lastSaved]);
-
-  useEffect(() => {
-    if (isLoading) {
-      toast.loading("Loading website data...", { id: "load-data" });
-    } else {
-      toast.dismiss("load-data");
-    }
-  }, [isLoading]);
 
   useEffect(() => {
     if (unsavedChanges) {
@@ -96,7 +78,6 @@ const SimpleBuilder = () => {
   const handlePageChange = (pageId: string) => {
     console.log("Page changed to:", pageId);
     
-    // Find the selected page
     const selectedPage = pages.find(page => page.id === pageId);
     if (!selectedPage) {
       console.error("Page not found:", pageId);
@@ -105,7 +86,6 @@ const SimpleBuilder = () => {
     
     setCurrentPage(selectedPage);
     
-    // Load content for the selected page
     const pageContent = website?.settings?.pagesContent?.[pageId] || [];
     updateElements(pageContent);
   };
@@ -116,10 +96,8 @@ const SimpleBuilder = () => {
     if (templateData.elements && Array.isArray(templateData.elements)) {
       console.log("Applying template elements:", templateData.elements);
       
-      // Clear existing elements and apply template
       updateElements([]);
       
-      // Add elements with proper IDs
       const elementsWithIds = templateData.elements.map((element: any) => ({
         ...element,
         id: element.id || uuidv4()
@@ -136,8 +114,7 @@ const SimpleBuilder = () => {
     }
   }, [updateElements]);
 
-  // Show loading state until builder is initialized
-  if (isLoading || !isInitialized) {
+  if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
@@ -149,42 +126,41 @@ const SimpleBuilder = () => {
   }
 
   return (
-    <div className="h-screen flex">
-      <BuilderProvider 
-        initialElements={elements}
-        initialPageSettings={pageSettings}
-        onSave={handleBuilderSave}
-      >
-        <SidebarProvider>
-          <div className="h-screen flex">
-            <BuilderSidebar isPreviewMode={isPreviewMode} />
-            <main className="flex-1 flex flex-col">
-              <BuilderNavbar
-                websiteName={websiteName}
-                setWebsiteName={setWebsiteName}
-                onSave={handleSave}
-                onPublish={handlePublish}
-                isPublished={website?.published}
-                isSaving={isSaving}
-                isPublishing={isPublishing}
+    <BuilderProvider 
+      initialElements={elements}
+      initialPageSettings={pageSettings}
+      onSave={handleBuilderSave}
+    >
+      <SidebarProvider>
+        <div className="h-screen flex bg-gray-50">
+          <BuilderSidebar isPreviewMode={isPreviewMode} />
+          <div className="flex-1 flex flex-col">
+            <BuilderNavbar
+              websiteName={websiteName}
+              setWebsiteName={setWebsiteName}
+              onSave={handleSave}
+              onPublish={handlePublish}
+              isPublished={website?.published}
+              isSaving={isSaving}
+              isPublishing={isPublishing}
+              isPreviewMode={isPreviewMode}
+              setIsPreviewMode={setIsPreviewMode}
+              currentPage={currentPage}
+              pages={pages}
+              onChangePage={handlePageChange}
+              viewSiteUrl={`https://${id}.aetherwebsites.com`}
+              saveStatus={saveStatus}
+            />
+            <div className="flex-1 overflow-hidden">
+              <BuilderContent 
                 isPreviewMode={isPreviewMode}
-                setIsPreviewMode={setIsPreviewMode}
-                currentPage={currentPage}
-                pages={pages}
-                onChangePage={handlePageChange}
-                viewSiteUrl={`https://${id}.aetherwebsites.com`}
-                saveStatus={saveStatus}
+                isLiveSite={false}
               />
-              <div className="flex-1 flex overflow-hidden">
-                <BuilderContent 
-                  isPreviewMode={isPreviewMode}
-                />
-              </div>
-            </main>
+            </div>
           </div>
-        </SidebarProvider>
-      </BuilderProvider>
-    </div>
+        </div>
+      </SidebarProvider>
+    </BuilderProvider>
   );
 };
 
