@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -107,59 +108,8 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
     }
   ];
 
-  // Apply color scheme ONLY to the canvas/preview area
+  // Apply color scheme to the website canvas
   const applyColorSchemeToCanvas = (scheme: ColorScheme) => {
-    // Target specifically the canvas elements, not the builder interface
-    const canvasSelectors = [
-      '[data-builder-canvas]',
-      '.builder-canvas', 
-      '[data-preview]',
-      '.main-content',
-      '.canvas-container',
-      '[data-element-id]' // Target individual elements
-    ];
-
-    let canvasElement = null;
-    
-    // Try to find the canvas element
-    for (const selector of canvasSelectors) {
-      canvasElement = document.querySelector(selector);
-      if (canvasElement) break;
-    }
-
-    if (!canvasElement) {
-      // Try to find iframe for preview
-      const iframe = document.querySelector('iframe');
-      if (iframe && iframe.contentDocument) {
-        applySchemeToElement(iframe.contentDocument.documentElement, scheme);
-        return;
-      }
-      
-      // Fallback: try to find the right-side preview area
-      const previewArea = document.querySelector('.preview-area') || 
-                         document.querySelector('[class*="preview"]') ||
-                         document.querySelector('.w-full.h-full');
-      
-      if (previewArea) {
-        canvasElement = previewArea;
-      } else {
-        console.warn("Canvas element not found for color scheme application");
-        return;
-      }
-    }
-    
-    console.log("Applying color scheme to canvas:", canvasElement);
-    applySchemeToElement(canvasElement as HTMLElement, scheme);
-    
-    // Also apply to all child elements with data-element-id
-    const childElements = canvasElement.querySelectorAll('[data-element-id]');
-    childElements.forEach(element => {
-      applySchemeToElement(element as HTMLElement, scheme);
-    });
-  };
-
-  const applySchemeToElement = (element: HTMLElement, scheme: ColorScheme) => {
-    // Convert hex to HSL for CSS variables
     const hexToHsl = (hex: string) => {
       const r = parseInt(hex.slice(1, 3), 16) / 255;
       const g = parseInt(hex.slice(3, 5), 16) / 255;
@@ -183,7 +133,40 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
       return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
     };
 
-    // Apply CSS custom properties to the element
+    // Find the canvas element - try multiple selectors
+    const canvasSelectors = [
+      '[data-testid="builder-canvas"]',
+      '.builder-canvas',
+      '[data-builder-canvas]',
+      '[data-element-id]'
+    ];
+
+    let canvasElement = null;
+    
+    for (const selector of canvasSelectors) {
+      canvasElement = document.querySelector(selector);
+      if (canvasElement) break;
+    }
+
+    // If still not found, try to find the canvas in an iframe
+    if (!canvasElement) {
+      const iframe = document.querySelector('iframe');
+      if (iframe && iframe.contentDocument) {
+        const iframeDocument = iframe.contentDocument;
+        for (const selector of canvasSelectors) {
+          canvasElement = iframeDocument.querySelector(selector);
+          if (canvasElement) break;
+        }
+      }
+    }
+
+    // Apply to document root if canvas not found
+    const targetElement = canvasElement || document.documentElement;
+    
+    console.log("Applying color scheme to:", targetElement);
+    
+    // Apply CSS custom properties
+    const element = targetElement as HTMLElement;
     element.style.setProperty('--primary', hexToHsl(scheme.primary));
     element.style.setProperty('--secondary', hexToHsl(scheme.secondary));
     element.style.setProperty('--accent', hexToHsl(scheme.accent));
@@ -202,6 +185,20 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
     element.style.setProperty('--color-text', scheme.text);
     element.style.setProperty('--color-text-secondary', scheme.textSecondary);
     element.style.setProperty('--color-border', scheme.border);
+
+    // Apply to all child elements with data-element-id
+    const childElements = document.querySelectorAll('[data-element-id]');
+    childElements.forEach(child => {
+      const childElement = child as HTMLElement;
+      childElement.style.setProperty('--primary', hexToHsl(scheme.primary));
+      childElement.style.setProperty('--secondary', hexToHsl(scheme.secondary));
+      childElement.style.setProperty('--accent', hexToHsl(scheme.accent));
+      childElement.style.setProperty('--background', hexToHsl(scheme.background));
+      childElement.style.setProperty('--card', hexToHsl(scheme.surface));
+      childElement.style.setProperty('--foreground', hexToHsl(scheme.text));
+      childElement.style.setProperty('--muted-foreground', hexToHsl(scheme.textSecondary));
+      childElement.style.setProperty('--border', hexToHsl(scheme.border));
+    });
   };
 
   // Handle color change
@@ -245,7 +242,9 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
       border: "#e2e8f0"
     };
     setCurrentScheme(defaultScheme);
-    applyColorSchemeToCanvas(defaultScheme);
+    if (previewMode) {
+      applyColorSchemeToCanvas(defaultScheme);
+    }
     toast.success("Reset to default colors");
   };
 
@@ -275,8 +274,10 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
 
   // Toggle preview mode
   const togglePreview = () => {
-    setPreviewMode(!previewMode);
-    if (!previewMode) {
+    const newPreviewMode = !previewMode;
+    setPreviewMode(newPreviewMode);
+    
+    if (newPreviewMode) {
       applyColorSchemeToCanvas(currentScheme);
       toast.success("Preview mode enabled - colors applied to website canvas");
     } else {
