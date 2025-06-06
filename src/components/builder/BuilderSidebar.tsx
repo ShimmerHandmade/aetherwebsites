@@ -103,10 +103,6 @@ const BuilderSidebar: React.FC<BuilderSidebarProps> = ({ isPreviewMode }) => {
                   <Plus className="h-3 w-3" />
                   Add
                 </TabsTrigger>
-                <TabsTrigger value="layers" className="flex items-center gap-1">
-                  <Layers className="h-3 w-3" />
-                  Layers
-                </TabsTrigger>
                 <TabsTrigger value="settings" className="flex items-center gap-1">
                   <Settings className="h-3 w-3" />
                   Style
@@ -119,17 +115,6 @@ const BuilderSidebar: React.FC<BuilderSidebarProps> = ({ isPreviewMode }) => {
                 <ScrollArea className="h-full">
                   <div className="p-4">
                     <ElementPalette />
-                  </div>
-                </ScrollArea>
-              </TabsContent>
-
-              <TabsContent value="layers" className="h-full m-0 p-0">
-                <ScrollArea className="h-full">
-                  <div className="p-4">
-                    <div className="text-center text-gray-500 text-sm">
-                      <Layers className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p>Layer management coming soon</p>
-                    </div>
                   </div>
                 </ScrollArea>
               </TabsContent>
