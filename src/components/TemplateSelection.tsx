@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Crown, Sparkles, Wand2 } from "lucide-react";
+import { Loader2, Crown, Sparkles, Wand2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { usePlan } from "@/contexts/PlanContext";
 import { getTemplates, Template } from "@/api/templates";
@@ -35,7 +35,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
         setIsLoadingTemplates(true);
         setError(null);
         
-        const result = await getTemplates(false); // Only get active templates
+        const result = await getTemplates(false);
         
         if (result.success && result.data) {
           setTemplates(result.data);
@@ -55,7 +55,6 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
     fetchTemplatesData();
   }, []);
 
-  // Get unique categories from templates
   const categories = ["all", ...new Set(templates.map(template => template.category).filter(Boolean))];
 
   const filteredTemplates = selectedCategory === "all" 
@@ -63,7 +62,6 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
     : templates.filter(template => template.category === selectedCategory);
 
   const handleApplyTemplate = async (template: Template) => {
-    // Check if template is premium and user doesn't have access
     if (template.is_premium && !isPremium && !isEnterprise) {
       if (checkUpgrade) {
         checkUpgrade(`${template.name} Template`);
@@ -76,10 +74,8 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
     try {
       console.log("Applying template:", template.name, template.template_data);
       
-      // Extract elements from template data
       const templateElements = template.template_data?.content || [];
       
-      // Apply the template elements
       onSelectTemplate({
         elements: templateElements,
         templateId: template.id,
@@ -88,10 +84,6 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
       
       toast.success(`${template.name} template applied successfully!`);
       
-      if (onClose) {
-        onClose();
-      }
-
       if (onComplete) {
         onComplete();
       }
@@ -103,7 +95,6 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
     }
   };
 
-  // Show loading state while fetching templates
   if (isLoadingTemplates) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -115,7 +106,6 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
     );
   }
 
-  // Show error state if templates failed to load
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -130,18 +120,27 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Choose a Template</h2>
-        {onClose && (
-          <Button variant="outline" onClick={onClose}>
-            Close
-          </Button>
-        )}
+    <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">Choose Your Starting Template</h1>
+        <p className="text-xl text-gray-600 mb-6">Select a professionally designed template to get started quickly, or start from scratch.</p>
+        
+        <div className="flex justify-center gap-4">
+          {onClose && (
+            <Button 
+              variant="outline" 
+              onClick={onClose}
+              className="flex items-center gap-2"
+            >
+              Skip Templates & Start Fresh
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Category Filter */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 justify-center">
         {categories.map((category) => (
           <Button
             key={category}
@@ -208,7 +207,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
                   ) : (
                     <>
                       <Wand2 className="h-4 w-4 mr-2" />
-                      Apply Template
+                      Use This Template
                     </>
                   )}
                 </Button>

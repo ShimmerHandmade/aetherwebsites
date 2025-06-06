@@ -5,6 +5,7 @@ import { SidebarProvider } from "@/contexts/sidebar/SidebarProvider";
 import BuilderSidebar from "@/components/builder/BuilderSidebar";
 import BuilderNavbar from "@/components/builder/BuilderNavbar";
 import BuilderContent from "@/components/builder/BuilderContent";
+import TemplateSelection from "@/components/TemplateSelection";
 import { useWebsite } from "@/hooks/useWebsite";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -16,6 +17,7 @@ const SimpleBuilder = () => {
   const navigate = useNavigate();
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string>('');
+  const [showTemplateSelection, setShowTemplateSelection] = useState(false);
   
   const { 
     website,
@@ -36,6 +38,21 @@ const SimpleBuilder = () => {
   
   const [currentPage, setCurrentPage] = useState<{ id: string; title: string; slug: string; isHomePage?: boolean; } | null>(null);
   const pages = website?.settings?.pages || [];
+
+  // Check if website has content, if not show template selection
+  useEffect(() => {
+    if (website && !isLoading) {
+      const hasContent = elements && elements.length > 0;
+      const hasPages = website.settings?.pages && website.settings.pages.length > 0;
+      
+      if (!hasContent && !hasPages) {
+        console.log("No content found, showing template selection");
+        setShowTemplateSelection(true);
+      } else {
+        setShowTemplateSelection(false);
+      }
+    }
+  }, [website, isLoading, elements]);
 
   useEffect(() => {
     if (website && website.settings?.pages && website.settings.pages.length > 0) {
@@ -96,23 +113,48 @@ const SimpleBuilder = () => {
     if (templateData.elements && Array.isArray(templateData.elements)) {
       console.log("Applying template elements:", templateData.elements);
       
-      updateElements([]);
-      
       const elementsWithIds = templateData.elements.map((element: any) => ({
         ...element,
         id: element.id || uuidv4()
       }));
       
-      setTimeout(() => {
-        updateElements(elementsWithIds);
-        console.log("Template applied successfully");
-        toast.success(`${templateData.templateName || 'Template'} applied successfully!`);
-      }, 100);
+      updateElements(elementsWithIds);
+      setShowTemplateSelection(false);
+      console.log("Template applied successfully");
+      toast.success(`${templateData.templateName || 'Template'} applied successfully!`);
     } else {
       console.error("Invalid template data:", templateData);
       toast.error("Failed to apply template - invalid data");
     }
   }, [updateElements]);
+
+  const handleSkipTemplate = () => {
+    setShowTemplateSelection(false);
+    // Initialize with a basic element structure
+    const basicElements = [
+      {
+        id: uuidv4(),
+        type: "section",
+        content: "",
+        props: {
+          padding: "large",
+          backgroundColor: "bg-white"
+        },
+        children: [
+          {
+            id: uuidv4(),
+            type: "heading",
+            content: "Welcome to Your Website",
+            props: {
+              level: "h1",
+              className: "text-4xl font-bold text-center mb-8"
+            }
+          }
+        ]
+      }
+    ];
+    updateElements(basicElements);
+  };
 
   if (isLoading) {
     return (
@@ -125,10 +167,26 @@ const SimpleBuilder = () => {
     );
   }
 
+  // Show template selection screen
+  if (showTemplateSelection) {
+    return (
+      <div className="h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
+          <TemplateSelection 
+            onSelectTemplate={handleTemplateSelect}
+            websiteId={id} 
+            onComplete={() => setShowTemplateSelection(false)}
+            onClose={handleSkipTemplate}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <BuilderProvider 
-      initialElements={elements}
-      initialPageSettings={pageSettings}
+      initialElements={elements || []}
+      initialPageSettings={pageSettings || { title: websiteName || 'My Website' }}
       onSave={handleBuilderSave}
     >
       <SidebarProvider>
