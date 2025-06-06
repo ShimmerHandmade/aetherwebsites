@@ -17,7 +17,6 @@ import ElementPalette from "./ElementPalette";
 import ElementProperties from "./ElementProperties";
 import { 
   Settings, 
-  Layers, 
   Plus, 
   Palette,
   Crown,
@@ -98,7 +97,7 @@ const BuilderSidebar: React.FC<BuilderSidebarProps> = ({ isPreviewMode }) => {
         <div className="h-full flex flex-col">
           <Tabs defaultValue="elements" className="flex-1 flex flex-col">
             <div className="px-4 pt-4">
-              <TabsList className="grid w-full grid-cols-3 text-xs">
+              <TabsList className="grid w-full grid-cols-2 text-xs">
                 <TabsTrigger value="elements" className="flex items-center gap-1">
                   <Plus className="h-3 w-3" />
                   Add

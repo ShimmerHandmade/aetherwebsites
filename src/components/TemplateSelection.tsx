@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Crown, Sparkles, Wand2, ArrowRight } from "lucide-react";
+import { Loader2, Crown, Sparkles, Wand2, ArrowRight, Zap, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { usePlan } from "@/contexts/PlanContext";
 import { getTemplates, Template } from "@/api/templates";
@@ -95,6 +95,12 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
     }
   };
 
+  const handleAIGenerator = () => {
+    // This would trigger the AI template generator
+    // For now, we'll show a message that this feature needs to be implemented
+    toast.info("AI Template Generator coming soon! Use our pre-made templates for now.");
+  };
+
   if (isLoadingTemplates) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -122,17 +128,33 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Choose Your Starting Template</h1>
-        <p className="text-xl text-gray-600 mb-6">Select a professionally designed template to get started quickly, or start from scratch.</p>
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">Choose Your Starting Point</h1>
+        <p className="text-xl text-gray-600 mb-6">Select a professionally designed template, generate with AI, or start from scratch.</p>
         
-        <div className="flex justify-center gap-4">
+        {/* Quick Action Buttons */}
+        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
+          <Button 
+            onClick={handleAIGenerator}
+            className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3"
+            size="lg"
+          >
+            <Zap className="h-5 w-5" />
+            Generate with AI
+            <Badge className="bg-white/20 text-white text-xs">
+              <Sparkles className="h-3 w-3 mr-1" />
+              New
+            </Badge>
+          </Button>
+          
           {onClose && (
             <Button 
               variant="outline" 
               onClick={onClose}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 px-6 py-3"
+              size="lg"
             >
-              Skip Templates & Start Fresh
+              <FileText className="h-5 w-5" />
+              Start with Blank Site
               <ArrowRight className="h-4 w-4" />
             </Button>
           )}
