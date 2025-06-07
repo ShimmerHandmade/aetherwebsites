@@ -1,134 +1,75 @@
 
-import React, { useState, useEffect } from "react";
-import { useBuilder } from "@/contexts/BuilderContext";
-import PropertyEditorManager from "./properties/PropertyEditorManager";
-import ResponsivePropertyEditor from "./properties/ResponsivePropertyEditor";
-import ResponsiveControls from "./ResponsiveControls";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Copy, ChevronUp, ChevronDown } from "lucide-react";
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
+import { Trash2 } from "lucide-react";
+import { useBuilder } from "@/contexts/builder/useBuilder";
+import PropertyEditorManager from "./properties/PropertyEditorManager";
+import ResponsiveControls from "./ResponsiveControls";
 
 const ElementProperties = () => {
-  const { 
-    elements, 
-    selectedElementId, 
-    updateElement, 
-    findElementById, 
-    deleteElement, 
-    duplicateElement, 
-    moveElementUp, 
-    moveElementDown 
-  } = useBuilder();
-  
-  const [content, setContent] = useState("");
-  const [properties, setProperties] = useState<Record<string, any>>({});
-
-  // Using findElementById to get the selected element from anywhere in the tree
-  const selectedElement = selectedElementId ? findElementById(selectedElementId) : null;
-
-  useEffect(() => {
-    if (selectedElement) {
-      setContent(selectedElement.content || "");
-      setProperties(selectedElement.props || {});
-    } else {
-      setContent("");
-      setProperties({});
-    }
-  }, [selectedElement]);
-
-  const handleContentChange = (newContent: string) => {
-    setContent(newContent);
-    
-    if (selectedElementId) {
-      updateElement(selectedElementId, { content: newContent });
-    }
-  };
-
-  const handlePropertyChange = (property: string, value: any) => {
-    const updatedProps = { ...properties, [property]: value };
-    setProperties(updatedProps);
-    
-    if (selectedElementId) {
-      updateElement(selectedElementId, { props: updatedProps });
-    }
-  };
-  
-  const handleDelete = () => {
-    if (!selectedElementId) return;
-    
-    const elementType = selectedElement?.type || "Element";
-    deleteElement(selectedElementId);
-    toast({
-      description: `${elementType} deleted`
-    });
-  };
-  
-  const handleDuplicate = () => {
-    if (!selectedElementId) return;
-    
-    duplicateElement(selectedElementId);
-    toast({
-      description: `${selectedElement?.type || "Element"} duplicated`
-    });
-  };
+  const { selectedElement, deleteElement } = useBuilder();
 
   if (!selectedElement) {
     return (
-      <div className="p-4 text-center">
-        <ResponsiveControls />
-        <p className="text-gray-500 text-sm py-8 mt-4">Select an element to edit its properties</p>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Properties</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-500">Select an element to edit its properties</p>
+          <div className="mt-4">
+            <ResponsiveControls />
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
+  const handleDelete = () => {
+    if (selectedElement) {
+      deleteElement(selectedElement.id);
+    }
+  };
+
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-gray-200 bg-gray-50">
-        <ResponsiveControls />
-      </div>
-      
-      <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
-        <h3 className="font-medium text-gray-800">
-          {selectedElement.type.charAt(0).toUpperCase() + selectedElement.type.slice(1)} Properties
-        </h3>
-        <div className="flex items-center space-x-1">
-          <Button variant="ghost" size="icon" onClick={() => moveElementUp(selectedElementId)} title="Move Up">
-            <ChevronUp className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => moveElementDown(selectedElementId)} title="Move Down">
-            <ChevronDown className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleDuplicate} title="Duplicate">
-            <Copy className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleDelete} title="Delete">
-            <Trash2 className="h-4 w-4 text-red-500" />
-          </Button>
-        </div>
-      </div>
-      
-      <ScrollArea className="flex-1">
-        <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mx-4 my-2">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="responsive">Responsive</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="general" className="p-4">
-            <PropertyEditorManager
-              element={selectedElement}
-              onPropertyChange={handlePropertyChange}
-              onContentChange={handleContentChange}
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center justify-between">
+            Properties
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDelete}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="element-type" className="text-xs font-medium">
+              Element Type
+            </Label>
+            <Input
+              id="element-type"
+              value={selectedElement.type}
+              disabled
+              className="mt-1"
             />
-          </TabsContent>
+          </div>
+
+          <PropertyEditorManager />
           
-          <TabsContent value="responsive" className="p-4">
-            <ResponsivePropertyEditor element={selectedElement} />
-          </TabsContent>
-        </Tabs>
-      </ScrollArea>
+          <div className="pt-4 border-t">
+            <ResponsiveControls />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
