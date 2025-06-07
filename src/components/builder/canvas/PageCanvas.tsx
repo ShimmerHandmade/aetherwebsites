@@ -22,6 +22,7 @@ const PageCanvas: React.FC<PageCanvasProps> = memo(({
   const { isPremium, isEnterprise, loading: planLoading, error: planError } = usePlan();
   const [canvasVisible, setCanvasVisible] = useState(false);
   const [loadingFailed, setLoadingFailed] = useState(false);
+  const [renderError, setRenderError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   
   // Debug logging for elements
@@ -45,12 +46,8 @@ const PageCanvas: React.FC<PageCanvasProps> = memo(({
   
   // Single effect for stable rendering
   useEffect(() => {
-    // Set visible state once and don't change it to prevent flicker
-    const timer = setTimeout(() => {
-      setCanvasVisible(true);
-    }, 100);
-    
-    return () => clearTimeout(timer);
+    setCanvasVisible(true);
+    setRenderError(null);
   }, []);
   
   // Report errors up to parent component
@@ -61,8 +58,46 @@ const PageCanvas: React.FC<PageCanvasProps> = memo(({
     }
   }, [planError, onError]);
 
+  // Handle element rendering errors
+  const handleElementError = (error: Error, elementId: string) => {
+    console.error(`Error rendering element ${elementId}:`, error);
+    setRenderError(`Error rendering element: ${error.message}`);
+  };
+
+  // Safe element rendering with error boundaries
+  const renderElementSafely = (element: BuilderElement, index: number) => {
+    try {
+      return (
+        <ElementWrapper 
+          key={element.id} 
+          element={element}
+          index={index}
+          selected={selectedElementId === element.id}
+          isPreviewMode={isPreviewMode}
+          canUseAnimations={isPremium || isEnterprise}
+          canUseEnterpriseAnimations={isEnterprise}
+          isLiveSite={isLiveSite}
+          onElementReady={() => {
+            // Element rendered successfully
+            if (renderError) {
+              setRenderError(null);
+            }
+          }}
+        />
+      );
+    } catch (error) {
+      console.error(`Error rendering element ${element.id}:`, error);
+      return (
+        <div key={element.id} className="p-4 border border-red-300 bg-red-50 text-red-600 rounded">
+          <p className="font-medium">Error rendering {element.type} element</p>
+          <p className="text-sm mt-1">{String(error)}</p>
+        </div>
+      );
+    }
+  };
+
   // Handle error state
-  if (loadingFailed) {
+  if (loadingFailed || renderError) {
     return (
       <div className="builder-canvas">
         <div className="page-content">
@@ -72,14 +107,25 @@ const PageCanvas: React.FC<PageCanvasProps> = memo(({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
               <h3 className="text-lg font-medium text-gray-900 mb-1">Unable to load content</h3>
-              <p className="text-gray-500 mb-4">We're having trouble loading the page elements.</p>
+              <p className="text-gray-500 mb-4">{renderError || "We're having trouble loading the page elements."}</p>
               {!isPreviewMode && !isLiveSite && (
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
-                >
-                  Refresh Page
-                </button>
+                <div className="space-x-2">
+                  <button 
+                    onClick={() => {
+                      setRenderError(null);
+                      setLoadingFailed(false);
+                    }}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+                  >
+                    Try Again
+                  </button>
+                  <button 
+                    onClick={() => window.location.reload()}
+                    className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                  >
+                    Refresh Page
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -98,18 +144,7 @@ const PageCanvas: React.FC<PageCanvasProps> = memo(({
         {elements && elements.length > 0 ? (
           elements.map((element, index) => {
             console.log(`Rendering element ${index}:`, element.type, element.id);
-            return (
-              <ElementWrapper 
-                key={element.id} 
-                element={element}
-                index={index}
-                selected={selectedElementId === element.id}
-                isPreviewMode={isPreviewMode}
-                canUseAnimations={isPremium || isEnterprise}
-                canUseEnterpriseAnimations={isEnterprise}
-                isLiveSite={isLiveSite}
-              />
-            );
+            return renderElementSafely(element, index);
           })
         ) : (
           <div className="flex items-center justify-center min-h-[300px] text-gray-400 p-4">

@@ -63,6 +63,28 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
     ? templates 
     : templates.filter(template => template.category === selectedCategory);
 
+  const applyTemplateData = (templateElements: any[], templateName: string, templateId?: string) => {
+    console.log("Applying template data:", { templateElements, templateName, templateId });
+    
+    // Ensure elements have proper structure
+    const processedElements = templateElements.map(element => ({
+      ...element,
+      id: element.id || crypto.randomUUID?.() || Math.random().toString(36)
+    }));
+
+    onSelectTemplate({
+      elements: processedElements,
+      templateId: templateId,
+      templateName: templateName
+    });
+    
+    toast.success(`${templateName} applied successfully!`);
+    
+    if (onComplete) {
+      onComplete();
+    }
+  };
+
   const handleApplyTemplate = async (template: Template) => {
     if (template.is_premium && !isPremium && !isEnterprise) {
       if (checkUpgrade) {
@@ -78,17 +100,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
       
       const templateElements = template.template_data?.content || [];
       
-      onSelectTemplate({
-        elements: templateElements,
-        templateId: template.id,
-        templateName: template.name
-      });
-      
-      toast.success(`${template.name} template applied successfully!`);
-      
-      if (onComplete) {
-        onComplete();
-      }
+      applyTemplateData(templateElements, template.name, template.id);
     } catch (error) {
       console.error("Error applying template:", error);
       toast.error("Failed to apply template. Please try again.");
@@ -108,19 +120,39 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
   const handleAITemplateGenerated = (generatedTemplate: any) => {
     console.log("AI Template generated:", generatedTemplate);
     
-    const templateElements = generatedTemplate.templateData?.content || [];
-    
-    onSelectTemplate({
-      elements: templateElements,
-      templateId: generatedTemplate.id,
-      templateName: generatedTemplate.name
-    });
-    
-    setShowAIGenerator(false);
-    toast.success(`AI-generated template "${generatedTemplate.name}" applied successfully!`);
-    
-    if (onComplete) {
-      onComplete();
+    try {
+      // Handle different possible structures from AI generator
+      let templateElements = [];
+      let templateName = "AI Generated Template";
+
+      if (generatedTemplate.elements) {
+        // Direct elements array
+        templateElements = generatedTemplate.elements;
+        templateName = generatedTemplate.name || templateName;
+      } else if (generatedTemplate.templateData?.content) {
+        // Nested structure
+        templateElements = generatedTemplate.templateData.content;
+        templateName = generatedTemplate.name || templateName;
+      } else if (generatedTemplate.content) {
+        // Alternative structure
+        templateElements = generatedTemplate.content;
+        templateName = generatedTemplate.name || templateName;
+      } else if (Array.isArray(generatedTemplate)) {
+        // Direct array
+        templateElements = generatedTemplate;
+      }
+
+      console.log("Processed AI template elements:", templateElements);
+
+      if (!templateElements || !Array.isArray(templateElements) || templateElements.length === 0) {
+        throw new Error("Invalid template structure from AI generator");
+      }
+
+      applyTemplateData(templateElements, templateName, generatedTemplate.id);
+      setShowAIGenerator(false);
+    } catch (error) {
+      console.error("Error processing AI generated template:", error);
+      toast.error("Failed to apply AI generated template. Please try again.");
     }
   };
 
