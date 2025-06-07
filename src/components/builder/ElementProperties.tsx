@@ -10,7 +10,10 @@ import PropertyEditorManager from "./properties/PropertyEditorManager";
 import ResponsiveControls from "./ResponsiveControls";
 
 const ElementProperties = () => {
-  const { selectedElement, deleteElement } = useBuilder();
+  const { selectedElementId, findElementById, deleteElement, updateElement } = useBuilder();
+
+  // Get the actual selected element using the ID
+  const selectedElement = selectedElementId ? findElementById(selectedElementId) : null;
 
   if (!selectedElement) {
     return (
@@ -31,6 +34,18 @@ const ElementProperties = () => {
   const handleDelete = () => {
     if (selectedElement) {
       deleteElement(selectedElement.id);
+    }
+  };
+
+  const handlePropertyChange = (property: string, value: any) => {
+    if (selectedElement) {
+      updateElement(selectedElement.id, { [property]: value });
+    }
+  };
+
+  const handleContentChange = (content: string) => {
+    if (selectedElement) {
+      updateElement(selectedElement.id, { content });
     }
   };
 
@@ -63,7 +78,11 @@ const ElementProperties = () => {
             />
           </div>
 
-          <PropertyEditorManager />
+          <PropertyEditorManager 
+            element={selectedElement}
+            onPropertyChange={handlePropertyChange}
+            onContentChange={handleContentChange}
+          />
           
           <div className="pt-4 border-t">
             <ResponsiveControls />
