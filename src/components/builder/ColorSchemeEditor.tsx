@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +37,77 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
   });
 
   const [previewMode, setPreviewMode] = useState(false);
+
+  // Apply color scheme ONLY to canvas elements
+  const applyColorSchemeToCanvas = (scheme: ColorScheme) => {
+    const hexToHsl = (hex: string) => {
+      const r = parseInt(hex.slice(1, 3), 16) / 255;
+      const g = parseInt(hex.slice(3, 5), 16) / 255;
+      const b = parseInt(hex.slice(5, 7), 16) / 255;
+
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      let h = 0, s = 0, l = (max + min) / 2;
+
+      if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+
+      return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+    };
+
+    // Target only canvas container and its children
+    const canvasContainer = document.querySelector('[data-canvas-container="true"]');
+    
+    if (canvasContainer) {
+      const element = canvasContainer as HTMLElement;
+      
+      // Apply CSS custom properties to canvas container
+      element.style.setProperty('--primary', hexToHsl(scheme.primary));
+      element.style.setProperty('--secondary', hexToHsl(scheme.secondary));
+      element.style.setProperty('--accent', hexToHsl(scheme.accent));
+      element.style.setProperty('--background', hexToHsl(scheme.background));
+      element.style.setProperty('--card', hexToHsl(scheme.surface));
+      element.style.setProperty('--foreground', hexToHsl(scheme.text));
+      element.style.setProperty('--muted-foreground', hexToHsl(scheme.textSecondary));
+      element.style.setProperty('--border', hexToHsl(scheme.border));
+      
+      // Apply direct color styles for immediate effect
+      element.style.setProperty('--color-primary', scheme.primary);
+      element.style.setProperty('--color-secondary', scheme.secondary);
+      element.style.setProperty('--color-accent', scheme.accent);
+      element.style.setProperty('--color-background', scheme.background);
+      element.style.setProperty('--color-surface', scheme.surface);
+      element.style.setProperty('--color-text', scheme.text);
+      element.style.setProperty('--color-text-secondary', scheme.textSecondary);
+      element.style.setProperty('--color-border', scheme.border);
+
+      // Apply to all elements within the canvas only
+      const canvasElements = canvasContainer.querySelectorAll('[data-element-id], .builder-element');
+      canvasElements.forEach(child => {
+        const childElement = child as HTMLElement;
+        childElement.style.setProperty('--primary', hexToHsl(scheme.primary));
+        childElement.style.setProperty('--secondary', hexToHsl(scheme.secondary));
+        childElement.style.setProperty('--accent', hexToHsl(scheme.accent));
+        childElement.style.setProperty('--background', hexToHsl(scheme.background));
+        childElement.style.setProperty('--card', hexToHsl(scheme.surface));
+        childElement.style.setProperty('--foreground', hexToHsl(scheme.text));
+        childElement.style.setProperty('--muted-foreground', hexToHsl(scheme.textSecondary));
+        childElement.style.setProperty('--border', hexToHsl(scheme.border));
+      });
+      
+      console.log("Color scheme applied to canvas elements only");
+    } else {
+      console.warn("Canvas container not found, colors not applied");
+    }
+  };
 
   // Predefined color schemes
   const presetSchemes = [
@@ -108,99 +178,6 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
     }
   ];
 
-  // Apply color scheme to the website canvas
-  const applyColorSchemeToCanvas = (scheme: ColorScheme) => {
-    const hexToHsl = (hex: string) => {
-      const r = parseInt(hex.slice(1, 3), 16) / 255;
-      const g = parseInt(hex.slice(3, 5), 16) / 255;
-      const b = parseInt(hex.slice(5, 7), 16) / 255;
-
-      const max = Math.max(r, g, b);
-      const min = Math.min(r, g, b);
-      let h = 0, s = 0, l = (max + min) / 2;
-
-      if (max !== min) {
-        const d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch (max) {
-          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-          case g: h = (b - r) / d + 2; break;
-          case b: h = (r - g) / d + 4; break;
-        }
-        h /= 6;
-      }
-
-      return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
-    };
-
-    // Find the canvas element - try multiple selectors
-    const canvasSelectors = [
-      '[data-testid="builder-canvas"]',
-      '.builder-canvas',
-      '[data-builder-canvas]',
-      '[data-element-id]'
-    ];
-
-    let canvasElement = null;
-    
-    for (const selector of canvasSelectors) {
-      canvasElement = document.querySelector(selector);
-      if (canvasElement) break;
-    }
-
-    // If still not found, try to find the canvas in an iframe
-    if (!canvasElement) {
-      const iframe = document.querySelector('iframe');
-      if (iframe && iframe.contentDocument) {
-        const iframeDocument = iframe.contentDocument;
-        for (const selector of canvasSelectors) {
-          canvasElement = iframeDocument.querySelector(selector);
-          if (canvasElement) break;
-        }
-      }
-    }
-
-    // Apply to document root if canvas not found
-    const targetElement = canvasElement || document.documentElement;
-    
-    console.log("Applying color scheme to:", targetElement);
-    
-    // Apply CSS custom properties
-    const element = targetElement as HTMLElement;
-    element.style.setProperty('--primary', hexToHsl(scheme.primary));
-    element.style.setProperty('--secondary', hexToHsl(scheme.secondary));
-    element.style.setProperty('--accent', hexToHsl(scheme.accent));
-    element.style.setProperty('--background', hexToHsl(scheme.background));
-    element.style.setProperty('--card', hexToHsl(scheme.surface));
-    element.style.setProperty('--foreground', hexToHsl(scheme.text));
-    element.style.setProperty('--muted-foreground', hexToHsl(scheme.textSecondary));
-    element.style.setProperty('--border', hexToHsl(scheme.border));
-    
-    // Also apply direct color styles for immediate effect
-    element.style.setProperty('--color-primary', scheme.primary);
-    element.style.setProperty('--color-secondary', scheme.secondary);
-    element.style.setProperty('--color-accent', scheme.accent);
-    element.style.setProperty('--color-background', scheme.background);
-    element.style.setProperty('--color-surface', scheme.surface);
-    element.style.setProperty('--color-text', scheme.text);
-    element.style.setProperty('--color-text-secondary', scheme.textSecondary);
-    element.style.setProperty('--color-border', scheme.border);
-
-    // Apply to all child elements with data-element-id
-    const childElements = document.querySelectorAll('[data-element-id]');
-    childElements.forEach(child => {
-      const childElement = child as HTMLElement;
-      childElement.style.setProperty('--primary', hexToHsl(scheme.primary));
-      childElement.style.setProperty('--secondary', hexToHsl(scheme.secondary));
-      childElement.style.setProperty('--accent', hexToHsl(scheme.accent));
-      childElement.style.setProperty('--background', hexToHsl(scheme.background));
-      childElement.style.setProperty('--card', hexToHsl(scheme.surface));
-      childElement.style.setProperty('--foreground', hexToHsl(scheme.text));
-      childElement.style.setProperty('--muted-foreground', hexToHsl(scheme.textSecondary));
-      childElement.style.setProperty('--border', hexToHsl(scheme.border));
-    });
-  };
-
   // Handle color change
   const handleColorChange = (colorKey: keyof ColorScheme, value: string) => {
     const newScheme = { ...currentScheme, [colorKey]: value };
@@ -217,7 +194,7 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
     if (previewMode) {
       applyColorSchemeToCanvas(preset);
     }
-    toast.success("Color scheme applied!");
+    toast.success("Color scheme applied to canvas!");
   };
 
   // Save scheme
@@ -226,7 +203,7 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
     if (onSave) {
       onSave(currentScheme);
     }
-    toast.success("Color scheme saved successfully!");
+    toast.success("Color scheme saved to canvas successfully!");
   };
 
   // Reset to default
@@ -279,27 +256,27 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
     
     if (newPreviewMode) {
       applyColorSchemeToCanvas(currentScheme);
-      toast.success("Preview mode enabled - colors applied to website canvas");
+      toast.success("Preview mode enabled - colors applied to canvas only");
     } else {
       toast.success("Preview mode disabled");
     }
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-6 space-y-6">
+    <div className="w-full max-w-4xl mx-auto p-8 space-y-8">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Palette className="h-6 w-6 text-primary" />
-          <h2 className="text-2xl font-bold">Color Scheme Editor</h2>
+          <h2 className="text-2xl font-bold">Canvas Color Scheme</h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Button
             variant={previewMode ? "default" : "outline"}
             size="sm"
             onClick={togglePreview}
           >
             <Eye className="h-4 w-4 mr-2" />
-            {previewMode ? "Previewing Canvas" : "Preview on Canvas"}
+            {previewMode ? "Previewing Canvas" : "Preview Canvas"}
           </Button>
           {onClose && (
             <Button variant="outline" size="sm" onClick={onClose}>
@@ -315,7 +292,7 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
           <TabsTrigger value="presets">Preset Schemes</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="custom" className="space-y-6">
+        <TabsContent value="custom" className="space-y-8">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -332,14 +309,14 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
                 </div>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <CardContent className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {Object.entries(currentScheme).map(([key, value]) => (
-                  <div key={key} className="space-y-2">
+                  <div key={key} className="space-y-3">
                     <Label htmlFor={key} className="text-sm font-medium capitalize">
                       {key.replace(/([A-Z])/g, ' $1').trim()}
                     </Label>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <Input
                         id={key}
                         type="color"
@@ -360,18 +337,18 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
               </div>
 
               {/* Color Preview */}
-              <div className="p-6 rounded-lg border" style={{
+              <div className="p-8 rounded-lg border" style={{
                 backgroundColor: currentScheme.background,
                 borderColor: currentScheme.border
               }}>
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <h3 style={{ color: currentScheme.text }} className="text-lg font-semibold">
-                    Color Preview
+                    Canvas Color Preview
                   </h3>
                   <p style={{ color: currentScheme.textSecondary }} className="text-sm">
-                    This is how your colors will look on your website.
+                    This preview shows how colors will appear on your canvas elements.
                   </p>
-                  <div className="flex gap-3 flex-wrap">
+                  <div className="flex gap-4 flex-wrap">
                     <Button style={{ backgroundColor: currentScheme.primary }} className="text-white">
                       Primary Button
                     </Button>
@@ -389,7 +366,7 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
                     </Badge>
                   </div>
                   <div 
-                    className="p-4 rounded"
+                    className="p-6 rounded"
                     style={{ backgroundColor: currentScheme.surface }}
                   >
                     <p style={{ color: currentScheme.text }} className="text-sm">
@@ -402,31 +379,31 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
           </Card>
         </TabsContent>
 
-        <TabsContent value="presets" className="space-y-6">
+        <TabsContent value="presets" className="space-y-8">
           <Card>
             <CardHeader>
               <CardTitle>Preset Color Schemes</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {presetSchemes.map((preset, index) => (
                   <div 
                     key={index}
-                    className="p-4 rounded-lg border cursor-pointer hover:shadow-md transition-shadow"
+                    className="p-6 rounded-lg border cursor-pointer hover:shadow-md transition-shadow"
                     style={{
                       backgroundColor: preset.scheme.background,
                       borderColor: preset.scheme.border
                     }}
                     onClick={() => applyPreset(preset.scheme)}
                   >
-                    <h4 style={{ color: preset.scheme.text }} className="font-medium mb-3">
+                    <h4 style={{ color: preset.scheme.text }} className="font-medium mb-4">
                       {preset.name}
                     </h4>
-                    <div className="flex gap-2 mb-3">
+                    <div className="flex gap-2 mb-4">
                       {Object.entries(preset.scheme).slice(0, 4).map(([key, color]) => (
                         <div
                           key={key}
-                          className="w-6 h-6 rounded border"
+                          className="w-8 h-8 rounded border"
                           style={{ backgroundColor: color }}
                           title={key}
                         />
@@ -437,7 +414,7 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
                       style={{ backgroundColor: preset.scheme.primary }}
                       className="text-white w-full"
                     >
-                      Apply Scheme
+                      Apply to Canvas
                     </Button>
                   </div>
                 ))}
@@ -448,14 +425,14 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
       </Tabs>
 
       {/* Action Buttons */}
-      <div className="flex justify-center gap-4 pt-4 border-t">
+      <div className="flex justify-center gap-6 pt-6 border-t">
         <Button variant="outline" onClick={handleReset}>
           <RotateCcw className="h-4 w-4 mr-2" />
           Reset to Default
         </Button>
         <Button onClick={handleSave} className="bg-primary hover:bg-primary/90">
           <Save className="h-4 w-4 mr-2" />
-          Apply to Website
+          Apply to Canvas
         </Button>
       </div>
     </div>

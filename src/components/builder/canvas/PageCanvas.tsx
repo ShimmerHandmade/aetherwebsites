@@ -4,6 +4,7 @@ import { useBuilder } from "@/contexts/builder/useBuilder";
 import { BuilderElement } from "@/contexts/builder/types";
 import { ElementWrapper } from "../elements";
 import { usePlan } from "@/contexts/PlanContext";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface PageCanvasProps {
   elements: BuilderElement[];
@@ -64,30 +65,35 @@ const PageCanvas: React.FC<PageCanvasProps> = memo(({
   };
 
   return (
-    <div 
-      className={`builder-canvas ${isPreviewMode ? 'preview-mode' : ''} ${canvasVisible ? 'opacity-100' : 'opacity-0'}`}
-      style={{ minHeight: '50vh', transition: 'opacity 0.2s ease-in-out' }}
-      ref={canvasRef}
-      data-builder-canvas
-    >
-      <div className="page-content">
-        {elements && elements.length > 0 ? (
-          elements.map((element, index) => renderElementSafely(element, index))
-        ) : (
-          <div className="flex items-center justify-center min-h-[300px] text-gray-400 p-4">
-            <div className="text-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              <p>No elements added to this page yet</p>
-              {!isPreviewMode && !isLiveSite && (
-                <p className="text-sm mt-2">Drag elements from the sidebar to get started</p>
-              )}
+    <ScrollArea className="h-full w-full">
+      <div 
+        className={`builder-canvas min-h-screen p-6 ${isPreviewMode ? 'preview-mode' : ''} ${canvasVisible ? 'opacity-100' : 'opacity-0'}`}
+        style={{ transition: 'opacity 0.2s ease-in-out' }}
+        ref={canvasRef}
+        data-builder-canvas
+        data-canvas-container="true"
+      >
+        <div className="page-content max-w-full">
+          {elements && elements.length > 0 ? (
+            <div className="space-y-4">
+              {elements.map((element, index) => renderElementSafely(element, index))}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="flex items-center justify-center min-h-[300px] text-gray-400 p-4">
+              <div className="text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <p>No elements added to this page yet</p>
+                {!isPreviewMode && !isLiveSite && (
+                  <p className="text-sm mt-2">Drag elements from the sidebar to get started</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </ScrollArea>
   );
 });
 
