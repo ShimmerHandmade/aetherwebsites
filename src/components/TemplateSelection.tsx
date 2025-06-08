@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,17 +67,24 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
   const applyTemplateData = (templateElements: any[], templateName: string, templateId?: string) => {
     console.log("Applying template data:", { templateElements, templateName, templateId });
     
-    // Ensure elements have proper structure
+    // Ensure elements have proper structure and IDs
     const processedElements = templateElements.map(element => ({
       ...element,
-      id: element.id || crypto.randomUUID?.() || Math.random().toString(36)
+      id: element.id || crypto.randomUUID?.() || Math.random().toString(36),
+      children: element.children?.map((child: any) => ({
+        ...child,
+        id: child.id || crypto.randomUUID?.() || Math.random().toString(36)
+      }))
     }));
 
-    onSelectTemplate({
+    const templateData = {
       elements: processedElements,
       templateId: templateId,
       templateName: templateName
-    });
+    };
+
+    console.log("Calling onSelectTemplate with:", templateData);
+    onSelectTemplate(templateData);
     
     toast.success(`${templateName} applied successfully!`);
     
@@ -99,6 +107,10 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
       console.log("Applying template:", template.name, template.template_data);
       
       const templateElements = template.template_data?.content || [];
+      
+      if (!templateElements || !Array.isArray(templateElements) || templateElements.length === 0) {
+        throw new Error("Template has no content elements");
+      }
       
       applyTemplateData(templateElements, template.name, template.id);
     } catch (error) {
@@ -125,27 +137,29 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
       let templateElements = [];
       let templateName = "AI Generated Template";
 
-      if (generatedTemplate.elements) {
+      if (generatedTemplate.elements && Array.isArray(generatedTemplate.elements)) {
         // Direct elements array
         templateElements = generatedTemplate.elements;
         templateName = generatedTemplate.name || templateName;
-      } else if (generatedTemplate.templateData?.content) {
+      } else if (generatedTemplate.templateData?.content && Array.isArray(generatedTemplate.templateData.content)) {
         // Nested structure
         templateElements = generatedTemplate.templateData.content;
         templateName = generatedTemplate.name || templateName;
-      } else if (generatedTemplate.content) {
+      } else if (generatedTemplate.content && Array.isArray(generatedTemplate.content)) {
         // Alternative structure
         templateElements = generatedTemplate.content;
         templateName = generatedTemplate.name || templateName;
       } else if (Array.isArray(generatedTemplate)) {
         // Direct array
         templateElements = generatedTemplate;
+      } else {
+        throw new Error("Invalid template structure from AI generator");
       }
 
       console.log("Processed AI template elements:", templateElements);
 
       if (!templateElements || !Array.isArray(templateElements) || templateElements.length === 0) {
-        throw new Error("Invalid template structure from AI generator");
+        throw new Error("AI generator returned no valid elements");
       }
 
       applyTemplateData(templateElements, templateName, generatedTemplate.id);

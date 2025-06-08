@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { BuilderElement } from "@/contexts/BuilderContext";
+import { BuilderElement } from "@/contexts/builder/types";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import CartButton from "@/components/CartButton";

@@ -43,9 +43,10 @@ const SimpleBuilder = () => {
   useEffect(() => {
     if (website && !isLoading) {
       const hasContent = elements && elements.length > 0;
-      const hasPages = website.settings?.pages && website.settings.pages.length > 0;
       
-      if (!hasContent && !hasPages) {
+      console.log("Checking website content:", { hasContent, elementsLength: elements?.length });
+      
+      if (!hasContent) {
         console.log("No content found, showing template selection");
         setShowTemplateSelection(true);
       } else {
@@ -108,52 +109,55 @@ const SimpleBuilder = () => {
   };
 
   const handleTemplateSelect = useCallback((templateData: any) => {
-    console.log("Template selected:", templateData);
+    console.log("Template selected in SimpleBuilder:", templateData);
     
-    if (templateData.elements && Array.isArray(templateData.elements)) {
-      console.log("Applying template elements:", templateData.elements);
+    try {
+      let templateElements = [];
       
-      const elementsWithIds = templateData.elements.map((element: any) => ({
+      // Handle different template data structures
+      if (templateData.elements && Array.isArray(templateData.elements)) {
+        templateElements = templateData.elements;
+      } else if (templateData.templateData?.content && Array.isArray(templateData.templateData.content)) {
+        templateElements = templateData.templateData.content;
+      } else if (templateData.content && Array.isArray(templateData.content)) {
+        templateElements = templateData.content;
+      } else if (Array.isArray(templateData)) {
+        templateElements = templateData;
+      } else {
+        throw new Error("Invalid template structure");
+      }
+
+      console.log("Processing template elements:", templateElements);
+      
+      // Ensure all elements have IDs
+      const elementsWithIds = templateElements.map((element: any) => ({
         ...element,
-        id: element.id || uuidv4()
+        id: element.id || uuidv4(),
+        children: element.children?.map((child: any) => ({
+          ...child,
+          id: child.id || uuidv4()
+        }))
       }));
       
+      console.log("Applying elements to canvas:", elementsWithIds);
+      
+      // Apply elements to the canvas
       updateElements(elementsWithIds);
       setShowTemplateSelection(false);
+      
       console.log("Template applied successfully");
       toast.success(`${templateData.templateName || 'Template'} applied successfully!`);
-    } else {
-      console.error("Invalid template data:", templateData);
-      toast.error("Failed to apply template - invalid data");
+    } catch (error) {
+      console.error("Error applying template:", error);
+      toast.error("Failed to apply template - invalid data structure");
     }
   }, [updateElements]);
 
   const handleSkipTemplate = () => {
+    console.log("Skipping template selection, starting with blank canvas");
     setShowTemplateSelection(false);
-    // Initialize with a basic element structure
-    const basicElements = [
-      {
-        id: uuidv4(),
-        type: "section",
-        content: "",
-        props: {
-          padding: "large",
-          backgroundColor: "bg-white"
-        },
-        children: [
-          {
-            id: uuidv4(),
-            type: "heading",
-            content: "Welcome to Your Website",
-            props: {
-              level: "h1",
-              className: "text-4xl font-bold text-center mb-8"
-            }
-          }
-        ]
-      }
-    ];
-    updateElements(basicElements);
+    // Don't add any default elements - let the user start completely blank
+    updateElements([]);
   };
 
   if (isLoading) {
