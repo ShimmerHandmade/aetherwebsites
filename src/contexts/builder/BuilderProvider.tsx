@@ -24,20 +24,16 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
   const [currentBreakpoint, setCurrentBreakpoint] = useState<BreakpointType>('desktop');
   const [previewBreakpoint, setPreviewBreakpoint] = useState<BreakpointType>('desktop');
 
-  // Update elements when initialElements changes
+  // Update elements when initialElements changes - simplified logic
   useEffect(() => {
-    console.log("🔄 Updating elements from initialElements:", initialElements);
-    if (JSON.stringify(initialElements) !== JSON.stringify(elements)) {
-      setElements(initialElements);
-    }
+    console.log("🔄 BuilderProvider: initialElements changed:", initialElements?.length || 0, "elements");
+    setElements(initialElements);
   }, [initialElements]);
 
   // Update page settings when initialPageSettings changes
   useEffect(() => {
-    console.log("🔄 Updating page settings from initialPageSettings:", initialPageSettings);
-    if (JSON.stringify(initialPageSettings) !== JSON.stringify(pageSettings)) {
-      setPageSettings(initialPageSettings);
-    }
+    console.log("🔄 BuilderProvider: initialPageSettings changed:", initialPageSettings);
+    setPageSettings(initialPageSettings);
   }, [initialPageSettings]);
 
   // Listen for save events

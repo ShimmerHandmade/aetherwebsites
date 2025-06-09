@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from "react";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -44,12 +43,17 @@ const SimpleBuilder = () => {
     if (website && !isLoading) {
       const hasContent = elements && elements.length > 0;
       
-      console.log("Checking website content:", { hasContent, elementsLength: elements?.length });
+      console.log("🔍 SimpleBuilder: Checking website content:", { 
+        hasContent, 
+        elementsLength: elements?.length,
+        websiteId: website.id 
+      });
       
       if (!hasContent) {
-        console.log("No content found, showing template selection");
+        console.log("📝 SimpleBuilder: No content found, showing template selection");
         setShowTemplateSelection(true);
       } else {
+        console.log("✅ SimpleBuilder: Content found, hiding template selection");
         setShowTemplateSelection(false);
       }
     }
@@ -109,7 +113,7 @@ const SimpleBuilder = () => {
   };
 
   const handleTemplateSelect = useCallback((templateData: any) => {
-    console.log("Template selected in SimpleBuilder:", templateData);
+    console.log("🎨 SimpleBuilder: Template selected:", templateData);
     
     try {
       // Simplified template processing - just get the elements array
@@ -128,7 +132,7 @@ const SimpleBuilder = () => {
         templateElements = [];
       }
 
-      console.log("Processing template elements:", templateElements.length, "elements");
+      console.log("🔧 SimpleBuilder: Processing template elements:", templateElements.length, "elements");
       
       // Ensure all elements have unique IDs
       const elementsWithIds = templateElements.map((element: any) => ({
@@ -140,21 +144,23 @@ const SimpleBuilder = () => {
         })) || []
       }));
       
+      console.log("🚀 SimpleBuilder: Applying elements to canvas:", elementsWithIds.length);
+      
       // Apply elements to canvas and hide template selection
       updateElements(elementsWithIds);
       setShowTemplateSelection(false);
       
-      console.log("Template applied successfully with", elementsWithIds.length, "elements");
+      console.log("✅ SimpleBuilder: Template applied successfully");
       toast.success(`Template applied successfully!`);
       
     } catch (error) {
-      console.error("Error applying template:", error);
+      console.error("❌ SimpleBuilder: Error applying template:", error);
       toast.error("Failed to apply template. Please try again.");
     }
   }, [updateElements]);
 
   const handleSkipTemplate = () => {
-    console.log("Starting with blank canvas");
+    console.log("📝 SimpleBuilder: Starting with blank canvas");
     setShowTemplateSelection(false);
     updateElements([]);
     toast.success("Starting with blank canvas");
@@ -186,6 +192,8 @@ const SimpleBuilder = () => {
       </div>
     );
   }
+
+  console.log("🏗️ SimpleBuilder: Rendering builder with", elements?.length || 0, "elements");
 
   return (
     <BuilderProvider 
