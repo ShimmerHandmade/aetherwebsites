@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 interface OnboardingFlowProps {
   websiteId: string;
-  onComplete: () => void;
+  onComplete: (templateData?: any) => void;
 }
 
 enum OnboardingStep {
@@ -19,6 +19,7 @@ const OnboardingFlow = ({ websiteId, onComplete }: OnboardingFlowProps) => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isLoadingComplete, setIsLoadingComplete] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("Loading onboarding experience...");
+  const [selectedTemplateData, setSelectedTemplateData] = useState<any>(null);
   
   // Initialize loading state
   useEffect(() => {
@@ -44,7 +45,7 @@ const OnboardingFlow = ({ websiteId, onComplete }: OnboardingFlowProps) => {
     }, 1500);
   };
   
-  // Handle completion
+  // Handle completion - now passes the template data back
   const handleTutorialComplete = () => {
     setIsTransitioning(true);
     setLoadingMessage("Preparing your site builder...");
@@ -52,12 +53,14 @@ const OnboardingFlow = ({ websiteId, onComplete }: OnboardingFlowProps) => {
     toast.success("Onboarding complete! Loading builder...");
     
     setTimeout(() => {
-      onComplete();
+      console.log("🎓 OnboardingFlow: Tutorial complete, applying template:", selectedTemplateData);
+      onComplete(selectedTemplateData);
     }, 1500);
   };
 
   const handleTemplateSelect = (templateData: any) => {
-    console.log("Template selected in onboarding:", templateData);
+    console.log("🎨 OnboardingFlow: Template selected, storing for after tutorial:", templateData);
+    setSelectedTemplateData(templateData);
     handleTemplateComplete();
   };
 

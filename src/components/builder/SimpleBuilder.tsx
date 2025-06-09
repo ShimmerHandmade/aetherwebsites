@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from "react";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -5,6 +6,7 @@ import BuilderSidebar from "@/components/builder/BuilderSidebar";
 import BuilderNavbar from "@/components/builder/BuilderNavbar";
 import BuilderContent from "@/components/builder/BuilderContent";
 import TemplateSelection from "@/components/TemplateSelection";
+import OnboardingFlow from "@/components/OnboardingFlow";
 import { useWebsite } from "@/hooks/useWebsite";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -17,6 +19,8 @@ const SimpleBuilder = () => {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string>('');
   const [showTemplateSelection, setShowTemplateSelection] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isFirstVisit, setIsFirstVisit] = useState(false);
   
   const { 
     website,
@@ -38,23 +42,32 @@ const SimpleBuilder = () => {
   const [currentPage, setCurrentPage] = useState<{ id: string; title: string; slug: string; isHomePage?: boolean; } | null>(null);
   const pages = website?.settings?.pages || [];
 
-  // Check if website has content, if not show template selection
+  // Check if this is first visit and website has no content
   useEffect(() => {
     if (website && !isLoading) {
       const hasContent = elements && elements.length > 0;
+      const hasVisitedBefore = localStorage.getItem(`visited-${website.id}`);
       
-      console.log("🔍 SimpleBuilder: Checking website content:", { 
+      console.log("🔍 SimpleBuilder: Checking first visit:", { 
         hasContent, 
         elementsLength: elements?.length,
-        websiteId: website.id 
+        websiteId: website.id,
+        hasVisitedBefore: !!hasVisitedBefore
       });
       
-      if (!hasContent) {
+      if (!hasContent && !hasVisitedBefore) {
+        console.log("🎯 SimpleBuilder: First visit with no content, showing onboarding");
+        setIsFirstVisit(true);
+        setShowOnboarding(true);
+        // Mark as visited
+        localStorage.setItem(`visited-${website.id}`, 'true');
+      } else if (!hasContent) {
         console.log("📝 SimpleBuilder: No content found, showing template selection");
         setShowTemplateSelection(true);
       } else {
         console.log("✅ SimpleBuilder: Content found, hiding template selection");
         setShowTemplateSelection(false);
+        setShowOnboarding(false);
       }
     }
   }, [website, isLoading, elements]);
@@ -111,6 +124,22 @@ const SimpleBuilder = () => {
     const pageContent = website?.settings?.pagesContent?.[pageId] || [];
     updateElements(pageContent);
   };
+
+  const handleOnboardingComplete = useCallback((templateData?: any) => {
+    console.log("🎓 SimpleBuilder: Onboarding complete with template:", templateData);
+    
+    setShowOnboarding(false);
+    
+    if (templateData && templateData.length > 0) {
+      // Apply the template that was selected during onboarding
+      handleTemplateSelect(templateData);
+    } else {
+      // User skipped or no template selected
+      setShowTemplateSelection(false);
+      updateElements([]);
+      toast.success("Starting with blank canvas");
+    }
+  }, [updateElements]);
 
   const handleTemplateSelect = useCallback((templateData: any) => {
     console.log("🎨 SimpleBuilder: Template selected:", templateData);
@@ -174,6 +203,16 @@ const SimpleBuilder = () => {
           <p className="text-gray-600">Loading builder...</p>
         </div>
       </div>
+    );
+  }
+
+  // Show onboarding flow for first-time visitors
+  if (showOnboarding) {
+    return (
+      <OnboardingFlow 
+        websiteId={id!}
+        onComplete={handleOnboardingComplete}
+      />
     );
   }
 
