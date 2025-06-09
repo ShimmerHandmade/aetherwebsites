@@ -112,52 +112,52 @@ const SimpleBuilder = () => {
     console.log("Template selected in SimpleBuilder:", templateData);
     
     try {
+      // Simplified template processing - just get the elements array
       let templateElements = [];
       
-      // Handle different template data structures
-      if (templateData.elements && Array.isArray(templateData.elements)) {
+      if (Array.isArray(templateData)) {
+        templateElements = templateData;
+      } else if (templateData.elements && Array.isArray(templateData.elements)) {
         templateElements = templateData.elements;
       } else if (templateData.templateData?.content && Array.isArray(templateData.templateData.content)) {
         templateElements = templateData.templateData.content;
       } else if (templateData.content && Array.isArray(templateData.content)) {
         templateElements = templateData.content;
-      } else if (Array.isArray(templateData)) {
-        templateElements = templateData;
       } else {
-        throw new Error("Invalid template structure");
+        console.warn("Invalid template structure, using empty array");
+        templateElements = [];
       }
 
-      console.log("Processing template elements:", templateElements);
+      console.log("Processing template elements:", templateElements.length, "elements");
       
-      // Ensure all elements have IDs
+      // Ensure all elements have unique IDs
       const elementsWithIds = templateElements.map((element: any) => ({
         ...element,
         id: element.id || uuidv4(),
         children: element.children?.map((child: any) => ({
           ...child,
           id: child.id || uuidv4()
-        }))
+        })) || []
       }));
       
-      console.log("Applying elements to canvas:", elementsWithIds);
-      
-      // Apply elements to the canvas
+      // Apply elements to canvas and hide template selection
       updateElements(elementsWithIds);
       setShowTemplateSelection(false);
       
-      console.log("Template applied successfully");
-      toast.success(`${templateData.templateName || 'Template'} applied successfully!`);
+      console.log("Template applied successfully with", elementsWithIds.length, "elements");
+      toast.success(`Template applied successfully!`);
+      
     } catch (error) {
       console.error("Error applying template:", error);
-      toast.error("Failed to apply template - invalid data structure");
+      toast.error("Failed to apply template. Please try again.");
     }
   }, [updateElements]);
 
   const handleSkipTemplate = () => {
-    console.log("Skipping template selection, starting with blank canvas");
+    console.log("Starting with blank canvas");
     setShowTemplateSelection(false);
-    // Don't add any default elements - let the user start completely blank
     updateElements([]);
+    toast.success("Starting with blank canvas");
   };
 
   if (isLoading) {

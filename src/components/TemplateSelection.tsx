@@ -64,35 +64,6 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
     ? templates 
     : templates.filter(template => template.category === selectedCategory);
 
-  const applyTemplateData = (templateElements: any[], templateName: string, templateId?: string) => {
-    console.log("Applying template data:", { templateElements, templateName, templateId });
-    
-    // Ensure elements have proper structure and IDs
-    const processedElements = templateElements.map(element => ({
-      ...element,
-      id: element.id || crypto.randomUUID?.() || Math.random().toString(36),
-      children: element.children?.map((child: any) => ({
-        ...child,
-        id: child.id || crypto.randomUUID?.() || Math.random().toString(36)
-      }))
-    }));
-
-    const templateData = {
-      elements: processedElements,
-      templateId: templateId,
-      templateName: templateName
-    };
-
-    console.log("Calling onSelectTemplate with:", templateData);
-    onSelectTemplate(templateData);
-    
-    toast.success(`${templateName} applied successfully!`);
-    
-    if (onComplete) {
-      onComplete();
-    }
-  };
-
   const handleApplyTemplate = async (template: Template) => {
     if (template.is_premium && !isPremium && !isEnterprise) {
       if (checkUpgrade) {
@@ -104,15 +75,24 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
     setIsApplying(true);
     
     try {
-      console.log("Applying template:", template.name, template.template_data);
+      console.log("Applying template:", template.name);
       
       const templateElements = template.template_data?.content || [];
       
-      if (!templateElements || !Array.isArray(templateElements) || templateElements.length === 0) {
-        throw new Error("Template has no content elements");
+      if (!templateElements || !Array.isArray(templateElements)) {
+        throw new Error("Template has invalid or missing content");
       }
       
-      applyTemplateData(templateElements, template.name, template.id);
+      console.log("Template elements to apply:", templateElements);
+      
+      // Pass the elements directly to the parent
+      onSelectTemplate(templateElements);
+      
+      toast.success(`${template.name} template applied successfully!`);
+      
+      if (onComplete) {
+        onComplete();
+      }
     } catch (error) {
       console.error("Error applying template:", error);
       toast.error("Failed to apply template. Please try again.");
@@ -133,41 +113,48 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
     console.log("AI Template generated:", generatedTemplate);
     
     try {
-      // Handle different possible structures from AI generator
       let templateElements = [];
-      let templateName = "AI Generated Template";
 
-      if (generatedTemplate.elements && Array.isArray(generatedTemplate.elements)) {
-        // Direct elements array
-        templateElements = generatedTemplate.elements;
-        templateName = generatedTemplate.name || templateName;
-      } else if (generatedTemplate.templateData?.content && Array.isArray(generatedTemplate.templateData.content)) {
-        // Nested structure
-        templateElements = generatedTemplate.templateData.content;
-        templateName = generatedTemplate.name || templateName;
-      } else if (generatedTemplate.content && Array.isArray(generatedTemplate.content)) {
-        // Alternative structure
-        templateElements = generatedTemplate.content;
-        templateName = generatedTemplate.name || templateName;
-      } else if (Array.isArray(generatedTemplate)) {
-        // Direct array
+      // Handle AI generated template structure
+      if (Array.isArray(generatedTemplate)) {
         templateElements = generatedTemplate;
+      } else if (generatedTemplate.elements && Array.isArray(generatedTemplate.elements)) {
+        templateElements = generatedTemplate.elements;
+      } else if (generatedTemplate.content && Array.isArray(generatedTemplate.content)) {
+        templateElements = generatedTemplate.content;
       } else {
-        throw new Error("Invalid template structure from AI generator");
+        throw new Error("Invalid AI template structure");
       }
 
       console.log("Processed AI template elements:", templateElements);
 
-      if (!templateElements || !Array.isArray(templateElements) || templateElements.length === 0) {
+      if (!templateElements || templateElements.length === 0) {
         throw new Error("AI generator returned no valid elements");
       }
 
-      applyTemplateData(templateElements, templateName, generatedTemplate.id);
+      onSelectTemplate(templateElements);
       setShowAIGenerator(false);
+      
+      toast.success("AI generated template applied successfully!");
+      
+      if (onComplete) {
+        onComplete();
+      }
     } catch (error) {
       console.error("Error processing AI generated template:", error);
       toast.error("Failed to apply AI generated template. Please try again.");
     }
+  };
+
+  const handleStartBlank = () => {
+    console.log("Starting with blank canvas");
+    onSelectTemplate([]);
+    
+    if (onComplete) {
+      onComplete();
+    }
+    
+    toast.success("Starting with blank canvas");
   };
 
   if (isLoadingTemplates) {
@@ -216,18 +203,16 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
               </Badge>
             </Button>
             
-            {onClose && (
-              <Button 
-                variant="outline" 
-                onClick={onClose}
-                className="flex items-center gap-2 px-6 py-3"
-                size="lg"
-              >
-                <FileText className="h-5 w-5" />
-                Start with Blank Site
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            )}
+            <Button 
+              variant="outline" 
+              onClick={handleStartBlank}
+              className="flex items-center gap-2 px-6 py-3"
+              size="lg"
+            >
+              <FileText className="h-5 w-5" />
+              Start with Blank Site
+              <ArrowRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
