@@ -1,5 +1,4 @@
-
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import BuilderSidebar from "@/components/builder/BuilderSidebar";
@@ -21,6 +20,8 @@ const SimpleBuilder = () => {
   const [showTemplateSelection, setShowTemplateSelection] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isFirstVisit, setIsFirstVisit] = useState(false);
+  const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
+  const hasProcessedInitialContent = useRef(false);
   
   const { 
     website,
@@ -48,13 +49,15 @@ const SimpleBuilder = () => {
       elementsLength: elements?.length || 0,
       elements: elements,
       isLoading,
-      websiteId: id
+      websiteId: id,
+      isApplyingTemplate,
+      hasProcessedInitialContent: hasProcessedInitialContent.current
     });
-  }, [elements, isLoading, id]);
+  }, [elements, isLoading, id, isApplyingTemplate]);
 
   // Check if this is first visit and website has no content
   useEffect(() => {
-    if (website && !isLoading) {
+    if (website && !isLoading && !hasProcessedInitialContent.current && !isApplyingTemplate) {
       const hasContent = elements && elements.length > 0;
       const hasVisitedBefore = localStorage.getItem(`visited-${website.id}`);
       
@@ -62,7 +65,8 @@ const SimpleBuilder = () => {
         hasContent, 
         elementsLength: elements?.length,
         websiteId: website.id,
-        hasVisitedBefore: !!hasVisitedBefore
+        hasVisitedBefore: !!hasVisitedBefore,
+        isApplyingTemplate
       });
       
       if (!hasContent && !hasVisitedBefore) {
@@ -79,8 +83,10 @@ const SimpleBuilder = () => {
         setShowTemplateSelection(false);
         setShowOnboarding(false);
       }
+      
+      hasProcessedInitialContent.current = true;
     }
-  }, [website, isLoading, elements]);
+  }, [website, isLoading, elements, isApplyingTemplate]);
 
   useEffect(() => {
     if (website && website.settings?.pages && website.settings.pages.length > 0) {
@@ -136,25 +142,29 @@ const SimpleBuilder = () => {
     updateElements(pageContent);
   };
 
-  const handleOnboardingComplete = useCallback((templateData?: any) => {
+  const handleOnboardingComplete = useCallback(async (templateData?: any) => {
     console.log("🎓 SimpleBuilder: Onboarding complete with template:", templateData);
     
+    setIsApplyingTemplate(true);
     setShowOnboarding(false);
     
     if (templateData && templateData.length > 0) {
       // Apply the template that was selected during onboarding
-      handleTemplateSelect(templateData);
+      await handleTemplateSelect(templateData);
     } else {
       // User skipped or no template selected
       setShowTemplateSelection(false);
       console.log("🧹 SimpleBuilder: Updating elements to empty array");
       updateElements([]);
       toast.success("Starting with blank canvas");
+      setIsApplyingTemplate(false);
     }
   }, [updateElements]);
 
-  const handleTemplateSelect = useCallback((templateData: any) => {
+  const handleTemplateSelect = useCallback(async (templateData: any) => {
     console.log("🎨 SimpleBuilder: Template selected:", templateData);
+    
+    setIsApplyingTemplate(true);
     
     try {
       // Simplified template processing - just get the elements array
@@ -189,23 +199,33 @@ const SimpleBuilder = () => {
       
       // Apply elements to canvas and hide template selection
       updateElements(elementsWithIds);
-      setShowTemplateSelection(false);
       
-      console.log("✅ SimpleBuilder: Template applied successfully");
-      toast.success(`Template applied successfully!`);
+      // Use setTimeout to ensure state updates are processed
+      setTimeout(() => {
+        setShowTemplateSelection(false);
+        setIsApplyingTemplate(false);
+        
+        console.log("✅ SimpleBuilder: Template applied successfully");
+        toast.success(`Template applied successfully!`);
+      }, 100);
       
     } catch (error) {
       console.error("❌ SimpleBuilder: Error applying template:", error);
       toast.error("Failed to apply template. Please try again.");
+      setIsApplyingTemplate(false);
     }
   }, [updateElements]);
 
   const handleSkipTemplate = () => {
     console.log("📝 SimpleBuilder: Starting with blank canvas");
+    setIsApplyingTemplate(true);
     setShowTemplateSelection(false);
     console.log("🧹 SimpleBuilder: Updating elements to empty array (skip)");
     updateElements([]);
     toast.success("Starting with blank canvas");
+    setTimeout(() => {
+      setIsApplyingTemplate(false);
+    }, 100);
   };
 
   if (isLoading) {
@@ -230,7 +250,7 @@ const SimpleBuilder = () => {
   }
 
   // Show template selection screen
-  if (showTemplateSelection) {
+  if (showTemplateSelection && !isApplyingTemplate) {
     return (
       <div className="h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-8">
