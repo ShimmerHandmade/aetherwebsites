@@ -42,6 +42,16 @@ const SimpleBuilder = () => {
   const [currentPage, setCurrentPage] = useState<{ id: string; title: string; slug: string; isHomePage?: boolean; } | null>(null);
   const pages = website?.settings?.pages || [];
 
+  // Debug logging for elements state
+  useEffect(() => {
+    console.log("🔍 SimpleBuilder: Elements state changed:", {
+      elementsLength: elements?.length || 0,
+      elements: elements,
+      isLoading,
+      websiteId: id
+    });
+  }, [elements, isLoading, id]);
+
   // Check if this is first visit and website has no content
   useEffect(() => {
     if (website && !isLoading) {
@@ -107,6 +117,7 @@ const SimpleBuilder = () => {
   };
 
   const handleBuilderSave = async (elements: BuilderElement[], pageSettings: PageSettings) => {
+    console.log("💾 SimpleBuilder: Saving from builder with elements:", elements?.length || 0);
     await saveWebsite(elements, pageSettings);
   };
 
@@ -136,6 +147,7 @@ const SimpleBuilder = () => {
     } else {
       // User skipped or no template selected
       setShowTemplateSelection(false);
+      console.log("🧹 SimpleBuilder: Updating elements to empty array");
       updateElements([]);
       toast.success("Starting with blank canvas");
     }
@@ -191,6 +203,7 @@ const SimpleBuilder = () => {
   const handleSkipTemplate = () => {
     console.log("📝 SimpleBuilder: Starting with blank canvas");
     setShowTemplateSelection(false);
+    console.log("🧹 SimpleBuilder: Updating elements to empty array (skip)");
     updateElements([]);
     toast.success("Starting with blank canvas");
   };

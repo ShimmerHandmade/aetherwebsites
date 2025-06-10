@@ -18,22 +18,49 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
   initialPageSettings = { title: "Untitled Page" },
   onSave,
 }) => {
-  const [elements, setElements] = useState<BuilderElement[]>(initialElements);
+  const [elements, setElements] = useState<BuilderElement[]>([]);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [pageSettings, setPageSettings] = useState<PageSettings>(initialPageSettings);
   const [currentBreakpoint, setCurrentBreakpoint] = useState<BreakpointType>('desktop');
   const [previewBreakpoint, setPreviewBreakpoint] = useState<BreakpointType>('desktop');
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Update elements when initialElements changes - simplified logic
+  // Improved synchronization with initialElements
   useEffect(() => {
-    console.log("🔄 BuilderProvider: initialElements changed:", initialElements?.length || 0, "elements");
-    setElements(initialElements);
-  }, [initialElements]);
+    console.log("🔄 BuilderProvider: initialElements changed:", {
+      newLength: initialElements?.length || 0,
+      currentLength: elements?.length || 0,
+      isInitialized,
+      newElements: initialElements
+    });
+    
+    // Always update elements when initialElements changes, regardless of initialization state
+    if (initialElements && Array.isArray(initialElements)) {
+      setElements(initialElements);
+      console.log("✅ BuilderProvider: Elements updated from initialElements");
+      
+      if (!isInitialized) {
+        setIsInitialized(true);
+        console.log("🎯 BuilderProvider: Initialized");
+      }
+    } else if (initialElements === null || initialElements === undefined) {
+      // If initialElements is explicitly null/undefined, set empty array
+      setElements([]);
+      console.log("🧹 BuilderProvider: Elements cleared (null/undefined initialElements)");
+      
+      if (!isInitialized) {
+        setIsInitialized(true);
+        console.log("🎯 BuilderProvider: Initialized with empty elements");
+      }
+    }
+  }, [initialElements, isInitialized]);
 
   // Update page settings when initialPageSettings changes
   useEffect(() => {
     console.log("🔄 BuilderProvider: initialPageSettings changed:", initialPageSettings);
-    setPageSettings(initialPageSettings);
+    if (initialPageSettings) {
+      setPageSettings(initialPageSettings);
+    }
   }, [initialPageSettings]);
 
   // Listen for save events
@@ -204,7 +231,36 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
         }
       });
     }, []),
-    updateElementResponsive,
+    updateElementResponsive: useCallback((
+      id: string, 
+      breakpoint: BreakpointType, 
+      responsiveUpdates: any
+    ) => {
+      console.log("🔄 Updating element responsive settings:", { id, breakpoint, responsiveUpdates });
+      setElements(prevElements => {
+        const updateElementRecursively = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
+          return elementsToUpdate.map(element => {
+            if (element.id === id) {
+              const updated = {
+                ...element,
+                responsiveSettings: {
+                  ...element.responsiveSettings,
+                  [breakpoint]: responsiveUpdates
+                }
+              };
+              console.log("✅ Element responsive settings updated:", updated);
+              return updated;
+            }
+            if (element.children) {
+              return { ...element, children: updateElementRecursively(element.children) };
+            }
+            return element;
+          });
+        };
+        
+        return updateElementRecursively(prevElements);
+      });
+    }, []),
     removeElement: useCallback((id: string) => {
       console.log("🗑️ Removing element:", id);
       setElements(prevElements => {
@@ -301,6 +357,34 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     }, []),
     moveElementUp: useCallback((id: string) => {
       console.log("⬆️ Moving element up:", id);
+      const findElementIndex = (id: string, parentId?: string): number => {
+        if (parentId) {
+          const findElementById = (id: string): BuilderElement | null => {
+            const searchElements = (elementsToSearch: BuilderElement[]): BuilderElement | null => {
+              for (const element of elementsToSearch) {
+                if (element.id === id) {
+                  return element;
+                }
+                if (element.children) {
+                  const found = searchElements(element.children);
+                  if (found) return found;
+                }
+              }
+              return null;
+            };
+            
+            return searchElements(elements);
+          };
+          
+          const parent = findElementById(parentId);
+          if (parent?.children) {
+            return parent.children.findIndex(el => el.id === id);
+          }
+          return -1;
+        }
+        return elements.findIndex(el => el.id === id);
+      };
+      
       const currentIndex = findElementIndex(id);
       if (currentIndex > 0) {
         setElements(prevElements => {
@@ -314,9 +398,37 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
           return orderedElements;
         });
       }
-    }, [findElementIndex]),
+    }, [elements]),
     moveElementDown: useCallback((id: string) => {
       console.log("⬇️ Moving element down:", id);
+      const findElementIndex = (id: string, parentId?: string): number => {
+        if (parentId) {
+          const findElementById = (id: string): BuilderElement | null => {
+            const searchElements = (elementsToSearch: BuilderElement[]): BuilderElement | null => {
+              for (const element of elementsToSearch) {
+                if (element.id === id) {
+                  return element;
+                }
+                if (element.children) {
+                  const found = searchElements(element.children);
+                  if (found) return found;
+                }
+              }
+              return null;
+            };
+            
+            return searchElements(elements);
+          };
+          
+          const parent = findElementById(parentId);
+          if (parent?.children) {
+            return parent.children.findIndex(el => el.id === id);
+          }
+          return -1;
+        }
+        return elements.findIndex(el => el.id === id);
+      };
+      
       const currentIndex = findElementIndex(id);
       if (currentIndex >= 0 && currentIndex < elements.length - 1) {
         setElements(prevElements => {
@@ -330,14 +442,57 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
           return orderedElements;
         });
       }
-    }, [findElementIndex, elements.length]),
+    }, [elements]),
     selectElement: useCallback((id: string | null) => {
       console.log("🎯 Selecting element:", id);
       setSelectedElementId(id);
     }, []),
-    findElementById,
+    findElementById: useCallback((id: string): BuilderElement | null => {
+      const searchElements = (elementsToSearch: BuilderElement[]): BuilderElement | null => {
+        for (const element of elementsToSearch) {
+          if (element.id === id) {
+            return element;
+          }
+          if (element.children) {
+            const found = searchElements(element.children);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      
+      return searchElements(elements);
+    }, [elements]),
     duplicateElement: useCallback((id: string) => {
       console.log("📋 Duplicating element:", id);
+      const findElementById = (id: string): BuilderElement | null => {
+        const searchElements = (elementsToSearch: BuilderElement[]): BuilderElement | null => {
+          for (const element of elementsToSearch) {
+            if (element.id === id) {
+              return element;
+            }
+            if (element.children) {
+              const found = searchElements(element.children);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        
+        return searchElements(elements);
+      };
+      
+      const findElementIndex = (id: string, parentId?: string): number => {
+        if (parentId) {
+          const parent = findElementById(parentId);
+          if (parent?.children) {
+            return parent.children.findIndex(el => el.id === id);
+          }
+          return -1;
+        }
+        return elements.findIndex(el => el.id === id);
+      };
+      
       const element = findElementById(id);
       if (!element) {
         console.warn("❌ Element not found for duplication:", id);
@@ -361,7 +516,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
           return newElements;
         });
       }
-    }, [findElementById, findElementIndex]),
+    }, [elements]),
     updatePageSettings: useCallback((newSettings: Partial<PageSettings>) => {
       console.log("🔄 Updating page settings:", newSettings);
       setPageSettings(prev => ({ ...prev, ...newSettings }));
