@@ -19,7 +19,6 @@ const OnboardingFlow = ({ websiteId, onComplete }: OnboardingFlowProps) => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isLoadingComplete, setIsLoadingComplete] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("Loading onboarding experience...");
-  const [selectedTemplateData, setSelectedTemplateData] = useState<any>(null);
   
   // Initialize loading state
   useEffect(() => {
@@ -30,38 +29,46 @@ const OnboardingFlow = ({ websiteId, onComplete }: OnboardingFlowProps) => {
     return () => clearTimeout(timer);
   }, []);
   
-  // Handle smooth transition between steps
-  const handleTemplateComplete = () => {
+  // Handle template selection - apply immediately and go to tutorial
+  const handleTemplateSelect = (templateData: any) => {
+    console.log("🎨 OnboardingFlow: Template selected, applying immediately:", templateData);
+    
+    setIsTransitioning(true);
+    setLoadingMessage("Applying template...");
+    
+    // Apply template immediately
+    onComplete(templateData);
+    
+    // Don't continue to tutorial, just finish onboarding
+    toast.success("Template applied! Welcome to your builder!");
+  };
+  
+  // Handle skip template - go straight to tutorial
+  const handleSkipTemplate = () => {
+    console.log("📝 OnboardingFlow: Skipping template, going to tutorial");
     setIsTransitioning(true);
     setLoadingMessage("Preparing tutorial...");
-    
-    toast.success("Template selected! Loading tutorial...");
     
     setTimeout(() => {
       setCurrentStep(OnboardingStep.TUTORIAL);
       setTimeout(() => {
         setIsTransitioning(false);
       }, 500);
-    }, 1500);
+    }, 1000);
   };
   
-  // Handle completion - now passes the template data back
+  // Handle tutorial completion
   const handleTutorialComplete = () => {
+    console.log("🎓 OnboardingFlow: Tutorial complete, finishing onboarding");
     setIsTransitioning(true);
     setLoadingMessage("Preparing your site builder...");
     
-    toast.success("Onboarding complete! Loading builder...");
+    toast.success("Tutorial complete! Starting with blank canvas...");
     
     setTimeout(() => {
-      console.log("🎓 OnboardingFlow: Tutorial complete, applying template:", selectedTemplateData);
-      onComplete(selectedTemplateData);
-    }, 1500);
-  };
-
-  const handleTemplateSelect = (templateData: any) => {
-    console.log("🎨 OnboardingFlow: Template selected, storing for after tutorial:", templateData);
-    setSelectedTemplateData(templateData);
-    handleTemplateComplete();
+      // Complete with empty array for blank canvas
+      onComplete([]);
+    }, 1000);
   };
 
   // Show loading indicator
@@ -83,7 +90,8 @@ const OnboardingFlow = ({ websiteId, onComplete }: OnboardingFlowProps) => {
           <TemplateSelection 
             onSelectTemplate={handleTemplateSelect}
             websiteId={websiteId} 
-            onComplete={handleTemplateComplete} 
+            onComplete={() => {}} // Not used anymore
+            onClose={handleSkipTemplate}
           />
         )}
         

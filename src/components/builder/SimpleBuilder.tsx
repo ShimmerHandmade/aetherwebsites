@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -22,6 +23,7 @@ const SimpleBuilder = () => {
   const [isFirstVisit, setIsFirstVisit] = useState(false);
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
   const hasProcessedInitialContent = useRef(false);
+  const hasCompletedOnboarding = useRef(false);
   
   const { 
     website,
@@ -51,13 +53,14 @@ const SimpleBuilder = () => {
       isLoading,
       websiteId: id,
       isApplyingTemplate,
-      hasProcessedInitialContent: hasProcessedInitialContent.current
+      hasProcessedInitialContent: hasProcessedInitialContent.current,
+      hasCompletedOnboarding: hasCompletedOnboarding.current
     });
   }, [elements, isLoading, id, isApplyingTemplate]);
 
   // Check if this is first visit and website has no content
   useEffect(() => {
-    if (website && !isLoading && !hasProcessedInitialContent.current && !isApplyingTemplate) {
+    if (website && !isLoading && !hasProcessedInitialContent.current && !isApplyingTemplate && !hasCompletedOnboarding.current) {
       const hasContent = elements && elements.length > 0;
       const hasVisitedBefore = localStorage.getItem(`visited-${website.id}`);
       
@@ -66,7 +69,8 @@ const SimpleBuilder = () => {
         elementsLength: elements?.length,
         websiteId: website.id,
         hasVisitedBefore: !!hasVisitedBefore,
-        isApplyingTemplate
+        isApplyingTemplate,
+        hasCompletedOnboarding: hasCompletedOnboarding.current
       });
       
       if (!hasContent && !hasVisitedBefore) {
@@ -75,11 +79,11 @@ const SimpleBuilder = () => {
         setShowOnboarding(true);
         // Mark as visited
         localStorage.setItem(`visited-${website.id}`, 'true');
-      } else if (!hasContent) {
-        console.log("📝 SimpleBuilder: No content found, showing template selection");
+      } else if (!hasContent && hasVisitedBefore) {
+        console.log("📝 SimpleBuilder: Returning visit with no content, showing template selection");
         setShowTemplateSelection(true);
       } else {
-        console.log("✅ SimpleBuilder: Content found, hiding template selection");
+        console.log("✅ SimpleBuilder: Content found, proceeding to builder");
         setShowTemplateSelection(false);
         setShowOnboarding(false);
       }
@@ -145,44 +149,23 @@ const SimpleBuilder = () => {
   const handleOnboardingComplete = useCallback(async (templateData?: any) => {
     console.log("🎓 SimpleBuilder: Onboarding complete with template:", templateData);
     
+    hasCompletedOnboarding.current = true;
     setIsApplyingTemplate(true);
     setShowOnboarding(false);
     
-    if (templateData && templateData.length > 0) {
-      // Apply the template that was selected during onboarding
-      await handleTemplateSelect(templateData);
+    if (templateData && Array.isArray(templateData) && templateData.length > 0) {
+      console.log("🎨 SimpleBuilder: Applying template from onboarding");
+      await applyTemplateElements(templateData);
     } else {
-      // User skipped or no template selected
-      setShowTemplateSelection(false);
-      console.log("🧹 SimpleBuilder: Updating elements to empty array");
+      console.log("🧹 SimpleBuilder: Starting with blank canvas from onboarding");
       updateElements([]);
       toast.success("Starting with blank canvas");
       setIsApplyingTemplate(false);
     }
   }, [updateElements]);
 
-  const handleTemplateSelect = useCallback(async (templateData: any) => {
-    console.log("🎨 SimpleBuilder: Template selected:", templateData);
-    
-    setIsApplyingTemplate(true);
-    
+  const applyTemplateElements = useCallback(async (templateElements: any[]) => {
     try {
-      // Simplified template processing - just get the elements array
-      let templateElements = [];
-      
-      if (Array.isArray(templateData)) {
-        templateElements = templateData;
-      } else if (templateData.elements && Array.isArray(templateData.elements)) {
-        templateElements = templateData.elements;
-      } else if (templateData.templateData?.content && Array.isArray(templateData.templateData.content)) {
-        templateElements = templateData.templateData.content;
-      } else if (templateData.content && Array.isArray(templateData.content)) {
-        templateElements = templateData.content;
-      } else {
-        console.warn("Invalid template structure, using empty array");
-        templateElements = [];
-      }
-
       console.log("🔧 SimpleBuilder: Processing template elements:", templateElements.length, "elements");
       
       // Ensure all elements have unique IDs
@@ -197,7 +180,7 @@ const SimpleBuilder = () => {
       
       console.log("🚀 SimpleBuilder: Applying elements to canvas:", elementsWithIds.length);
       
-      // Apply elements to canvas and hide template selection
+      // Apply elements to canvas
       updateElements(elementsWithIds);
       
       // Use setTimeout to ensure state updates are processed
@@ -215,6 +198,30 @@ const SimpleBuilder = () => {
       setIsApplyingTemplate(false);
     }
   }, [updateElements]);
+
+  const handleTemplateSelect = useCallback(async (templateData: any) => {
+    console.log("🎨 SimpleBuilder: Template selected:", templateData);
+    
+    setIsApplyingTemplate(true);
+    
+    // Simplified template processing - just get the elements array
+    let templateElements = [];
+    
+    if (Array.isArray(templateData)) {
+      templateElements = templateData;
+    } else if (templateData.elements && Array.isArray(templateData.elements)) {
+      templateElements = templateData.elements;
+    } else if (templateData.templateData?.content && Array.isArray(templateData.templateData.content)) {
+      templateElements = templateData.templateData.content;
+    } else if (templateData.content && Array.isArray(templateData.content)) {
+      templateElements = templateData.content;
+    } else {
+      console.warn("Invalid template structure, using empty array");
+      templateElements = [];
+    }
+
+    await applyTemplateElements(templateElements);
+  }, [applyTemplateElements]);
 
   const handleSkipTemplate = () => {
     console.log("📝 SimpleBuilder: Starting with blank canvas");
@@ -240,7 +247,7 @@ const SimpleBuilder = () => {
   }
 
   // Show onboarding flow for first-time visitors
-  if (showOnboarding) {
+  if (showOnboarding && !hasCompletedOnboarding.current) {
     return (
       <OnboardingFlow 
         websiteId={id!}
@@ -249,8 +256,8 @@ const SimpleBuilder = () => {
     );
   }
 
-  // Show template selection screen
-  if (showTemplateSelection && !isApplyingTemplate) {
+  // Show template selection screen for returning users with no content
+  if (showTemplateSelection && !isApplyingTemplate && hasCompletedOnboarding.current === false) {
     return (
       <div className="h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-8">
