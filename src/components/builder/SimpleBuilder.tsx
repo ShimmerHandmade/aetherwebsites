@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -23,7 +22,6 @@ const SimpleBuilder = () => {
   const [isFirstVisit, setIsFirstVisit] = useState(false);
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
   const hasProcessedInitialContent = useRef(false);
-  const hasCompletedOnboarding = useRef(false);
   
   const { 
     website,
@@ -53,14 +51,13 @@ const SimpleBuilder = () => {
       isLoading,
       websiteId: id,
       isApplyingTemplate,
-      hasProcessedInitialContent: hasProcessedInitialContent.current,
-      hasCompletedOnboarding: hasCompletedOnboarding.current
+      hasProcessedInitialContent: hasProcessedInitialContent.current
     });
   }, [elements, isLoading, id, isApplyingTemplate]);
 
   // Check if this is first visit and website has no content
   useEffect(() => {
-    if (website && !isLoading && !hasProcessedInitialContent.current && !isApplyingTemplate && !hasCompletedOnboarding.current) {
+    if (website && !isLoading && !hasProcessedInitialContent.current && !isApplyingTemplate) {
       const hasContent = elements && elements.length > 0;
       const hasVisitedBefore = localStorage.getItem(`visited-${website.id}`);
       
@@ -69,21 +66,17 @@ const SimpleBuilder = () => {
         elementsLength: elements?.length,
         websiteId: website.id,
         hasVisitedBefore: !!hasVisitedBefore,
-        isApplyingTemplate,
-        hasCompletedOnboarding: hasCompletedOnboarding.current
+        isApplyingTemplate
       });
       
       if (!hasContent && !hasVisitedBefore) {
         console.log("🎯 SimpleBuilder: First visit with no content, showing onboarding");
         setIsFirstVisit(true);
         setShowOnboarding(true);
-        // Mark as visited
+        // Mark as visited to prevent re-showing onboarding
         localStorage.setItem(`visited-${website.id}`, 'true');
-      } else if (!hasContent && hasVisitedBefore) {
-        console.log("📝 SimpleBuilder: Returning visit with no content, showing template selection");
-        setShowTemplateSelection(true);
       } else {
-        console.log("✅ SimpleBuilder: Content found, proceeding to builder");
+        console.log("✅ SimpleBuilder: Content found or returning visit, proceeding to builder");
         setShowTemplateSelection(false);
         setShowOnboarding(false);
       }
@@ -146,23 +139,16 @@ const SimpleBuilder = () => {
     updateElements(pageContent);
   };
 
-  const handleOnboardingComplete = useCallback(async (templateData?: any) => {
-    console.log("🎓 SimpleBuilder: Onboarding complete with template:", templateData);
+  const handleOnboardingComplete = useCallback(async () => {
+    console.log("🎓 SimpleBuilder: Onboarding complete, refreshing website data");
     
-    hasCompletedOnboarding.current = true;
-    setIsApplyingTemplate(true);
     setShowOnboarding(false);
     
-    if (templateData && Array.isArray(templateData) && templateData.length > 0) {
-      console.log("🎨 SimpleBuilder: Applying template from onboarding");
-      await applyTemplateElements(templateData);
-    } else {
-      console.log("🧹 SimpleBuilder: Starting with blank canvas from onboarding");
-      updateElements([]);
-      toast.success("Starting with blank canvas");
-      setIsApplyingTemplate(false);
-    }
-  }, [updateElements]);
+    // Refresh website data to get the saved template
+    await refreshWebsite();
+    
+    toast.success("Welcome to your website builder!");
+  }, [refreshWebsite]);
 
   const applyTemplateElements = useCallback(async (templateElements: any[]) => {
     try {
@@ -247,7 +233,7 @@ const SimpleBuilder = () => {
   }
 
   // Show onboarding flow for first-time visitors
-  if (showOnboarding && !hasCompletedOnboarding.current) {
+  if (showOnboarding) {
     return (
       <OnboardingFlow 
         websiteId={id!}
@@ -256,8 +242,8 @@ const SimpleBuilder = () => {
     );
   }
 
-  // Show template selection screen for returning users with no content
-  if (showTemplateSelection && !isApplyingTemplate && hasCompletedOnboarding.current === false) {
+  // Show template selection screen for returning users with no content (should rarely happen now)
+  if (showTemplateSelection && !isApplyingTemplate) {
     return (
       <div className="h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-8">

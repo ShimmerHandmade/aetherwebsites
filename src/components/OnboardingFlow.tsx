@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import TemplateSelection from "./TemplateSelection";
 import BuilderTutorial from "./BuilderTutorial";
 import { toast } from "sonner";
+import { useWebsite } from "@/hooks/useWebsite";
+import { useNavigate } from "react-router-dom";
 
 interface OnboardingFlowProps {
   websiteId: string;
@@ -15,10 +17,17 @@ enum OnboardingStep {
 }
 
 const OnboardingFlow = ({ websiteId, onComplete }: OnboardingFlowProps) => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(OnboardingStep.TEMPLATES);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isLoadingComplete, setIsLoadingComplete] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("Loading onboarding experience...");
+  
+  // Use the website hook to save template data
+  const {
+    updateElements,
+    saveWebsite,
+  } = useWebsite(websiteId, navigate, { autoSave: false });
   
   // Initialize loading state
   useEffect(() => {
@@ -29,46 +38,89 @@ const OnboardingFlow = ({ websiteId, onComplete }: OnboardingFlowProps) => {
     return () => clearTimeout(timer);
   }, []);
   
-  // Handle template selection - apply immediately and go to tutorial
-  const handleTemplateSelect = (templateData: any) => {
-    console.log("🎨 OnboardingFlow: Template selected, applying immediately:", templateData);
+  // Handle template selection - apply and save immediately
+  const handleTemplateSelect = async (templateData: any) => {
+    console.log("🎨 OnboardingFlow: Template selected, applying and saving:", templateData);
     
     setIsTransitioning(true);
-    setLoadingMessage("Applying template...");
+    setLoadingMessage("Applying and saving template...");
     
-    // Apply template immediately
-    onComplete(templateData);
-    
-    // Don't continue to tutorial, just finish onboarding
-    toast.success("Template applied! Welcome to your builder!");
+    try {
+      // Apply template to the website
+      updateElements(templateData);
+      
+      // Save the template to the website
+      const saveSuccess = await saveWebsite(templateData);
+      
+      if (saveSuccess) {
+        console.log("✅ OnboardingFlow: Template saved successfully");
+        toast.success("Template applied and saved!");
+        
+        // Complete onboarding and return to dashboard
+        setTimeout(() => {
+          onComplete();
+        }, 1000);
+      } else {
+        throw new Error("Failed to save template");
+      }
+    } catch (error) {
+      console.error("❌ OnboardingFlow: Error saving template:", error);
+      toast.error("Failed to save template. Please try again.");
+      setIsTransitioning(false);
+    }
   };
   
-  // Handle skip template - go straight to tutorial
-  const handleSkipTemplate = () => {
+  // Handle skip template - save empty state and complete
+  const handleSkipTemplate = async () => {
     console.log("📝 OnboardingFlow: Skipping template, going to tutorial");
     setIsTransitioning(true);
     setLoadingMessage("Preparing tutorial...");
     
-    setTimeout(() => {
-      setCurrentStep(OnboardingStep.TUTORIAL);
-      setTimeout(() => {
-        setIsTransitioning(false);
-      }, 500);
-    }, 1000);
+    try {
+      // Save empty state
+      const saveSuccess = await saveWebsite([]);
+      
+      if (saveSuccess) {
+        setTimeout(() => {
+          setCurrentStep(OnboardingStep.TUTORIAL);
+          setTimeout(() => {
+            setIsTransitioning(false);
+          }, 500);
+        }, 1000);
+      } else {
+        throw new Error("Failed to save empty state");
+      }
+    } catch (error) {
+      console.error("❌ OnboardingFlow: Error saving empty state:", error);
+      toast.error("Failed to initialize. Please try again.");
+      setIsTransitioning(false);
+    }
   };
   
   // Handle tutorial completion
-  const handleTutorialComplete = () => {
+  const handleTutorialComplete = async () => {
     console.log("🎓 OnboardingFlow: Tutorial complete, finishing onboarding");
     setIsTransitioning(true);
-    setLoadingMessage("Preparing your site builder...");
+    setLoadingMessage("Completing setup...");
     
-    toast.success("Tutorial complete! Starting with blank canvas...");
-    
-    setTimeout(() => {
-      // Complete with empty array for blank canvas
-      onComplete([]);
-    }, 1000);
+    try {
+      // Ensure empty state is saved if no template was applied
+      const saveSuccess = await saveWebsite([]);
+      
+      if (saveSuccess) {
+        toast.success("Tutorial complete! Your website is ready!");
+        
+        setTimeout(() => {
+          onComplete();
+        }, 1000);
+      } else {
+        throw new Error("Failed to finalize setup");
+      }
+    } catch (error) {
+      console.error("❌ OnboardingFlow: Error completing tutorial:", error);
+      toast.error("Failed to complete setup. Please try again.");
+      setIsTransitioning(false);
+    }
   };
 
   // Show loading indicator
