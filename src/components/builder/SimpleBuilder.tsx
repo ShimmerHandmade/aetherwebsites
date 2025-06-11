@@ -1,5 +1,4 @@
-
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback } from "react";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import BuilderSidebar from "@/components/builder/BuilderSidebar";
@@ -8,22 +7,19 @@ import BuilderContent from "@/components/builder/BuilderContent";
 import TemplateSelection from "@/components/TemplateSelection";
 import OnboardingFlow from "@/components/OnboardingFlow";
 import { useWebsite } from "@/hooks/useWebsite";
+import { useWebsiteInitialization } from "@/hooks/useWebsiteInitialization";
+import { useTemplateApplication } from "@/hooks/useTemplateApplication";
+import { useBuilderSave } from "@/hooks/useBuilderSave";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { v4 as uuidv4 } from "@/lib/uuid";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
 
 const SimpleBuilder = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<string>('');
-  const [showTemplateSelection, setShowTemplateSelection] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [isFirstVisit, setIsFirstVisit] = useState(false);
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
-  const hasProcessedInitialContent = useRef(false);
-  const templateAppliedRef = useRef(false);
+  const [currentPage, setCurrentPage] = useState<{ id: string; title: string; slug: string; isHomePage?: boolean; } | null>(null);
   
   const { 
     website,
@@ -41,8 +37,41 @@ const SimpleBuilder = () => {
     lastSaved,
     unsavedChanges
   } = useWebsite(id, navigate, { autoSave: false });
-  
-  const [currentPage, setCurrentPage] = useState<{ id: string; title: string; slug: string; isHomePage?: boolean; } | null>(null);
+
+  const {
+    showTemplateSelection,
+    setShowTemplateSelection,
+    showOnboarding,
+    setShowOnboarding,
+    markTemplateAsApplied
+  } = useWebsiteInitialization({
+    website,
+    isLoading,
+    elements,
+    isApplyingTemplate
+  });
+
+  const {
+    handleTemplateSelect,
+    handleSkipTemplate
+  } = useTemplateApplication({
+    updateElements,
+    saveWebsite,
+    setIsApplyingTemplate,
+    setShowTemplateSelection,
+    markTemplateAsApplied
+  });
+
+  const {
+    saveStatus,
+    handleSave,
+    handleBuilderSave
+  } = useBuilderSave({
+    saveWebsite,
+    lastSaved,
+    unsavedChanges
+  });
+
   const pages = website?.settings?.pages || [];
 
   // Debug logging for elements state
@@ -113,25 +142,8 @@ const SimpleBuilder = () => {
     }
   }, [unsavedChanges]);
 
-  const handleSave = async () => {
-    const success = await saveWebsite();
-    if (success) {
-      setSaveStatus(`Last saved ${new Date().toLocaleTimeString()}`);
-    }
-  };
-
   const handlePublish = async () => {
     await publishWebsite();
-  };
-
-  const handleBuilderSave = async (elements: BuilderElement[], pageSettings: PageSettings) => {
-    console.log("💾 SimpleBuilder: Saving from builder with elements:", elements?.length || 0);
-    const success = await saveWebsite(elements, pageSettings);
-    if (success) {
-      // Mark that content has been successfully saved
-      templateAppliedRef.current = true;
-    }
-    return success;
   };
 
   const handlePageChange = (pageId: string) => {
@@ -150,102 +162,15 @@ const SimpleBuilder = () => {
   };
 
   const handleOnboardingComplete = useCallback(async () => {
-    console.log("🎓 SimpleBuilder: Onboarding complete, refreshing website data");
+    console.log("🎓 Onboarding complete, refreshing website data");
     
     setShowOnboarding(false);
-    templateAppliedRef.current = true;
+    markTemplateAsApplied();
     
-    // Refresh website data to get the saved template
     await refreshWebsite();
     
     toast.success("Welcome to your website builder!");
-  }, [refreshWebsite]);
-
-  const applyTemplateElements = useCallback(async (templateElements: any[]) => {
-    try {
-      console.log("🔧 SimpleBuilder: Processing template elements:", templateElements.length, "elements");
-      
-      // Ensure all elements have unique IDs
-      const elementsWithIds = templateElements.map((element: any) => ({
-        ...element,
-        id: element.id || uuidv4(),
-        children: element.children?.map((child: any) => ({
-          ...child,
-          id: child.id || uuidv4()
-        })) || []
-      }));
-      
-      console.log("🚀 SimpleBuilder: Applying elements to canvas:", elementsWithIds.length);
-      
-      // Apply elements to canvas
-      updateElements(elementsWithIds);
-      
-      // Save immediately to ensure template persists
-      const success = await saveWebsite(elementsWithIds);
-      
-      if (success) {
-        templateAppliedRef.current = true;
-        console.log("✅ SimpleBuilder: Template applied and saved successfully");
-        toast.success(`Template applied successfully!`);
-      } else {
-        throw new Error("Failed to save template");
-      }
-      
-      // Use setTimeout to ensure state updates are processed
-      setTimeout(() => {
-        setShowTemplateSelection(false);
-        setIsApplyingTemplate(false);
-      }, 100);
-      
-    } catch (error) {
-      console.error("❌ SimpleBuilder: Error applying template:", error);
-      toast.error("Failed to apply template. Please try again.");
-      setIsApplyingTemplate(false);
-    }
-  }, [updateElements, saveWebsite]);
-
-  const handleTemplateSelect = useCallback(async (templateData: any) => {
-    console.log("🎨 SimpleBuilder: Template selected:", templateData);
-    
-    setIsApplyingTemplate(true);
-    
-    // Simplified template processing - just get the elements array
-    let templateElements = [];
-    
-    if (Array.isArray(templateData)) {
-      templateElements = templateData;
-    } else if (templateData.elements && Array.isArray(templateData.elements)) {
-      templateElements = templateData.elements;
-    } else if (templateData.templateData?.content && Array.isArray(templateData.templateData.content)) {
-      templateElements = templateData.templateData.content;
-    } else if (templateData.content && Array.isArray(templateData.content)) {
-      templateElements = templateData.content;
-    } else {
-      console.warn("Invalid template structure, using empty array");
-      templateElements = [];
-    }
-
-    await applyTemplateElements(templateElements);
-  }, [applyTemplateElements]);
-
-  const handleSkipTemplate = async () => {
-    console.log("📝 SimpleBuilder: Starting with blank canvas");
-    setIsApplyingTemplate(true);
-    setShowTemplateSelection(false);
-    console.log("🧹 SimpleBuilder: Updating elements to empty array (skip)");
-    updateElements([]);
-    
-    // Save the empty state immediately
-    const success = await saveWebsite([]);
-    if (success) {
-      templateAppliedRef.current = true;
-    }
-    
-    toast.success("Starting with blank canvas");
-    setTimeout(() => {
-      setIsApplyingTemplate(false);
-    }, 100);
-  };
+  }, [refreshWebsite, markTemplateAsApplied, setShowOnboarding]);
 
   if (isLoading) {
     return (
@@ -258,7 +183,6 @@ const SimpleBuilder = () => {
     );
   }
 
-  // Show onboarding flow for first-time visitors
   if (showOnboarding) {
     return (
       <OnboardingFlow 
@@ -268,7 +192,6 @@ const SimpleBuilder = () => {
     );
   }
 
-  // Show template selection screen for returning users with no content (should rarely happen now)
   if (showTemplateSelection && !isApplyingTemplate) {
     return (
       <div className="h-screen bg-gray-50">

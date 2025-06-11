@@ -1,6 +1,5 @@
 
 import React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,25 +13,23 @@ import {
 import {
   Eye,
   EyeOff,
-  Settings,
-  PanelsTopLeft,
-  Store,
-  FileText,
-  Package,
   Save,
   ArrowLeft,
   Home,
   ExternalLink,
-  ShoppingBag,
-  CreditCard,
-  Truck,
+  EyeIcon,
   Smartphone,
   Tablet,
   Monitor,
-  EyeIcon
+  PanelsTopLeft,
+  Package,
+  ShoppingBag,
+  FileText,
+  CreditCard,
+  Truck
 } from "lucide-react";
-import { toast } from "sonner";
-import { useBuilder } from "@/contexts/BuilderContext";
+import { useBuilderNavigation } from "@/hooks/useBuilderNavigation";
+import { useResponsiveControls } from "@/hooks/useResponsiveControls";
 
 interface Page {
   id: string;
@@ -73,139 +70,37 @@ const BuilderNavbar = ({
   currentPage,
   pages,
   onChangePage,
-  onShopLinkClick,
   onReturnToDashboard,
-  viewSiteUrl,
   saveStatus = ''
 }: BuilderNavbarProps) => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { previewBreakpoint, setPreviewBreakpoint } = useBuilder();
-  
-  // Determine active tab based on current route
-  const getActiveTabFromRoute = () => {
-    const path = location.pathname;
-    if (path.includes('/products')) return "products";
-    if (path.includes('/orders')) return "orders";
-    if (path.includes('/pages')) return "pages";
-    if (path.includes('/site-settings')) return "settings";
-    if (path.includes('/payment-settings')) return "payment-settings";
-    if (path.includes('/shipping-settings')) return "shipping-settings";
-    return "edit";
-  };
-  
-  const [activeTab, setActiveTab] = React.useState(getActiveTabFromRoute());
-  
-  // Update active tab when route changes
-  React.useEffect(() => {
-    setActiveTab(getActiveTabFromRoute());
-  }, [location.pathname]);
-  
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    
-    const websiteId = window.location.pathname.split("/")[2];
-    if (!websiteId) return;
-    
-    switch (value) {
-      case "edit":
-        navigate(`/builder/${websiteId}`);
-        break;
-      case "products":
-        navigate(`/builder/${websiteId}/products`);
-        break;
-      case "orders":
-        navigate(`/builder/${websiteId}/orders`);
-        break;
-      case "pages":
-        navigate(`/builder/${websiteId}/pages`);
-        break;
-      case "payment-settings":
-        navigate(`/builder/${websiteId}/payment-settings`);
-        break;
-      case "shipping-settings":
-        navigate(`/builder/${websiteId}/shipping-settings`);
-        break;
-    }
-  };
+  const {
+    activeTab,
+    handleTabChange,
+    handleReturnToDashboard,
+    handleOpenFullPreview
+  } = useBuilderNavigation();
 
-  const handleReturnToDashboard = () => {
-    if (isSaving) {
-      toast("Please wait for the current save to complete", {
-        description: "Your changes are being saved"
-      });
-      return;
-    }
-    
-    if (onReturnToDashboard) {
-      onReturnToDashboard();
-    } else {
-      navigate('/dashboard');
-    }
-  };
+  const {
+    previewBreakpoint,
+    breakpoints,
+    handleBreakpointChange
+  } = useResponsiveControls();
 
-  const handleOpenFullPreview = () => {
-    const websiteId = window.location.pathname.split("/")[2];
-    if (!websiteId) return;
-    
-    // Use folder structure instead of subdomain
-    window.open(`/site/${websiteId}`, '_blank');
-  };
-
-  const breakpoints = [
-    { type: 'mobile', icon: Smartphone, label: 'Mobile', width: '375px' },
-    { type: 'tablet', icon: Tablet, label: 'Tablet', width: '768px' },
-    { type: 'desktop', icon: Monitor, label: 'Desktop', width: '100%' }
-  ];
-
-  const handleBreakpointChange = (breakpoint: string) => {
-    console.log("📱 Breakpoint changed to:", breakpoint);
-    setPreviewBreakpoint(breakpoint as any);
-    
-    // Apply responsive styles to the preview area
-    const previewElement = document.querySelector('[data-builder-canvas]') || 
-                          document.querySelector('.builder-canvas') ||
-                          document.querySelector('.main-content');
-                          
-    if (previewElement) {
-      // Remove existing breakpoint classes
-      previewElement.classList.remove('preview-mobile', 'preview-tablet', 'preview-desktop');
-      
-      // Add new breakpoint class and set max-width
-      const element = previewElement as HTMLElement;
-      element.classList.add(`preview-${breakpoint}`);
-      
-      // Apply appropriate max-width based on breakpoint
-      switch (breakpoint) {
-        case 'mobile':
-          element.style.maxWidth = '375px';
-          element.style.margin = '0 auto';
-          break;
-        case 'tablet':
-          element.style.maxWidth = '768px';
-          element.style.margin = '0 auto';
-          break;
-        case 'desktop':
-          element.style.maxWidth = '100%';
-          element.style.margin = '0';
-          break;
-      }
-      
-      console.log("✅ Applied responsive styles to preview");
-    } else {
-      console.warn("❌ Preview element not found for responsive styling");
-    }
+  const iconComponents = {
+    Smartphone,
+    Tablet,
+    Monitor
   };
 
   return (
     <div className="w-full flex flex-col bg-white border-b border-slate-200 relative z-50">
-      {/* Top bar - fixed height with better spacing */}
+      {/* Top bar */}
       <div className="h-14 flex items-center px-4 justify-between bg-white border-b border-slate-100">
         <div className="flex items-center space-x-3 flex-1 min-w-0">
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={handleReturnToDashboard}
+            onClick={() => handleReturnToDashboard(isSaving, onReturnToDashboard)}
             className="flex items-center gap-1 flex-shrink-0"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -242,29 +137,32 @@ const BuilderNavbar = ({
           )}
         </div>
 
-        {/* Right side buttons - ensure they're always visible */}
+        {/* Right side controls */}
         <div className="flex items-center space-x-2 flex-shrink-0">
-          {/* Responsive Controls - only show on edit tab */}
+          {/* Responsive Controls */}
           {activeTab === "edit" && (
             <div className="hidden lg:flex items-center space-x-1 bg-gray-50 border rounded-lg p-1">
               <span className="text-xs text-gray-600 px-2">View:</span>
-              {breakpoints.map(({ type, icon: Icon, label }) => (
-                <Button
-                  key={type}
-                  variant={previewBreakpoint === type ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => handleBreakpointChange(type)}
-                  className="flex items-center space-x-1 h-7 px-2"
-                  title={`Switch to ${label} view`}
-                >
-                  <Icon className="h-3 w-3" />
-                  <span className="hidden xl:inline text-xs">{label}</span>
-                </Button>
-              ))}
+              {breakpoints.map(({ type, icon, label }) => {
+                const IconComponent = iconComponents[icon as keyof typeof iconComponents];
+                return (
+                  <Button
+                    key={type}
+                    variant={previewBreakpoint === type ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => handleBreakpointChange(type)}
+                    className="flex items-center space-x-1 h-7 px-2"
+                    title={`Switch to ${label} view`}
+                  >
+                    <IconComponent className="h-3 w-3" />
+                    <span className="hidden xl:inline text-xs">{label}</span>
+                  </Button>
+                );
+              })}
             </div>
           )}
 
-          {/* Site Status Indicator */}
+          {/* Site Status */}
           {!isPublished && (
             <Button
               variant="outline"

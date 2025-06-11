@@ -3,38 +3,11 @@ import { NavigateFunction } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
-import { Json } from "@/integrations/supabase/types";
-import { v4 as uuidv4 } from "@/lib/uuid";
-
-export interface WebsiteData {
-  id: string;
-  name: string;
-  content: BuilderElement[];
-  settings: WebsiteSettings;
-  pageSettings?: PageSettings;
-  published: boolean;
-}
-
-interface WebsiteSettings {
-  pageSettings?: PageSettings;
-  pages?: Array<{
-    id: string;
-    title: string;
-    slug: string;
-    isHomePage?: boolean;
-  }>;
-  pagesContent?: {
-    [pageId: string]: BuilderElement[];
-  };
-  pagesSettings?: {
-    [pageId: string]: PageSettings;
-  };
-  [key: string]: any;
-}
+import { WebsiteService, WebsiteData } from "@/services/websiteService";
 
 interface UseWebsiteOptions {
   autoSave?: boolean;
-  autoSaveInterval?: number; // in milliseconds
+  autoSaveInterval?: number;
 }
 
 export const useWebsite = (
@@ -51,12 +24,12 @@ export const useWebsite = (
   const [pageSettings, setPageSettings] = useState<PageSettings | null>(null);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  
   const [autoSaveEnabled] = useState(options?.autoSave ?? false);
   const autoSaveIntervalRef = useRef<number | null>(null);
   const pendingSaveRef = useRef<boolean>(false);
   const forcedRefreshRef = useRef<boolean>(false);
   
-  // Track whether we have content to save
   const contentToSaveRef = useRef<{
     elements?: BuilderElement[];
     pageSettings?: PageSettings;
@@ -83,14 +56,9 @@ export const useWebsite = (
       if (!id) return;
       
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from("websites")
-        .select("*")
-        .eq("id", id)
-        .single();
+      const websiteData = await WebsiteService.fetchWebsite(id);
       
-      if (error) {
-        console.error("Error fetching website:", error);
+      if (!websiteData) {
         toast({
           title: "Error",
           description: "Error loading website",
@@ -99,73 +67,18 @@ export const useWebsite = (
         navigate("/dashboard");
         return;
       }
-      
-      // Parse the settings field if it's a string, otherwise cast it
-      const parsedSettings: WebsiteSettings = typeof data.settings === 'string' 
-        ? JSON.parse(data.settings as string)
-        : (data.settings as unknown as WebsiteSettings) || {};
-      
-      // Ensure we have pages array
-      if (!parsedSettings.pages || !Array.isArray(parsedSettings.pages)) {
-        parsedSettings.pages = [];
-      }
-      
-      // If no pages exist, create a default home page
-      if (parsedSettings.pages.length === 0) {
-        const homePageId = uuidv4();
-        parsedSettings.pages = [{
-          id: homePageId,
-          title: 'Home',
-          slug: '/',
-          isHomePage: true
-        }];
-        
-        // Create empty content for this page
-        if (!parsedSettings.pagesContent) {
-          parsedSettings.pagesContent = {};
-        }
-        parsedSettings.pagesContent[homePageId] = [];
-        
-        // Save this new structure back to the database
-        const { error: updateError } = await supabase
-          .from("websites")
-          .update({ 
-            settings: parsedSettings as unknown as Json
-          })
-          .eq("id", id);
-          
-        if (updateError) {
-          console.error("Error updating website with default home page:", updateError);
-        } else {
-          console.log("Created default home page for website");
-        }
-      }
-      
-      // Convert the database response to the correct type
-      const websiteData: WebsiteData = {
-        id: data.id,
-        name: data.name,
-        content: Array.isArray(data.content) ? data.content as unknown as BuilderElement[] : [],
-        settings: parsedSettings,
-        // Store page settings from the settings object if it exists
-        pageSettings: parsedSettings?.pageSettings || null,
-        published: !!data.published
-      };
 
       setWebsite(websiteData);
-      setWebsiteName(data.name);
-      setPageSettings(parsedSettings?.pageSettings || { title: data.name });
+      setWebsiteName(websiteData.name);
+      setPageSettings(websiteData.pageSettings || { title: websiteData.name });
       
-      // Only update elements if this is an initial load or forced refresh
       if (forcedRefreshRef.current || forceRefresh || !elements.length) {
-        // Load elements from content if available
-        if (data.content && Array.isArray(data.content) && data.content.length > 0) {
-          setElements(data.content as unknown as BuilderElement[]);
-          console.log("Loaded elements from database", data.content);
+        if (websiteData.content && Array.isArray(websiteData.content) && websiteData.content.length > 0) {
+          setElements(websiteData.content);
+          console.log("Loaded elements from database", websiteData.content);
         }
       }
       
-      // Reset unsaved changes flag after fetching fresh data
       if (forceRefresh) {
         setUnsavedChanges(false);
       }
@@ -195,7 +108,6 @@ export const useWebsite = (
         return false;
       }
       
-      // If we're already saving, store this save for later
       if (isSaving) {
         console.log("Save already in progress, queuing this save");
         contentToSaveRef.current = {
@@ -210,46 +122,27 @@ export const useWebsite = (
       setIsSaving(true);
       console.log("Starting website save...");
       
-      // Use provided values or fall back to current state
       const contentToSave = updatedElements !== undefined ? updatedElements : elements;
       const settingsToSave = updatedPageSettings !== undefined ? updatedPageSettings : pageSettings;
       
-      // Make a deep copy of the current website settings to avoid mutation issues
-      const currentSettings = website.settings ? JSON.parse(JSON.stringify(website.settings)) : {};
+      const success = await WebsiteService.saveWebsite(
+        id,
+        websiteName,
+        contentToSave,
+        settingsToSave,
+        additionalSettings
+      );
       
-      // Store page settings and additional settings within the settings object
-      const updatedSettings: WebsiteSettings = {
-        ...currentSettings,
-        pageSettings: settingsToSave,
-        ...(additionalSettings || {})
-      };
-      
-      console.log("Saving website with settings:", updatedSettings);
-      console.log("Saving elements:", contentToSave);
-      
-      const { error } = await supabase
-        .from("websites")
-        .update({ 
-          name: websiteName,
-          content: contentToSave as unknown as Json,
-          settings: updatedSettings as unknown as Json,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", id);
-      
-      if (error) {
+      if (!success) {
         toast.error("Failed to save website");
-        console.error("Error saving website:", error);
         return false;
       }
       
-      // Update local state with the saved data to ensure consistency
       const updatedWebsite = {
         ...website,
         name: websiteName,
         content: contentToSave,
-        pageSettings: settingsToSave,
-        settings: updatedSettings
+        pageSettings: settingsToSave
       };
       
       setWebsite(updatedWebsite);
@@ -258,16 +151,13 @@ export const useWebsite = (
         setPageSettings(settingsToSave);
       }
       
-      // Reset unsaved changes flag
       setUnsavedChanges(false);
       setLastSaved(new Date());
       
-      // Only show manual save toast (not for auto-saves)
       if (!autoSaveEnabled) {
         toast.success("Website saved successfully");
       }
       
-      // Dispatch an event for any listeners
       document.dispatchEvent(new CustomEvent('save-complete'));
       
       return true;
@@ -278,13 +168,11 @@ export const useWebsite = (
     } finally {
       setIsSaving(false);
       
-      // Process any pending saves that came in while we were saving
       if (pendingSaveRef.current && contentToSaveRef.current) {
         pendingSaveRef.current = false;
         const { elements, pageSettings, additionalSettings } = contentToSaveRef.current;
         contentToSaveRef.current = null;
         
-        // Small delay before attempting the next save
         setTimeout(() => {
           saveWebsite(elements, pageSettings, additionalSettings);
         }, 500);
@@ -301,17 +189,12 @@ export const useWebsite = (
       
       setIsPublishing(true);
       
-      // First save the latest state to ensure we're publishing the most recent version
       await saveWebsite();
       
-      const { error } = await supabase
-        .from("websites")
-        .update({ published: true })
-        .eq("id", id);
+      const success = await WebsiteService.publishWebsite(id);
       
-      if (error) {
+      if (!success) {
         toast.error("Failed to publish website");
-        console.error("Error publishing website:", error);
         return;
       }
       
@@ -329,7 +212,6 @@ export const useWebsite = (
   useEffect(() => {
     if (!autoSaveEnabled || !options?.autoSaveInterval) return;
     
-    // Function to check if we need to auto-save
     const checkAndAutoSave = () => {
       if (unsavedChanges && !isSaving && id && website) {
         console.log("Auto-saving website...");
@@ -337,12 +219,10 @@ export const useWebsite = (
       }
     };
 
-    // Clear any existing interval
     if (autoSaveIntervalRef.current) {
       window.clearInterval(autoSaveIntervalRef.current);
     }
     
-    // Set up new interval
     autoSaveIntervalRef.current = window.setInterval(
       checkAndAutoSave, 
       options.autoSaveInterval
@@ -365,13 +245,11 @@ export const useWebsite = (
     return unsavedChanges;
   };
   
-  // Set unsaved changes when website name is updated
   const updateWebsiteName = (name: string) => {
     setWebsiteName(name);
     setUnsavedChanges(true);
   };
 
-  // Force refresh the website from the database
   const refreshWebsite = useCallback(() => {
     forcedRefreshRef.current = true;
     return fetchWebsite(true);
