@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from "react";
+
+import React, { useState, useCallback, useEffect } from "react";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import BuilderSidebar from "@/components/builder/BuilderSidebar";
@@ -74,51 +75,6 @@ const SimpleBuilder = () => {
 
   const pages = website?.settings?.pages || [];
 
-  // Debug logging for elements state
-  useEffect(() => {
-    console.log("🔍 SimpleBuilder: Elements state changed:", {
-      elementsLength: elements?.length || 0,
-      elements: elements,
-      isLoading,
-      websiteId: id,
-      isApplyingTemplate,
-      templateApplied: templateAppliedRef.current,
-      hasProcessedInitialContent: hasProcessedInitialContent.current
-    });
-  }, [elements, isLoading, id, isApplyingTemplate]);
-
-  // Check if this is first visit and website has no content
-  useEffect(() => {
-    if (website && !isLoading && !hasProcessedInitialContent.current && !isApplyingTemplate) {
-      const hasContent = elements && elements.length > 0;
-      const hasVisitedBefore = localStorage.getItem(`visited-${website.id}`);
-      
-      console.log("🔍 SimpleBuilder: Checking first visit:", { 
-        hasContent, 
-        elementsLength: elements?.length,
-        websiteId: website.id,
-        hasVisitedBefore: !!hasVisitedBefore,
-        isApplyingTemplate,
-        templateApplied: templateAppliedRef.current
-      });
-      
-      // Only show onboarding if no content AND no template has been applied AND hasn't visited before
-      if (!hasContent && !hasVisitedBefore && !templateAppliedRef.current) {
-        console.log("🎯 SimpleBuilder: First visit with no content, showing onboarding");
-        setIsFirstVisit(true);
-        setShowOnboarding(true);
-        // Mark as visited to prevent re-showing onboarding
-        localStorage.setItem(`visited-${website.id}`, 'true');
-      } else {
-        console.log("✅ SimpleBuilder: Content found or returning visit, proceeding to builder");
-        setShowTemplateSelection(false);
-        setShowOnboarding(false);
-      }
-      
-      hasProcessedInitialContent.current = true;
-    }
-  }, [website, isLoading, elements, isApplyingTemplate]);
-
   useEffect(() => {
     if (website && website.settings?.pages && website.settings.pages.length > 0) {
       const homePage = website.settings.pages.find(page => page.isHomePage) || website.settings.pages[0];
@@ -127,20 +83,6 @@ const SimpleBuilder = () => {
       }
     }
   }, [website, currentPage]);
-
-  useEffect(() => {
-    if (lastSaved) {
-      setSaveStatus(`Last saved ${lastSaved.toLocaleTimeString()}`);
-    } else {
-      setSaveStatus('');
-    }
-  }, [lastSaved]);
-
-  useEffect(() => {
-    if (unsavedChanges) {
-      setSaveStatus("Unsaved changes");
-    }
-  }, [unsavedChanges]);
 
   const handlePublish = async () => {
     await publishWebsite();
