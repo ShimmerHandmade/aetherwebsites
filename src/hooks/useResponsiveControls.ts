@@ -7,7 +7,6 @@ export const useResponsiveControls = () => {
 
   const breakpoints = [
     { type: 'mobile', icon: 'Smartphone', label: 'Mobile', width: '375px' },
-    { type: 'tablet', icon: 'Tablet', label: 'Tablet', width: '768px' },
     { type: 'desktop', icon: 'Monitor', label: 'Desktop', width: '100%' }
   ];
 
@@ -28,10 +27,6 @@ export const useResponsiveControls = () => {
       switch (breakpoint) {
         case 'mobile':
           element.style.maxWidth = '375px';
-          element.style.margin = '0 auto';
-          break;
-        case 'tablet':
-          element.style.maxWidth = '768px';
           element.style.margin = '0 auto';
           break;
         case 'desktop':
