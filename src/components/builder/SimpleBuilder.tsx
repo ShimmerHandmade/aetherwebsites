@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -22,6 +23,7 @@ const SimpleBuilder = () => {
   const [isFirstVisit, setIsFirstVisit] = useState(false);
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
   const hasProcessedInitialContent = useRef(false);
+  const templateAppliedRef = useRef(false);
   
   const { 
     website,
@@ -51,6 +53,7 @@ const SimpleBuilder = () => {
       isLoading,
       websiteId: id,
       isApplyingTemplate,
+      templateApplied: templateAppliedRef.current,
       hasProcessedInitialContent: hasProcessedInitialContent.current
     });
   }, [elements, isLoading, id, isApplyingTemplate]);
@@ -66,10 +69,12 @@ const SimpleBuilder = () => {
         elementsLength: elements?.length,
         websiteId: website.id,
         hasVisitedBefore: !!hasVisitedBefore,
-        isApplyingTemplate
+        isApplyingTemplate,
+        templateApplied: templateAppliedRef.current
       });
       
-      if (!hasContent && !hasVisitedBefore) {
+      // Only show onboarding if no content AND no template has been applied AND hasn't visited before
+      if (!hasContent && !hasVisitedBefore && !templateAppliedRef.current) {
         console.log("🎯 SimpleBuilder: First visit with no content, showing onboarding");
         setIsFirstVisit(true);
         setShowOnboarding(true);
@@ -121,7 +126,12 @@ const SimpleBuilder = () => {
 
   const handleBuilderSave = async (elements: BuilderElement[], pageSettings: PageSettings) => {
     console.log("💾 SimpleBuilder: Saving from builder with elements:", elements?.length || 0);
-    await saveWebsite(elements, pageSettings);
+    const success = await saveWebsite(elements, pageSettings);
+    if (success) {
+      // Mark that content has been successfully saved
+      templateAppliedRef.current = true;
+    }
+    return success;
   };
 
   const handlePageChange = (pageId: string) => {
@@ -143,6 +153,7 @@ const SimpleBuilder = () => {
     console.log("🎓 SimpleBuilder: Onboarding complete, refreshing website data");
     
     setShowOnboarding(false);
+    templateAppliedRef.current = true;
     
     // Refresh website data to get the saved template
     await refreshWebsite();
@@ -169,13 +180,21 @@ const SimpleBuilder = () => {
       // Apply elements to canvas
       updateElements(elementsWithIds);
       
+      // Save immediately to ensure template persists
+      const success = await saveWebsite(elementsWithIds);
+      
+      if (success) {
+        templateAppliedRef.current = true;
+        console.log("✅ SimpleBuilder: Template applied and saved successfully");
+        toast.success(`Template applied successfully!`);
+      } else {
+        throw new Error("Failed to save template");
+      }
+      
       // Use setTimeout to ensure state updates are processed
       setTimeout(() => {
         setShowTemplateSelection(false);
         setIsApplyingTemplate(false);
-        
-        console.log("✅ SimpleBuilder: Template applied successfully");
-        toast.success(`Template applied successfully!`);
       }, 100);
       
     } catch (error) {
@@ -183,7 +202,7 @@ const SimpleBuilder = () => {
       toast.error("Failed to apply template. Please try again.");
       setIsApplyingTemplate(false);
     }
-  }, [updateElements]);
+  }, [updateElements, saveWebsite]);
 
   const handleTemplateSelect = useCallback(async (templateData: any) => {
     console.log("🎨 SimpleBuilder: Template selected:", templateData);
@@ -209,12 +228,19 @@ const SimpleBuilder = () => {
     await applyTemplateElements(templateElements);
   }, [applyTemplateElements]);
 
-  const handleSkipTemplate = () => {
+  const handleSkipTemplate = async () => {
     console.log("📝 SimpleBuilder: Starting with blank canvas");
     setIsApplyingTemplate(true);
     setShowTemplateSelection(false);
     console.log("🧹 SimpleBuilder: Updating elements to empty array (skip)");
     updateElements([]);
+    
+    // Save the empty state immediately
+    const success = await saveWebsite([]);
+    if (success) {
+      templateAppliedRef.current = true;
+    }
+    
     toast.success("Starting with blank canvas");
     setTimeout(() => {
       setIsApplyingTemplate(false);
@@ -283,7 +309,7 @@ const SimpleBuilder = () => {
               currentPage={currentPage}
               pages={pages}
               onChangePage={handlePageChange}
-              viewSiteUrl={`https://${id}.aetherwebsites.com`}
+              viewSiteUrl={`/site/${id}`}
               saveStatus={saveStatus}
             />
             <div className="flex-1 overflow-hidden">

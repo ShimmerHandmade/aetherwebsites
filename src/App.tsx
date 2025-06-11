@@ -50,16 +50,19 @@ function App() {
                 <Route path="/builder/:id/site-settings" element={<SiteSettings />} />
                 <Route path="/builder/:id/pages" element={<BuilderPages />} />
                 <Route path="/builder/:id/payment-settings" element={<PaymentSettings />} />
+                
+                {/* Published sites using folder structure */}
+                <Route path="/site/:id" element={<Website />} />
+                <Route path="/site/:id/*" element={<Website />} />
+                
+                {/* Legacy view routes for backward compatibility */}
                 <Route path="/view/:id" element={<Website />} />
                 <Route path="/view/:id/cart" element={<Website />} />
                 <Route path="/view/:id/product/:productId" element={<Website />} />
                 <Route path="/view/:id/checkout" element={<Website />} />
                 <Route path="/view/:id/order-confirmation" element={<Website />} />
-                <Route path="/site/:id" element={<Website />} />
-                <Route path="/site/:id/cart" element={<Website />} />
-                <Route path="/site/:id/product/:productId" element={<Website />} />
-                <Route path="/site/:id/checkout" element={<Website />} />
-                <Route path="/site/:id/order-confirmation" element={<Website />} />
+                
+                {/* Global cart/checkout routes */}
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/product/:productId" element={<ProductDetails />} />
                 <Route path="/checkout" element={<Checkout />} />

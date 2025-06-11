@@ -1,8 +1,10 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Monitor, Smartphone } from "lucide-react";
+
+// This component is now integrated into BuilderNavbar for better UX
+// Keeping as legacy component for potential future use
 
 const ResponsiveControls = () => {
   const [currentBreakpoint, setCurrentBreakpoint] = React.useState<'desktop' | 'mobile'>('desktop');

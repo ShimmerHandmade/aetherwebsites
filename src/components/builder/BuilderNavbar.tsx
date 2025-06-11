@@ -28,7 +28,8 @@ import {
   Truck,
   Smartphone,
   Tablet,
-  Monitor
+  Monitor,
+  EyeIcon
 } from "lucide-react";
 import { toast } from "sonner";
 import { useBuilder } from "@/contexts/BuilderContext";
@@ -144,14 +145,11 @@ const BuilderNavbar = ({
   };
 
   const handleOpenFullPreview = () => {
-    if (viewSiteUrl) {
-      window.open(viewSiteUrl, '_blank');
-    } else {
-      const websiteId = window.location.pathname.split("/")[2];
-      if (!websiteId) return;
-      
-      window.open(`/view/${websiteId}`, '_blank');
-    }
+    const websiteId = window.location.pathname.split("/")[2];
+    if (!websiteId) return;
+    
+    // Use folder structure instead of subdomain
+    window.open(`/site/${websiteId}`, '_blank');
   };
 
   const breakpoints = [
@@ -200,22 +198,22 @@ const BuilderNavbar = ({
   };
 
   return (
-    <div className="w-full flex flex-col bg-white border-b border-slate-200">
-      {/* Top bar */}
-      <div className="h-14 flex items-center px-4 justify-between">
-        <div className="flex items-center space-x-4">
+    <div className="w-full flex flex-col bg-white border-b border-slate-200 relative z-50">
+      {/* Top bar - fixed height with better spacing */}
+      <div className="h-14 flex items-center px-4 justify-between bg-white border-b border-slate-100">
+        <div className="flex items-center space-x-3 flex-1 min-w-0">
           <Button 
             variant="outline" 
             size="sm" 
             onClick={handleReturnToDashboard}
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 flex-shrink-0"
           >
             <ArrowLeft className="h-4 w-4" />
             Dashboard
           </Button>
           
           <Input
-            className="w-48 h-8 text-sm font-medium"
+            className="w-48 h-8 text-sm font-medium flex-shrink-0"
             value={websiteName}
             onChange={(e) => setWebsiteName(e.target.value)}
             placeholder="Website Name"
@@ -225,7 +223,7 @@ const BuilderNavbar = ({
             value={currentPage?.id || ""}
             onValueChange={(value) => onChangePage(value)}
           >
-            <SelectTrigger className="w-40 h-8">
+            <SelectTrigger className="w-40 h-8 flex-shrink-0">
               <SelectValue placeholder="Select page" />
             </SelectTrigger>
             <SelectContent>
@@ -238,16 +236,17 @@ const BuilderNavbar = ({
           </Select>
           
           {saveStatus && (
-            <span className="text-xs text-gray-500 ml-2">
+            <span className="text-xs text-gray-500 truncate min-w-0">
               {saveStatus}
             </span>
           )}
         </div>
 
-        <div className="flex items-center space-x-2">
-          {/* Responsive Controls */}
+        {/* Right side buttons - ensure they're always visible */}
+        <div className="flex items-center space-x-2 flex-shrink-0">
+          {/* Responsive Controls - only show on edit tab */}
           {activeTab === "edit" && (
-            <div className="flex items-center space-x-1 bg-gray-50 border rounded-lg p-1">
+            <div className="hidden lg:flex items-center space-x-1 bg-gray-50 border rounded-lg p-1">
               <span className="text-xs text-gray-600 px-2">View:</span>
               {breakpoints.map(({ type, icon: Icon, label }) => (
                 <Button
@@ -256,13 +255,26 @@ const BuilderNavbar = ({
                   size="sm"
                   onClick={() => handleBreakpointChange(type)}
                   className="flex items-center space-x-1 h-7 px-2"
-                  title={`Switch to ${label} view (${type === 'mobile' ? '375px' : type === 'tablet' ? '768px' : 'full width'})`}
+                  title={`Switch to ${label} view`}
                 >
                   <Icon className="h-3 w-3" />
-                  <span className="hidden sm:inline text-xs">{label}</span>
+                  <span className="hidden xl:inline text-xs">{label}</span>
                 </Button>
               ))}
             </div>
+          )}
+
+          {/* Site Status Indicator */}
+          {!isPublished && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled
+              className="flex items-center gap-1 text-amber-600 border-amber-200 bg-amber-50"
+            >
+              <EyeIcon className="h-4 w-4" />
+              Site is hidden
+            </Button>
           )}
 
           <Button
@@ -273,8 +285,9 @@ const BuilderNavbar = ({
             className="flex items-center gap-1"
           >
             <ExternalLink className="h-4 w-4" />
-            View Site
+            <span className="hidden sm:inline">View Site</span>
           </Button>
+          
           <Button
             variant="outline"
             size="sm"
@@ -282,16 +295,17 @@ const BuilderNavbar = ({
           >
             {isPreviewMode ? (
               <>
-                <EyeOff className="mr-2 h-4 w-4" />
-                Exit Preview
+                <EyeOff className="mr-1 h-4 w-4" />
+                <span className="hidden sm:inline">Exit Preview</span>
               </>
             ) : (
               <>
-                <Eye className="mr-2 h-4 w-4" />
-                Preview
+                <Eye className="mr-1 h-4 w-4" />
+                <span className="hidden sm:inline">Preview</span>
               </>
             )}
           </Button>
+          
           <Button 
             size="sm" 
             onClick={onSave}
@@ -301,10 +315,12 @@ const BuilderNavbar = ({
             <Save className="h-4 w-4" />
             {isSaving ? "Saving..." : "Save"}
           </Button>
+          
           <Button 
             size="sm" 
             onClick={onPublish} 
-            disabled={isPublishing || isPublished}
+            disabled={isPublishing}
+            variant={isPublished ? "outline" : "default"}
             className="flex items-center gap-1"
           >
             <Home className="h-4 w-4" />
@@ -314,7 +330,7 @@ const BuilderNavbar = ({
       </div>
 
       {/* Tabs row */}
-      <div className="px-4 border-t border-slate-200">
+      <div className="px-4 border-t border-slate-200 bg-white">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="bg-transparent h-10 p-0 border-b border-transparent gap-4">
             <TabsTrigger 
@@ -346,7 +362,7 @@ const BuilderNavbar = ({
               Pages
             </TabsTrigger>
             <TabsTrigger 
-              value="settings" 
+              value="payment-settings" 
               className="px-2 py-2 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
             >
               <CreditCard className="h-4 w-4 mr-2" />
