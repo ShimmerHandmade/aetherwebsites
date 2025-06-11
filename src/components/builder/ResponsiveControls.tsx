@@ -2,18 +2,17 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Monitor, Tablet, Smartphone } from "lucide-react";
+import { Monitor, Smartphone } from "lucide-react";
 
 const ResponsiveControls = () => {
-  const [currentBreakpoint, setCurrentBreakpoint] = React.useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [currentBreakpoint, setCurrentBreakpoint] = React.useState<'desktop' | 'mobile'>('desktop');
 
   const breakpoints = [
     { id: 'desktop' as const, label: 'Desktop', icon: Monitor, width: '100%' },
-    { id: 'tablet' as const, label: 'Tablet', icon: Tablet, width: '768px' },
     { id: 'mobile' as const, label: 'Mobile', icon: Smartphone, width: '375px' }
   ];
 
-  const handleBreakpointChange = (breakpoint: 'desktop' | 'tablet' | 'mobile') => {
+  const handleBreakpointChange = (breakpoint: 'desktop' | 'mobile') => {
     setCurrentBreakpoint(breakpoint);
     
     // Apply breakpoint to preview iframe or canvas

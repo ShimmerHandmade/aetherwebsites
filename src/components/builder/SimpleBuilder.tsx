@@ -267,9 +267,9 @@ const SimpleBuilder = () => {
       onSave={handleBuilderSave}
     >
       <SidebarProvider>
-        <div className="h-screen flex bg-gray-50 w-full">
+        <div className="h-screen flex bg-gray-50 w-full overflow-hidden">
           <BuilderSidebar isPreviewMode={isPreviewMode} />
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-w-0">
             <BuilderNavbar
               websiteName={websiteName}
               setWebsiteName={setWebsiteName}

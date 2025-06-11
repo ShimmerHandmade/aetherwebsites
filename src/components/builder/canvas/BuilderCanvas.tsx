@@ -25,17 +25,31 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = memo(({
 
   return (
     <div 
-      className="w-full min-h-screen pb-20 relative"
+      className="w-full h-full overflow-auto"
       data-testid="builder-canvas"
       ref={canvasRef}
     >
-      {!isPreviewMode && (
-        <CanvasDragDropHandler 
-          isPreviewMode={isPreviewMode}
-          onCanvasClick={handleCanvasClick}
-          className="w-full min-h-screen"
-        >
-          {elements.length === 0 ? (
+      <div className="min-h-full pb-20 relative">
+        {!isPreviewMode && (
+          <CanvasDragDropHandler 
+            isPreviewMode={isPreviewMode}
+            onCanvasClick={handleCanvasClick}
+            className="w-full min-h-full"
+          >
+            {elements.length === 0 ? (
+              <EmptyCanvasPlaceholder isPreviewMode={isPreviewMode} />
+            ) : (
+              <PageCanvas 
+                elements={elements} 
+                isPreviewMode={isPreviewMode} 
+                isLiveSite={isLiveSite}
+              />
+            )}
+          </CanvasDragDropHandler>
+        )}
+        
+        {isPreviewMode && (
+          elements.length === 0 ? (
             <EmptyCanvasPlaceholder isPreviewMode={isPreviewMode} />
           ) : (
             <PageCanvas 
@@ -43,21 +57,9 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = memo(({
               isPreviewMode={isPreviewMode} 
               isLiveSite={isLiveSite}
             />
-          )}
-        </CanvasDragDropHandler>
-      )}
-      
-      {isPreviewMode && (
-        elements.length === 0 ? (
-          <EmptyCanvasPlaceholder isPreviewMode={isPreviewMode} />
-        ) : (
-          <PageCanvas 
-            elements={elements} 
-            isPreviewMode={isPreviewMode} 
-            isLiveSite={isLiveSite}
-          />
-        )
-      )}
+          )
+        )}
+      </div>
     </div>
   );
 });
