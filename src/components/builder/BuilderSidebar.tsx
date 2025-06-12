@@ -26,7 +26,7 @@ const BuilderSidebar = ({ isPreviewMode }: BuilderSidebarProps) => {
       </SidebarHeader>
       <SidebarContent className="flex flex-col h-full">
         <div className="flex-1 overflow-hidden">
-          <PageEditorSidebar />
+          <PageEditorSidebar isPreviewMode={isPreviewMode} />
         </div>
         <div className="border-t border-gray-200">
           <ElementPalette />
