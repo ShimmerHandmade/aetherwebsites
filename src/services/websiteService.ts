@@ -33,6 +33,8 @@ interface WebsiteSettings {
 export class WebsiteService {
   static async fetchWebsite(id: string): Promise<WebsiteData | null> {
     try {
+      console.log("🔍 WebsiteService: Fetching website", id);
+      
       const { data, error } = await supabase
         .from("websites")
         .select("*")
@@ -40,9 +42,17 @@ export class WebsiteService {
         .single();
       
       if (error) {
-        console.error("Error fetching website:", error);
+        console.error("❌ WebsiteService: Error fetching website:", error);
         throw error;
       }
+      
+      console.log("📊 WebsiteService: Raw website data:", {
+        id: data.id,
+        name: data.name,
+        contentType: typeof data.content,
+        settingsType: typeof data.settings,
+        contentLength: Array.isArray(data.content) ? data.content.length : 'not array'
+      });
       
       const parsedSettings: WebsiteSettings = typeof data.settings === 'string' 
         ? JSON.parse(data.settings as string)
@@ -64,12 +74,25 @@ export class WebsiteService {
         if (!parsedSettings.pagesContent) {
           parsedSettings.pagesContent = {};
         }
-        parsedSettings.pagesContent[homePageId] = [];
+        
+        // If there's existing content, put it in the home page
+        const existingContent = Array.isArray(data.content) ? data.content as unknown as BuilderElement[] : [];
+        parsedSettings.pagesContent[homePageId] = existingContent;
+        
+        console.log("🏠 WebsiteService: Created default home page with", existingContent.length, "elements");
         
         await this.updateWebsiteSettings(id, parsedSettings);
       }
       
-      return {
+      // Ensure pagesContent and pagesSettings exist
+      if (!parsedSettings.pagesContent) {
+        parsedSettings.pagesContent = {};
+      }
+      if (!parsedSettings.pagesSettings) {
+        parsedSettings.pagesSettings = {};
+      }
+      
+      const websiteData: WebsiteData = {
         id: data.id,
         name: data.name,
         content: Array.isArray(data.content) ? data.content as unknown as BuilderElement[] : [],
@@ -77,8 +100,19 @@ export class WebsiteService {
         pageSettings: parsedSettings?.pageSettings || null,
         published: !!data.published
       };
+      
+      console.log("✅ WebsiteService: Processed website data:", {
+        id: websiteData.id,
+        name: websiteData.name,
+        contentLength: websiteData.content.length,
+        pagesCount: parsedSettings.pages.length,
+        pagesContentKeys: Object.keys(parsedSettings.pagesContent || {}),
+        pagesSettingsKeys: Object.keys(parsedSettings.pagesSettings || {})
+      });
+      
+      return websiteData;
     } catch (error) {
-      console.error("Error in fetchWebsite:", error);
+      console.error("❌ WebsiteService: Error in fetchWebsite:", error);
       return null;
     }
   }
@@ -91,6 +125,14 @@ export class WebsiteService {
     additionalSettings?: any
   ): Promise<boolean> {
     try {
+      console.log("💾 WebsiteService: Saving website", {
+        id,
+        name: websiteName,
+        elementsCount: elements.length,
+        pageSettings,
+        hasAdditionalSettings: !!additionalSettings
+      });
+      
       const updatedSettings: WebsiteSettings = {
         pageSettings,
         ...(additionalSettings || {})
@@ -107,13 +149,14 @@ export class WebsiteService {
         .eq("id", id);
       
       if (error) {
-        console.error("Error saving website:", error);
+        console.error("❌ WebsiteService: Error saving website:", error);
         return false;
       }
       
+      console.log("✅ WebsiteService: Website saved successfully");
       return true;
     } catch (error) {
-      console.error("Error in saveWebsite:", error);
+      console.error("❌ WebsiteService: Error in saveWebsite:", error);
       return false;
     }
   }

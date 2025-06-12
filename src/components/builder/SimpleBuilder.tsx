@@ -21,6 +21,8 @@ const SimpleBuilder = () => {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
   const [currentPage, setCurrentPage] = useState<{ id: string; title: string; slug: string; isHomePage?: boolean; } | null>(null);
+  const [currentElements, setCurrentElements] = useState<BuilderElement[]>([]);
+  const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
   
   const { 
     website,
@@ -75,31 +77,80 @@ const SimpleBuilder = () => {
 
   const pages = website?.settings?.pages || [];
 
+  // Initialize current page and load its content
   useEffect(() => {
-    if (website && website.settings?.pages && website.settings.pages.length > 0) {
-      const homePage = website.settings.pages.find(page => page.isHomePage) || website.settings.pages[0];
+    console.log("🔄 SimpleBuilder: Website data changed", {
+      websiteId: website?.id,
+      pagesCount: pages.length,
+      currentPageId: currentPage?.id
+    });
+
+    if (website && pages.length > 0) {
+      const homePage = pages.find(page => page.isHomePage) || pages[0];
+      
       if (!currentPage || currentPage.id !== homePage.id) {
+        console.log("📄 SimpleBuilder: Setting current page to", homePage.title);
         setCurrentPage(homePage);
+        
+        // Load the page content
+        const pageContent = website.settings?.pagesContent?.[homePage.id] || [];
+        const pageSettingsData = website.settings?.pagesSettings?.[homePage.id] || { title: websiteName || 'My Website' };
+        
+        console.log("📝 SimpleBuilder: Loading page content", {
+          pageId: homePage.id,
+          elementsCount: pageContent.length,
+          pageSettings: pageSettingsData
+        });
+        
+        setCurrentElements(pageContent);
+        setCurrentPageSettings(pageSettingsData);
+        updateElements(pageContent);
       }
     }
-  }, [website, currentPage]);
+  }, [website, pages, currentPage, websiteName, updateElements]);
+
+  // Initialize elements from the useWebsite hook when it loads
+  useEffect(() => {
+    if (elements && elements.length > 0 && currentElements.length === 0) {
+      console.log("🔄 SimpleBuilder: Initializing elements from useWebsite hook", elements.length);
+      setCurrentElements(elements);
+    }
+  }, [elements, currentElements.length]);
+
+  // Initialize page settings
+  useEffect(() => {
+    if (pageSettings && !currentPageSettings) {
+      console.log("🔄 SimpleBuilder: Initializing page settings from useWebsite hook");
+      setCurrentPageSettings(pageSettings);
+    }
+  }, [pageSettings, currentPageSettings]);
 
   const handlePublish = async () => {
     await publishWebsite();
   };
 
   const handlePageChange = (pageId: string) => {
-    console.log("Page changed to:", pageId);
+    console.log("📄 SimpleBuilder: Page changed to:", pageId);
     
     const selectedPage = pages.find(page => page.id === pageId);
     if (!selectedPage) {
-      console.error("Page not found:", pageId);
+      console.error("❌ SimpleBuilder: Page not found:", pageId);
       return;
     }
     
     setCurrentPage(selectedPage);
     
+    // Load the page content and settings
     const pageContent = website?.settings?.pagesContent?.[pageId] || [];
+    const pageSettingsData = website?.settings?.pagesSettings?.[pageId] || { title: selectedPage.title };
+    
+    console.log("📝 SimpleBuilder: Loading page content for", selectedPage.title, {
+      elementsCount: pageContent.length,
+      pageSettings: pageSettingsData
+    });
+    
+    setCurrentElements(pageContent);
+    setCurrentPageSettings(pageSettingsData);
     updateElements(pageContent);
   };
 
@@ -114,15 +165,39 @@ const SimpleBuilder = () => {
     toast.success("Welcome to your website builder!");
   }, [refreshWebsite, markTemplateAsApplied, setShowOnboarding]);
 
-  // Enhanced save handler that properly connects builder to website saving
+  // Enhanced save handler that properly saves page content
   const handleBuilderSaveWrapper = useCallback(async (elements: BuilderElement[], pageSettings: PageSettings) => {
-    console.log("💾 SimpleBuilder: Handling save from builder with", elements?.length || 0, "elements");
+    console.log("💾 SimpleBuilder: Handling save from builder", {
+      elementsCount: elements?.length || 0,
+      pageId: currentPage?.id,
+      pageSettings
+    });
+    
+    if (!currentPage) {
+      console.error("❌ SimpleBuilder: No current page selected for saving");
+      return false;
+    }
     
     // Update local state first
+    setCurrentElements(elements);
+    setCurrentPageSettings(pageSettings);
     updateElements(elements);
     
-    // Save to database
-    const success = await saveWebsite(elements, pageSettings);
+    // Prepare the website settings with updated page content
+    const updatedSettings = {
+      ...website?.settings,
+      pagesContent: {
+        ...website?.settings?.pagesContent,
+        [currentPage.id]: elements
+      },
+      pagesSettings: {
+        ...website?.settings?.pagesSettings,
+        [currentPage.id]: pageSettings
+      }
+    };
+    
+    // Save to database with the updated settings
+    const success = await saveWebsite(elements, pageSettings, updatedSettings);
     
     if (success) {
       console.log("✅ SimpleBuilder: Save successful");
@@ -131,7 +206,7 @@ const SimpleBuilder = () => {
     }
     
     return success;
-  }, [saveWebsite, updateElements]);
+  }, [saveWebsite, updateElements, currentPage, website?.settings]);
 
   if (isLoading) {
     return (
@@ -168,12 +243,16 @@ const SimpleBuilder = () => {
     );
   }
 
-  console.log("🏗️ SimpleBuilder: Rendering builder with", elements?.length || 0, "elements");
+  console.log("🏗️ SimpleBuilder: Rendering builder", {
+    currentElementsCount: currentElements.length,
+    currentPageId: currentPage?.id,
+    currentPageSettings
+  });
 
   return (
     <BuilderProvider 
-      initialElements={elements || []}
-      initialPageSettings={pageSettings || { title: websiteName || 'My Website' }}
+      initialElements={currentElements}
+      initialPageSettings={currentPageSettings || { title: websiteName || 'My Website' }}
       onSave={handleBuilderSaveWrapper}
     >
       <SidebarProvider>
