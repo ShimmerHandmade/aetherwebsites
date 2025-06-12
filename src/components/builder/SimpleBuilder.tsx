@@ -114,6 +114,25 @@ const SimpleBuilder = () => {
     toast.success("Welcome to your website builder!");
   }, [refreshWebsite, markTemplateAsApplied, setShowOnboarding]);
 
+  // Enhanced save handler that properly connects builder to website saving
+  const handleBuilderSaveWrapper = useCallback(async (elements: BuilderElement[], pageSettings: PageSettings) => {
+    console.log("💾 SimpleBuilder: Handling save from builder with", elements?.length || 0, "elements");
+    
+    // Update local state first
+    updateElements(elements);
+    
+    // Save to database
+    const success = await saveWebsite(elements, pageSettings);
+    
+    if (success) {
+      console.log("✅ SimpleBuilder: Save successful");
+    } else {
+      console.error("❌ SimpleBuilder: Save failed");
+    }
+    
+    return success;
+  }, [saveWebsite, updateElements]);
+
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -155,7 +174,7 @@ const SimpleBuilder = () => {
     <BuilderProvider 
       initialElements={elements || []}
       initialPageSettings={pageSettings || { title: websiteName || 'My Website' }}
-      onSave={handleBuilderSave}
+      onSave={handleBuilderSaveWrapper}
     >
       <SidebarProvider>
         <div className="h-screen flex bg-gray-50 w-full overflow-hidden">
