@@ -10,7 +10,6 @@ import {
   ArrowLeft,
   Home,
   ExternalLink,
-  EyeIcon,
   Smartphone,
   Monitor,
   PanelsTopLeft,
@@ -18,10 +17,17 @@ import {
   ShoppingBag,
   FileText,
   CreditCard,
-  Truck
+  Truck,
+  ChevronDown
 } from "lucide-react";
 import { useBuilderNavigation } from "@/hooks/useBuilderNavigation";
 import { useResponsiveControls } from "@/hooks/useResponsiveControls";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Page {
   id: string;
@@ -142,17 +148,38 @@ const BuilderNavbar = ({
             </div>
           )}
 
-          {/* Site Status */}
-          {!isPublished && (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled
-              className="flex items-center gap-2 text-amber-600 border-amber-200 bg-amber-50"
-            >
-              <EyeIcon className="h-4 w-4" />
-              Site is hidden
-            </Button>
+          {/* Page Switcher */}
+          {activeTab === "edit" && pages.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  {currentPage?.isHomePage && <Home className="h-4 w-4" />}
+                  <span className="hidden sm:inline">
+                    {currentPage?.title || 'Select Page'}
+                  </span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {pages.map((page) => (
+                  <DropdownMenuItem
+                    key={page.id}
+                    onClick={() => onChangePage(page.id)}
+                    className="flex items-center gap-2"
+                  >
+                    {page.isHomePage && <Home className="h-4 w-4" />}
+                    <span>{page.title}</span>
+                    {page.isHomePage && (
+                      <span className="ml-auto text-xs text-green-600">Home</span>
+                    )}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
 
           <Button

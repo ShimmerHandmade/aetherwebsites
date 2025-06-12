@@ -92,9 +92,11 @@ const SimpleBuilder = () => {
         console.log("📄 SimpleBuilder: Setting current page to", homePage.title);
         setCurrentPage(homePage);
         
-        // Load the page content
+        // Load the page content with better fallback handling
         const pageContent = website.settings?.pagesContent?.[homePage.id] || [];
-        const pageSettingsData = website.settings?.pagesSettings?.[homePage.id] || { title: websiteName || 'My Website' };
+        const pageSettingsData = website.settings?.pagesSettings?.[homePage.id] || { 
+          title: websiteName || homePage.title || 'My Website' 
+        };
         
         console.log("📝 SimpleBuilder: Loading page content", {
           pageId: homePage.id,
@@ -129,7 +131,7 @@ const SimpleBuilder = () => {
     await publishWebsite();
   };
 
-  const handlePageChange = (pageId: string) => {
+  const handlePageChange = useCallback((pageId: string) => {
     console.log("📄 SimpleBuilder: Page changed to:", pageId);
     
     const selectedPage = pages.find(page => page.id === pageId);
@@ -138,11 +140,32 @@ const SimpleBuilder = () => {
       return;
     }
     
+    // Save current page before switching if there are unsaved changes
+    if (unsavedChanges && currentPage) {
+      console.log("💾 SimpleBuilder: Auto-saving current page before switch");
+      const updatedSettings = {
+        ...website?.settings,
+        pagesContent: {
+          ...website?.settings?.pagesContent,
+          [currentPage.id]: currentElements
+        },
+        pagesSettings: {
+          ...website?.settings?.pagesSettings,
+          [currentPage.id]: currentPageSettings
+        }
+      };
+      
+      // Save asynchronously without waiting
+      saveWebsite(currentElements, currentPageSettings, updatedSettings);
+    }
+    
     setCurrentPage(selectedPage);
     
-    // Load the page content and settings
+    // Load the page content and settings with better error handling
     const pageContent = website?.settings?.pagesContent?.[pageId] || [];
-    const pageSettingsData = website?.settings?.pagesSettings?.[pageId] || { title: selectedPage.title };
+    const pageSettingsData = website?.settings?.pagesSettings?.[pageId] || { 
+      title: selectedPage.title 
+    };
     
     console.log("📝 SimpleBuilder: Loading page content for", selectedPage.title, {
       elementsCount: pageContent.length,
@@ -152,7 +175,7 @@ const SimpleBuilder = () => {
     setCurrentElements(pageContent);
     setCurrentPageSettings(pageSettingsData);
     updateElements(pageContent);
-  };
+  }, [pages, unsavedChanges, currentPage, currentElements, currentPageSettings, website?.settings, saveWebsite, updateElements]);
 
   const handleOnboardingComplete = useCallback(async () => {
     console.log("🎓 Onboarding complete, refreshing website data");
@@ -175,37 +198,51 @@ const SimpleBuilder = () => {
     
     if (!currentPage) {
       console.error("❌ SimpleBuilder: No current page selected for saving");
+      toast.error("No page selected for saving");
       return false;
     }
     
-    // Update local state first
-    setCurrentElements(elements);
-    setCurrentPageSettings(pageSettings);
-    updateElements(elements);
-    
-    // Prepare the website settings with updated page content
-    const updatedSettings = {
-      ...website?.settings,
-      pagesContent: {
-        ...website?.settings?.pagesContent,
-        [currentPage.id]: elements
-      },
-      pagesSettings: {
-        ...website?.settings?.pagesSettings,
-        [currentPage.id]: pageSettings
+    try {
+      // Update local state first
+      setCurrentElements(elements);
+      setCurrentPageSettings(pageSettings);
+      updateElements(elements);
+      
+      // Prepare the website settings with updated page content
+      const updatedSettings = {
+        ...website?.settings,
+        pagesContent: {
+          ...website?.settings?.pagesContent,
+          [currentPage.id]: elements
+        },
+        pagesSettings: {
+          ...website?.settings?.pagesSettings,
+          [currentPage.id]: pageSettings
+        }
+      };
+      
+      console.log("💾 SimpleBuilder: Saving with updated settings", {
+        currentPageId: currentPage.id,
+        totalPages: Object.keys(updatedSettings.pagesContent || {}).length
+      });
+      
+      // Save to database with the updated settings
+      const success = await saveWebsite(elements, pageSettings, updatedSettings);
+      
+      if (success) {
+        console.log("✅ SimpleBuilder: Save successful");
+        toast.success("Page saved successfully");
+      } else {
+        console.error("❌ SimpleBuilder: Save failed");
+        toast.error("Failed to save page");
       }
-    };
-    
-    // Save to database with the updated settings
-    const success = await saveWebsite(elements, pageSettings, updatedSettings);
-    
-    if (success) {
-      console.log("✅ SimpleBuilder: Save successful");
-    } else {
-      console.error("❌ SimpleBuilder: Save failed");
+      
+      return success;
+    } catch (error) {
+      console.error("❌ SimpleBuilder: Save error:", error);
+      toast.error("An error occurred while saving");
+      return false;
     }
-    
-    return success;
   }, [saveWebsite, updateElements, currentPage, website?.settings]);
 
   if (isLoading) {
@@ -246,6 +283,7 @@ const SimpleBuilder = () => {
   console.log("🏗️ SimpleBuilder: Rendering builder", {
     currentElementsCount: currentElements.length,
     currentPageId: currentPage?.id,
+    currentPageTitle: currentPage?.title,
     currentPageSettings
   });
 
