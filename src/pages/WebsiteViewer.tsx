@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, Suspense } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { BuilderProvider } from "@/contexts/BuilderContext";
@@ -39,9 +38,10 @@ const WebsiteViewer = () => {
     // Detect site ID from various sources
     let detectedId = id;
     
-    // Check if this is a custom domain (not localhost or lovable domains)
+    // Check if this is a custom domain (not localhost, lovable domains, or lovableproject domains)
     const isCustomDomain = window.location.hostname !== 'localhost' && 
                            !window.location.hostname.includes('lovable.app') &&
+                           !window.location.hostname.includes('lovableproject.com') &&
                            !window.location.hostname.includes('netlify.app');
     
     if (isCustomDomain) {
@@ -82,6 +82,7 @@ const WebsiteViewer = () => {
   const isSiteRoute = location.pathname.startsWith(`/site/${actualSiteId}`);
   const isCustomDomain = window.location.hostname !== 'localhost' && 
                          !window.location.hostname.includes('lovable.app') &&
+                         !window.location.hostname.includes('lovableproject.com') &&
                          !window.location.hostname.includes('netlify.app');
   const isLiveSite = isSiteRoute || isViewRoute || isCustomDomain;
 
