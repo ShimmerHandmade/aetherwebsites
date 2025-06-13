@@ -38,10 +38,11 @@ const WebsiteViewer = () => {
     // Detect site ID from various sources
     let detectedId = id;
     
-    // Check if this is a custom domain (not localhost, lovable domains, or lovableproject domains)
+    // Check if this is a custom domain (not localhost, lovable domains, lovableproject domains, or aetherwebsites.com)
     const isCustomDomain = window.location.hostname !== 'localhost' && 
                            !window.location.hostname.includes('lovable.app') &&
                            !window.location.hostname.includes('lovableproject.com') &&
+                           !window.location.hostname.includes('aetherwebsites.com') &&
                            !window.location.hostname.includes('netlify.app');
     
     if (isCustomDomain) {
@@ -83,6 +84,7 @@ const WebsiteViewer = () => {
   const isCustomDomain = window.location.hostname !== 'localhost' && 
                          !window.location.hostname.includes('lovable.app') &&
                          !window.location.hostname.includes('lovableproject.com') &&
+                         !window.location.hostname.includes('aetherwebsites.com') &&
                          !window.location.hostname.includes('netlify.app');
   const isLiveSite = isSiteRoute || isViewRoute || isCustomDomain;
 

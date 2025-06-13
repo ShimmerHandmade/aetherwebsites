@@ -30,10 +30,10 @@ const queryClient = new QueryClient();
 import DebugInfo from "@/components/DebugInfo";
 
 function App() {
-  // Check if this is a custom domain (not localhost, lovable.app, or lovableproject.com)
+  // Check if this is a custom domain (not localhost, lovable.app, lovableproject.com, or aetherwebsites.com)
   const isCustomDomain = window.location.hostname !== 'localhost' && 
                          !window.location.hostname.includes('lovable.app') &&
-                         !window.location.hostname.includes('lovableproject.com');
+                         !window.location.hostname.includes('lovableproject.com') &&
                          !window.location.hostname.includes('aetherwebsites.com');
 
   console.log("App routing info:", {
