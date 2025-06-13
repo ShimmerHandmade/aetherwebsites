@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BuilderElement } from "@/contexts/builder/types";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -52,11 +52,41 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
     primary: "text-white/80 hover:text-white transition-colors font-medium",
     accent: "text-white/90 hover:text-white transition-colors font-medium"
   };
+
+  // Mobile menu link styles
+  const mobileLinkStyles = {
+    default: "text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors font-medium",
+    transparent: "text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors font-medium",
+    dark: "text-gray-800 hover:text-indigo-600 hover:bg-gray-50 transition-colors font-medium",
+    primary: "text-gray-800 hover:text-indigo-600 hover:bg-gray-50 transition-colors font-medium",
+    accent: "text-gray-800 hover:text-amber-600 hover:bg-gray-50 transition-colors font-medium"
+  };
   
   // Handle mobile menu toggle
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
+
+  // Close mobile menu when switching to desktop
+  useEffect(() => {
+    if (!isMobile && mobileMenuOpen) {
+      setMobileMenuOpen(false);
+    }
+  }, [isMobile, mobileMenuOpen]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [mobileMenuOpen]);
 
   // Get the current site URL to build site-specific cart URL
   const getSiteCartUrl = () => {
@@ -120,94 +150,102 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
   };
 
   return (
-    <header className={cn(navbarStyles[variant as keyof typeof navbarStyles], "relative z-50")}>
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center py-4">
-          <div className="flex items-center space-x-3">
-            {logo ? (
-              <img 
-                src={logo} 
-                alt={`${siteName} logo`} 
-                className="h-6 sm:h-8 object-contain" 
-                onError={(e) => {
-                  // Hide broken images
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-            ) : (
-              <div className={cn(
-                "w-6 h-6 sm:w-8 sm:h-8 rounded flex items-center justify-center text-white font-bold text-sm",
-                variant === 'default' || variant === 'transparent' ? 'bg-indigo-600' : 'bg-white/20'
+    <>
+      <header className={cn(navbarStyles[variant as keyof typeof navbarStyles], "relative z-50")}>
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-3">
+              {logo ? (
+                <img 
+                  src={logo} 
+                  alt={`${siteName} logo`} 
+                  className="h-6 sm:h-8 object-contain" 
+                  onError={(e) => {
+                    // Hide broken images
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div className={cn(
+                  "w-6 h-6 sm:w-8 sm:h-8 rounded flex items-center justify-center text-white font-bold text-sm",
+                  variant === 'default' || variant === 'transparent' ? 'bg-indigo-600' : 'bg-white/20'
+                )}>
+                  {siteName.charAt(0)}
+                </div>
+              )}
+              <span className={cn(
+                "text-sm sm:text-lg font-bold", 
+                variant === 'dark' || variant === 'primary' || variant === 'accent' ? 'text-white' : 'text-gray-800'
               )}>
-                {siteName.charAt(0)}
-              </div>
-            )}
-            <span className={cn(
-              "text-sm sm:text-lg font-bold", 
-              variant === 'dark' || variant === 'primary' || variant === 'accent' ? 'text-white' : 'text-gray-800'
-            )}>
-              {siteName}
-            </span>
-          </div>
-          
-          <nav className="hidden md:block">
-            <ul className="flex space-x-6 lg:space-x-8">
-              {links.map((link, index) => (
-                <li key={index}>
-                  <a 
-                    href={link.url} 
-                    className={linkStyles[variant as keyof typeof linkStyles]}
-                    onClick={(e) => handleLinkClick(e, link.url)}
-                  >
-                    {link.text}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-          
-          <div className="flex items-center space-x-2">
-            {showCartButton && (
-              <CartButton 
-                variant={variant === 'dark' || variant === 'primary' || variant === 'accent' ? "ghost" : "outline"} 
-                size="icon" 
-                className="text-inherit" 
-                siteCartUrl={getSiteCartUrl()}
-              />
-            )}
+                {siteName}
+              </span>
+            </div>
             
-            <div className="md:hidden">
-              <button 
-                className={cn(
-                  "p-2 rounded-md transition-colors",
-                  variant === 'dark' || variant === 'primary' || variant === 'accent' ? 
-                    'text-white/80 hover:bg-white/10 hover:text-white' : 
-                    'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                )}
-                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-                onClick={toggleMobileMenu}
-              >
-                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </button>
+            <nav className="hidden md:block">
+              <ul className="flex space-x-6 lg:space-x-8">
+                {links.map((link, index) => (
+                  <li key={index}>
+                    <a 
+                      href={link.url} 
+                      className={linkStyles[variant as keyof typeof linkStyles]}
+                      onClick={(e) => handleLinkClick(e, link.url)}
+                    >
+                      {link.text}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+            
+            <div className="flex items-center space-x-2">
+              {showCartButton && (
+                <CartButton 
+                  variant={variant === 'dark' || variant === 'primary' || variant === 'accent' ? "ghost" : "outline"} 
+                  size="icon" 
+                  className="text-inherit" 
+                  siteCartUrl={getSiteCartUrl()}
+                />
+              )}
+              
+              <div className="md:hidden">
+                <button 
+                  className={cn(
+                    "p-2 rounded-md transition-colors",
+                    variant === 'dark' || variant === 'primary' || variant === 'accent' ? 
+                      'text-white/80 hover:bg-white/10 hover:text-white' : 
+                      'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  )}
+                  aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                  onClick={toggleMobileMenu}
+                >
+                  {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </button>
+              </div>
             </div>
           </div>
         </div>
+      </header>
 
-        {/* Mobile navigation */}
-        {mobileMenuOpen && (
-          <div className="md:hidden">
-            <div className={cn(
-              "mt-2 pt-4 pb-4 border-t",
-              variant === 'default' || variant === 'transparent' ? 'border-gray-100' : 'border-white/20'
-            )}>
-              <div className="flex flex-col space-y-3">
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          
+          {/* Menu Panel */}
+          <div className="fixed top-0 right-0 h-full w-64 bg-white shadow-lg animate-slide-in-right">
+            <div className="p-6 pt-20">
+              <div className="flex flex-col space-y-6">
                 {links.map((link, index) => (
                   <a
                     key={index}
                     href={link.url}
                     className={cn(
-                      linkStyles[variant as keyof typeof linkStyles],
-                      "py-2 text-base"
+                      mobileLinkStyles[variant as keyof typeof mobileLinkStyles],
+                      "py-3 px-4 text-lg rounded-md block"
                     )}
                     onClick={(e) => {
                       handleLinkClick(e, link.url);
@@ -220,9 +258,9 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
               </div>
             </div>
           </div>
-        )}
-      </div>
-    </header>
+        </div>
+      )}
+    </>
   );
 };
 
