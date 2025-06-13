@@ -30,6 +30,39 @@ const queryClient = new QueryClient();
 import DebugInfo from "@/components/DebugInfo";
 
 function App() {
+  // Check if this is a custom domain (not localhost or lovable.app)
+  const isCustomDomain = window.location.hostname !== 'localhost' && 
+                         !window.location.hostname.includes('lovable.app');
+
+  console.log("App routing info:", {
+    hostname: window.location.hostname,
+    pathname: window.location.pathname,
+    isCustomDomain,
+    fullUrl: window.location.href
+  });
+
+  // If it's a custom domain, show the website viewer directly
+  if (isCustomDomain) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <PlanProvider>
+          <CartProvider>
+            <Router>
+              <div className="min-h-screen bg-background font-sans antialiased">
+                <Routes>
+                  {/* Custom domain routes - all paths go to Website component */}
+                  <Route path="/*" element={<Website />} />
+                </Routes>
+                <Toaster />
+                <DebugInfo />
+              </div>
+            </Router>
+          </CartProvider>
+        </PlanProvider>
+      </QueryClientProvider>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <PlanProvider>

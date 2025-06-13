@@ -22,30 +22,75 @@ const WebsiteViewer = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
   
+  // Enhanced site ID detection for custom domains
+  const [actualSiteId, setActualSiteId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // Debug current location and URL
+    console.log("WebsiteViewer Debug Info:", {
+      pathname: location.pathname,
+      hostname: window.location.hostname,
+      fullUrl: window.location.href,
+      routeId: id,
+      search: location.search,
+      hash: location.hash
+    });
+
+    // Detect site ID from various sources
+    let detectedId = id;
+    
+    // Check if this is a custom domain (not localhost or lovable domains)
+    const isCustomDomain = window.location.hostname !== 'localhost' && 
+                           !window.location.hostname.includes('lovable.app') &&
+                           !window.location.hostname.includes('netlify.app');
+    
+    if (isCustomDomain) {
+      // For custom domains, try to extract site ID from URL params or subdomain
+      const urlParams = new URLSearchParams(location.search);
+      const siteIdFromParams = urlParams.get('siteId') || urlParams.get('id');
+      
+      if (siteIdFromParams) {
+        detectedId = siteIdFromParams;
+        console.log("Site ID detected from URL params:", detectedId);
+      } else {
+        // Try to detect from subdomain pattern (e.g., site-123.domain.com)
+        const subdomainMatch = window.location.hostname.match(/^site-([a-f0-9-]+)\./);
+        if (subdomainMatch) {
+          detectedId = subdomainMatch[1];
+          console.log("Site ID detected from subdomain:", detectedId);
+        }
+      }
+    }
+    
+    console.log("Final detected site ID:", detectedId);
+    setActualSiteId(detectedId || null);
+  }, [id, location]);
+  
   const { 
     website, 
     isLoading, 
     websiteName,
     elements
-  } = useWebsite(id, navigate);
+  } = useWebsite(actualSiteId, navigate);
   
   const [currentPageId, setCurrentPageId] = useState<string | null>(null);
   const [currentPageElements, setCurrentPageElements] = useState<BuilderElement[]>([]);
   const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
 
-  // Route detection - Enhanced to handle both /site and /view routes
-  const isViewRoute = location.pathname.startsWith(`/view/${id}`);
-  const isSiteRoute = location.pathname.startsWith(`/site/${id}`);
+  // Enhanced route detection
+  const isViewRoute = location.pathname.startsWith(`/view/${actualSiteId}`);
+  const isSiteRoute = location.pathname.startsWith(`/site/${actualSiteId}`);
   const isCustomDomain = window.location.hostname !== 'localhost' && 
-                         !window.location.hostname.includes('lovable.app');
+                         !window.location.hostname.includes('lovable.app') &&
+                         !window.location.hostname.includes('netlify.app');
   const isLiveSite = isSiteRoute || isViewRoute || isCustomDomain;
 
   // Extract the current path after the site/view prefix
   let currentPath = location.pathname;
   if (isSiteRoute) {
-    currentPath = currentPath.replace(`/site/${id}`, '') || '/';
+    currentPath = currentPath.replace(`/site/${actualSiteId}`, '') || '/';
   } else if (isViewRoute) {
-    currentPath = currentPath.replace(`/view/${id}`, '') || '/';
+    currentPath = currentPath.replace(`/view/${actualSiteId}`, '') || '/';
   } else if (isCustomDomain) {
     currentPath = location.pathname || '/';
   }
@@ -56,7 +101,8 @@ const WebsiteViewer = () => {
   const isProductPage = !!productMatch;
   const productId = productMatch ? productMatch[1] : null;
 
-  console.log("WebsiteViewer route detection:", {
+  console.log("WebsiteViewer enhanced route detection:", {
+    actualSiteId,
     isViewRoute,
     isSiteRoute,
     isCustomDomain,
@@ -66,8 +112,32 @@ const WebsiteViewer = () => {
     isCheckoutPage,
     isProductPage,
     productId,
-    fullPath: location.pathname
+    fullPath: location.pathname,
+    hostname: window.location.hostname
   });
+
+  // Show error if no site ID could be detected
+  if (!actualSiteId) {
+    return (
+      <PlanProvider>
+        <CartProvider>
+          <div className="h-screen flex items-center justify-center px-4">
+            <div className="text-center">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-700 mb-2">Site ID not found</h2>
+              <p className="text-gray-600 mb-6 text-sm md:text-base">
+                Could not determine the website ID from the URL. 
+                Expected format: /site/[id] or /view/[id]
+              </p>
+              <p className="text-xs text-gray-500">
+                Current URL: {window.location.href}
+              </p>
+            </div>
+          </div>
+          <PlanDebugInfo />
+        </CartProvider>
+      </PlanProvider>
+    );
+  }
 
   // Debug logging for website data
   useEffect(() => {
@@ -184,14 +254,14 @@ const WebsiteViewer = () => {
       // Make site settings available globally for components
       window.__SITE_SETTINGS__ = {
         logoUrl: website.settings.logoUrl,
-        siteId: id, // Add site ID to settings for cart routes
-        isLiveSite: isLiveSite, // Indicate this is a live site
+        siteId: actualSiteId, // Use the detected site ID
+        isLiveSite: isLiveSite,
         customDomain: website.settings.customDomain,
         customDomainEnabled: website.settings.customDomainEnabled,
-        isMobile: isMobile // Add mobile detection to global settings
+        isMobile: isMobile
       };
     }
-  }, [website?.settings, id, isLiveSite, isMobile]);
+  }, [website?.settings, actualSiteId, isLiveSite, isMobile]);
 
   // Viewport optimization for mobile
   useEffect(() => {
@@ -226,7 +296,15 @@ const WebsiteViewer = () => {
           <div className="h-screen flex items-center justify-center px-4">
             <div className="text-center">
               <h2 className="text-xl md:text-2xl font-bold text-gray-700 mb-2">Website not found</h2>
-              <p className="text-gray-600 mb-6 text-sm md:text-base">The website you're looking for doesn't exist or you don't have permission to access it.</p>
+              <p className="text-gray-600 mb-6 text-sm md:text-base">
+                The website you're looking for doesn't exist or you don't have permission to access it.
+              </p>
+              <p className="text-xs text-gray-500 mb-2">
+                Site ID: {actualSiteId}
+              </p>
+              <p className="text-xs text-gray-500">
+                URL: {window.location.href}
+              </p>
             </div>
           </div>
           <PlanDebugInfo />
@@ -237,22 +315,22 @@ const WebsiteViewer = () => {
 
   const renderContent = () => {
     if (isCartPage) {
-      console.log("Rendering Cart page with siteId:", id);
+      console.log("Rendering Cart page with siteId:", actualSiteId);
       return (
         <div className="w-full min-h-screen">
           <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
-            <Cart siteName={websiteName} siteId={id} />
+            <Cart siteName={websiteName} siteId={actualSiteId} />
           </div>
         </div>
       );
     }
     
     if (isProductPage) {
-      console.log("Rendering ProductDetails page with productId:", productId, "siteId:", id);
+      console.log("Rendering ProductDetails page with productId:", productId, "siteId:", actualSiteId);
       return (
         <div className="w-full min-h-screen">
           <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
-            <ProductDetails productId={productId} siteId={id} />
+            <ProductDetails productId={productId} siteId={actualSiteId} />
           </div>
         </div>
       );
