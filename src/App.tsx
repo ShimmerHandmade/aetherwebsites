@@ -34,6 +34,7 @@ function App() {
   const isCustomDomain = window.location.hostname !== 'localhost' && 
                          !window.location.hostname.includes('lovable.app') &&
                          !window.location.hostname.includes('lovableproject.com');
+                         !window.location.hostname.includes('aetherwebsites.com');
 
   console.log("App routing info:", {
     hostname: window.location.hostname,
