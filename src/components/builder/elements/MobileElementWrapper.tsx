@@ -95,8 +95,16 @@ const MobileElementWrapper: React.FC<MobileElementWrapperProps> = ({
         ${selected ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
         ${longPressActive ? 'scale-105 shadow-lg' : ''}
       `}
-      onTouchStart={handleElementTouch}
-      {...mobileProps}
+      onTouchStart={(e) => {
+        handleElementTouch(e);
+        // Call the mobile builder's touch start handler if it exists
+        if (mobileProps.onTouchStart) {
+          mobileProps.onTouchStart(e);
+        }
+      }}
+      onTouchMove={mobileProps.onTouchMove}
+      onTouchEnd={mobileProps.onTouchEnd}
+      style={mobileProps.style}
     >
       {children}
       

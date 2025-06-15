@@ -24,15 +24,13 @@ export const useMobileBuilder = () => {
       }
     }, 500);
 
-    // Clear timer if touch ends early
+    // Clear timer on touch end - we'll handle this in the component
     const clearTimer = () => {
       clearTimeout(longPressTimer);
     };
 
-    // Set up cleanup on component unmount or touch end
-    const timeoutId = setTimeout(() => clearTimer(), 1000);
-    
-    return () => clearTimeout(timeoutId);
+    // Store the clear function for cleanup
+    (e.currentTarget as any).__clearLongPressTimer = clearTimer;
   }, [dragActive]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
@@ -45,6 +43,12 @@ export const useMobileBuilder = () => {
   }, [touchStartTime]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    // Clear any pending long press timer
+    const clearTimer = (e.currentTarget as any).__clearLongPressTimer;
+    if (clearTimer) {
+      clearTimer();
+    }
+    
     setDragActive(false);
     setLongPressActive(false);
   }, []);
@@ -58,9 +62,9 @@ export const useMobileBuilder = () => {
       onTouchMove: handleTouchMove,
       onTouchEnd: handleTouchEnd,
       style: {
-        touchAction: 'manipulation', // Prevent default touch behaviors
-        userSelect: 'none', // Prevent text selection on touch
-      }
+        touchAction: 'manipulation' as const,
+        userSelect: 'none' as const,
+      } as React.CSSProperties
     };
   }, [isMobile, handleTouchStart, handleTouchMove, handleTouchEnd]);
 
