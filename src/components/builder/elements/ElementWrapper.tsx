@@ -1,11 +1,19 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { useBuilder } from "@/contexts/builder/useBuilder";
 import { usePlan } from "@/contexts/PlanContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { renderElement } from "./renderElement";
 import { Button } from "@/components/ui/button";
-import { Pencil, Copy, Trash, GripVertical, ArrowUp, ArrowDown, Sparkles, Lock } from "lucide-react";
+import { Pencil, Copy, Trash, GripVertical, ArrowUp, ArrowDown, Sparkles, Lock, MoreVertical } from "lucide-react";
 import ResizableWrapper from "./ResizableWrapper";
+import MobileElementWrapper from "./MobileElementWrapper";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface BuilderElementProps {
   element: any;
@@ -39,6 +47,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
 }) => {
   const { selectElement, removeElement, duplicateElement, moveElementUp, moveElementDown, previewBreakpoint } = useBuilder();
   const { isPremium, isEnterprise } = usePlan();
+  const isMobile = useIsMobile();
   const [isDragging, setIsDragging] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
 
@@ -107,6 +116,10 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
     }
   };
 
+  const handleSelect = () => {
+    selectElement(element.id);
+  };
+
   const handleDuplicateClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     duplicateElement(element.id);
@@ -128,7 +141,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   };
 
   const handleDragStart = (e: React.DragEvent) => {
-    if (isPreviewMode || isElementLocked || isLiveSite) {
+    if (isPreviewMode || isElementLocked || isLiveSite || isMobile) {
       e.preventDefault();
       return false;
     }
@@ -255,10 +268,51 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   const renderedElement = renderElement(element, isPreviewMode, isLiveSite);
   
   // Some elements can't or shouldn't be draggable/editable
-  const isDraggable = !isPreviewMode && !isLiveSite && !["navbar", "footer"].includes(element.type) && !isElementLocked;
+  const isDraggable = !isPreviewMode && !isLiveSite && !["navbar", "footer"].includes(element.type) && !isElementLocked && !isMobile;
 
-  // Always show element controls for selected elements in builder mode - Fixed positioning
-  const controlsBar = !isPreviewMode && !isLiveSite && selected ? (
+  // Mobile-optimized controls bar - more compact and touch-friendly
+  const mobileControlsBar = !isPreviewMode && !isLiveSite && selected && isMobile ? (
+    <div className="absolute -top-12 left-0 flex space-x-1 bg-white p-2 rounded-lg shadow-lg border z-50 min-w-max">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-2"
+          >
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="bg-white border shadow-lg z-50">
+          <DropdownMenuItem onClick={handleMoveUpClick}>
+            <ArrowUp className="h-4 w-4 mr-2" />
+            Move Up
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleMoveDownClick}>
+            <ArrowDown className="h-4 w-4 mr-2" />
+            Move Down
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleDuplicateClick}>
+            <Copy className="h-4 w-4 mr-2" />
+            Duplicate
+          </DropdownMenuItem>
+          {!["navbar", "footer"].includes(element.type) && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleDeleteClick} className="text-red-600">
+                <Trash className="h-4 w-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  ) : null;
+
+  // Desktop controls bar - keep existing layout
+  const desktopControlsBar = !isPreviewMode && !isLiveSite && selected && !isMobile ? (
     <div className="absolute -top-8 left-0 flex space-x-1 bg-white p-1 rounded shadow-lg border z-50 min-w-max">
       <Button
         variant="outline"
@@ -315,6 +369,8 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
     </div>
   ) : null;
 
+  const controlsBar = isMobile ? mobileControlsBar : desktopControlsBar;
+
   // Create the element content with responsive container
   const content = (
     <div
@@ -365,6 +421,18 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
     </div>
   );
 
+  // Wrap with mobile element wrapper for enhanced touch interactions
+  const wrappedContent = isMobile && !isPreviewMode && !isLiveSite ? (
+    <MobileElementWrapper
+      element={element}
+      selected={selected}
+      isPreviewMode={isPreviewMode}
+      onSelect={handleSelect}
+    >
+      {content}
+    </MobileElementWrapper>
+  ) : content;
+
   // If the element is resizable and not in preview or live site mode, wrap it in ResizableWrapper
   if (isResizable && !isPreviewMode && !isLiveSite) {
     return (
@@ -377,10 +445,10 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
           maintainAspectRatio={maintainAspectRatio}
           minWidth={50}
           minHeight={50}
-          showHandles={false}
+          showHandles={!isMobile} // Disable resize handles on mobile
           className="resize-wrapper"
         >
-          {content}
+          {wrappedContent}
         </ResizableWrapper>
       </div>
     );
@@ -390,7 +458,7 @@ export const ElementWrapper: React.FC<BuilderElementProps> = ({
   return (
     <div className={`relative ${!isPreviewMode && !isLiveSite ? "mt-10" : ""} mb-4`}> {/* Increased top margin for controls */}
       {controlsBar}
-      {content}
+      {wrappedContent}
     </div>
   );
 };

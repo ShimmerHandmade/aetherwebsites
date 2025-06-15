@@ -1,8 +1,8 @@
-
 import React, { useState, useCallback, useEffect } from "react";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import BuilderSidebar from "@/components/builder/BuilderSidebar";
+import MobileBuilderSidebar from "@/components/builder/MobileBuilderSidebar";
 import BuilderNavbar from "@/components/builder/BuilderNavbar";
 import BuilderContent from "@/components/builder/BuilderContent";
 import TemplateSelection from "@/components/TemplateSelection";
@@ -11,6 +11,7 @@ import { useWebsite } from "@/hooks/useWebsite";
 import { useWebsiteInitialization } from "@/hooks/useWebsiteInitialization";
 import { useTemplateApplication } from "@/hooks/useTemplateApplication";
 import { useBuilderSave } from "@/hooks/useBuilderSave";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
@@ -25,6 +26,7 @@ const defaultHomePage = {
 const SimpleBuilder = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
   const [currentPage, setCurrentPage] = useState<{ id: string; title: string; slug: string; isHomePage?: boolean; } | null>(null);
@@ -315,35 +317,66 @@ const SimpleBuilder = () => {
       initialPageSettings={currentPageSettings || { title: websiteName || "My Website" }}
       onSave={handleBuilderSaveWrapper}
     >
-      <SidebarProvider>
-        <div className="h-screen flex bg-gray-50 w-full overflow-hidden">
-          <BuilderSidebar isPreviewMode={isPreviewMode} />
-          <div className="flex-1 flex flex-col min-w-0">
-            <BuilderNavbar
-              websiteName={websiteName}
-              setWebsiteName={setWebsiteName}
-              onSave={handleMainSave}
-              onPublish={handlePublish}
-              isPublished={website?.published}
-              isSaving={isSaving}
-              isPublishing={isPublishing}
+      {/* Conditionally render mobile or desktop layout */}
+      {isMobile ? (
+        // Mobile layout - no sidebar provider needed
+        <div className="h-screen flex flex-col bg-gray-50 w-full overflow-hidden">
+          <BuilderNavbar
+            websiteName={websiteName}
+            setWebsiteName={setWebsiteName}
+            onSave={handleMainSave}
+            onPublish={handlePublish}
+            isPublished={website?.published}
+            isSaving={isSaving}
+            isPublishing={isPublishing}
+            isPreviewMode={isPreviewMode}
+            setIsPreviewMode={setIsPreviewMode}
+            currentPage={currentPage}
+            pages={pages}
+            onChangePage={handlePageChange}
+            viewSiteUrl={`/site/${id}`}
+            saveStatus={saveStatus}
+          />
+          <div className="flex-1 overflow-hidden">
+            <BuilderContent 
               isPreviewMode={isPreviewMode}
-              setIsPreviewMode={setIsPreviewMode}
-              currentPage={currentPage}
-              pages={pages}
-              onChangePage={handlePageChange}
-              viewSiteUrl={`/site/${id}`}
-              saveStatus={saveStatus}
+              isLiveSite={false}
             />
-            <div className="flex-1 overflow-hidden">
-              <BuilderContent 
+          </div>
+          <MobileBuilderSidebar isPreviewMode={isPreviewMode} />
+        </div>
+      ) : (
+        // Desktop layout - keep existing sidebar structure
+        <SidebarProvider>
+          <div className="h-screen flex bg-gray-50 w-full overflow-hidden">
+            <BuilderSidebar isPreviewMode={isPreviewMode} />
+            <div className="flex-1 flex flex-col min-w-0">
+              <BuilderNavbar
+                websiteName={websiteName}
+                setWebsiteName={setWebsiteName}
+                onSave={handleMainSave}
+                onPublish={handlePublish}
+                isPublished={website?.published}
+                isSaving={isSaving}
+                isPublishing={isPublishing}
                 isPreviewMode={isPreviewMode}
-                isLiveSite={false}
+                setIsPreviewMode={setIsPreviewMode}
+                currentPage={currentPage}
+                pages={pages}
+                onChangePage={handlePageChange}
+                viewSiteUrl={`/site/${id}`}
+                saveStatus={saveStatus}
               />
+              <div className="flex-1 overflow-hidden">
+                <BuilderContent 
+                  isPreviewMode={isPreviewMode}
+                  isLiveSite={false}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      </SidebarProvider>
+        </SidebarProvider>
+      )}
     </BuilderProvider>
   );
 };
