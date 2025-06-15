@@ -278,6 +278,13 @@ const BuilderNavbar = ({
               value="shipping-settings" 
               className="px-3 py-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
             >
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </TabsTrigger>
+            <TabsTrigger 
+              value="site-settings" 
+              className="px-3 py-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
+            >
               <Truck className="h-4 w-4 mr-2" />
               Shipping
             </TabsTrigger>
