@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { BuilderElement } from "@/contexts/builder/types";
 import { Menu, X } from "lucide-react";
@@ -7,16 +6,33 @@ import CartButton from "@/components/CartButton";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-interface ElementProps {
+/**
+ * Extra props for builder edit/preview mode
+ * If forceMobileView is true, always use mobile nav style (for builder preview)
+ */
+interface BuilderPreviewMobileProps {
+  forceMobileView?: boolean;
+  isPreviewMode?: boolean;
+}
+
+interface ElementProps extends BuilderPreviewMobileProps {
   element: BuilderElement;
   isLiveSite?: boolean;
 }
 
-const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) => {
+const NavbarElement: React.FC<ElementProps> = ({
+  element,
+  isLiveSite = false,
+  forceMobileView,
+  isPreviewMode
+}) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
+
+  // This is the magic: use forced mobile view in builder preview, otherwise use actual browser/mobile detection
+  const effectiveIsMobile = forceMobileView || isMobile;
   
   const siteName = element.props?.siteName || "Your Website";
   const showCartButton = element.props?.showCartButton !== false;
@@ -54,18 +70,14 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
   };
 
   // Handle mobile menu toggle
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen((open) => !open);
-  };
+  const toggleMobileMenu = () => setMobileMenuOpen(open => !open);
 
-  // Close mobile menu when switching to desktop
+  // Close menu when switching to desktop-like view, builder or real
   useEffect(() => {
-    if (!isMobile && mobileMenuOpen) {
-      setMobileMenuOpen(false);
-    }
-  }, [isMobile, mobileMenuOpen]);
+    if (!effectiveIsMobile && mobileMenuOpen) setMobileMenuOpen(false);
+  }, [effectiveIsMobile, mobileMenuOpen]);
 
-  // Prevent body scroll when mobile menu is open
+  // Prevent body scroll if mobile menu is open
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -150,7 +162,8 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
               </span>
             </div>
             
-            <nav className="hidden md:block">
+            {/* Only show desktop nav on "real" desktop (not simulated) */}
+            <nav className={cn("hidden md:block", effectiveIsMobile ? "hidden" : "")}>
               <ul className="flex space-x-6 lg:space-x-8">
                 {links.map((link, index) => (
                   <li key={index}>
@@ -175,7 +188,8 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
                   siteCartUrl={getSiteCartUrl()}
                 />
               )}
-              <div className="md:hidden">
+              {/* Always show mobile menu button in simulated or real mobile */}
+              <div className={cn("md:hidden", effectiveIsMobile ? "" : "hidden")}>
                 <button 
                   className={cn(
                     "p-2 rounded-md transition-colors",
@@ -195,7 +209,7 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
       </header>
 
       {/* Mobile Menu Overlay */}
-      {mobileMenuOpen && (
+      {mobileMenuOpen && effectiveIsMobile && (
         <div className="fixed inset-0 z-40 md:hidden">
           {/* Backdrop */}
           <div 

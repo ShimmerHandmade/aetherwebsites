@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from "react";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -14,6 +13,7 @@ import { useBuilderSave } from "@/hooks/useBuilderSave";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
+import { useResponsiveControls } from "@/hooks/useResponsiveControls";
 
 const SimpleBuilder = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +24,11 @@ const SimpleBuilder = () => {
   const [currentElements, setCurrentElements] = useState<BuilderElement[]>([]);
   const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
   
+  const {
+    previewBreakpoint,
+    // ... keep existing code ...
+  } = useResponsiveControls();
+
   const { 
     website,
     isLoading,
@@ -317,6 +322,7 @@ const SimpleBuilder = () => {
               <BuilderContent 
                 isPreviewMode={isPreviewMode}
                 isLiveSite={false}
+                previewBreakpoint={previewBreakpoint}
               />
             </div>
           </div>
