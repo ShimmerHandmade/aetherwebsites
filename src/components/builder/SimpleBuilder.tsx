@@ -10,6 +10,7 @@ import { useWebsite } from "@/hooks/useWebsite";
 import { useWebsiteInitialization } from "@/hooks/useWebsiteInitialization";
 import { useTemplateApplication } from "@/hooks/useTemplateApplication";
 import { useBuilderSave } from "@/hooks/useBuilderSave";
+import { useResponsiveControls } from "@/hooks/useResponsiveControls";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
@@ -313,7 +314,7 @@ const SimpleBuilder = () => {
     setWebsiteName, handleSave, handlePublish, website, isSaving,
     isPublishing, onChangePage, saveStatus
   }: any) {
-    const { previewBreakpoint } = require("@/hooks/useResponsiveControls").useResponsiveControls();
+    const { previewBreakpoint } = useResponsiveControls();
 
     return (
       <SidebarProvider>
