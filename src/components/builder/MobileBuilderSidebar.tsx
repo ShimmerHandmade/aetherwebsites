@@ -7,10 +7,8 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { 
   Plus, 
   Settings, 
-  Layers,
-  X,
-  Menu,
-  Smartphone
+  Smartphone,
+  X
 } from "lucide-react";
 import ElementPalette from "./ElementPalette";
 import ElementProperties from "./ElementProperties";
@@ -88,7 +86,7 @@ const MobileBuilderSidebar: React.FC<MobileBuilderSidebarProps> = ({
                     </ScrollArea>
                   </TabsContent>
                 </div>
-              </div>
+              </Tabs>
             </div>
           </SheetContent>
         </Sheet>
