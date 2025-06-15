@@ -20,13 +20,10 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
   
   const siteName = element.props?.siteName || "Your Website";
   const showCartButton = element.props?.showCartButton !== false;
-  
-  // Use the logo from element props, or fall back to the global site settings if available
   const logo = element.props?.logo || 
                (typeof window !== 'undefined' && 
                 window.__SITE_SETTINGS__?.logoUrl) || 
                "";
-               
   const links = element.props?.links || [
     { text: "Home", url: "#" },
     { text: "About", url: "#" },
@@ -34,8 +31,6 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
     { text: "Contact", url: "#" }
   ];
   const variant = element.props?.variant || "default";
-  
-  // Variants for navbar
   const navbarStyles = {
     default: "bg-white shadow-sm border-b border-gray-200",
     transparent: "bg-transparent",
@@ -43,8 +38,6 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
     primary: "bg-indigo-600 text-white",
     accent: "bg-amber-500 text-white"
   };
-  
-  // Link styles based on variant
   const linkStyles = {
     default: "text-gray-600 hover:text-indigo-600 transition-colors font-medium",
     transparent: "text-gray-800 hover:text-indigo-600 transition-colors font-medium",
@@ -52,8 +45,6 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
     primary: "text-white/80 hover:text-white transition-colors font-medium",
     accent: "text-white/90 hover:text-white transition-colors font-medium"
   };
-
-  // Mobile menu link styles
   const mobileLinkStyles = {
     default: "text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors font-medium",
     transparent: "text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors font-medium",
@@ -61,10 +52,10 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
     primary: "text-gray-800 hover:text-indigo-600 hover:bg-gray-50 transition-colors font-medium",
     accent: "text-gray-800 hover:text-amber-600 hover:bg-gray-50 transition-colors font-medium"
   };
-  
+
   // Handle mobile menu toggle
   const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
+    setMobileMenuOpen((open) => !open);
   };
 
   // Close mobile menu when switching to desktop
@@ -81,8 +72,6 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
     } else {
       document.body.style.overflow = 'unset';
     }
-
-    // Cleanup on unmount
     return () => {
       document.body.style.overflow = 'unset';
     };
@@ -90,9 +79,7 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
 
   // Get the current site URL to build site-specific cart URL
   const getSiteCartUrl = () => {
-    const currentPath = location.pathname;
-    
-    // Check if we're in a site context and extract the site ID
+    const currentPath = location.pathname;    
     if (currentPath.includes('/site/')) {
       const siteIdMatch = currentPath.match(/\/site\/([^\/]+)/);
       if (siteIdMatch) {
@@ -100,7 +87,6 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
         return `/site/${siteId}/cart`;
       }
     }
-    
     if (currentPath.includes('/view/')) {
       const siteIdMatch = currentPath.match(/\/view\/([^\/]+)/);
       if (siteIdMatch) {
@@ -108,45 +94,29 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
         return `/view/${siteId}/cart`;
       }
     }
-    
-    // Check global site settings for site ID
     if (typeof window !== 'undefined' && window.__SITE_SETTINGS__?.siteId) {
       const siteId = window.__SITE_SETTINGS__.siteId;
-      // Determine if we're in view or site mode based on current path structure
       if (currentPath.includes('/view/') || window.__SITE_SETTINGS__.isLiveSite) {
         return `/view/${siteId}/cart`;
       }
       return `/site/${siteId}/cart`;
     }
-    
-    // Fallback to regular cart path
     return '/cart';
   };
-  
-  // Handle link clicks with proper navigation
+
+  // Handle link clicks with proper navigation in both live site and builder previews (edit mode)
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {
     e.preventDefault();
-    
-    // Only use real navigation in live site mode
-    if (isLiveSite) {
-      // In live site mode, we want to use actual navigation
-      // Check if this is an internal link
-      if (url.startsWith('/') || url === '#') {
-        navigate(url === '#' ? '/' : url);
-      } else if (url.startsWith('http')) {
-        // External link - open in new tab
-        window.open(url, '_blank');
-      } else {
-        // Treat as internal path
-        navigate(url);
-      }
-      
-      // Close mobile menu after navigation
-      setMobileMenuOpen(false);
+
+    // Always support navigation in both builder and live preview
+    if (url.startsWith('/') || url === '#') {
+      navigate(url === '#' ? '/' : url);
+    } else if (url.startsWith('http')) {
+      window.open(url, '_blank');
+    } else {
+      navigate(url);
     }
-    
-    // In builder mode, we just prevent default navigation
-    // which stops the page from reloading
+    setMobileMenuOpen(false);
   };
 
   return (
@@ -161,7 +131,6 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
                   alt={`${siteName} logo`} 
                   className="h-6 sm:h-8 object-contain" 
                   onError={(e) => {
-                    // Hide broken images
                     e.currentTarget.style.display = 'none';
                   }}
                 />
@@ -206,7 +175,6 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
                   siteCartUrl={getSiteCartUrl()}
                 />
               )}
-              
               <div className="md:hidden">
                 <button 
                   className={cn(
@@ -234,7 +202,6 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
             className="fixed inset-0 bg-black bg-opacity-50"
             onClick={() => setMobileMenuOpen(false)}
           />
-          
           {/* Menu Panel */}
           <div className="fixed top-0 right-0 h-full w-64 bg-white shadow-lg animate-slide-in-right">
             <div className="p-6 pt-20">
@@ -247,10 +214,7 @@ const NavbarElement: React.FC<ElementProps> = ({ element, isLiveSite = false }) 
                       mobileLinkStyles[variant as keyof typeof mobileLinkStyles],
                       "py-3 px-4 text-lg rounded-md block"
                     )}
-                    onClick={(e) => {
-                      handleLinkClick(e, link.url);
-                      setMobileMenuOpen(false);
-                    }}
+                    onClick={(e) => handleLinkClick(e, link.url)}
                   >
                     {link.text}
                   </a>
