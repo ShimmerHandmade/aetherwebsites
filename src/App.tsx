@@ -82,7 +82,7 @@ function App() {
                 <Route path="/builder/:id/products" element={<ProductsManager />} />
                 <Route path="/builder/:id/orders" element={<Orders />} />
                 <Route path="/builder/:id/shipping-settings" element={<ShippingSettings />} />
-                <Route path="/builder/:id/site-settings" element={<SiteSettings />} />
+                <Route path="/builder/:id/settings" element={<SiteSettings />} />
                 <Route path="/builder/:id/pages" element={<BuilderPages />} />
                 <Route path="/builder/:id/payment-settings" element={<PaymentSettings />} />
                 
