@@ -12,9 +12,9 @@ export const useBuilderNavigation = () => {
     if (path.includes('/products')) return "products";
     if (path.includes('/orders')) return "orders";
     if (path.includes('/pages')) return "pages";
-    if (path.includes('/site-settings')) return "settings";
     if (path.includes('/payment-settings')) return "payment-settings";
     if (path.includes('/shipping-settings')) return "shipping-settings";
+    if (path.includes('/settings')) return "settings";
     return "edit";
   };
   
@@ -36,7 +36,8 @@ export const useBuilderNavigation = () => {
       orders: `/builder/${websiteId}/orders`,
       pages: `/builder/${websiteId}/pages`,
       "payment-settings": `/builder/${websiteId}/payment-settings`,
-      "shipping-settings": `/builder/${websiteId}/shipping-settings`
+      "shipping-settings": `/builder/${websiteId}/shipping-settings`,
+      settings: `/builder/${websiteId}/settings`
     };
     
     const route = routes[value as keyof typeof routes];

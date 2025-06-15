@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -236,55 +235,55 @@ const BuilderNavbar = ({
         </div>
       </div>
 
-      {/* Tabs row */}
-      <div className="px-6 border-t border-slate-200 bg-white">
+      {/* Tabs row with improved styling */}
+      <div className="px-6 bg-white border-b border-slate-100">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="bg-transparent h-12 p-0 border-b border-transparent gap-6">
+          <TabsList className="bg-transparent h-12 p-0 border-b border-transparent gap-0">
             <TabsTrigger 
               value="edit" 
-              className="px-3 py-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
+              className="px-4 py-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 hover:bg-gray-50 transition-colors"
             >
               <PanelsTopLeft className="h-4 w-4 mr-2" />
               Edit
             </TabsTrigger>
             <TabsTrigger 
               value="products" 
-              className="px-3 py-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
+              className="px-4 py-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 hover:bg-gray-50 transition-colors"
             >
               <Package className="h-4 w-4 mr-2" />
               Products
             </TabsTrigger>
             <TabsTrigger 
               value="orders" 
-              className="px-3 py-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
+              className="px-4 py-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 hover:bg-gray-50 transition-colors"
             >
               <ShoppingBag className="h-4 w-4 mr-2" />
               Orders
             </TabsTrigger>
             <TabsTrigger 
               value="pages" 
-              className="px-3 py-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
+              className="px-4 py-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 hover:bg-gray-50 transition-colors"
             >
               <FileText className="h-4 w-4 mr-2" />
               Pages
             </TabsTrigger>
             <TabsTrigger 
               value="payment-settings" 
-              className="px-3 py-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
+              className="px-4 py-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 hover:bg-gray-50 transition-colors"
             >
               <CreditCard className="h-4 w-4 mr-2" />
               Payment
             </TabsTrigger>
             <TabsTrigger 
-              value="shipping-settings" 
-              className="px-3 py-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
+              value="settings" 
+              className="px-4 py-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 hover:bg-gray-50 transition-colors"
             >
               <Settings className="h-4 w-4 mr-2" />
               Settings
             </TabsTrigger>
             <TabsTrigger 
-              value="site-settings" 
-              className="px-3 py-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 cursor-pointer"
+              value="shipping-settings" 
+              className="px-4 py-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 hover:bg-gray-50 transition-colors"
             >
               <Truck className="h-4 w-4 mr-2" />
               Shipping

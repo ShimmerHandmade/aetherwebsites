@@ -5,7 +5,7 @@ import BuilderSidebar from "./BuilderSidebar";
 import BuilderCanvas from "./canvas/BuilderCanvas";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Menu } from "lucide-react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 interface BuilderLayoutProps {
@@ -49,17 +49,20 @@ const BuilderLayout: React.FC<BuilderLayoutProps> = ({
           
           <SidebarInset className="flex-1">
             {!isPreviewMode && (
-              <header className="flex h-14 shrink-0 items-center gap-2 border-b border-gray-200 bg-white/80 backdrop-blur-sm px-4 shadow-sm">
-                <SidebarTrigger className="-ml-1" />
+              <header className="flex h-14 shrink-0 items-center gap-2 border-b border-gray-200 bg-white/90 backdrop-blur-sm px-4 shadow-sm">
+                <SidebarTrigger className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md p-2 transition-colors">
+                  <Menu className="h-4 w-4" />
+                </SidebarTrigger>
                 <div className="h-4 w-px bg-gray-300" />
                 <div className="flex-1">
                   <h1 className="text-lg font-semibold text-gray-800">Website Builder</h1>
+                  <p className="text-xs text-gray-500">Design and customize your website</p>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setIsPreviewMode(!isPreviewMode)}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300 transition-colors"
                 >
                   {isPreviewMode ? (
                     <>
