@@ -322,7 +322,6 @@ const SimpleBuilder = () => {
               <BuilderContent 
                 isPreviewMode={isPreviewMode}
                 isLiveSite={false}
-                previewBreakpoint={previewBreakpoint}
               />
             </div>
           </div>
