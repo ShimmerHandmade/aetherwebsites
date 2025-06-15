@@ -8,8 +8,8 @@ export const useMobileBuilder = () => {
   const [longPressActive, setLongPressActive] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
-  // Mobile-specific interaction handlers
-  const handleTouchStart = useCallback((e: TouchEvent) => {
+  // Mobile-specific interaction handlers using React's synthetic events
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
     setTouchStartTime(Date.now());
     setLongPressActive(false);
     
@@ -27,15 +27,15 @@ export const useMobileBuilder = () => {
     // Clear timer if touch ends early
     const clearTimer = () => {
       clearTimeout(longPressTimer);
-      document.removeEventListener('touchend', clearTimer);
-      document.removeEventListener('touchmove', clearTimer);
     };
 
-    document.addEventListener('touchend', clearTimer, { once: true });
-    document.addEventListener('touchmove', clearTimer, { once: true });
+    // Set up cleanup on component unmount or touch end
+    const timeoutId = setTimeout(() => clearTimer(), 1000);
+    
+    return () => clearTimeout(timeoutId);
   }, [dragActive]);
 
-  const handleTouchMove = useCallback((e: TouchEvent) => {
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
     const touchDuration = Date.now() - touchStartTime;
     
     // If touch has been held for more than 100ms, consider it a drag
@@ -44,7 +44,7 @@ export const useMobileBuilder = () => {
     }
   }, [touchStartTime]);
 
-  const handleTouchEnd = useCallback(() => {
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     setDragActive(false);
     setLongPressActive(false);
   }, []);

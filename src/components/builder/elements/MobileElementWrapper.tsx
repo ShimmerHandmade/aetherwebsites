@@ -85,6 +85,8 @@ const MobileElementWrapper: React.FC<MobileElementWrapperProps> = ({
     setShowMobileMenu(false);
   };
 
+  const mobileProps = getMobileInteractionProps();
+
   return (
     <div
       ref={wrapperRef}
@@ -94,7 +96,7 @@ const MobileElementWrapper: React.FC<MobileElementWrapperProps> = ({
         ${longPressActive ? 'scale-105 shadow-lg' : ''}
       `}
       onTouchStart={handleElementTouch}
-      {...getMobileInteractionProps()}
+      {...mobileProps}
     >
       {children}
       
