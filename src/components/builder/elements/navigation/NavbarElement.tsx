@@ -28,6 +28,8 @@ const NavbarElement: React.FC<ElementProps> = ({
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // PATCH: Log AND use forced mobile overridden by builder preview or breakpoint
   const effectiveIsMobile = Boolean(forceMobileView) || isMobile;
