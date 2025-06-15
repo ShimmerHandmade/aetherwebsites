@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from "react";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -14,7 +13,6 @@ import { useBuilderSave } from "@/hooks/useBuilderSave";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
-import { useResponsiveControls } from "@/hooks/useResponsiveControls";
 
 const defaultHomePage = {
   id: "home",
@@ -31,13 +29,8 @@ const SimpleBuilder = () => {
   const [currentPage, setCurrentPage] = useState<{ id: string; title: string; slug: string; isHomePage?: boolean; } | null>(null);
   const [currentElements, setCurrentElements] = useState<BuilderElement[]>([]);
   const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
-  
-  const {
-    previewBreakpoint,
-    // ... keep existing code ...
-  } = useResponsiveControls();
 
-  const { 
+  const {
     website,
     isLoading,
     isSaving,
@@ -88,14 +81,11 @@ const SimpleBuilder = () => {
     unsavedChanges
   });
 
-  // --- PATCH: Guarantee pages, elements, and fallback states ---
-  // Return at least [defaultHomePage] if no pages exist
   const pages =
     website?.settings?.pages && Array.isArray(website.settings.pages) && website.settings.pages.length > 0
       ? website.settings.pages
       : [defaultHomePage];
 
-  // Main initialization/fallback on website/pages load
   useEffect(() => {
     console.log("🔄 SimpleBuilder: Website/pages load detection", {
       websiteId: website?.id,
@@ -148,14 +138,12 @@ const SimpleBuilder = () => {
     currentPageSettings
   ]);
 
-  // If useWebsite state elements come in late, copy into current
   useEffect(() => {
     if (elements && elements.length > 0 && currentElements.length === 0) {
       setCurrentElements(elements);
     }
   }, [elements, currentElements.length]);
 
-  // If useWebsite state pageSettings available late, copy into current
   useEffect(() => {
     if (pageSettings && !currentPageSettings) {
       setCurrentPageSettings(pageSettings);
@@ -223,7 +211,6 @@ const SimpleBuilder = () => {
     toast.success("Welcome to your website builder!");
   }, [refreshWebsite, markTemplateAsApplied, setShowOnboarding]);
 
-  // Enhanced save handler that properly saves page content
   const handleBuilderSaveWrapper = useCallback(async (elements: BuilderElement[], pageSettings: PageSettings) => {
     console.log("💾 SimpleBuilder: Handling save from builder", {
       elementsCount: elements?.length || 0,
@@ -321,19 +308,14 @@ const SimpleBuilder = () => {
     );
   }
 
-  console.log("🏗️ SimpleBuilder: Rendering builder", {
-    currentElementsCount: currentElements.length,
-    currentPageId: currentPage?.id,
-    currentPageTitle: currentPage?.title,
-    currentPageSettings
-  });
+  function BuilderMain({
+    isPreviewMode, setIsPreviewMode, currentPage, pages, websiteName,
+    setWebsiteName, handleSave, handlePublish, website, isSaving,
+    isPublishing, onChangePage, saveStatus
+  }: any) {
+    const { previewBreakpoint } = require("@/hooks/useResponsiveControls").useResponsiveControls();
 
-  return (
-    <BuilderProvider 
-      initialElements={currentElements}
-      initialPageSettings={currentPageSettings || { title: websiteName || 'My Website' }}
-      onSave={handleBuilderSaveWrapper}
-    >
+    return (
       <SidebarProvider>
         <div className="h-screen flex bg-gray-50 w-full overflow-hidden">
           <BuilderSidebar isPreviewMode={isPreviewMode} />
@@ -350,7 +332,7 @@ const SimpleBuilder = () => {
               setIsPreviewMode={setIsPreviewMode}
               currentPage={currentPage}
               pages={pages}
-              onChangePage={handlePageChange}
+              onChangePage={onChangePage}
               viewSiteUrl={`/site/${id}`}
               saveStatus={saveStatus}
             />
@@ -363,9 +345,32 @@ const SimpleBuilder = () => {
           </div>
         </div>
       </SidebarProvider>
+    );
+  }
+
+  return (
+    <BuilderProvider 
+      initialElements={currentElements}
+      initialPageSettings={currentPageSettings || { title: websiteName || 'My Website' }}
+      onSave={handleBuilderSaveWrapper}
+    >
+      <BuilderMain
+        isPreviewMode={isPreviewMode}
+        setIsPreviewMode={setIsPreviewMode}
+        currentPage={currentPage}
+        pages={pages}
+        websiteName={websiteName}
+        setWebsiteName={setWebsiteName}
+        handleSave={handleSave}
+        handlePublish={handlePublish}
+        website={website}
+        isSaving={isSaving}
+        isPublishing={isPublishing}
+        onChangePage={handlePageChange}
+        saveStatus={saveStatus}
+      />
     </BuilderProvider>
   );
 };
 
 export default SimpleBuilder;
-
