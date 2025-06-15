@@ -11,7 +11,6 @@ import { useWebsite } from "@/hooks/useWebsite";
 import { useWebsiteInitialization } from "@/hooks/useWebsiteInitialization";
 import { useTemplateApplication } from "@/hooks/useTemplateApplication";
 import { useBuilderSave } from "@/hooks/useBuilderSave";
-import { useResponsiveControls } from "@/hooks/useResponsiveControls";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
@@ -27,7 +26,6 @@ const SimpleBuilder = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isPreviewMode, setIsPreviewMode] = useState(false);
-  // ERROR: Circular reference. FIX by using a boolean default:
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
   const [currentPage, setCurrentPage] = useState<{ id: string; title: string; slug: string; isHomePage?: boolean; } | null>(null);
   const [currentElements, setCurrentElements] = useState<BuilderElement[]>([]);
@@ -89,6 +87,7 @@ const SimpleBuilder = () => {
       ? website.settings.pages
       : [defaultHomePage];
 
+  // Initialize current page and elements
   useEffect(() => {
     console.log("🔄 SimpleBuilder: Website/pages load detection", {
       websiteId: website?.id,
@@ -96,7 +95,6 @@ const SimpleBuilder = () => {
       currentPageId: currentPage?.id
     });
 
-    // If no currentPage or currentPage is not found in pages, pick the home page (or first page)
     let chosenPage = currentPage && pages.some(p => p.id === currentPage.id)
       ? pages.find(p => p.id === currentPage.id)
       : pages.find(page => page.isHomePage) || pages[0];
@@ -105,28 +103,25 @@ const SimpleBuilder = () => {
       chosenPage = defaultHomePage;
     }
 
-    // Fallback: ensure at least one root page content exists
     const pagesContent = website?.settings?.pagesContent || {};
     const effectiveElements = pagesContent[chosenPage.id] || [];
 
-    // Fallback: page settings for this page
     const pagesSettings = website?.settings?.pagesSettings || {};
     const settingsForCurrent = pagesSettings[chosenPage.id] || { 
       title: websiteName || chosenPage.title || 'My Website'
     };
 
-    // Set current page/elements/settings if not already set or if mismatched
     if (!currentPage || currentPage.id !== chosenPage.id) {
       setCurrentPage(chosenPage);
       setCurrentElements(effectiveElements);
       setCurrentPageSettings(settingsForCurrent);
-      updateElements(effectiveElements); // propagate to useWebsite state
+      updateElements(effectiveElements);
       console.log("📄 SimpleBuilder: Set initial page to", chosenPage.title);
     }
-    // Also update elements and settings if they somehow became null/empty
+
     if (currentPage && currentPage.id === chosenPage.id && currentElements.length === 0 && effectiveElements.length > 0) {
       setCurrentElements(effectiveElements);
-      updateElements(effectiveElements); // propagate
+      updateElements(effectiveElements);
     }
     if (currentPage && currentPage.id === chosenPage.id && !currentPageSettings && settingsForCurrent) {
       setCurrentPageSettings(settingsForCurrent);
@@ -141,6 +136,7 @@ const SimpleBuilder = () => {
     currentPageSettings
   ]);
 
+  // Sync with useWebsite elements
   useEffect(() => {
     if (elements && elements.length > 0 && currentElements.length === 0) {
       setCurrentElements(elements);
@@ -157,7 +153,17 @@ const SimpleBuilder = () => {
     await publishWebsite();
   };
 
-  // PATCH #1: Save wrapper logic, NEW deep debug logs for all state and sent params!
+  // Main save handler that gets current data from BuilderProvider
+  const handleMainSave = useCallback(async () => {
+    console.log("💾 SimpleBuilder: Save button clicked, requesting current data from builder");
+    
+    // Dispatch event to request current data from BuilderProvider
+    document.dispatchEvent(new CustomEvent('request-save-data'));
+    
+    // The actual save will be handled by the onSave callback from BuilderProvider
+  }, []);
+
+  // This gets called by BuilderProvider with the current state
   const handleBuilderSaveWrapper = useCallback(async (elements: BuilderElement[], pageSettings: PageSettings) => {
     if (!currentPage) {
       console.error("❌ SimpleBuilder: No current page selected for saving");
@@ -165,57 +171,68 @@ const SimpleBuilder = () => {
       return false;
     }
 
-    // PREP: Build the updated settings for this page
-    const previousSettings = website?.settings || {};
-    const updatedSettings = {
-      ...previousSettings,
-      pagesContent: {
-        ...(previousSettings.pagesContent || {}),
-        [currentPage.id]: elements,
-      },
-      pagesSettings: {
-        ...(previousSettings.pagesSettings || {}),
-        [currentPage.id]: pageSettings,
-      },
-      // Ensure pages and everything else persists!
-      pages: previousSettings.pages,
-    };
-
-    // PATCH: Extra debug for 100% confidence in what is sent to Supabase
-    console.log("💾 [BUILDER] handleBuilderSaveWrapper WILL SAVE:", {
-      websiteId: website?.id, currentPageId: currentPage.id,
-      elements,
+    console.log("💾 SimpleBuilder: Handling save from BuilderProvider", {
+      elementsCount: elements?.length || 0,
+      pageId: currentPage?.id,
       pageSettings,
-      updatedSettings: JSON.parse(JSON.stringify(updatedSettings)),
+      websiteName,
     });
 
-    // State update - always flows to builder
-    setCurrentElements(elements);
-    setCurrentPageSettings(pageSettings);
-    updateElements(elements);
+    try {
+      // Update local state first
+      setCurrentElements(elements);
+      setCurrentPageSettings(pageSettings);
+      updateElements(elements);
 
-    // PATCH: Save directly and log what comes back
-    const success = await saveWebsite(elements, pageSettings, updatedSettings);
-    console.log("💾 [BUILDER] saveWebsite AFTER SUBMIT:", { success });
+      // Prepare the website settings with updated page content
+      const previousSettings = website?.settings || {};
+      const updatedSettings = {
+        ...previousSettings,
+        pagesContent: {
+          ...(previousSettings.pagesContent || {}),
+          [currentPage.id]: elements,
+        },
+        pagesSettings: {
+          ...(previousSettings.pagesSettings || {}),
+          [currentPage.id]: pageSettings,
+        },
+        pages: previousSettings.pages,
+      };
 
-    if (success) {
-      toast.success("Page saved successfully");
-    } else {
-      toast.error("Failed to save page");
+      console.log("💾 SimpleBuilder: Saving with updated settings", {
+        currentPageId: currentPage.id,
+        websiteName,
+        totalPages: Object.keys(updatedSettings.pagesContent || {}).length,
+        updatedSettings
+      });
+
+      // Save to database with the updated settings
+      const success = await saveWebsite(elements, pageSettings, updatedSettings);
+
+      if (success) {
+        console.log("✅ SimpleBuilder: Save successful");
+        toast.success("Page saved successfully");
+      } else {
+        console.error("❌ SimpleBuilder: Save failed");
+        toast.error("Failed to save page");
+      }
+
+      return success;
+    } catch (error) {
+      console.error("❌ SimpleBuilder: Save error:", error);
+      toast.error("An error occurred while saving");
+      return false;
     }
-    return success;
-  }, [
-    saveWebsite, updateElements, currentPage, website?.settings,
-  ]);
+  }, [saveWebsite, updateElements, currentPage, website?.settings, websiteName]);
 
-  // PATCH #2: Save on page change, ONLY if there are unsaved changes and new values present
   const handlePageChange = useCallback((pageId: string) => {
     const selectedPage = pages.find((pg) => pg.id === pageId);
     if (!selectedPage) {
       console.error("❌ SimpleBuilder: Page not found:", pageId);
       return;
     }
-    // Save before navigating
+
+    // Save before navigating if there are unsaved changes
     if (unsavedChanges && currentPage) {
       const previousSettings = website?.settings || {};
       const stagedSettings = {
@@ -236,9 +253,10 @@ const SimpleBuilder = () => {
       });
       saveWebsite(currentElements, currentPageSettings, stagedSettings);
     }
+
     setCurrentPage(selectedPage);
 
-    // Always load the right content!
+    // Load the right content for the new page
     const pageContent = website?.settings?.pagesContent?.[pageId] || [];
     const pageSettingsData = website?.settings?.pagesSettings?.[pageId] || { title: selectedPage.title };
     setCurrentElements(pageContent);
@@ -250,76 +268,11 @@ const SimpleBuilder = () => {
 
   const handleOnboardingComplete = useCallback(async () => {
     console.log("🎓 Onboarding complete, refreshing website data");
-
     setShowOnboarding(false);
     markTemplateAsApplied();
-
     await refreshWebsite();
-
     toast.success("Welcome to your website builder!");
   }, [refreshWebsite, markTemplateAsApplied, setShowOnboarding]);
-
-  const handleBuilderSaveWrapperOld = useCallback(async (elements: BuilderElement[], pageSettings: PageSettings) => {
-    console.log("💾 SimpleBuilder: Handling save from builder", {
-      elementsCount: elements?.length || 0,
-      pageId: currentPage?.id,
-      pageSettings,
-      currentWebsite: website,
-      websiteName: websiteName,
-    });
-
-    if (!currentPage) {
-      console.error("❌ SimpleBuilder: No current page selected for saving");
-      toast.error("No page selected for saving");
-      return false;
-    }
-
-    try {
-      // Update local state first
-      setCurrentElements(elements);
-      setCurrentPageSettings(pageSettings);
-      updateElements(elements);
-
-      // Prepare the website settings with updated page content
-      const updatedSettings = {
-        ...website?.settings,
-        pagesContent: {
-          ...website?.settings?.pagesContent,
-          [currentPage.id]: elements
-        },
-        pagesSettings: {
-          ...website?.settings?.pagesSettings,
-          [currentPage.id]: pageSettings
-        }
-      };
-
-      console.log("💾 SimpleBuilder: Saving with updated settings", {
-        currentPageId: currentPage.id,
-        websiteName,
-        totalPages: Object.keys(updatedSettings.pagesContent || {}).length,
-        updatedSettings
-      });
-
-      // Save to database with the updated settings
-      const success = await saveWebsite(elements, pageSettings, updatedSettings);
-
-      console.log("💾 SimpleBuilder: saveWebsite returned", success);
-
-      if (success) {
-        console.log("✅ SimpleBuilder: Save successful");
-        toast.success("Page saved successfully");
-      } else {
-        console.error("❌ SimpleBuilder: Save failed");
-        toast.error("Failed to save page");
-      }
-
-      return success;
-    } catch (error) {
-      console.error("❌ SimpleBuilder: Save error:", error);
-      toast.error("An error occurred while saving");
-      return false;
-    }
-  }, [saveWebsite, updateElements, currentPage, website?.settings, websiteName]);
 
   if (isLoading) {
     return (
@@ -356,14 +309,12 @@ const SimpleBuilder = () => {
     );
   }
 
-  function BuilderMain({
-    isPreviewMode, setIsPreviewMode, currentPage, pages, websiteName,
-    setWebsiteName, handleSave, handlePublish, website, isSaving,
-    isPublishing, onChangePage, saveStatus
-  }: any) {
-    const { previewBreakpoint } = useResponsiveControls();
-
-    return (
+  return (
+    <BuilderProvider
+      initialElements={currentElements}
+      initialPageSettings={currentPageSettings || { title: websiteName || "My Website" }}
+      onSave={handleBuilderSaveWrapper}
+    >
       <SidebarProvider>
         <div className="h-screen flex bg-gray-50 w-full overflow-hidden">
           <BuilderSidebar isPreviewMode={isPreviewMode} />
@@ -371,7 +322,7 @@ const SimpleBuilder = () => {
             <BuilderNavbar
               websiteName={websiteName}
               setWebsiteName={setWebsiteName}
-              onSave={handleSave}
+              onSave={handleMainSave}
               onPublish={handlePublish}
               isPublished={website?.published}
               isSaving={isSaving}
@@ -380,7 +331,7 @@ const SimpleBuilder = () => {
               setIsPreviewMode={setIsPreviewMode}
               currentPage={currentPage}
               pages={pages}
-              onChangePage={onChangePage}
+              onChangePage={handlePageChange}
               viewSiteUrl={`/site/${id}`}
               saveStatus={saveStatus}
             />
@@ -393,31 +344,6 @@ const SimpleBuilder = () => {
           </div>
         </div>
       </SidebarProvider>
-    );
-  }
-
-  // PATCH #3: Clean up object passing to BuilderProvider
-  return (
-    <BuilderProvider
-      initialElements={currentElements}
-      initialPageSettings={currentPageSettings || { title: websiteName || "My Website" }}
-      onSave={handleBuilderSaveWrapper}
-    >
-      <BuilderMain
-        isPreviewMode={isPreviewMode}
-        setIsPreviewMode={setIsPreviewMode}
-        currentPage={currentPage}
-        pages={pages}
-        websiteName={websiteName}
-        setWebsiteName={setWebsiteName}
-        handleSave={handleBuilderSaveWrapper}
-        handlePublish={handlePublish}
-        website={website}
-        isSaving={isSaving}
-        isPublishing={isPublishing}
-        onChangePage={handlePageChange}
-        saveStatus={saveStatus}
-      />
     </BuilderProvider>
   );
 };

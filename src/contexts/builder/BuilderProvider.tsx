@@ -34,7 +34,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       newElements: initialElements
     });
     
-    // Always update elements when initialElements changes, regardless of initialization state
+    // Always update elements when initialElements changes
     if (initialElements && Array.isArray(initialElements)) {
       setElements(initialElements);
       console.log("✅ BuilderProvider: Elements updated from initialElements");
@@ -44,7 +44,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
         console.log("🎯 BuilderProvider: Initialized");
       }
     } else if (initialElements === null || initialElements === undefined) {
-      // If initialElements is explicitly null/undefined, set empty array
       setElements([]);
       console.log("🧹 BuilderProvider: Elements cleared (null/undefined initialElements)");
       
@@ -63,10 +62,13 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     }
   }, [initialPageSettings]);
 
-  // Listen for save events
+  // Listen for save data requests
   useEffect(() => {
     const handleSaveRequest = () => {
-      console.log("💾 Save request received, triggering onSave with:", { elements, pageSettings });
+      console.log("💾 BuilderProvider: Save request received, calling onSave with current data:", { 
+        elements: elements.length, 
+        pageSettings 
+      });
       if (onSave) {
         onSave(elements, pageSettings);
       }
@@ -95,48 +97,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     return searchElements(elements);
   }, [elements]);
 
-  const findElementIndex = useCallback((id: string, parentId?: string): number => {
-    if (parentId) {
-      const parent = findElementById(parentId);
-      if (parent?.children) {
-        return parent.children.findIndex(el => el.id === id);
-      }
-      return -1;
-    }
-    return elements.findIndex(el => el.id === id);
-  }, [elements, findElementById]);
-
-  const updateElementResponsive = useCallback((
-    id: string, 
-    breakpoint: BreakpointType, 
-    responsiveUpdates: any
-  ) => {
-    console.log("🔄 Updating element responsive settings:", { id, breakpoint, responsiveUpdates });
-    setElements(prevElements => {
-      const updateElementRecursively = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
-        return elementsToUpdate.map(element => {
-          if (element.id === id) {
-            const updated = {
-              ...element,
-              responsiveSettings: {
-                ...element.responsiveSettings,
-                [breakpoint]: responsiveUpdates
-              }
-            };
-            console.log("✅ Element responsive settings updated:", updated);
-            return updated;
-          }
-          if (element.children) {
-            return { ...element, children: updateElementRecursively(element.children) };
-          }
-          return element;
-        });
-      };
-      
-      return updateElementRecursively(prevElements);
-    });
-  }, []);
-
   const value: BuilderContextType = {
     elements,
     selectedElementId,
@@ -150,7 +110,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     ) => {
       console.log("🔄 Adding element:", { element: element.type, index, parentId });
       
-      // Ensure element has an ID
       const elementWithId = {
         ...element,
         id: element.id || uuidv4()
@@ -161,7 +120,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
           let newElements = [...prevElements];
           
           if (parentId) {
-            // Add to specific parent container
             const updateElementChildren = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
               return elementsToUpdate.map(el => {
                 if (el.id === parentId) {
@@ -184,14 +142,12 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
             
             newElements = updateElementChildren(newElements);
           } else {
-            // Add to root level with proper ordering
             if (index !== undefined) {
               newElements.splice(index, 0, elementWithId);
             } else {
               newElements.push(elementWithId);
             }
             
-            // Ensure proper element ordering (header, content, footer)
             newElements = ensureElementsOrder(newElements);
             console.log("📋 Added element to root with proper ordering");
           }
@@ -200,7 +156,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
           return newElements;
         } catch (error) {
           console.error("❌ Error adding element:", error);
-          return prevElements; // Return previous state on error
+          return prevElements;
         }
       });
     }, []),
@@ -318,7 +274,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       setElements(prevElements => {
         try {
           if (parentId) {
-            // Move within a specific parent container
             const updateElementChildren = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
               return elementsToUpdate.map(el => {
                 if (el.id === parentId && el.children) {
@@ -339,12 +294,10 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
             
             return updateElementChildren(prevElements);
           } else {
-            // Move at root level
             const newElements = [...prevElements];
             const [movedElement] = newElements.splice(fromIndex, 1);
             newElements.splice(toIndex, 0, movedElement);
             
-            // Ensure proper ordering after move
             const orderedElements = ensureElementsOrder(newElements);
             console.log("✅ Element moved at root level");
             return orderedElements;
@@ -357,31 +310,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     }, []),
     moveElementUp: useCallback((id: string) => {
       console.log("⬆️ Moving element up:", id);
-      const findElementIndex = (id: string, parentId?: string): number => {
-        if (parentId) {
-          const findElementById = (id: string): BuilderElement | null => {
-            const searchElements = (elementsToSearch: BuilderElement[]): BuilderElement | null => {
-              for (const element of elementsToSearch) {
-                if (element.id === id) {
-                  return element;
-                }
-                if (element.children) {
-                  const found = searchElements(element.children);
-                  if (found) return found;
-                }
-              }
-              return null;
-            };
-            
-            return searchElements(elements);
-          };
-          
-          const parent = findElementById(parentId);
-          if (parent?.children) {
-            return parent.children.findIndex(el => el.id === id);
-          }
-          return -1;
-        }
+      const findElementIndex = (id: string): number => {
         return elements.findIndex(el => el.id === id);
       };
       
@@ -392,7 +321,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
           const [movedElement] = newElements.splice(currentIndex, 1);
           newElements.splice(currentIndex - 1, 0, movedElement);
           
-          // Ensure proper ordering after move
           const orderedElements = ensureElementsOrder(newElements);
           console.log("✅ Element moved up");
           return orderedElements;
@@ -401,31 +329,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     }, [elements]),
     moveElementDown: useCallback((id: string) => {
       console.log("⬇️ Moving element down:", id);
-      const findElementIndex = (id: string, parentId?: string): number => {
-        if (parentId) {
-          const findElementById = (id: string): BuilderElement | null => {
-            const searchElements = (elementsToSearch: BuilderElement[]): BuilderElement | null => {
-              for (const element of elementsToSearch) {
-                if (element.id === id) {
-                  return element;
-                }
-                if (element.children) {
-                  const found = searchElements(element.children);
-                  if (found) return found;
-                }
-              }
-              return null;
-            };
-            
-            return searchElements(elements);
-          };
-          
-          const parent = findElementById(parentId);
-          if (parent?.children) {
-            return parent.children.findIndex(el => el.id === id);
-          }
-          return -1;
-        }
+      const findElementIndex = (id: string): number => {
         return elements.findIndex(el => el.id === id);
       };
       
@@ -436,7 +340,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
           const [movedElement] = newElements.splice(currentIndex, 1);
           newElements.splice(currentIndex + 1, 0, movedElement);
           
-          // Ensure proper ordering after move
           const orderedElements = ensureElementsOrder(newElements);
           console.log("✅ Element moved down");
           return orderedElements;
@@ -447,52 +350,9 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       console.log("🎯 Selecting element:", id);
       setSelectedElementId(id);
     }, []),
-    findElementById: useCallback((id: string): BuilderElement | null => {
-      const searchElements = (elementsToSearch: BuilderElement[]): BuilderElement | null => {
-        for (const element of elementsToSearch) {
-          if (element.id === id) {
-            return element;
-          }
-          if (element.children) {
-            const found = searchElements(element.children);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-      
-      return searchElements(elements);
-    }, [elements]),
+    findElementById,
     duplicateElement: useCallback((id: string) => {
       console.log("📋 Duplicating element:", id);
-      const findElementById = (id: string): BuilderElement | null => {
-        const searchElements = (elementsToSearch: BuilderElement[]): BuilderElement | null => {
-          for (const element of elementsToSearch) {
-            if (element.id === id) {
-              return element;
-            }
-            if (element.children) {
-              const found = searchElements(element.children);
-              if (found) return found;
-            }
-          }
-          return null;
-        };
-        
-        return searchElements(elements);
-      };
-      
-      const findElementIndex = (id: string, parentId?: string): number => {
-        if (parentId) {
-          const parent = findElementById(parentId);
-          if (parent?.children) {
-            return parent.children.findIndex(el => el.id === id);
-          }
-          return -1;
-        }
-        return elements.findIndex(el => el.id === id);
-      };
-      
       const element = findElementById(id);
       if (!element) {
         console.warn("❌ Element not found for duplication:", id);
@@ -506,7 +366,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       });
       
       const duplicated = duplicateRecursively(element);
-      const currentIndex = findElementIndex(id);
+      const currentIndex = elements.findIndex(el => el.id === id);
       
       if (currentIndex >= 0) {
         setElements(prevElements => {
@@ -516,7 +376,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
           return newElements;
         });
       }
-    }, [elements]),
+    }, [elements, findElementById]),
     updatePageSettings: useCallback((newSettings: Partial<PageSettings>) => {
       console.log("🔄 Updating page settings:", newSettings);
       setPageSettings(prev => ({ ...prev, ...newSettings }));
