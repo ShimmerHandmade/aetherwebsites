@@ -26,7 +26,7 @@ const SimpleBuilder = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
+  const [isApplyingTemplate, setIsApplyingTemplate] = useState(isApplyingTemplate);
   const [currentPage, setCurrentPage] = useState<{ id: string; title: string; slug: string; isHomePage?: boolean; } | null>(null);
   const [currentElements, setCurrentElements] = useState<BuilderElement[]>([]);
   const [currentPageSettings, setCurrentPageSettings] = useState<PageSettings | null>(null);
@@ -155,51 +155,96 @@ const SimpleBuilder = () => {
     await publishWebsite();
   };
 
+  // PATCH #1: Save wrapper logic, NEW deep debug logs for all state and sent params!
+  const handleBuilderSaveWrapper = useCallback(async (elements: BuilderElement[], pageSettings: PageSettings) => {
+    if (!currentPage) {
+      console.error("❌ SimpleBuilder: No current page selected for saving");
+      toast.error("No page selected for saving");
+      return false;
+    }
+
+    // PREP: Build the updated settings for this page
+    const previousSettings = website?.settings || {};
+    const updatedSettings = {
+      ...previousSettings,
+      pagesContent: {
+        ...(previousSettings.pagesContent || {}),
+        [currentPage.id]: elements,
+      },
+      pagesSettings: {
+        ...(previousSettings.pagesSettings || {}),
+        [currentPage.id]: pageSettings,
+      },
+      // Ensure pages and everything else persists!
+      pages: previousSettings.pages,
+    };
+
+    // PATCH: Extra debug for 100% confidence in what is sent to Supabase
+    console.log("💾 [BUILDER] handleBuilderSaveWrapper WILL SAVE:", {
+      websiteId: website?.id, currentPageId: currentPage.id,
+      elements,
+      pageSettings,
+      updatedSettings: JSON.parse(JSON.stringify(updatedSettings)),
+    });
+
+    // State update - always flows to builder
+    setCurrentElements(elements);
+    setCurrentPageSettings(pageSettings);
+    updateElements(elements);
+
+    // PATCH: Save directly and log what comes back
+    const success = await saveWebsite(elements, pageSettings, updatedSettings);
+    console.log("💾 [BUILDER] saveWebsite AFTER SUBMIT:", { success });
+
+    if (success) {
+      toast.success("Page saved successfully");
+    } else {
+      toast.error("Failed to save page");
+    }
+    return success;
+  }, [
+    saveWebsite, updateElements, currentPage, website?.settings,
+  ]);
+
+  // PATCH #2: Save on page change, ONLY if there are unsaved changes and new values present
   const handlePageChange = useCallback((pageId: string) => {
-    console.log("📄 SimpleBuilder: Page changed to:", pageId);
-    
-    const selectedPage = pages.find(page => page.id === pageId);
+    const selectedPage = pages.find((pg) => pg.id === pageId);
     if (!selectedPage) {
       console.error("❌ SimpleBuilder: Page not found:", pageId);
       return;
     }
-    
-    // Save current page before switching if there are unsaved changes
+    // Save before navigating
     if (unsavedChanges && currentPage) {
-      console.log("💾 SimpleBuilder: Auto-saving current page before switch");
-      const updatedSettings = {
-        ...website?.settings,
+      const previousSettings = website?.settings || {};
+      const stagedSettings = {
+        ...previousSettings,
         pagesContent: {
-          ...website?.settings?.pagesContent,
-          [currentPage.id]: currentElements
+          ...(previousSettings.pagesContent || {}),
+          [currentPage.id]: currentElements,
         },
         pagesSettings: {
-          ...website?.settings?.pagesSettings,
-          [currentPage.id]: currentPageSettings
-        }
+          ...(previousSettings.pagesSettings || {}),
+          [currentPage.id]: currentPageSettings,
+        },
+        pages: previousSettings.pages,
       };
-
-      // Save asynchronously without waiting
-      saveWebsite(currentElements, currentPageSettings, updatedSettings);
+      console.log("💾 [PAGE SWAP] Auto-save before page switch", {
+        id: website?.id, pageId: currentPage.id,
+        stagedSettings: JSON.parse(JSON.stringify(stagedSettings)),
+      });
+      saveWebsite(currentElements, currentPageSettings, stagedSettings);
     }
-
     setCurrentPage(selectedPage);
 
-    // Load the page content and settings with better error handling
+    // Always load the right content!
     const pageContent = website?.settings?.pagesContent?.[pageId] || [];
-    const pageSettingsData = website?.settings?.pagesSettings?.[pageId] || { 
-      title: selectedPage.title 
-    };
-
-    console.log("📝 SimpleBuilder: Loading page content for", selectedPage.title, {
-      elementsCount: pageContent.length,
-      pageSettings: pageSettingsData
-    });
-
+    const pageSettingsData = website?.settings?.pagesSettings?.[pageId] || { title: selectedPage.title };
     setCurrentElements(pageContent);
     setCurrentPageSettings(pageSettingsData);
     updateElements(pageContent);
-  }, [pages, unsavedChanges, currentPage, currentElements, currentPageSettings, website?.settings, saveWebsite, updateElements]);
+  }, [
+    pages, unsavedChanges, currentPage, currentElements, currentPageSettings, website?.settings, saveWebsite, updateElements,
+  ]);
 
   const handleOnboardingComplete = useCallback(async () => {
     console.log("🎓 Onboarding complete, refreshing website data");
@@ -212,7 +257,7 @@ const SimpleBuilder = () => {
     toast.success("Welcome to your website builder!");
   }, [refreshWebsite, markTemplateAsApplied, setShowOnboarding]);
 
-  const handleBuilderSaveWrapper = useCallback(async (elements: BuilderElement[], pageSettings: PageSettings) => {
+  const handleBuilderSaveWrapperOld = useCallback(async (elements: BuilderElement[], pageSettings: PageSettings) => {
     console.log("💾 SimpleBuilder: Handling save from builder", {
       elementsCount: elements?.length || 0,
       pageId: currentPage?.id,
@@ -349,10 +394,11 @@ const SimpleBuilder = () => {
     );
   }
 
+  // PATCH #3: Clean up object passing to BuilderProvider
   return (
-    <BuilderProvider 
+    <BuilderProvider
       initialElements={currentElements}
-      initialPageSettings={currentPageSettings || { title: websiteName || 'My Website' }}
+      initialPageSettings={currentPageSettings || { title: websiteName || "My Website" }}
       onSave={handleBuilderSaveWrapper}
     >
       <BuilderMain
@@ -362,7 +408,7 @@ const SimpleBuilder = () => {
         pages={pages}
         websiteName={websiteName}
         setWebsiteName={setWebsiteName}
-        handleSave={handleSave}
+        handleSave={handleBuilderSaveWrapper}
         handlePublish={handlePublish}
         website={website}
         isSaving={isSaving}

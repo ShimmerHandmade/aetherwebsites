@@ -27,13 +27,16 @@ const NavbarElement: React.FC<ElementProps> = ({
   isPreviewMode
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
   const isMobile = useIsMobile();
 
-  // This is the magic: use forced mobile view in builder preview, otherwise use actual browser/mobile detection
-  const effectiveIsMobile = forceMobileView || isMobile;
-  
+  // PATCH: Log AND use forced mobile overridden by builder preview or breakpoint
+  const effectiveIsMobile = Boolean(forceMobileView) || isMobile;
+  useEffect(() => {
+    console.log(
+      "📱 NavbarElement: effectiveIsMobile computed:", 
+      { forceMobileView, isMobile, effectiveIsMobile });
+  }, [forceMobileView, isMobile, effectiveIsMobile]);
+
   const siteName = element.props?.siteName || "Your Website";
   const showCartButton = element.props?.showCartButton !== false;
   const logo = element.props?.logo || 
@@ -70,22 +73,29 @@ const NavbarElement: React.FC<ElementProps> = ({
   };
 
   // Handle mobile menu toggle
-  const toggleMobileMenu = () => setMobileMenuOpen(open => !open);
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(open => {
+      console.log("🍔 NavbarElement: Hamburger toggled", { opening: !open, effectiveIsMobile });
+      return !open;
+    });
+  };
 
   // Close menu when switching to desktop-like view, builder or real
   useEffect(() => {
-    if (!effectiveIsMobile && mobileMenuOpen) setMobileMenuOpen(false);
+    if (!effectiveIsMobile && mobileMenuOpen) {
+      setMobileMenuOpen(false);
+    }
   }, [effectiveIsMobile, mobileMenuOpen]);
 
   // Prevent body scroll if mobile menu is open
   useEffect(() => {
     if (mobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, [mobileMenuOpen]);
 
@@ -199,6 +209,7 @@ const NavbarElement: React.FC<ElementProps> = ({
                   )}
                   aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
                   onClick={toggleMobileMenu}
+                  data-testid="navbar-hamburger-button"
                 >
                   {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </button>
