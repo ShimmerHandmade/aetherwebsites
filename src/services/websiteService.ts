@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
 import { Json } from "@/integrations/supabase/types";
@@ -125,19 +124,28 @@ export class WebsiteService {
     additionalSettings?: any
   ): Promise<boolean> {
     try {
-      console.log("💾 WebsiteService: Saving website", {
+      console.log("💾 WebsiteService: Called saveWebsite", {
         id,
-        name: websiteName,
-        elementsCount: elements.length,
+        websiteName,
+        elements,
+        elementsType: Array.isArray(elements) ? "array" : typeof elements,
+        elementsCount: elements?.length,
         pageSettings,
-        hasAdditionalSettings: !!additionalSettings
+        additionalSettings
       });
-      
+
       const updatedSettings: WebsiteSettings = {
         pageSettings,
         ...(additionalSettings || {})
       };
-      
+
+      console.log("💾 WebsiteService: Saving to supabase", {
+        id,
+        name: websiteName,
+        content: elements,
+        settings: updatedSettings,
+      });
+
       const { error } = await supabase
         .from("websites")
         .update({ 
@@ -147,16 +155,16 @@ export class WebsiteService {
           updated_at: new Date().toISOString()
         })
         .eq("id", id);
-      
+
       if (error) {
         console.error("❌ WebsiteService: Error saving website:", error);
         return false;
       }
-      
-      console.log("✅ WebsiteService: Website saved successfully");
+
+      console.log("✅ WebsiteService: Website saved to supabase");
       return true;
     } catch (error) {
-      console.error("❌ WebsiteService: Error in saveWebsite:", error);
+      console.error("❌ WebsiteService: Exception in saveWebsite:", error);
       return false;
     }
   }

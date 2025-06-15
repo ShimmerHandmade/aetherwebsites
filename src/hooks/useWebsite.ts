@@ -104,12 +104,13 @@ export const useWebsite = (
   ) => {
     try {
       if (!id || !website) {
+        console.error("❌ useWebsite: No website loaded for save", { id, website });
         toast.error("No website to save");
         return false;
       }
       
       if (isSaving) {
-        console.log("Save already in progress, queuing this save");
+        console.log("⏳ useWebsite: Save already in progress, queuing this save");
         contentToSaveRef.current = {
           elements: updatedElements,
           pageSettings: updatedPageSettings,
@@ -118,13 +119,30 @@ export const useWebsite = (
         pendingSaveRef.current = true;
         return false;
       }
-      
+
       setIsSaving(true);
-      console.log("Starting website save...");
-      
+      console.log("💾 useWebsite: Starting website save...", {
+        id,
+        websiteName,
+        updatedElements,
+        updatedPageSettings,
+        additionalSettings,
+        elements, 
+        pageSettings,
+      });
+
       const contentToSave = updatedElements !== undefined ? updatedElements : elements;
       const settingsToSave = updatedPageSettings !== undefined ? updatedPageSettings : pageSettings;
-      
+
+      // Show what will actually be saved
+      console.log("💾 useWebsite: Calling WebsiteService.saveWebsite with:", {
+        id,
+        websiteName,
+        contentToSave,
+        settingsToSave,
+        additionalSettings
+      });
+
       const success = await WebsiteService.saveWebsite(
         id,
         websiteName,
@@ -132,47 +150,48 @@ export const useWebsite = (
         settingsToSave,
         additionalSettings
       );
-      
+
       if (!success) {
+        console.error("❌ useWebsite: WebsiteService.saveWebsite returned false");
         toast.error("Failed to save website");
         return false;
       }
-      
+
       const updatedWebsite = {
         ...website,
         name: websiteName,
         content: contentToSave,
         pageSettings: settingsToSave
       };
-      
+
       setWebsite(updatedWebsite);
       setElements(contentToSave);
       if (settingsToSave) {
         setPageSettings(settingsToSave);
       }
-      
+
       setUnsavedChanges(false);
       setLastSaved(new Date());
-      
+
       if (!autoSaveEnabled) {
         toast.success("Website saved successfully");
       }
-      
+
       document.dispatchEvent(new CustomEvent('save-complete'));
-      
+
       return true;
     } catch (error) {
-      console.error("Error in saveWebsite:", error);
+      console.error("❌ useWebsite: Error in saveWebsite:", error);
       toast.error("An unexpected error occurred while saving");
       return false;
     } finally {
       setIsSaving(false);
-      
+
       if (pendingSaveRef.current && contentToSaveRef.current) {
         pendingSaveRef.current = false;
         const { elements, pageSettings, additionalSettings } = contentToSaveRef.current;
         contentToSaveRef.current = null;
-        
+
         setTimeout(() => {
           saveWebsite(elements, pageSettings, additionalSettings);
         }, 500);

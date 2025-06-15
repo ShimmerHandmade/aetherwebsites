@@ -198,7 +198,9 @@ const SimpleBuilder = () => {
     console.log("💾 SimpleBuilder: Handling save from builder", {
       elementsCount: elements?.length || 0,
       pageId: currentPage?.id,
-      pageSettings
+      pageSettings,
+      currentWebsite: website,
+      websiteName: websiteName,
     });
     
     if (!currentPage) {
@@ -228,12 +230,16 @@ const SimpleBuilder = () => {
       
       console.log("💾 SimpleBuilder: Saving with updated settings", {
         currentPageId: currentPage.id,
-        totalPages: Object.keys(updatedSettings.pagesContent || {}).length
+        websiteName,
+        totalPages: Object.keys(updatedSettings.pagesContent || {}).length,
+        updatedSettings
       });
       
       // Save to database with the updated settings
       const success = await saveWebsite(elements, pageSettings, updatedSettings);
-      
+
+      console.log("💾 SimpleBuilder: saveWebsite returned", success);
+
       if (success) {
         console.log("✅ SimpleBuilder: Save successful");
         toast.success("Page saved successfully");
@@ -248,7 +254,7 @@ const SimpleBuilder = () => {
       toast.error("An error occurred while saving");
       return false;
     }
-  }, [saveWebsite, updateElements, currentPage, website?.settings]);
+  }, [saveWebsite, updateElements, currentPage, website?.settings, websiteName]);
 
   if (isLoading) {
     return (
