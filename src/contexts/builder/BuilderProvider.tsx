@@ -18,41 +18,28 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
   initialPageSettings = { title: "Untitled Page" },
   onSave,
 }) => {
-  const [elements, setElements] = useState<BuilderElement[]>([]);
+  const [elements, setElements] = useState<BuilderElement[]>(initialElements);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [pageSettings, setPageSettings] = useState<PageSettings>(initialPageSettings);
   const [currentBreakpoint, setCurrentBreakpoint] = useState<BreakpointType>('desktop');
   const [previewBreakpoint, setPreviewBreakpoint] = useState<BreakpointType>('desktop');
-  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Improved synchronization with initialElements
+  console.log("🔄 BuilderProvider: Initialized with", {
+    elementsCount: initialElements?.length || 0,
+    pageSettings: initialPageSettings
+  });
+
+  // Update elements when initialElements changes
   useEffect(() => {
-    console.log("🔄 BuilderProvider: initialElements changed:", {
-      newLength: initialElements?.length || 0,
-      currentLength: elements?.length || 0,
-      isInitialized,
-      newElements: initialElements
+    console.log("🔄 BuilderProvider: initialElements changed", {
+      newCount: initialElements?.length || 0,
+      currentCount: elements?.length || 0
     });
     
-    // Always update elements when initialElements changes
     if (initialElements && Array.isArray(initialElements)) {
       setElements(initialElements);
-      console.log("✅ BuilderProvider: Elements updated from initialElements");
-      
-      if (!isInitialized) {
-        setIsInitialized(true);
-        console.log("🎯 BuilderProvider: Initialized");
-      }
-    } else if (initialElements === null || initialElements === undefined) {
-      setElements([]);
-      console.log("🧹 BuilderProvider: Elements cleared (null/undefined initialElements)");
-      
-      if (!isInitialized) {
-        setIsInitialized(true);
-        console.log("🎯 BuilderProvider: Initialized with empty elements");
-      }
     }
-  }, [initialElements, isInitialized]);
+  }, [initialElements]);
 
   // Update page settings when initialPageSettings changes
   useEffect(() => {
@@ -65,10 +52,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
   // Listen for save data requests
   useEffect(() => {
     const handleSaveRequest = () => {
-      console.log("💾 BuilderProvider: Save request received, calling onSave with current data:", { 
-        elements: elements.length, 
-        pageSettings 
-      });
+      console.log("💾 BuilderProvider: Save request received");
       if (onSave) {
         onSave(elements, pageSettings);
       }
@@ -108,83 +92,63 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       index?: number, 
       parentId?: string | null
     ) => {
-      console.log("🔄 Adding element:", { element: element.type, index, parentId });
-      
       const elementWithId = {
         ...element,
         id: element.id || uuidv4()
       };
       
       setElements(prevElements => {
-        try {
-          let newElements = [...prevElements];
-          
-          if (parentId) {
-            const updateElementChildren = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
-              return elementsToUpdate.map(el => {
-                if (el.id === parentId) {
-                  const children = el.children || [];
-                  const newChildren = index !== undefined 
-                    ? [...children.slice(0, index), elementWithId, ...children.slice(index)]
-                    : [...children, elementWithId];
-                  
-                  console.log(`📋 Added element to container ${parentId}, children count: ${newChildren.length}`);
-                  return { ...el, children: newChildren };
-                }
+        let newElements = [...prevElements];
+        
+        if (parentId) {
+          const updateElementChildren = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
+            return elementsToUpdate.map(el => {
+              if (el.id === parentId) {
+                const children = el.children || [];
+                const newChildren = index !== undefined 
+                  ? [...children.slice(0, index), elementWithId, ...children.slice(index)]
+                  : [...children, elementWithId];
                 
-                if (el.children) {
-                  return { ...el, children: updateElementChildren(el.children) };
-                }
-                
-                return el;
-              });
-            };
-            
-            newElements = updateElementChildren(newElements);
-          } else {
-            if (index !== undefined) {
-              newElements.splice(index, 0, elementWithId);
-            } else {
-              newElements.push(elementWithId);
-            }
-            
-            newElements = ensureElementsOrder(newElements);
-            console.log("📋 Added element to root with proper ordering");
-          }
-          
-          console.log("✅ Element added successfully, new elements:", newElements);
-          return newElements;
-        } catch (error) {
-          console.error("❌ Error adding element:", error);
-          return prevElements;
-        }
-      });
-    }, []),
-    updateElement: useCallback((id: string, updates: Partial<BuilderElement>) => {
-      console.log("🔄 Updating element:", { id, updates });
-      setElements(prevElements => {
-        try {
-          const updateElementRecursively = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
-            return elementsToUpdate.map(element => {
-              if (element.id === id) {
-                const updated = { ...element, ...updates };
-                console.log("✅ Element updated:", updated);
-                return updated;
+                return { ...el, children: newChildren };
               }
-              if (element.children) {
-                return { ...element, children: updateElementRecursively(element.children) };
+              
+              if (el.children) {
+                return { ...el, children: updateElementChildren(el.children) };
               }
-              return element;
+              
+              return el;
             });
           };
           
-          const result = updateElementRecursively(prevElements);
-          console.log("✅ Update complete");
-          return result;
-        } catch (error) {
-          console.error("❌ Error updating element:", error);
-          return prevElements;
+          newElements = updateElementChildren(newElements);
+        } else {
+          if (index !== undefined) {
+            newElements.splice(index, 0, elementWithId);
+          } else {
+            newElements.push(elementWithId);
+          }
+          
+          newElements = ensureElementsOrder(newElements);
         }
+        
+        return newElements;
+      });
+    }, []),
+    updateElement: useCallback((id: string, updates: Partial<BuilderElement>) => {
+      setElements(prevElements => {
+        const updateElementRecursively = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
+          return elementsToUpdate.map(element => {
+            if (element.id === id) {
+              return { ...element, ...updates };
+            }
+            if (element.children) {
+              return { ...element, children: updateElementRecursively(element.children) };
+            }
+            return element;
+          });
+        };
+        
+        return updateElementRecursively(prevElements);
       });
     }, []),
     updateElementResponsive: useCallback((
@@ -192,20 +156,17 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       breakpoint: BreakpointType, 
       responsiveUpdates: any
     ) => {
-      console.log("🔄 Updating element responsive settings:", { id, breakpoint, responsiveUpdates });
       setElements(prevElements => {
         const updateElementRecursively = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
           return elementsToUpdate.map(element => {
             if (element.id === id) {
-              const updated = {
+              return {
                 ...element,
                 responsiveSettings: {
                   ...element.responsiveSettings,
                   [breakpoint]: responsiveUpdates
                 }
               };
-              console.log("✅ Element responsive settings updated:", updated);
-              return updated;
             }
             if (element.children) {
               return { ...element, children: updateElementRecursively(element.children) };
@@ -218,25 +179,17 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       });
     }, []),
     removeElement: useCallback((id: string) => {
-      console.log("🗑️ Removing element:", id);
       setElements(prevElements => {
-        try {
-          const removeElementRecursively = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
-            return elementsToUpdate
-              .filter(element => element.id !== id)
-              .map(element => ({
-                ...element,
-                children: element.children ? removeElementRecursively(element.children) : undefined
-              }));
-          };
-          
-          const newElements = removeElementRecursively(prevElements);
-          console.log("✅ Element removed, new count:", newElements.length);
-          return newElements;
-        } catch (error) {
-          console.error("❌ Error removing element:", error);
-          return prevElements;
-        }
+        const removeElementRecursively = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
+          return elementsToUpdate
+            .filter(element => element.id !== id)
+            .map(element => ({
+              ...element,
+              children: element.children ? removeElementRecursively(element.children) : undefined
+            }));
+        };
+        
+        return removeElementRecursively(prevElements);
       });
       
       if (selectedElementId === id) {
@@ -244,25 +197,17 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       }
     }, [selectedElementId]),
     deleteElement: useCallback((id: string) => {
-      console.log("🗑️ Deleting element (alias):", id);
       setElements(prevElements => {
-        try {
-          const removeElementRecursively = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
-            return elementsToUpdate
-              .filter(element => element.id !== id)
-              .map(element => ({
-                ...element,
-                children: element.children ? removeElementRecursively(element.children) : undefined
-              }));
-          };
-          
-          const newElements = removeElementRecursively(prevElements);
-          console.log("✅ Element removed, new count:", newElements.length);
-          return newElements;
-        } catch (error) {
-          console.error("❌ Error deleting element:", error);
-          return prevElements;
-        }
+        const removeElementRecursively = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
+          return elementsToUpdate
+            .filter(element => element.id !== id)
+            .map(element => ({
+              ...element,
+              children: element.children ? removeElementRecursively(element.children) : undefined
+            }));
+        };
+        
+        return removeElementRecursively(prevElements);
       });
       
       if (selectedElementId === id) {
@@ -270,94 +215,66 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       }
     }, [selectedElementId]),
     moveElement: useCallback((fromIndex: number, toIndex: number, parentId?: string) => {
-      console.log("🔄 Moving element:", { fromIndex, toIndex, parentId });
       setElements(prevElements => {
-        try {
-          if (parentId) {
-            const updateElementChildren = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
-              return elementsToUpdate.map(el => {
-                if (el.id === parentId && el.children) {
-                  const children = [...el.children];
-                  const [movedElement] = children.splice(fromIndex, 1);
-                  children.splice(toIndex, 0, movedElement);
-                  console.log("✅ Element moved within container");
-                  return { ...el, children };
-                }
-                
-                if (el.children) {
-                  return { ...el, children: updateElementChildren(el.children) };
-                }
-                
-                return el;
-              });
-            };
-            
-            return updateElementChildren(prevElements);
-          } else {
-            const newElements = [...prevElements];
-            const [movedElement] = newElements.splice(fromIndex, 1);
-            newElements.splice(toIndex, 0, movedElement);
-            
-            const orderedElements = ensureElementsOrder(newElements);
-            console.log("✅ Element moved at root level");
-            return orderedElements;
-          }
-        } catch (error) {
-          console.error("❌ Error moving element:", error);
-          return prevElements;
+        if (parentId) {
+          const updateElementChildren = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
+            return elementsToUpdate.map(el => {
+              if (el.id === parentId && el.children) {
+                const children = [...el.children];
+                const [movedElement] = children.splice(fromIndex, 1);
+                children.splice(toIndex, 0, movedElement);
+                return { ...el, children };
+              }
+              
+              if (el.children) {
+                return { ...el, children: updateElementChildren(el.children) };
+              }
+              
+              return el;
+            });
+          };
+          
+          return updateElementChildren(prevElements);
+        } else {
+          const newElements = [...prevElements];
+          const [movedElement] = newElements.splice(fromIndex, 1);
+          newElements.splice(toIndex, 0, movedElement);
+          
+          return ensureElementsOrder(newElements);
         }
       });
     }, []),
     moveElementUp: useCallback((id: string) => {
-      console.log("⬆️ Moving element up:", id);
-      const findElementIndex = (id: string): number => {
-        return elements.findIndex(el => el.id === id);
-      };
-      
-      const currentIndex = findElementIndex(id);
+      const currentIndex = elements.findIndex(el => el.id === id);
       if (currentIndex > 0) {
         setElements(prevElements => {
           const newElements = [...prevElements];
           const [movedElement] = newElements.splice(currentIndex, 1);
           newElements.splice(currentIndex - 1, 0, movedElement);
           
-          const orderedElements = ensureElementsOrder(newElements);
-          console.log("✅ Element moved up");
-          return orderedElements;
+          return ensureElementsOrder(newElements);
         });
       }
     }, [elements]),
     moveElementDown: useCallback((id: string) => {
-      console.log("⬇️ Moving element down:", id);
-      const findElementIndex = (id: string): number => {
-        return elements.findIndex(el => el.id === id);
-      };
-      
-      const currentIndex = findElementIndex(id);
+      const currentIndex = elements.findIndex(el => el.id === id);
       if (currentIndex >= 0 && currentIndex < elements.length - 1) {
         setElements(prevElements => {
           const newElements = [...prevElements];
           const [movedElement] = newElements.splice(currentIndex, 1);
           newElements.splice(currentIndex + 1, 0, movedElement);
           
-          const orderedElements = ensureElementsOrder(newElements);
-          console.log("✅ Element moved down");
-          return orderedElements;
+          return ensureElementsOrder(newElements);
         });
       }
     }, [elements]),
     selectElement: useCallback((id: string | null) => {
-      console.log("🎯 Selecting element:", id);
       setSelectedElementId(id);
     }, []),
     findElementById,
     duplicateElement: useCallback((id: string) => {
-      console.log("📋 Duplicating element:", id);
       const element = findElementById(id);
-      if (!element) {
-        console.warn("❌ Element not found for duplication:", id);
-        return;
-      }
+      if (!element) return;
       
       const duplicateRecursively = (el: BuilderElement): BuilderElement => ({
         ...el,
@@ -372,27 +289,22 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
         setElements(prevElements => {
           const newElements = [...prevElements];
           newElements.splice(currentIndex + 1, 0, duplicated);
-          console.log("✅ Element duplicated");
           return newElements;
         });
       }
     }, [elements, findElementById]),
     updatePageSettings: useCallback((newSettings: Partial<PageSettings>) => {
-      console.log("🔄 Updating page settings:", newSettings);
       setPageSettings(prev => ({ ...prev, ...newSettings }));
     }, []),
     saveChanges: useCallback(() => {
       if (onSave) {
-        console.log("💾 Saving changes:", { elements, pageSettings });
         onSave(elements, pageSettings);
       }
     }, [elements, pageSettings, onSave]),
     setCurrentBreakpoint: useCallback((breakpoint: BreakpointType) => {
-      console.log("📱 Setting current breakpoint:", breakpoint);
       setCurrentBreakpoint(breakpoint);
     }, []),
     setPreviewBreakpoint: useCallback((breakpoint: BreakpointType) => {
-      console.log("👀 Setting preview breakpoint:", breakpoint);
       setPreviewBreakpoint(breakpoint);
     }, []),
   };
