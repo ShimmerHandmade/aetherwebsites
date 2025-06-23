@@ -1,6 +1,7 @@
 
 import React from "react";
 import { BuilderElement } from "@/contexts/BuilderContext";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PropertyEditor, { PropertyEditorProps } from "./PropertyEditor";
 import ContentPropertyEditor from "./ContentPropertyEditor";
 import ButtonPropertyEditor from "./ButtonPropertyEditor";
@@ -19,6 +20,12 @@ import VideoPropertyEditor from "./VideoPropertyEditor";
 import FormPropertyEditor from "./FormPropertyEditor";
 import ProductsListPropertyEditor from "./ProductsListPropertyEditor";
 import AnimationPropertyEditor from "./AnimationPropertyEditor";
+import TextPropertyEditor from "./TextPropertyEditor";
+import IconPropertyEditor from "./IconPropertyEditor";
+import ListPropertyEditor from "./ListPropertyEditor";
+import LayoutPropertyEditor from "./LayoutPropertyEditor";
+import StylePropertyEditor from "./StylePropertyEditor";
+import ResponsivePropertyEditor from "./ResponsivePropertyEditor";
 
 interface PropertyEditorManagerProps {
   element: BuilderElement;
@@ -31,8 +38,8 @@ const PropertyEditorManager: React.FC<PropertyEditorManagerProps> = ({
   onPropertyChange,
   onContentChange,
 }) => {
-  // Get the appropriate property editor based on element type
-  const getPropertyEditor = () => {
+  // Get the main property editor based on element type
+  const getMainPropertyEditor = () => {
     const commonProps: PropertyEditorProps = {
       element,
       onPropertyChange,
@@ -81,25 +88,73 @@ const PropertyEditorManager: React.FC<PropertyEditorManagerProps> = ({
       case "scrollReveal":
         return <AnimationPropertyEditor {...commonProps} />;
       case "text":
-      case "list":
+        return <TextPropertyEditor {...commonProps} />;
       case "icon":
+        return <IconPropertyEditor {...commonProps} />;
+      case "list":
+        return <ListPropertyEditor {...commonProps} />;
       default:
-        // For simple elements, just show content editor
         return (
-          <div className="space-y-4">
-            <ContentPropertyEditor 
-              content={element.content} 
-              onContentChange={onContentChange}
-              useMultiline={element.type === "text"}
-            />
-          </div>
+          <ContentPropertyEditor 
+            content={element.content || ""} 
+            onContentChange={onContentChange}
+            useMultiline={element.type === "text" || element.type === "list"}
+          />
         );
     }
   };
 
+  // Check if element supports advanced editing
+  const supportsAdvancedEditing = () => {
+    const advancedTypes = [
+      "section", "div", "flex", "grid", "container", 
+      "text", "heading", "button", "image", "card", "list"
+    ];
+    return advancedTypes.includes(element.type) || element.type.includes("Element");
+  };
+
+  // Simple elements get basic editor
+  if (!supportsAdvancedEditing()) {
+    return (
+      <div className="space-y-4">
+        {getMainPropertyEditor()}
+      </div>
+    );
+  }
+
+  // Advanced elements get tabbed interface
   return (
     <div className="space-y-4">
-      {getPropertyEditor()}
+      <Tabs defaultValue="content" className="w-full">
+        <TabsList className="grid w-full grid-cols-4 text-xs">
+          <TabsTrigger value="content">Content</TabsTrigger>
+          <TabsTrigger value="layout">Layout</TabsTrigger>
+          <TabsTrigger value="style">Style</TabsTrigger>
+          <TabsTrigger value="responsive">Device</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="content" className="space-y-4 mt-4">
+          {getMainPropertyEditor()}
+        </TabsContent>
+        
+        <TabsContent value="layout" className="space-y-4 mt-4">
+          <LayoutPropertyEditor 
+            element={element}
+            onPropertyChange={onPropertyChange}
+          />
+        </TabsContent>
+        
+        <TabsContent value="style" className="space-y-4 mt-4">
+          <StylePropertyEditor 
+            element={element}
+            onPropertyChange={onPropertyChange}
+          />
+        </TabsContent>
+        
+        <TabsContent value="responsive" className="space-y-4 mt-4">
+          <ResponsivePropertyEditor element={element} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
