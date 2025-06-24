@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Palette, Save, RotateCcw, Eye, Wand2 } from "lucide-react";
+import { Palette, Save, RotateCcw, Eye, Wand2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate, useParams } from "react-router-dom";
 
 interface ColorScheme {
   primary: string;
@@ -25,6 +27,9 @@ interface ColorSchemeEditorProps {
 }
 
 const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }) => {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  
   const [currentScheme, setCurrentScheme] = useState<ColorScheme>({
     primary: "#3b82f6",
     secondary: "#8b5cf6", 
@@ -267,9 +272,17 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Palette className="h-6 w-6 text-primary" />
-          <h2 className="text-2xl font-bold">Canvas Color Scheme</h2>
+          <h2 className="text-2xl font-bold">Quick Color Editor</h2>
         </div>
         <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(`/builder/${id}/theme`)}
+          >
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Full Theme Editor
+          </Button>
           <Button
             variant={previewMode ? "default" : "outline"}
             size="sm"
@@ -286,17 +299,33 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
         </div>
       </div>
 
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div className="flex items-center gap-2 text-blue-700">
+          <ExternalLink className="h-4 w-4" />
+          <p className="text-sm">
+            <strong>New!</strong> Try our comprehensive{" "}
+            <button 
+              onClick={() => navigate(`/builder/${id}/theme`)}
+              className="underline hover:no-underline font-medium"
+            >
+              Theme Editor
+            </button>{" "}
+            for complete control over colors, typography, and spacing.
+          </p>
+        </div>
+      </div>
+
       <Tabs defaultValue="custom" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="custom">Custom Colors</TabsTrigger>
-          <TabsTrigger value="presets">Preset Schemes</TabsTrigger>
+          <TabsTrigger value="presets">Quick Presets</TabsTrigger>
         </TabsList>
 
         <TabsContent value="custom" className="space-y-8">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                Custom Color Scheme
+                Quick Color Customization
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={generateRandomScheme}>
                     <Wand2 className="h-4 w-4 mr-2" />
@@ -382,7 +411,7 @@ const ColorSchemeEditor: React.FC<ColorSchemeEditorProps> = ({ onSave, onClose }
         <TabsContent value="presets" className="space-y-8">
           <Card>
             <CardHeader>
-              <CardTitle>Preset Color Schemes</CardTitle>
+              <CardTitle>Quick Color Presets</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
