@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,8 @@ const BuilderPages = () => {
     website, 
     isLoading, 
     websiteName,
-    saveWebsite
+    saveWebsite,
+    refreshWebsite
   } = useWebsite(id, navigate);
   
   const [pages, setPages] = useState<Page[]>([]);
@@ -46,18 +48,25 @@ const BuilderPages = () => {
   // Initialize pages from website settings if available
   useEffect(() => {
     if (website?.settings && website.settings.pages) {
+      console.log("Setting pages from website settings:", website.settings.pages);
       setPages(website.settings.pages);
     } else if (pages.length === 0) {
       // Create a default home page if no pages exist
-      setPages([
+      const defaultPages = [
         { id: uuidv4(), title: 'Home', slug: '/', isHomePage: true }
-      ]);
+      ];
+      console.log("Setting default pages:", defaultPages);
+      setPages(defaultPages);
     }
-  }, [website]);
+  }, [website?.settings]);
 
   const handleAddPage = async () => {
     if (!newPageTitle.trim()) {
-      toast.error("Page title cannot be empty");
+      toast({
+        title: "Error",
+        description: "Page title cannot be empty",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -75,17 +84,24 @@ const BuilderPages = () => {
     setNewPageTitle('');
     setIsCreating(false);
     
-    // Save pages to website settings
+    // Save pages to website settings and refresh
     await savePagesToDB(updatedPages);
     
-    toast.success(`Page "${newPageTitle}" created`);
+    toast({
+      title: "Success",
+      description: `Page "${newPageTitle}" created`
+    });
   };
 
   const handleDeletePage = async (pageId: string) => {
     // Don't allow deleting the homepage
     const pageToDelete = pages.find(p => p.id === pageId);
     if (pageToDelete?.isHomePage) {
-      toast.error("Cannot delete the home page");
+      toast({
+        title: "Error",
+        description: "Cannot delete the home page",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -106,12 +122,18 @@ const BuilderPages = () => {
         pagesContent,
         pagesSettings
       });
+      
+      // Refresh the website data to ensure consistency
+      await refreshWebsite();
     } else {
       // Just save the updated pages
       await savePagesToDB(updatedPages);
     }
     
-    toast.success("Page deleted");
+    toast({
+      title: "Success",
+      description: "Page deleted"
+    });
   };
 
   const handleEditPage = (page: Page) => {
@@ -122,7 +144,11 @@ const BuilderPages = () => {
 
   const handleSaveEdit = async () => {
     if (!editingPage || !editTitle.trim()) {
-      toast.error("Page title cannot be empty");
+      toast({
+        title: "Error",
+        description: "Page title cannot be empty",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -137,7 +163,11 @@ const BuilderPages = () => {
       // Make sure we still have a homepage
       const hasAnotherHomePage = updatedPages.some(p => p.id !== editingPage.id && p.isHomePage);
       if (!hasAnotherHomePage && editingPage.isHomePage) {
-        toast.error("You must have a home page. Please set another page as home before removing this one.");
+        toast({
+          title: "Error",
+          description: "You must have a home page. Please set another page as home before removing this one.",
+          variant: "destructive"
+        });
         return;
       }
       
@@ -152,15 +182,19 @@ const BuilderPages = () => {
     setPages(updatedPages);
     setEditingPage(null);
     
-    // Save pages to website settings
+    // Save pages to website settings and refresh
     await savePagesToDB(updatedPages);
     
-    toast.success("Page updated");
+    toast({
+      title: "Success",
+      description: "Page updated"
+    });
   };
 
   const savePagesToDB = async (updatedPages: Page[]) => {
     try {
       setIsSaving(true);
+      console.log("Saving pages to database:", updatedPages);
       
       // Update website settings with pages
       const updatedSettings = {
@@ -169,14 +203,31 @@ const BuilderPages = () => {
       };
       
       // Save to database
-      await saveWebsite(website?.content || [], {
+      const success = await saveWebsite(website?.content || [], {
         ...website?.pageSettings,
         title: website?.pageSettings?.title || websiteName
       }, updatedSettings);
       
+      if (success) {
+        // Refresh the website data to ensure UI consistency
+        await refreshWebsite();
+        console.log("Pages saved and website refreshed successfully");
+      } else {
+        console.error("Failed to save pages");
+        toast({
+          title: "Error",
+          description: "Failed to save pages",
+          variant: "destructive"
+        });
+      }
+      
     } catch (error) {
       console.error("Error saving pages:", error);
-      toast.error("Failed to save pages");
+      toast({
+        title: "Error",
+        description: "Failed to save pages",
+        variant: "destructive"
+      });
     } finally {
       setIsSaving(false);
     }
