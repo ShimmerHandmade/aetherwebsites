@@ -67,7 +67,12 @@ export const PlanProvider = ({ children }: PlanProviderProps) => {
       return true;
     }
     
-    // Show upgrade toast
+    // Don't show upgrade toast for Free Enterprise users
+    if (planInfo.isFreeEnterprise) {
+      return true;
+    }
+    
+    // Show upgrade toast for other users
     const requiredPlan = isPremiumOnly ? "Professional" : "Enterprise";
     console.log(`❌ Access denied for ${feature}, requires ${requiredPlan} plan`);
     toast.error(`${feature} requires a ${requiredPlan} plan`, {

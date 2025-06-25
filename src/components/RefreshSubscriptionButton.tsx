@@ -23,6 +23,31 @@ const RefreshSubscriptionButton = ({
   const handleRefresh = async () => {
     try {
       setIsRefreshing(true);
+      
+      // First check if user has Free Enterprise plan
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Please log in to refresh subscription status");
+        return;
+      }
+
+      // Get user profile to check for Free Enterprise plan
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_subscribed, plan_id, plans(name)")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profile?.is_subscribed && profile.plans && 
+          typeof profile.plans === 'object' && 
+          'name' in profile.plans &&
+          (profile.plans as { name: string }).name === "Free Enterprise") {
+        toast.success("Subscription status refreshed - Free Enterprise plan is active");
+        if (onRefresh) onRefresh();
+        return;
+      }
+
+      // For other plans, use the edge function
       const { data, error } = await supabase.functions.invoke("check-subscription");
       
       if (error) {
@@ -32,7 +57,8 @@ const RefreshSubscriptionButton = ({
       }
       
       if (data.subscribed) {
-        toast.success("Subscription status refreshed - Active subscription confirmed");
+        const planName = data.plan?.name || "your current plan";
+        toast.success(`Subscription status refreshed - ${planName} is active`);
       } else {
         toast.info("Subscription status refreshed - No active subscription found");
       }
