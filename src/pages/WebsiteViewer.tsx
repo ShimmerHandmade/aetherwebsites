@@ -38,27 +38,28 @@ const WebsiteViewer = () => {
     // Detect site ID from various sources
     let detectedId = id;
     
-    // Check if this is a custom domain (not localhost, lovable domains, lovableproject domains, or aetherwebsites.com)
+    // Check if this is a custom domain (not localhost, lovable domains, lovableproject domains, netlify.app, or main aetherwebsites.com)
     const isCustomDomain = window.location.hostname !== 'localhost' && 
                            !window.location.hostname.includes('lovable.app') &&
                            !window.location.hostname.includes('lovableproject.com') &&
-                           !window.location.hostname.includes('aetherwebsites.com') &&
-                           !window.location.hostname.includes('netlify.app');
+                           !window.location.hostname.includes('netlify.app') &&
+                           window.location.hostname.includes('aetherwebsites.com') &&
+                           window.location.hostname !== 'aetherwebsites.com';
     
     if (isCustomDomain) {
-      // For custom domains, try to extract site ID from URL params or subdomain
-      const urlParams = new URLSearchParams(location.search);
-      const siteIdFromParams = urlParams.get('siteId') || urlParams.get('id');
-      
-      if (siteIdFromParams) {
-        detectedId = siteIdFromParams;
-        console.log("Site ID detected from URL params:", detectedId);
+      // For aetherwebsites.com subdomains, extract site ID from subdomain
+      const subdomainMatch = window.location.hostname.match(/^site-([a-f0-9-]+)\.aetherwebsites\.com$/);
+      if (subdomainMatch) {
+        detectedId = subdomainMatch[1];
+        console.log("Site ID detected from aetherwebsites.com subdomain:", detectedId);
       } else {
-        // Try to detect from subdomain pattern (e.g., site-123.domain.com)
-        const subdomainMatch = window.location.hostname.match(/^site-([a-f0-9-]+)\./);
-        if (subdomainMatch) {
-          detectedId = subdomainMatch[1];
-          console.log("Site ID detected from subdomain:", detectedId);
+        // Try to detect from URL params as fallback
+        const urlParams = new URLSearchParams(location.search);
+        const siteIdFromParams = urlParams.get('siteId') || urlParams.get('id');
+        
+        if (siteIdFromParams) {
+          detectedId = siteIdFromParams;
+          console.log("Site ID detected from URL params:", detectedId);
         }
       }
     }
@@ -81,12 +82,9 @@ const WebsiteViewer = () => {
   // Enhanced route detection
   const isViewRoute = location.pathname.startsWith(`/view/${actualSiteId}`);
   const isSiteRoute = location.pathname.startsWith(`/site/${actualSiteId}`);
-  const isCustomDomain = window.location.hostname !== 'localhost' && 
-                         !window.location.hostname.includes('lovable.app') &&
-                         !window.location.hostname.includes('lovableproject.com') &&
-                         !window.location.hostname.includes('aetherwebsites.com') &&
-                         !window.location.hostname.includes('netlify.app');
-  const isLiveSite = isSiteRoute || isViewRoute || isCustomDomain;
+  const isAetherSubdomain = window.location.hostname.includes('aetherwebsites.com') && 
+                           window.location.hostname !== 'aetherwebsites.com';
+  const isLiveSite = isSiteRoute || isViewRoute || isAetherSubdomain;
 
   // Extract the current path after the site/view prefix
   let currentPath = location.pathname;
@@ -94,7 +92,7 @@ const WebsiteViewer = () => {
     currentPath = currentPath.replace(`/site/${actualSiteId}`, '') || '/';
   } else if (isViewRoute) {
     currentPath = currentPath.replace(`/view/${actualSiteId}`, '') || '/';
-  } else if (isCustomDomain) {
+  } else if (isAetherSubdomain) {
     currentPath = location.pathname || '/';
   }
   
@@ -108,7 +106,7 @@ const WebsiteViewer = () => {
     actualSiteId,
     isViewRoute,
     isSiteRoute,
-    isCustomDomain,
+    isAetherSubdomain,
     isLiveSite,
     currentPath,
     isCartPage,

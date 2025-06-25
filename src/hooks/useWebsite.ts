@@ -211,7 +211,7 @@ export const useWebsite = (
       // Save current state before publishing
       await saveWebsite();
       
-      // Deploy to netlify subfolder
+      // Deploy to aetherwebsites.com subdomain
       const { data: deployData, error: deployError } = await supabase.functions.invoke('deploy-to-netlify', {
         body: {
           websiteId: id,
@@ -243,11 +243,7 @@ export const useWebsite = (
       
       setWebsite({ ...website, published: true });
       toast.success("Website published successfully!", {
-        description: `Your site is live at ${deployData.url}`,
-        action: {
-          label: "View Site",
-          onClick: () => window.open(deployData.url, '_blank')
-        }
+        description: `Your site is live at ${deployData.url}`
       });
       
     } catch (error) {

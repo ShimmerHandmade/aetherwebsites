@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -24,16 +23,11 @@ serve(async (req) => {
       throw new Error('Netlify credentials not configured')
     }
 
-    // Generate the website subdirectory structure
-    const siteSubdomain = `site-${websiteId}`;
-    
-    // Prepare the site files for deployment to subfolder
+    // Generate the website files for aetherwebsites.com subdomain
     const deployFiles = {
-      [`${siteSubdomain}/index.html`]: generateIndexHTML(content, settings, websiteId),
-      [`${siteSubdomain}/_redirects`]: generateSiteRedirects(),
-      [`${siteSubdomain}/robots.txt`]: 'User-agent: *\nAllow: /',
-      // Root level redirects to handle subdomain routing
-      '_redirects': generateRootRedirects(websiteId),
+      'index.html': generateIndexHTML(content, settings, websiteId),
+      '_redirects': generateRedirects(websiteId),
+      'robots.txt': 'User-agent: *\nAllow: /',
     }
 
     console.log('📁 Deploy files prepared:', Object.keys(deployFiles));
@@ -55,7 +49,25 @@ serve(async (req) => {
     console.log('📤 Netlify response:', deployData);
 
     if (deployResponse.ok) {
-      const siteUrl = `https://site-${websiteId}.netlify.app`;
+      // Configure custom domain for this site
+      const customDomain = `site-${websiteId}.aetherwebsites.com`;
+      
+      // Add the custom domain to Netlify site
+      const domainResponse = await fetch(`https://api.netlify.com/api/v1/sites/${NETLIFY_SITE_ID}/domains`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: customDomain
+        })
+      });
+
+      const domainData = await domainResponse.json();
+      console.log('🌐 Domain configuration:', domainData);
+
+      const siteUrl = `https://${customDomain}`;
       
       return new Response(
         JSON.stringify({
@@ -63,7 +75,8 @@ serve(async (req) => {
           deploy_id: deployData.id,
           url: siteUrl,
           deploy_url: siteUrl,
-          subdomain: siteSubdomain
+          custom_domain: customDomain,
+          subdomain: `site-${websiteId}`
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -102,7 +115,7 @@ function generateIndexHTML(content: any[], settings: any, websiteId: string): st
   <meta property="og:title" content="${pageTitle}">
   <meta property="og:description" content="${pageDescription}">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://site-${websiteId}.netlify.app">
+  <meta property="og:url" content="https://site-${websiteId}.aetherwebsites.com">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     /* Custom styles for live site */
@@ -265,15 +278,7 @@ function renderFooter(element: any): string {
   </footer>`;
 }
 
-function generateSiteRedirects(): string {
-  return `/*    /index.html   200`;
-}
-
-function generateRootRedirects(websiteId: string): string {
-  return `# Handle subdomain routing for individual websites
-https://site-${websiteId}.netlify.app/* https://main.netlify.app/site-${websiteId}/:splat 200
-/site-${websiteId}/* /site-${websiteId}/index.html 200
-
-# Fallback for main app
+function generateRedirects(websiteId: string): string {
+  return `# Custom domain redirects for aetherwebsites.com subdomain
 /*    /index.html   200`;
 }

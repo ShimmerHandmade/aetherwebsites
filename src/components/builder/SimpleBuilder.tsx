@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from "react";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -108,13 +107,13 @@ const SimpleBuilder = () => {
   const currentPageSettings = website?.settings?.pagesSettings?.[currentPage?.id] || pageSettings || { title: websiteName || "My Website" };
 
   const handlePublish = async () => {
-    console.log("📤 Publishing website to subfolder...");
+    console.log("📤 Publishing website to aetherwebsites.com subdomain...");
     
     try {
       // First save the current state
       await saveWebsite();
       
-      // Deploy to netlify with proper subfolder structure
+      // Deploy to aetherwebsites.com subdomain
       const { data, error } = await supabase.functions.invoke('deploy-to-netlify', {
         body: {
           websiteId: id,
@@ -140,11 +139,7 @@ const SimpleBuilder = () => {
       await publishWebsite();
       
       toast.success("Website published successfully!", {
-        description: `Your site is now live at site-${id}.netlify.app`,
-        action: {
-          label: "View Site",
-          onClick: () => window.open(`https://site-${id}.netlify.app`, '_blank')
-        }
+        description: `Your site is now live at site-${id}.aetherwebsites.com`
       });
       
     } catch (error) {
