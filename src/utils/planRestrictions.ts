@@ -169,6 +169,24 @@ export const getUserPlanRestrictions = async (): Promise<PlanRestriction> => {
         };
         break;
       
+      case "free enterprise":
+        restrictions = {
+          maxProducts: 500,
+          maxWebsites: 3,
+          allowCoupons: true,
+          allowDiscounts: true,
+          allowAdvancedAnalytics: true,
+          allowCustomDomain: false,
+          allowPremiumTemplates: true,
+          allowPremiumElements: true,
+          allowPremiumAnimations: true,
+          allowedThemes: [
+            "business", "blog", "ecommerce", "fashion", "electronics", "food",
+            "beauty", "furniture", "jewelry"
+          ]
+        };
+        break;
+      
       default:
         restrictions = {
           maxProducts: 30,
@@ -233,7 +251,7 @@ export const checkProductLimit = async (currentProductCount: number): Promise<bo
     return canAddProduct;
   } catch (error) {
     console.error("💥 Error checking product limit:", error);
-    return false;
+    return true; // Allow if check fails
   }
 };
 
@@ -247,22 +265,13 @@ export const checkWebsiteLimit = async (currentWebsiteCount: number): Promise<bo
     
     if (!canAddWebsite) {
       toast.error(`You've reached your plan's limit of ${restrictions.maxWebsites} websites`, {
-        description: "Upgrade your plan to create more websites"
+        description: "Upgrade your plan to add more websites"
       });
     }
     
     return canAddWebsite;
   } catch (error) {
     console.error("💥 Error checking website limit:", error);
-    return false;
+    return true; // Allow if check fails
   }
-};
-
-// Clear cache when needed
-export const clearRestrictionsCache = () => {
-  restrictionsCache = {
-    data: null,
-    timestamp: 0,
-    userId: null
-  };
 };

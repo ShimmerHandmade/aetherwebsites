@@ -14,7 +14,7 @@ const PlanStatusBadge: React.FC<PlanStatusBadgeProps> = ({
   className,
   showIcon = true
 }) => {
-  const { planName, loading, isPremium, isEnterprise } = usePlan();
+  const { planName, loading, isPremium, isEnterprise, isFreeEnterprise } = usePlan();
   
   if (loading) {
     return (
@@ -48,6 +48,17 @@ const PlanStatusBadge: React.FC<PlanStatusBadgeProps> = ({
       >
         {showIcon && <span className="mr-1">✦</span>}
         Enterprise
+      </Badge>
+    );
+  }
+  
+  if (isFreeEnterprise) {
+    return (
+      <Badge 
+        className={cn("bg-gradient-to-r from-green-600 to-blue-600", className)}
+      >
+        {showIcon && <span className="mr-1">🎁</span>}
+        Free Enterprise
       </Badge>
     );
   }

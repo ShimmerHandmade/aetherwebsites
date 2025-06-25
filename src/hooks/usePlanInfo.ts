@@ -10,6 +10,7 @@ export interface PlanInfo {
   error: string | null;
   isPremium: boolean;
   isEnterprise: boolean;
+  isFreeEnterprise: boolean;
 }
 
 export const usePlanInfo = () => {
@@ -19,7 +20,8 @@ export const usePlanInfo = () => {
     loading: true,
     error: null,
     isPremium: false,
-    isEnterprise: false
+    isEnterprise: false,
+    isFreeEnterprise: false
   });
 
   useEffect(() => {
@@ -55,7 +57,8 @@ export const usePlanInfo = () => {
               loading: false,
               error: null,
               isPremium: false,
-              isEnterprise: false
+              isEnterprise: false,
+              isFreeEnterprise: false
             });
           }
           return;
@@ -79,7 +82,8 @@ export const usePlanInfo = () => {
               loading: false,
               error: profileError.message,
               isPremium: false,
-              isEnterprise: false
+              isEnterprise: false,
+              isFreeEnterprise: false
             });
           }
           return;
@@ -88,6 +92,7 @@ export const usePlanInfo = () => {
         let planName = null;
         let isPremium = false;
         let isEnterprise = false;
+        let isFreeEnterprise = false;
         
         // Check subscription status
         const hasActiveSubscription = profile?.is_subscribed && 
@@ -110,12 +115,14 @@ export const usePlanInfo = () => {
               isPremium = lowerPlanName.includes("professional") || 
                          lowerPlanName.includes("premium") ||
                          lowerPlanName.includes("enterprise");
-              isEnterprise = lowerPlanName.includes("enterprise");
+              isEnterprise = lowerPlanName.includes("enterprise") && 
+                           !lowerPlanName.includes("free");
+              isFreeEnterprise = lowerPlanName.includes("free enterprise");
             }
           }
         }
         
-        console.log("✅ Plan info loaded:", { planName, isPremium, isEnterprise });
+        console.log("✅ Plan info loaded:", { planName, isPremium, isEnterprise, isFreeEnterprise });
         
         if (isMounted) {
           setPlanInfo({
@@ -124,7 +131,8 @@ export const usePlanInfo = () => {
             loading: false,
             error: null,
             isPremium,
-            isEnterprise
+            isEnterprise,
+            isFreeEnterprise
           });
         }
       } catch (error) {

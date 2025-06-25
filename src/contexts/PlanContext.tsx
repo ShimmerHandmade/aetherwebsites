@@ -15,6 +15,7 @@ const PlanContext = createContext<PlanInfo & {
   error: null,
   isPremium: false,
   isEnterprise: false,
+  isFreeEnterprise: false,
   checkUpgrade: () => false,
   isThemeAllowed: async () => false
 });
@@ -42,11 +43,17 @@ export const PlanProvider = ({ children }: PlanProviderProps) => {
     console.log("🔍 Checking upgrade for feature:", feature, {
       isPremiumOnly,
       userIsPremium: planInfo.isPremium,
-      userIsEnterprise: planInfo.isEnterprise
+      userIsEnterprise: planInfo.isEnterprise,
+      userIsFreeEnterprise: planInfo.isFreeEnterprise
     });
     
     if (planInfo.isEnterprise) {
       console.log(`✅ Enterprise user has access to ${feature}`);
+      return true;
+    }
+    
+    if (planInfo.isFreeEnterprise) {
+      console.log(`✅ Free Enterprise user has access to ${feature}`);
       return true;
     }
     
@@ -74,11 +81,11 @@ export const PlanProvider = ({ children }: PlanProviderProps) => {
   // Check if a specific theme is allowed for the current plan
   const isThemeAllowed = async (themeName: string): Promise<boolean> => {
     try {
-      console.log(`🎨 Checking theme access for ${themeName} with plan status: Premium=${planInfo.isPremium}, Enterprise=${planInfo.isEnterprise}`);
+      console.log(`🎨 Checking theme access for ${themeName} with plan status: Premium=${planInfo.isPremium}, Enterprise=${planInfo.isEnterprise}, FreeEnterprise=${planInfo.isFreeEnterprise}`);
       
-      // All themes allowed for premium and enterprise users
-      if (planInfo.isPremium || planInfo.isEnterprise) {
-        console.log(`✅ Theme ${themeName} is allowed for premium/enterprise users`);
+      // All themes allowed for premium, enterprise, and free enterprise users
+      if (planInfo.isPremium || planInfo.isEnterprise || planInfo.isFreeEnterprise) {
+        console.log(`✅ Theme ${themeName} is allowed for premium/enterprise/free enterprise users`);
         return true;
       }
       
@@ -106,11 +113,12 @@ export const PlanProvider = ({ children }: PlanProviderProps) => {
         planName: planInfo.planName,
         isPremium: planInfo.isPremium,
         isEnterprise: planInfo.isEnterprise,
+        isFreeEnterprise: planInfo.isFreeEnterprise,
         hasRestrictions: !!planInfo.restrictions,
         error: planInfo.error
       });
     }
-  }, [planInfo.loading, planInfo.planName, planInfo.isPremium, planInfo.isEnterprise, planInfo.restrictions, planInfo.error]);
+  }, [planInfo.loading, planInfo.planName, planInfo.isPremium, planInfo.isEnterprise, planInfo.isFreeEnterprise, planInfo.restrictions, planInfo.error]);
   
   return (
     <PlanContext.Provider value={{
@@ -131,7 +139,8 @@ export const usePlan = () => {
     loading: context.loading,
     error: context.error,
     isPremium: context.isPremium,
-    isEnterprise: context.isEnterprise
+    isEnterprise: context.isEnterprise,
+    isFreeEnterprise: context.isFreeEnterprise
   });
   return context;
 };
