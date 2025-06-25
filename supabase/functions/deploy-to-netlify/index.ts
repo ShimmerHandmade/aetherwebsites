@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -20,77 +21,89 @@ serve(async (req) => {
     const NETLIFY_SITE_ID = Deno.env.get('NETLIFY_SITE_ID')
 
     if (!NETLIFY_ACCESS_TOKEN || !NETLIFY_SITE_ID) {
+      console.error('❌ Missing credentials:', { 
+        hasToken: !!NETLIFY_ACCESS_TOKEN, 
+        hasSiteId: !!NETLIFY_SITE_ID 
+      });
       throw new Error('Netlify credentials not configured')
     }
 
-    // Generate the website files for aetherwebsites.com subdomain
-    const deployFiles = {
-      'index.html': generateIndexHTML(content, settings, websiteId),
-      '_redirects': generateRedirects(websiteId),
-      'robots.txt': 'User-agent: *\nAllow: /',
-    }
+    console.log('✅ Credentials found, proceeding with deployment');
 
-    console.log('📁 Deploy files prepared:', Object.keys(deployFiles));
+    // Generate the website files
+    const indexHTML = generateIndexHTML(content, settings, websiteId);
+    const redirectsContent = generateRedirects(websiteId);
+    
+    console.log('📁 Generated files:', { 
+      indexHTMLLength: indexHTML.length,
+      redirectsLength: redirectsContent.length
+    });
 
-    // Create deployment
+    // Create a ZIP-like deployment using Netlify's deploy API
+    const deployPayload = {
+      files: {
+        'index.html': indexHTML,
+        '_redirects': redirectsContent,
+        'robots.txt': 'User-agent: *\nAllow: /',
+      }
+    };
+
+    console.log('📤 Sending deployment to Netlify...');
+
+    // Use the correct Netlify API endpoint for file uploads
     const deployResponse = await fetch(`https://api.netlify.com/api/v1/sites/${NETLIFY_SITE_ID}/deploys`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        files: deployFiles,
-        draft: false
-      })
-    })
+      body: JSON.stringify(deployPayload)
+    });
 
-    const deployData = await deployResponse.json()
-    console.log('📤 Netlify response:', deployData);
+    console.log('📤 Netlify API response status:', deployResponse.status);
 
-    if (deployResponse.ok) {
-      // Configure custom domain for this site
-      const customDomain = `site-${websiteId}.aetherwebsites.com`;
-      
-      // Add the custom domain to Netlify site
-      const domainResponse = await fetch(`https://api.netlify.com/api/v1/sites/${NETLIFY_SITE_ID}/domains`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: customDomain
-        })
-      });
-
-      const domainData = await domainResponse.json();
-      console.log('🌐 Domain configuration:', domainData);
-
-      const siteUrl = `https://${customDomain}`;
-      
-      return new Response(
-        JSON.stringify({
-          success: true,
-          deploy_id: deployData.id,
-          url: siteUrl,
-          deploy_url: siteUrl,
-          custom_domain: customDomain,
-          subdomain: `site-${websiteId}`
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      )
-    } else {
-      throw new Error(`Netlify deployment failed: ${deployData.message}`)
+    if (!deployResponse.ok) {
+      const errorText = await deployResponse.text();
+      console.error('❌ Netlify API error:', errorText);
+      throw new Error(`Netlify deployment failed: ${deployResponse.status} ${errorText}`);
     }
+
+    const deployData = await deployResponse.json();
+    console.log('✅ Deployment successful:', { 
+      deployId: deployData.id,
+      state: deployData.state,
+      url: deployData.ssl_url || deployData.url
+    });
+
+    // The subdomain will be configured through DNS (CNAME record)
+    const customDomain = `site-${websiteId}.aetherwebsites.com`;
+    const siteUrl = `https://${customDomain}`;
+    
+    console.log('🌐 Site will be available at:', siteUrl);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        deploy_id: deployData.id,
+        url: siteUrl,
+        deploy_url: deployData.ssl_url || deployData.url,
+        custom_domain: customDomain,
+        subdomain: `site-${websiteId}`,
+        state: deployData.state
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      }
+    )
 
   } catch (error) {
     console.error('❌ Netlify deployment error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: 'Check Supabase logs for more information'
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
@@ -118,7 +131,6 @@ function generateIndexHTML(content: any[], settings: any, websiteId: string): st
   <meta property="og:url" content="https://site-${websiteId}.aetherwebsites.com">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Custom styles for live site */
     body { margin: 0; padding: 0; }
     .website-container { min-height: 100vh; }
   </style>
@@ -128,13 +140,11 @@ function generateIndexHTML(content: any[], settings: any, websiteId: string): st
     ${renderContent(content, settings)}
   </div>
   
-  <!-- Analytics and tracking can be added here -->
   <script>
-    // Add any necessary JavaScript for live site functionality
     console.log('Site loaded for website: ${websiteId}');
   </script>
 </body>
-</html>`
+</html>`;
 }
 
 function renderContent(content: any[], settings: any): string {
@@ -187,7 +197,6 @@ function renderContent(content: any[], settings: any): string {
 }
 
 function renderElement(element: any): string {
-  // Helper function to render nested elements
   switch (element.type) {
     case 'heading':
       const level = element.props?.level || 2;
@@ -279,6 +288,6 @@ function renderFooter(element: any): string {
 }
 
 function generateRedirects(websiteId: string): string {
-  return `# Custom domain redirects for aetherwebsites.com subdomain
+  return `# Redirects for site-${websiteId}.aetherwebsites.com
 /*    /index.html   200`;
 }
