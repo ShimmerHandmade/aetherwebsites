@@ -204,19 +204,27 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ onSave, onClose, initialTheme
     }
   };
 
-  // Handle theme changes
+  // Handle theme changes - now properly typed
   const updateTheme = (section: keyof Theme, key: string, value: string) => {
-    const newTheme = {
-      ...currentTheme,
-      [section]: {
-        ...currentTheme[section],
-        [key]: value
+    if (section === 'name') {
+      setCurrentTheme(prev => ({ ...prev, name: value }));
+      return;
+    }
+
+    const sectionData = currentTheme[section];
+    if (typeof sectionData === 'object' && sectionData !== null) {
+      const newTheme = {
+        ...currentTheme,
+        [section]: {
+          ...sectionData,
+          [key]: value
+        }
+      };
+      setCurrentTheme(newTheme);
+      
+      if (previewMode) {
+        applyThemeToCanvas(newTheme);
       }
-    };
-    setCurrentTheme(newTheme);
-    
-    if (previewMode) {
-      applyThemeToCanvas(newTheme);
     }
   };
 

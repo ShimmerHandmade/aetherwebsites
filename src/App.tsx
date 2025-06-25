@@ -38,48 +38,46 @@ const queryClient = new QueryClient();
 
 function App() {
   return (
-    <QueryClient>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          <TooltipProvider>
-            <PlanProvider>
-              <CartProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/builder/:id" element={<Builder />} />
-                    <Route path="/builder/:id/pages" element={<BuilderPages />} />
-                    <Route path="/builder/:id/theme" element={<BuilderThemeEditor />} />
-                    <Route path="/builder/:id/products" element={<BuilderProducts />} />
-                    <Route path="/builder/:id/orders" element={<BuilderOrders />} />
-                    <Route path="/builder/:id/order-management" element={<BuilderOrderManagement />} />
-                    <Route path="/builder/:id/payment" element={<BuilderPaymentSettings />} />
-                    <Route path="/builder/:id/shipping" element={<BuilderShippingSettings />} />
-                    <Route path="/builder/:id/settings" element={<BuilderSiteSettings />} />
-                    <Route path="/builder/:id/page-settings" element={<BuilderPageSettings />} />
-                    <Route path="/builder/:id/shop" element={<BuilderShop />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/cart" element={<Cart />} />
-                    <Route path="/checkout" element={<Checkout />} />
-                    <Route path="/order-confirmation" element={<OrderConfirmation />} />
-                    <Route path="/product/:id" element={<ProductDetails />} />
-                    <Route path="/subscription-success" element={<SubscriptionSuccess />} />
-                    <Route path="/premium-features" element={<PremiumFeatures />} />
-                    <Route path="/site/:slug" element={<WebsiteViewer />} />
-                    <Route path="/site/:slug/*" element={<WebsiteViewer />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </BrowserRouter>
-              </CartProvider>
-            </PlanProvider>
-          </TooltipProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </QueryClient>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <TooltipProvider>
+          <PlanProvider>
+            <CartProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/builder/:id" element={<Builder />} />
+                  <Route path="/builder/:id/pages" element={<BuilderPages />} />
+                  <Route path="/builder/:id/theme" element={<BuilderThemeEditor />} />
+                  <Route path="/builder/:id/products" element={<BuilderProducts />} />
+                  <Route path="/builder/:id/orders" element={<BuilderOrders />} />
+                  <Route path="/builder/:id/order-management" element={<BuilderOrderManagement />} />
+                  <Route path="/builder/:id/payment" element={<BuilderPaymentSettings />} />
+                  <Route path="/builder/:id/shipping" element={<BuilderShippingSettings />} />
+                  <Route path="/builder/:id/settings" element={<BuilderSiteSettings />} />
+                  <Route path="/builder/:id/page-settings" element={<BuilderPageSettings />} />
+                  <Route path="/builder/:id/shop" element={<BuilderShop />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/order-confirmation" element={<OrderConfirmation />} />
+                  <Route path="/product/:id" element={<ProductDetails />} />
+                  <Route path="/subscription-success" element={<SubscriptionSuccess />} />
+                  <Route path="/premium-features" element={<PremiumFeatures />} />
+                  <Route path="/site/:slug" element={<WebsiteViewer />} />
+                  <Route path="/site/:slug/*" element={<WebsiteViewer />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </CartProvider>
+          </PlanProvider>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 
