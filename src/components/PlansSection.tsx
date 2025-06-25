@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -18,12 +17,19 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAnnual, setIsAnnual] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Allowed user IDs for Free Enterprise (replace with your actual user ID)
+  const ALLOWED_FREE_ENTERPRISE_USERS = [
+    "0e7a77a2-c3c0-44f7-a08c-1dab109472b3" // Your user ID
+  ];
 
   // Check authentication status when component mounts
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setIsAuthenticated(!!session);
+      setCurrentUserId(session?.user?.id || null);
     };
     
     checkAuth();
@@ -31,6 +37,7 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
     // Subscribe to auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setIsAuthenticated(!!session);
+      setCurrentUserId(session?.user?.id || null);
     });
     
     return () => subscription.unsubscribe();
@@ -48,8 +55,14 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
         }
         
         if (data) {
+          // Filter out Free Enterprise plan for users who aren't allowed to see it
+          let filteredPlans = data;
+          if (currentUserId && !ALLOWED_FREE_ENTERPRISE_USERS.includes(currentUserId)) {
+            filteredPlans = data.filter(plan => plan.name !== "Free Enterprise");
+          }
+          
           // Sort plans by tier level to ensure proper feature filtering
-          const sortedPlans = data.sort((a, b) => {
+          const sortedPlans = filteredPlans.sort((a, b) => {
             const tiers: Record<string, number> = { 'Basic': 1, 'Professional': 2, 'Enterprise': 3, 'Free Enterprise': 4 };
             return (tiers[a.name] || 0) - (tiers[b.name] || 0);
           });
@@ -62,8 +75,11 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
       }
     };
 
-    fetchPlans();
-  }, []);
+    // Only fetch plans when we have the current user ID (or confirmed no user)
+    if (currentUserId !== null || !isAuthenticated) {
+      fetchPlans();
+    }
+  }, [currentUserId, isAuthenticated]);
 
   // Filter features based on plan tier (each plan should only show features for its tier)
   const getFilteredFeaturesForPlan = (plan: Plan, allPlans: Plan[]): string[] => {
@@ -99,6 +115,12 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
         toast.error("Please log in to select a plan");
         // Redirect to auth page
         window.location.href = '/auth';
+        return;
+      }
+
+      // Additional check for Free Enterprise plan
+      if (plan.name === "Free Enterprise" && !ALLOWED_FREE_ENTERPRISE_USERS.includes(session.user.id)) {
+        toast.error("This plan is not available for your account");
         return;
       }
       
@@ -214,7 +236,7 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div className={`grid grid-cols-1 ${plans.length === 4 ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-8`}>
         {plans.map((plan, planIndex) => {
           const isPopular = plan.name === 'Professional';
           const isFree = plan.name === 'Free Enterprise';
