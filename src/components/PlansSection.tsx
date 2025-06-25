@@ -50,7 +50,7 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
         if (data) {
           // Sort plans by tier level to ensure proper feature filtering
           const sortedPlans = data.sort((a, b) => {
-            const tiers: Record<string, number> = { 'Basic': 1, 'Professional': 2, 'Enterprise': 3 };
+            const tiers: Record<string, number> = { 'Basic': 1, 'Professional': 2, 'Enterprise': 3, 'Free Enterprise': 4 };
             return (tiers[a.name] || 0) - (tiers[b.name] || 0);
           });
           setPlans(sortedPlans);
@@ -104,7 +104,34 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
       
       setIsProcessing(true);
       
-      // Use create-checkout edge function to redirect to Stripe checkout
+      // Handle Free Enterprise plan differently (it's free)
+      if (plan.name === "Free Enterprise") {
+        try {
+          // Directly update the user's subscription status for Free Enterprise
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+              is_subscribed: true,
+              plan_id: plan.id,
+              subscription_end: null // Free enterprise doesn't expire
+            })
+            .eq('id', session.user.id);
+
+          if (updateError) {
+            throw new Error(updateError.message);
+          }
+
+          toast.success("Successfully subscribed to Free Enterprise plan!");
+          onPlanSelected();
+          return;
+        } catch (error) {
+          console.error("Error updating Free Enterprise subscription:", error);
+          toast.error("Failed to update subscription");
+          return;
+        }
+      }
+      
+      // For paid plans, use create-checkout edge function to redirect to Stripe checkout
       const billingType = isAnnual ? 'annual' : 'monthly';
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { 
@@ -187,9 +214,10 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
         {plans.map((plan, planIndex) => {
           const isPopular = plan.name === 'Professional';
+          const isFree = plan.name === 'Free Enterprise';
           // Get features specific to this plan tier
           const planFeatures = getFilteredFeaturesForPlan(plan, plans);
           
@@ -197,7 +225,8 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
             <div
               key={plan.id}
               className={`bg-white rounded-lg p-6 shadow-md border ${
-                isPopular ? 'border-indigo-500 ring-2 ring-indigo-500 ring-opacity-50' : 'border-gray-200'
+                isPopular ? 'border-indigo-500 ring-2 ring-indigo-500 ring-opacity-50' : 
+                isFree ? 'border-green-500 ring-2 ring-green-500 ring-opacity-50' : 'border-gray-200'
               } relative`}
             >
               {isPopular && (
@@ -206,13 +235,21 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
                 </div>
               )}
               
+              {isFree && (
+                <div className="absolute top-0 right-0 bg-green-500 text-white px-4 py-1 rounded-bl-lg rounded-tr-lg text-sm font-medium">
+                  Free
+                </div>
+              )}
+              
               <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
               <div className="mb-6">
                 <div className="flex items-baseline">
                   <span className="text-4xl font-bold">
-                    ${isAnnual ? plan.annual_price : plan.monthly_price}
+                    {isFree && isAnnual ? 'Free' : `$${isAnnual ? plan.annual_price : plan.monthly_price}`}
                   </span>
-                  <span className="text-gray-500 ml-2">/{isAnnual ? 'year' : 'month'}</span>
+                  {!isFree && (
+                    <span className="text-gray-500 ml-2">/{isAnnual ? 'year' : 'month'}</span>
+                  )}
                 </div>
                 <p className="text-gray-600 mt-2">{plan.description}</p>
               </div>
@@ -222,7 +259,9 @@ const PlansSection = ({ profile, onPlanSelected }: PlansSectionProps) => {
                 className={`w-full ${
                   isPopular 
                     ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white' 
-                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                    : isFree
+                      ? 'bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                 }`}
                 disabled={isProcessing}
               >
