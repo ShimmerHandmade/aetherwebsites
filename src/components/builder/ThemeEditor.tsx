@@ -1,10 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Palette, Save, RotateCcw, Eye, Wand2, Type, Layout } from "lucide-react";
@@ -47,9 +45,10 @@ interface ThemeEditorProps {
   onSave?: (theme: Theme) => void;
   onClose?: () => void;
   initialTheme?: Theme;
+  activeSection?: string; // Add this to control which section is shown
 }
 
-const ThemeEditor: React.FC<ThemeEditorProps> = ({ onSave, onClose, initialTheme }) => {
+const ThemeEditor: React.FC<ThemeEditorProps> = ({ onSave, onClose, initialTheme, activeSection = "colors" }) => {
   const [currentTheme, setCurrentTheme] = useState<Theme>(
     initialTheme || {
       name: "Custom Theme",
@@ -269,39 +268,10 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ onSave, onClose, initialTheme
     }
   };
 
-  return (
-    <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Palette className="h-6 w-6 text-primary" />
-          <h2 className="text-2xl font-bold">Theme Editor</h2>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant={previewMode ? "default" : "outline"}
-            size="sm"
-            onClick={togglePreview}
-          >
-            <Eye className="h-4 w-4 mr-2" />
-            {previewMode ? "Previewing" : "Preview"}
-          </Button>
-          {onClose && (
-            <Button variant="outline" size="sm" onClick={onClose}>
-              Close
-            </Button>
-          )}
-        </div>
-      </div>
-
-      <Tabs defaultValue="colors" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="colors">Colors</TabsTrigger>
-          <TabsTrigger value="typography">Typography</TabsTrigger>
-          <TabsTrigger value="spacing">Spacing</TabsTrigger>
-          <TabsTrigger value="presets">Presets</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="colors" className="space-y-6">
+  const renderContent = () => {
+    switch (activeSection) {
+      case "colors":
+        return (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -367,9 +337,10 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ onSave, onClose, initialTheme
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        );
 
-        <TabsContent value="typography" className="space-y-6">
+      case "typography":
+        return (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -473,9 +444,10 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ onSave, onClose, initialTheme
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        );
 
-        <TabsContent value="spacing" className="space-y-6">
+      case "spacing":
+        return (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -560,9 +532,10 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ onSave, onClose, initialTheme
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        );
 
-        <TabsContent value="presets" className="space-y-6">
+      case "presets":
+        return (
           <Card>
             <CardHeader>
               <CardTitle>Preset Themes</CardTitle>
@@ -604,8 +577,38 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ onSave, onClose, initialTheme
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Palette className="h-6 w-6 text-primary" />
+          <h2 className="text-2xl font-bold">Theme Editor</h2>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button
+            variant={previewMode ? "default" : "outline"}
+            size="sm"
+            onClick={togglePreview}
+          >
+            <Eye className="h-4 w-4 mr-2" />
+            {previewMode ? "Previewing" : "Preview"}
+          </Button>
+          {onClose && (
+            <Button variant="outline" size="sm" onClick={onClose}>
+              Close
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {renderContent()}
 
       {/* Action Buttons */}
       <div className="flex justify-center gap-6 pt-6 border-t">

@@ -1,8 +1,9 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Palette, Type, Layout, Wand2 } from "lucide-react";
 import { useWebsite } from "@/hooks/useWebsite";
 import ThemeEditor from "@/components/builder/ThemeEditor";
 import { toast } from "sonner";
@@ -11,6 +12,7 @@ const BuilderThemeEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { website, isLoading, websiteName, saveWebsite } = useWebsite(id, navigate);
+  const [activeSection, setActiveSection] = useState("colors");
 
   const handleSaveTheme = async (theme: any) => {
     if (!website) {
@@ -77,11 +79,61 @@ const BuilderThemeEditor = () => {
           </Button>
         </div>
         
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <ThemeEditor 
-            onSave={handleSaveTheme}
-            initialTheme={website.settings?.theme}
-          />
+        <div className="bg-white rounded-lg shadow-sm">
+          <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
+            <div className="border-b px-6 py-4">
+              <TabsList className="grid w-full grid-cols-4 max-w-md">
+                <TabsTrigger value="colors" className="flex items-center gap-2">
+                  <Palette className="h-4 w-4" />
+                  Colors
+                </TabsTrigger>
+                <TabsTrigger value="typography" className="flex items-center gap-2">
+                  <Type className="h-4 w-4" />
+                  Typography
+                </TabsTrigger>
+                <TabsTrigger value="spacing" className="flex items-center gap-2">
+                  <Layout className="h-4 w-4" />
+                  Spacing
+                </TabsTrigger>
+                <TabsTrigger value="presets" className="flex items-center gap-2">
+                  <Wand2 className="h-4 w-4" />
+                  Presets
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            
+            <TabsContent value="colors" className="mt-0">
+              <ThemeEditor 
+                onSave={handleSaveTheme}
+                initialTheme={website.settings?.theme}
+                activeSection="colors"
+              />
+            </TabsContent>
+            
+            <TabsContent value="typography" className="mt-0">
+              <ThemeEditor 
+                onSave={handleSaveTheme}
+                initialTheme={website.settings?.theme}
+                activeSection="typography"
+              />
+            </TabsContent>
+            
+            <TabsContent value="spacing" className="mt-0">
+              <ThemeEditor 
+                onSave={handleSaveTheme}
+                initialTheme={website.settings?.theme}
+                activeSection="spacing"
+              />
+            </TabsContent>
+            
+            <TabsContent value="presets" className="mt-0">
+              <ThemeEditor 
+                onSave={handleSaveTheme}
+                initialTheme={website.settings?.theme}
+                activeSection="presets"
+              />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

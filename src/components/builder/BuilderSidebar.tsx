@@ -23,11 +23,11 @@ import {
   CreditCard,
   Truck,
   Package,
-  Palette,
-  Users
+  Palette
 } from "lucide-react";
 import ElementPalette from "./ElementPalette";
 import ElementProperties from "./ElementProperties";
+import LayersPanel from "./LayersPanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -134,9 +134,7 @@ const BuilderSidebar: React.FC<BuilderSidebarProps> = ({ isPreviewMode }) => {
             <TabsContent value="layers" className="mt-0 h-full">
               <ScrollArea className="h-full">
                 <div className="p-4">
-                  <div className="text-center text-sm text-gray-500 py-8">
-                    Layers panel coming soon
-                  </div>
+                  <LayersPanel />
                 </div>
               </ScrollArea>
             </TabsContent>
