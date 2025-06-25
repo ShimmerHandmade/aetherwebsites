@@ -208,20 +208,51 @@ export const useWebsite = (
       
       setIsPublishing(true);
       
+      // Save current state before publishing
       await saveWebsite();
       
+      // Deploy to netlify subfolder
+      const { data: deployData, error: deployError } = await supabase.functions.invoke('deploy-to-netlify', {
+        body: {
+          websiteId: id,
+          content: elements,
+          settings: {
+            ...pageSettings,
+            pages: website.settings?.pages || [],
+            pagesContent: website.settings?.pagesContent || {},
+            pagesSettings: website.settings?.pagesSettings || {}
+          }
+        }
+      });
+
+      if (deployError) {
+        console.error("❌ Deployment error:", deployError);
+        toast.error("Failed to deploy website");
+        return;
+      }
+
+      console.log("✅ Website deployed successfully:", deployData);
+      
+      // Update database to mark as published
       const success = await WebsiteService.publishWebsite(id);
       
       if (!success) {
-        toast.error("Failed to publish website");
+        toast.error("Failed to update publish status");
         return;
       }
       
       setWebsite({ ...website, published: true });
-      toast.success("Website published successfully");
+      toast.success("Website published successfully!", {
+        description: `Your site is live at ${deployData.url}`,
+        action: {
+          label: "View Site",
+          onClick: () => window.open(deployData.url, '_blank')
+        }
+      });
+      
     } catch (error) {
-      console.error("Error in publishWebsite:", error);
-      toast.error("An unexpected error occurred");
+      console.error("❌ Error in publishWebsite:", error);
+      toast.error("An unexpected error occurred while publishing");
     } finally {
       setIsPublishing(false);
     }

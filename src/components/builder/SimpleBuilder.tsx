@@ -15,6 +15,7 @@ import { useBuilderSave } from "@/hooks/useBuilderSave";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
 
 const SimpleBuilder = () => {
@@ -24,6 +25,7 @@ const SimpleBuilder = () => {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [currentPageId, setCurrentPageId] = useState<string>('home');
 
   console.log("🏗️ SimpleBuilder: Rendering with ID:", id);
 
@@ -83,6 +85,14 @@ const SimpleBuilder = () => {
     if (website && !isLoading && !isInitialized) {
       console.log("✅ SimpleBuilder: Website loaded, initializing builder");
       setIsInitialized(true);
+      
+      // Set the initial current page
+      const homePage = pages.find(page => page.isHomePage);
+      if (homePage) {
+        setCurrentPageId(homePage.id);
+      } else if (pages.length > 0) {
+        setCurrentPageId(pages[0].id);
+      }
     }
   }, [website, isLoading, isInitialized]);
 
@@ -91,14 +101,56 @@ const SimpleBuilder = () => {
     ? website.settings.pages
     : [{ id: "home", title: "Home", slug: "/", isHomePage: true }];
 
-  const currentPage = pages.find(page => page.isHomePage) || pages[0];
+  const currentPage = pages.find(page => page.id === currentPageId) || pages[0];
 
   // Get elements for current page
   const currentElements = website?.settings?.pagesContent?.[currentPage?.id] || elements || [];
   const currentPageSettings = website?.settings?.pagesSettings?.[currentPage?.id] || pageSettings || { title: websiteName || "My Website" };
 
   const handlePublish = async () => {
-    await publishWebsite();
+    console.log("📤 Publishing website to subfolder...");
+    
+    try {
+      // First save the current state
+      await saveWebsite();
+      
+      // Deploy to netlify with proper subfolder structure
+      const { data, error } = await supabase.functions.invoke('deploy-to-netlify', {
+        body: {
+          websiteId: id,
+          content: currentElements,
+          settings: {
+            ...currentPageSettings,
+            pages,
+            pagesContent: website?.settings?.pagesContent || {},
+            pagesSettings: website?.settings?.pagesSettings || {}
+          }
+        }
+      });
+
+      if (error) {
+        console.error("❌ Deployment error:", error);
+        toast.error("Failed to publish website");
+        return;
+      }
+
+      console.log("✅ Website deployed:", data);
+      
+      // Update the website as published
+      await publishWebsite();
+      
+      toast.success("Website published successfully!", {
+        description: `Your site is now live at site-${id}.netlify.app`,
+        action: {
+          label: "View Site",
+          onClick: () => window.open(`https://site-${id}.netlify.app`, '_blank')
+        }
+      });
+      
+    } catch (error) {
+      console.error("❌ Publish error:", error);
+      toast.error("An error occurred while publishing");
+    }
   };
 
   const handleMainSave = useCallback(async () => {
@@ -147,10 +199,18 @@ const SimpleBuilder = () => {
     }
   }, [saveWebsite, currentPage, website, pages]);
 
-  const handlePageChange = useCallback((pageId: string) => {
+  const handlePageChange = useCallback(async (pageId: string) => {
     console.log("📄 SimpleBuilder: Page change to:", pageId);
-    // For now, just log - full page switching can be implemented later
-  }, []);
+    
+    // Save current page before switching
+    document.dispatchEvent(new CustomEvent('request-save-data'));
+    
+    // Wait a moment for save to complete
+    setTimeout(() => {
+      setCurrentPageId(pageId);
+      toast.success(`Switched to ${pages.find(p => p.id === pageId)?.title || 'page'}`);
+    }, 100);
+  }, [pages]);
 
   const handleOnboardingComplete = useCallback(async () => {
     console.log("🎓 Onboarding complete");
