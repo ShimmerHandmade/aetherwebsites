@@ -144,46 +144,101 @@ serve(async (req) => {
       redirectsLength: redirectsContent.length
     });
 
-    // Create deployment using Netlify's file-based deploy API
-    const formData = new FormData();
-    
-    // Add files to form data
-    formData.append('index.html', new Blob([indexHTML], { type: 'text/html' }));
-    formData.append('_redirects', new Blob([redirectsContent], { type: 'text/plain' }));
-    formData.append('robots.txt', new Blob(['User-agent: *\nAllow: /'], { type: 'text/plain' }));
-
-    console.log('📤 Sending deployment to Netlify...');
-
-    // Use the site-specific endpoint for deployment
-    const deployResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/deploys`, {
+    // Create deployment using Netlify's file upload API
+    // First, create the deployment
+    const createDeployResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/deploys`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
       },
-      body: formData
+      body: JSON.stringify({
+        files: {
+          '/index.html': indexHTML,
+          '/_redirects': redirectsContent,
+          '/robots.txt': 'User-agent: *\nAllow: /',
+        }
+      })
     });
 
-    console.log('📤 Netlify API response status:', deployResponse.status);
+    console.log('📤 Netlify create deploy response status:', createDeployResponse.status);
 
-    if (!deployResponse.ok) {
-      const errorText = await deployResponse.text();
-      console.error('❌ Netlify API error:', errorText);
-      throw new Error(`Netlify deployment failed: ${deployResponse.status} ${errorText}`);
+    if (!createDeployResponse.ok) {
+      const errorText = await createDeployResponse.text();
+      console.error('❌ Netlify create deploy error:', errorText);
+      throw new Error(`Netlify deployment creation failed: ${createDeployResponse.status} ${errorText}`);
     }
 
-    const deployData = await deployResponse.json();
-    console.log('✅ Deployment successful:', { 
+    const deployData = await createDeployResponse.json();
+    console.log('✅ Deployment created:', { 
       deployId: deployData.id,
       state: deployData.state,
-      customDomain: customDomain
+      required: deployData.required,
+      required_functions: deployData.required_functions
     });
+
+    // Upload the files if required
+    if (deployData.required && deployData.required.length > 0) {
+      console.log('📤 Uploading required files:', deployData.required);
+      
+      for (const filePath of deployData.required) {
+        let fileContent = '';
+        let contentType = 'text/plain';
+        
+        if (filePath === '/index.html') {
+          fileContent = indexHTML;
+          contentType = 'text/html';
+        } else if (filePath === '/_redirects') {
+          fileContent = redirectsContent;
+          contentType = 'text/plain';
+        } else if (filePath === '/robots.txt') {
+          fileContent = 'User-agent: *\nAllow: /';
+          contentType = 'text/plain';
+        }
+        
+        const uploadResponse = await fetch(`https://api.netlify.com/api/v1/deploys/${deployData.id}/files${filePath}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
+            'Content-Type': contentType,
+          },
+          body: fileContent
+        });
+        
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          console.error(`❌ Failed to upload ${filePath}:`, errorText);
+        } else {
+          console.log(`✅ Uploaded ${filePath} successfully`);
+        }
+      }
+    }
+
+    // Wait a moment for files to be processed
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Check deployment status
+    const checkDeployResponse = await fetch(`https://api.netlify.com/api/v1/deploys/${deployData.id}`, {
+      headers: {
+        'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
+      }
+    });
+
+    if (checkDeployResponse.ok) {
+      const finalDeployData = await checkDeployResponse.json();
+      console.log('📋 Final deployment status:', { 
+        deployId: finalDeployData.id,
+        state: finalDeployData.state,
+        deploy_ssl_url: finalDeployData.deploy_ssl_url
+      });
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
         deploy_id: deployData.id,
         url: siteUrl,
-        deploy_url: deployData.ssl_url || deployData.url,
+        deploy_url: deployData.deploy_ssl_url || deployData.deploy_url,
         custom_domain: customDomain,
         subdomain: siteName,
         state: deployData.state,
