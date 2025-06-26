@@ -211,29 +211,7 @@ export const useWebsite = (
       // Save current state before publishing
       await saveWebsite();
       
-      // Deploy to aetherwebsites.com subdomain
-      const { data: deployData, error: deployError } = await supabase.functions.invoke('deploy-to-netlify', {
-        body: {
-          websiteId: id,
-          content: elements,
-          settings: {
-            ...pageSettings,
-            pages: website.settings?.pages || [],
-            pagesContent: website.settings?.pagesContent || {},
-            pagesSettings: website.settings?.pagesSettings || {}
-          }
-        }
-      });
-
-      if (deployError) {
-        console.error("❌ Deployment error:", deployError);
-        toast.error("Failed to deploy website");
-        return;
-      }
-
-      console.log("✅ Website deployed successfully:", deployData);
-      
-      // Update database to mark as published
+      // Mark as published in database
       const success = await WebsiteService.publishWebsite(id);
       
       if (!success) {
@@ -242,9 +220,8 @@ export const useWebsite = (
       }
       
       setWebsite({ ...website, published: true });
-      toast.success("Website published successfully!", {
-        description: `Your site is live at ${deployData.url}`
-      });
+      
+      console.log("✅ Website marked as published in database");
       
     } catch (error) {
       console.error("❌ Error in publishWebsite:", error);

@@ -113,18 +113,26 @@ const SimpleBuilder = () => {
       // First save the current state
       await saveWebsite();
       
+      // Prepare complete website data for deployment
+      const deploymentContent = {
+        websiteId: id,
+        content: currentElements,
+        settings: {
+          title: websiteName || "My Website",
+          description: currentPageSettings?.meta?.description || `${websiteName} - Built with Aether Websites`,
+          socialImage: currentPageSettings?.meta?.socialImage || "",
+          ...currentPageSettings,
+          pages: pages,
+          pagesContent: website?.settings?.pagesContent || { [currentPage?.id]: currentElements },
+          pagesSettings: website?.settings?.pagesSettings || { [currentPage?.id]: currentPageSettings }
+        }
+      };
+      
+      console.log("🚀 Sending deployment data:", deploymentContent);
+      
       // Deploy to aetherwebsites.com subdomain
       const { data, error } = await supabase.functions.invoke('deploy-to-netlify', {
-        body: {
-          websiteId: id,
-          content: currentElements,
-          settings: {
-            ...currentPageSettings,
-            pages,
-            pagesContent: website?.settings?.pagesContent || {},
-            pagesSettings: website?.settings?.pagesSettings || {}
-          }
-        }
+        body: deploymentContent
       });
 
       if (error) {
@@ -139,7 +147,7 @@ const SimpleBuilder = () => {
       await publishWebsite();
       
       toast.success("Website published successfully!", {
-        description: `Your site is now live at site-${id}.aetherwebsites.com`
+        description: `Your site is now live at ${data.url}`
       });
       
     } catch (error) {
