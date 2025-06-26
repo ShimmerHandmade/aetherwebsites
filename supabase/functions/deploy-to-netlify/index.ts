@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -27,9 +26,10 @@ serve(async (req) => {
     console.log('✅ Credentials found, proceeding with deployment');
 
     const customDomain = `site-${websiteId}.aetherwebsites.com`;
+    const siteName = `site-${websiteId}`;
     
     // Check if site already exists for this website
-    console.log('🔍 Checking if site exists for:', customDomain);
+    console.log('🔍 Checking if site exists for:', siteName);
     
     const sitesResponse = await fetch('https://api.netlify.com/api/v1/sites', {
       headers: {
@@ -43,17 +43,18 @@ serve(async (req) => {
 
     const sites = await sitesResponse.json();
     let targetSite = sites.find((site: any) => 
-      site.custom_domain === customDomain || 
-      site.name === `site-${websiteId}` ||
+      site.name === siteName ||
+      site.custom_domain === customDomain ||
       (site.domain_aliases && site.domain_aliases.includes(customDomain))
     );
 
     let siteId;
+    let siteUrl;
 
     if (!targetSite) {
-      console.log('🆕 Creating new Netlify site for:', customDomain);
+      console.log('🆕 Creating new Netlify site for:', siteName);
       
-      // Create a new site
+      // Create a new site with the custom domain
       const createSiteResponse = await fetch('https://api.netlify.com/api/v1/sites', {
         method: 'POST',
         headers: {
@@ -61,7 +62,7 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: `site-${websiteId}`,
+          name: siteName,
           custom_domain: customDomain,
         })
       });
@@ -75,33 +76,63 @@ serve(async (req) => {
       targetSite = await createSiteResponse.json();
       siteId = targetSite.id;
       
-      console.log('✅ Site created:', { siteId, domain: targetSite.url });
+      console.log('✅ Site created:', { siteId, name: targetSite.name });
 
-      // Add custom domain if it's not already set
+      // Wait a moment for the site to be fully created
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Set the custom domain explicitly
+      console.log('🌐 Setting custom domain:', customDomain);
+      
+      const updateSiteResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          custom_domain: customDomain,
+          force_ssl: true,
+        })
+      });
+
+      if (!updateSiteResponse.ok) {
+        const errorText = await updateSiteResponse.text();
+        console.log('⚠️ Could not update custom domain:', errorText);
+      } else {
+        console.log('✅ Custom domain configured successfully');
+      }
+
+      siteUrl = `https://${customDomain}`;
+    } else {
+      siteId = targetSite.id;
+      console.log('✅ Using existing site:', { siteId, name: targetSite.name });
+      
+      // Ensure the custom domain is set for existing sites too
       if (targetSite.custom_domain !== customDomain) {
-        console.log('🌐 Adding custom domain:', customDomain);
+        console.log('🌐 Updating custom domain for existing site:', customDomain);
         
-        const addDomainResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/domains`, {
-          method: 'POST',
+        const updateSiteResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+          method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            domain: customDomain
+            custom_domain: customDomain,
+            force_ssl: true,
           })
         });
 
-        if (!addDomainResponse.ok) {
-          const errorText = await addDomainResponse.text();
-          console.log('⚠️ Could not add custom domain (may already exist):', errorText);
+        if (!updateSiteResponse.ok) {
+          const errorText = await updateSiteResponse.text();
+          console.log('⚠️ Could not update custom domain:', errorText);
         } else {
-          console.log('✅ Custom domain added successfully');
+          console.log('✅ Custom domain updated successfully');
         }
       }
-    } else {
-      siteId = targetSite.id;
-      console.log('✅ Using existing site:', { siteId, domain: targetSite.url });
+      
+      siteUrl = `https://${customDomain}`;
     }
 
     // Generate the website files
@@ -144,12 +175,8 @@ serve(async (req) => {
     console.log('✅ Deployment successful:', { 
       deployId: deployData.id,
       state: deployData.state,
-      url: deployData.ssl_url || deployData.url
+      customDomain: customDomain
     });
-
-    // The site should now be available at the custom domain
-    const siteUrl = `https://${customDomain}`;
-    console.log('🌐 Site will be available at:', siteUrl);
 
     return new Response(
       JSON.stringify({
@@ -158,7 +185,7 @@ serve(async (req) => {
         url: siteUrl,
         deploy_url: deployData.ssl_url || deployData.url,
         custom_domain: customDomain,
-        subdomain: `site-${websiteId}`,
+        subdomain: siteName,
         state: deployData.state,
         site_id: siteId
       }),
