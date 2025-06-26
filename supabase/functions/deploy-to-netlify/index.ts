@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -98,8 +97,8 @@ serve(async (req) => {
       redirectsLength: redirectsContent.length
     });
 
-    // Create a zip file containing the website files
-    const zipContent = await createZipFile({
+    // Create a proper zip file containing the website files
+    const zipContent = await createProperZipFile({
       'index.html': indexHTML,
       '_redirects': redirectsContent,
       'robots.txt': 'User-agent: *\nAllow: /'
@@ -135,10 +134,10 @@ serve(async (req) => {
     // Wait for deployment to complete with reasonable timeout
     let deploymentComplete = false;
     let attempts = 0;
-    const maxAttempts = 20;
+    const maxAttempts = 15; // Reduced from 20
 
     while (!deploymentComplete && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Reduced from 3000
       attempts++;
 
       const checkResponse = await fetch(`https://api.netlify.com/api/v1/deploys/${deployData.id}`, {
@@ -202,68 +201,149 @@ serve(async (req) => {
   }
 })
 
-// Create a simple zip file from files object
-async function createZipFile(files: Record<string, string>): Promise<Uint8Array> {
+// Create a proper zip file from files object
+async function createProperZipFile(files: Record<string, string>): Promise<Uint8Array> {
   const encoder = new TextEncoder();
   const zipParts: Uint8Array[] = [];
-  
-  // Simple zip file structure - this creates a minimal zip file
+  const centralDirEntries: Uint8Array[] = [];
+  let centralDirSize = 0;
+  let localHeaderOffset = 0;
+
+  // Create local file headers and file data
   for (const [filename, content] of Object.entries(files)) {
     const fileContent = encoder.encode(content);
     const filenameBytes = encoder.encode(filename);
+    const crc = crc32(fileContent);
     
-    // Local file header
-    const header = new Uint8Array(30 + filenameBytes.length);
-    const view = new DataView(header.buffer);
+    // Local file header (30 bytes + filename length)
+    const localHeader = new Uint8Array(30 + filenameBytes.length);
+    const headerView = new DataView(localHeader.buffer);
     
     // Local file header signature
-    view.setUint32(0, 0x04034b50, true);
+    headerView.setUint32(0, 0x04034b50, true);
     // Version needed to extract
-    view.setUint16(4, 20, true);
+    headerView.setUint16(4, 20, true);
     // General purpose bit flag
-    view.setUint16(6, 0, true);
+    headerView.setUint16(6, 0, true);
     // Compression method (0 = no compression)
-    view.setUint16(8, 0, true);
+    headerView.setUint16(8, 0, true);
     // File last modification time
-    view.setUint16(10, 0, true);
+    headerView.setUint16(10, 0, true);
     // File last modification date
-    view.setUint16(12, 0, true);
+    headerView.setUint16(12, 0, true);
     // CRC-32
-    view.setUint32(14, crc32(fileContent), true);
+    headerView.setUint32(14, crc, true);
     // Compressed size
-    view.setUint32(18, fileContent.length, true);
+    headerView.setUint32(18, fileContent.length, true);
     // Uncompressed size
-    view.setUint32(22, fileContent.length, true);
+    headerView.setUint32(22, fileContent.length, true);
     // File name length
-    view.setUint16(26, filenameBytes.length, true);
+    headerView.setUint16(26, filenameBytes.length, true);
     // Extra field length
-    view.setUint16(28, 0, true);
+    headerView.setUint16(28, 0, true);
     
-    // Add filename
-    header.set(filenameBytes, 30);
+    // Add filename to header
+    localHeader.set(filenameBytes, 30);
     
-    zipParts.push(header);
+    // Create central directory entry
+    const centralDirEntry = new Uint8Array(46 + filenameBytes.length);
+    const centralView = new DataView(centralDirEntry.buffer);
+    
+    // Central directory header signature
+    centralView.setUint32(0, 0x02014b50, true);
+    // Version made by
+    centralView.setUint16(4, 20, true);
+    // Version needed to extract
+    centralView.setUint16(6, 20, true);
+    // General purpose bit flag
+    centralView.setUint16(8, 0, true);
+    // Compression method
+    centralView.setUint16(10, 0, true);
+    // File last modification time
+    centralView.setUint16(12, 0, true);
+    // File last modification date
+    centralView.setUint16(14, 0, true);
+    // CRC-32
+    centralView.setUint32(16, crc, true);
+    // Compressed size
+    centralView.setUint32(20, fileContent.length, true);
+    // Uncompressed size
+    centralView.setUint32(24, fileContent.length, true);
+    // File name length
+    centralView.setUint16(28, filenameBytes.length, true);
+    // Extra field length
+    centralView.setUint16(30, 0, true);
+    // File comment length
+    centralView.setUint16(32, 0, true);
+    // Disk number start
+    centralView.setUint16(34, 0, true);
+    // Internal file attributes
+    centralView.setUint16(36, 0, true);
+    // External file attributes
+    centralView.setUint32(38, 0, true);
+    // Relative offset of local header
+    centralView.setUint32(42, localHeaderOffset, true);
+    
+    // Add filename to central directory entry
+    centralDirEntry.set(filenameBytes, 46);
+    
+    // Add to arrays
+    zipParts.push(localHeader);
     zipParts.push(fileContent);
+    centralDirEntries.push(centralDirEntry);
+    
+    // Update offsets
+    localHeaderOffset += localHeader.length + fileContent.length;
+    centralDirSize += centralDirEntry.length;
   }
   
-  // Central directory and end record (simplified)
-  const totalLength = zipParts.reduce((sum, part) => sum + part.length, 0);
-  const result = new Uint8Array(totalLength + 22); // +22 for end of central directory
+  // Create end of central directory record
+  const endOfCentralDir = new Uint8Array(22);
+  const endView = new DataView(endOfCentralDir.buffer);
   
+  // End of central directory signature
+  endView.setUint32(0, 0x06054b50, true);
+  // Number of this disk
+  endView.setUint16(4, 0, true);
+  // Number of the disk with the start of the central directory
+  endView.setUint16(6, 0, true);
+  // Total number of entries in the central directory on this disk
+  endView.setUint16(8, Object.keys(files).length, true);
+  // Total number of entries in the central directory
+  endView.setUint16(10, Object.keys(files).length, true);
+  // Size of the central directory
+  endView.setUint32(12, centralDirSize, true);
+  // Offset of start of central directory
+  endView.setUint32(16, localHeaderOffset, true);
+  // ZIP file comment length
+  endView.setUint16(20, 0, true);
+  
+  // Combine all parts
+  const totalLength = zipParts.reduce((sum, part) => sum + part.length, 0) + 
+                     centralDirSize + endOfCentralDir.length;
+  
+  const result = new Uint8Array(totalLength);
   let offset = 0;
+  
+  // Add local headers and file data
   for (const part of zipParts) {
     result.set(part, offset);
     offset += part.length;
   }
   
-  // End of central directory record
-  const endView = new DataView(result.buffer, offset);
-  endView.setUint32(0, 0x06054b50, true); // End of central directory signature
+  // Add central directory entries
+  for (const entry of centralDirEntries) {
+    result.set(entry, offset);
+    offset += entry.length;
+  }
+  
+  // Add end of central directory record
+  result.set(endOfCentralDir, offset);
   
   return result;
 }
 
-// Simple CRC32 implementation
+// CRC32 implementation
 function crc32(data: Uint8Array): number {
   const table = new Uint32Array(256);
   for (let i = 0; i < 256; i++) {
