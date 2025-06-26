@@ -98,24 +98,23 @@ serve(async (req) => {
       redirectsLength: redirectsContent.length
     });
 
-    // Create deployment using the files object method instead of FormData
-    const deployPayload = {
-      files: {
-        'index.html': indexHTML,
-        '_redirects': redirectsContent,
-        'robots.txt': 'User-agent: *\nAllow: /'
-      }
-    };
+    // Create a zip file containing the website files
+    const zipContent = await createZipFile({
+      'index.html': indexHTML,
+      '_redirects': redirectsContent,
+      'robots.txt': 'User-agent: *\nAllow: /'
+    });
 
-    console.log('📤 Creating deployment with files...');
+    console.log('📦 Created zip file, size:', zipContent.byteLength);
 
+    // Deploy using zip file upload
     const deployResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/deploys`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/zip',
       },
-      body: JSON.stringify(deployPayload)
+      body: zipContent
     });
 
     console.log('📤 Netlify deploy response status:', deployResponse.status);
@@ -133,13 +132,13 @@ serve(async (req) => {
       deploy_ssl_url: deployData.deploy_ssl_url || deployData.ssl_url
     });
 
-    // Wait for deployment to complete with reduced timeout since we're not using file uploads
+    // Wait for deployment to complete with reasonable timeout
     let deploymentComplete = false;
     let attempts = 0;
-    const maxAttempts = 15; // Reduced timeout since file-based deployments are faster
+    const maxAttempts = 20;
 
     while (!deploymentComplete && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Increased interval
+      await new Promise(resolve => setTimeout(resolve, 3000));
       attempts++;
 
       const checkResponse = await fetch(`https://api.netlify.com/api/v1/deploys/${deployData.id}`, {
@@ -159,6 +158,7 @@ serve(async (req) => {
         if (currentStatus.state === 'ready') {
           deploymentComplete = true;
           console.log('✅ Deployment completed successfully!');
+          break;
         } else if (currentStatus.state === 'error') {
           console.error('❌ Deployment failed with error:', currentStatus.error_message);
           throw new Error(`Deployment failed: ${currentStatus.error_message || 'Unknown error'}`);
@@ -167,7 +167,7 @@ serve(async (req) => {
     }
 
     if (!deploymentComplete) {
-      console.log('⚠️ Deployment timeout, but it may still complete in background');
+      console.log('⚠️ Deployment timeout, but returning success as deployment may complete in background');
     }
 
     return new Response(
@@ -201,6 +201,85 @@ serve(async (req) => {
     )
   }
 })
+
+// Create a simple zip file from files object
+async function createZipFile(files: Record<string, string>): Promise<Uint8Array> {
+  const encoder = new TextEncoder();
+  const zipParts: Uint8Array[] = [];
+  
+  // Simple zip file structure - this creates a minimal zip file
+  for (const [filename, content] of Object.entries(files)) {
+    const fileContent = encoder.encode(content);
+    const filenameBytes = encoder.encode(filename);
+    
+    // Local file header
+    const header = new Uint8Array(30 + filenameBytes.length);
+    const view = new DataView(header.buffer);
+    
+    // Local file header signature
+    view.setUint32(0, 0x04034b50, true);
+    // Version needed to extract
+    view.setUint16(4, 20, true);
+    // General purpose bit flag
+    view.setUint16(6, 0, true);
+    // Compression method (0 = no compression)
+    view.setUint16(8, 0, true);
+    // File last modification time
+    view.setUint16(10, 0, true);
+    // File last modification date
+    view.setUint16(12, 0, true);
+    // CRC-32
+    view.setUint32(14, crc32(fileContent), true);
+    // Compressed size
+    view.setUint32(18, fileContent.length, true);
+    // Uncompressed size
+    view.setUint32(22, fileContent.length, true);
+    // File name length
+    view.setUint16(26, filenameBytes.length, true);
+    // Extra field length
+    view.setUint16(28, 0, true);
+    
+    // Add filename
+    header.set(filenameBytes, 30);
+    
+    zipParts.push(header);
+    zipParts.push(fileContent);
+  }
+  
+  // Central directory and end record (simplified)
+  const totalLength = zipParts.reduce((sum, part) => sum + part.length, 0);
+  const result = new Uint8Array(totalLength + 22); // +22 for end of central directory
+  
+  let offset = 0;
+  for (const part of zipParts) {
+    result.set(part, offset);
+    offset += part.length;
+  }
+  
+  // End of central directory record
+  const endView = new DataView(result.buffer, offset);
+  endView.setUint32(0, 0x06054b50, true); // End of central directory signature
+  
+  return result;
+}
+
+// Simple CRC32 implementation
+function crc32(data: Uint8Array): number {
+  const table = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let j = 0; j < 8; j++) {
+      c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    }
+    table[i] = c;
+  }
+  
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < data.length; i++) {
+    crc = table[(crc ^ data[i]) & 0xFF] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
 
 function generateIndexHTML(content: any[], settings: any, websiteId: string): string {
   const pageTitle = settings?.title || settings?.pages?.[0]?.title || 'Website';
