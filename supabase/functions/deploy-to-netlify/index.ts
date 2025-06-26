@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -17,17 +18,91 @@ serve(async (req) => {
 
     // Get Netlify credentials from environment
     const NETLIFY_ACCESS_TOKEN = Deno.env.get('NETLIFY_ACCESS_TOKEN')
-    const NETLIFY_SITE_ID = Deno.env.get('NETLIFY_SITE_ID')
 
-    if (!NETLIFY_ACCESS_TOKEN || !NETLIFY_SITE_ID) {
-      console.error('❌ Missing credentials:', { 
-        hasToken: !!NETLIFY_ACCESS_TOKEN, 
-        hasSiteId: !!NETLIFY_SITE_ID 
-      });
-      throw new Error('Netlify credentials not configured')
+    if (!NETLIFY_ACCESS_TOKEN) {
+      console.error('❌ Missing Netlify access token');
+      throw new Error('Netlify access token not configured')
     }
 
     console.log('✅ Credentials found, proceeding with deployment');
+
+    const customDomain = `site-${websiteId}.aetherwebsites.com`;
+    
+    // Check if site already exists for this website
+    console.log('🔍 Checking if site exists for:', customDomain);
+    
+    const sitesResponse = await fetch('https://api.netlify.com/api/v1/sites', {
+      headers: {
+        'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
+      }
+    });
+
+    if (!sitesResponse.ok) {
+      throw new Error(`Failed to fetch sites: ${sitesResponse.status}`);
+    }
+
+    const sites = await sitesResponse.json();
+    let targetSite = sites.find((site: any) => 
+      site.custom_domain === customDomain || 
+      site.name === `site-${websiteId}` ||
+      (site.domain_aliases && site.domain_aliases.includes(customDomain))
+    );
+
+    let siteId;
+
+    if (!targetSite) {
+      console.log('🆕 Creating new Netlify site for:', customDomain);
+      
+      // Create a new site
+      const createSiteResponse = await fetch('https://api.netlify.com/api/v1/sites', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: `site-${websiteId}`,
+          custom_domain: customDomain,
+        })
+      });
+
+      if (!createSiteResponse.ok) {
+        const errorText = await createSiteResponse.text();
+        console.error('❌ Failed to create site:', errorText);
+        throw new Error(`Failed to create Netlify site: ${createSiteResponse.status} ${errorText}`);
+      }
+
+      targetSite = await createSiteResponse.json();
+      siteId = targetSite.id;
+      
+      console.log('✅ Site created:', { siteId, domain: targetSite.url });
+
+      // Add custom domain if it's not already set
+      if (targetSite.custom_domain !== customDomain) {
+        console.log('🌐 Adding custom domain:', customDomain);
+        
+        const addDomainResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/domains`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            domain: customDomain
+          })
+        });
+
+        if (!addDomainResponse.ok) {
+          const errorText = await addDomainResponse.text();
+          console.log('⚠️ Could not add custom domain (may already exist):', errorText);
+        } else {
+          console.log('✅ Custom domain added successfully');
+        }
+      }
+    } else {
+      siteId = targetSite.id;
+      console.log('✅ Using existing site:', { siteId, domain: targetSite.url });
+    }
 
     // Generate the website files
     const indexHTML = generateIndexHTML(content, settings, websiteId);
@@ -48,8 +123,8 @@ serve(async (req) => {
 
     console.log('📤 Sending deployment to Netlify...');
 
-    // Use the correct Netlify API endpoint for file-based deployments
-    const deployResponse = await fetch(`https://api.netlify.com/api/v1/sites/${NETLIFY_SITE_ID}/deploys`, {
+    // Use the site-specific endpoint for deployment
+    const deployResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/deploys`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
@@ -72,14 +147,8 @@ serve(async (req) => {
       url: deployData.ssl_url || deployData.url
     });
 
-    // Use the deployment URL directly - this is the actual Netlify deployment URL
-    const netlifyDeployUrl = deployData.ssl_url || deployData.url;
-    console.log('📡 Netlify deployment URL:', netlifyDeployUrl);
-
-    // The subdomain will be configured through DNS (CNAME record)
-    const customDomain = `site-${websiteId}.aetherwebsites.com`;
+    // The site should now be available at the custom domain
     const siteUrl = `https://${customDomain}`;
-    
     console.log('🌐 Site will be available at:', siteUrl);
 
     return new Response(
@@ -87,10 +156,11 @@ serve(async (req) => {
         success: true,
         deploy_id: deployData.id,
         url: siteUrl,
-        deploy_url: netlifyDeployUrl,
+        deploy_url: deployData.ssl_url || deployData.url,
         custom_domain: customDomain,
         subdomain: `site-${websiteId}`,
-        state: deployData.state
+        state: deployData.state,
+        site_id: siteId
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
