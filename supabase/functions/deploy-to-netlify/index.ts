@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -81,57 +82,10 @@ serve(async (req) => {
       // Wait a moment for the site to be fully created
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Set the custom domain explicitly
-      console.log('🌐 Setting custom domain:', customDomain);
-      
-      const updateSiteResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          custom_domain: customDomain,
-          force_ssl: true,
-        })
-      });
-
-      if (!updateSiteResponse.ok) {
-        const errorText = await updateSiteResponse.text();
-        console.log('⚠️ Could not update custom domain:', errorText);
-      } else {
-        console.log('✅ Custom domain configured successfully');
-      }
-
       siteUrl = `https://${customDomain}`;
     } else {
       siteId = targetSite.id;
       console.log('✅ Using existing site:', { siteId, name: targetSite.name });
-      
-      // Ensure the custom domain is set for existing sites too
-      if (targetSite.custom_domain !== customDomain) {
-        console.log('🌐 Updating custom domain for existing site:', customDomain);
-        
-        const updateSiteResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            custom_domain: customDomain,
-            force_ssl: true,
-          })
-        });
-
-        if (!updateSiteResponse.ok) {
-          const errorText = await updateSiteResponse.text();
-          console.log('⚠️ Could not update custom domain:', errorText);
-        } else {
-          console.log('✅ Custom domain updated successfully');
-        }
-      }
-      
       siteUrl = `https://${customDomain}`;
     }
 
@@ -144,22 +98,24 @@ serve(async (req) => {
       redirectsLength: redirectsContent.length
     });
 
-    // Create deployment using form data (the standard way)
-    const formData = new FormData();
-    
-    // Add files as blobs
-    formData.append('index.html', new Blob([indexHTML], { type: 'text/html' }), 'index.html');
-    formData.append('_redirects', new Blob([redirectsContent], { type: 'text/plain' }), '_redirects');
-    formData.append('robots.txt', new Blob(['User-agent: *\nAllow: /'], { type: 'text/plain' }), 'robots.txt');
+    // Create deployment using the files object method instead of FormData
+    const deployPayload = {
+      files: {
+        'index.html': indexHTML,
+        '_redirects': redirectsContent,
+        'robots.txt': 'User-agent: *\nAllow: /'
+      }
+    };
 
-    console.log('📤 Uploading deployment to Netlify...');
+    console.log('📤 Creating deployment with files...');
 
     const deployResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/deploys`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
       },
-      body: formData
+      body: JSON.stringify(deployPayload)
     });
 
     console.log('📤 Netlify deploy response status:', deployResponse.status);
@@ -177,13 +133,13 @@ serve(async (req) => {
       deploy_ssl_url: deployData.deploy_ssl_url || deployData.ssl_url
     });
 
-    // Wait for deployment to complete
+    // Wait for deployment to complete with reduced timeout since we're not using file uploads
     let deploymentComplete = false;
     let attempts = 0;
-    const maxAttempts = 30; // 30 seconds timeout
+    const maxAttempts = 15; // Reduced timeout since file-based deployments are faster
 
     while (!deploymentComplete && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Increased interval
       attempts++;
 
       const checkResponse = await fetch(`https://api.netlify.com/api/v1/deploys/${deployData.id}`, {
@@ -196,15 +152,16 @@ serve(async (req) => {
         const currentStatus = await checkResponse.json();
         console.log(`📋 Deployment status check ${attempts}:`, {
           state: currentStatus.state,
-          deploy_ssl_url: currentStatus.deploy_ssl_url
+          deploy_ssl_url: currentStatus.deploy_ssl_url,
+          error_message: currentStatus.error_message
         });
 
         if (currentStatus.state === 'ready') {
           deploymentComplete = true;
           console.log('✅ Deployment completed successfully!');
         } else if (currentStatus.state === 'error') {
-          console.error('❌ Deployment failed with error state');
-          throw new Error('Deployment failed during processing');
+          console.error('❌ Deployment failed with error:', currentStatus.error_message);
+          throw new Error(`Deployment failed: ${currentStatus.error_message || 'Unknown error'}`);
         }
       }
     }
