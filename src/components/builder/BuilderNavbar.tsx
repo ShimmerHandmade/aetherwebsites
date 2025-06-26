@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,6 +93,13 @@ const BuilderNavbar = ({
   // Filter out tablet from breakpoints
   const filteredBreakpoints = breakpoints.filter(bp => bp.type !== 'tablet');
 
+  const handlePageChange = (pageId: string) => {
+    console.log("📄 BuilderNavbar: Page change requested:", pageId);
+    if (onChangePage) {
+      onChangePage(pageId);
+    }
+  };
+
   return (
     <div className="w-full flex flex-col bg-white border-b border-slate-200 relative z-50">
       {/* Top bar with better spacing */}
@@ -155,7 +163,7 @@ const BuilderNavbar = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 bg-white hover:bg-gray-50"
                 >
                   {currentPage?.isHomePage && <Home className="h-4 w-4" />}
                   <span className="hidden sm:inline">
@@ -164,17 +172,28 @@ const BuilderNavbar = ({
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent 
+                align="end" 
+                className="w-48 bg-white border shadow-lg z-50"
+                sideOffset={5}
+              >
                 {pages.map((page) => (
                   <DropdownMenuItem
                     key={page.id}
-                    onClick={() => onChangePage(page.id)}
-                    className="flex items-center gap-2"
+                    onClick={() => handlePageChange(page.id)}
+                    className={`flex items-center gap-2 cursor-pointer hover:bg-gray-100 ${
+                      currentPage?.id === page.id 
+                        ? 'bg-blue-50 text-blue-700 font-medium' 
+                        : 'text-gray-700'
+                    }`}
                   >
                     {page.isHomePage && <Home className="h-4 w-4" />}
                     <span>{page.title}</span>
                     {page.isHomePage && (
                       <span className="ml-auto text-xs text-green-600">Home</span>
+                    )}
+                    {currentPage?.id === page.id && (
+                      <span className="ml-auto text-xs text-blue-600">Current</span>
                     )}
                   </DropdownMenuItem>
                 ))}
@@ -289,7 +308,7 @@ const BuilderNavbar = ({
               Shipping
             </TabsTrigger>
           </TabsList>
-        </Tabs>
+        </tabs>
       </div>
     </div>
   );
