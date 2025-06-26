@@ -120,7 +120,7 @@ const SimpleBuilder = () => {
         settings: {
           title: websiteName || "My Website",
           description: currentPageSettings?.meta?.description || `${websiteName} - Built with Aether Websites`,
-          socialImage: currentPageSettings?.meta?.socialImage || "",
+          socialImage: currentPageSettings?.meta?.ogImage || "",
           ...currentPageSettings,
           pages: pages,
           pagesContent: website?.settings?.pagesContent || { [currentPage?.id]: currentElements },
