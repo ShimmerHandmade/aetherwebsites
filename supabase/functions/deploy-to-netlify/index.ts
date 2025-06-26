@@ -39,25 +39,23 @@ serve(async (req) => {
       redirectsLength: redirectsContent.length
     });
 
-    // Create a ZIP-like deployment using Netlify's deploy API
-    const deployPayload = {
-      files: {
-        'index.html': indexHTML,
-        '_redirects': redirectsContent,
-        'robots.txt': 'User-agent: *\nAllow: /',
-      }
-    };
+    // Create deployment using Netlify's file-based deploy API
+    const formData = new FormData();
+    
+    // Add files to form data
+    formData.append('index.html', new Blob([indexHTML], { type: 'text/html' }));
+    formData.append('_redirects', new Blob([redirectsContent], { type: 'text/plain' }));
+    formData.append('robots.txt', new Blob(['User-agent: *\nAllow: /'], { type: 'text/plain' }));
 
     console.log('📤 Sending deployment to Netlify...');
 
-    // Use the correct Netlify API endpoint for file uploads
+    // Use the correct Netlify API endpoint for file-based deployments
     const deployResponse = await fetch(`https://api.netlify.com/api/v1/sites/${NETLIFY_SITE_ID}/deploys`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(deployPayload)
+      body: formData
     });
 
     console.log('📤 Netlify API response status:', deployResponse.status);
@@ -75,6 +73,20 @@ serve(async (req) => {
       url: deployData.ssl_url || deployData.url
     });
 
+    // Get the actual Netlify site URL
+    const siteResponse = await fetch(`https://api.netlify.com/api/v1/sites/${NETLIFY_SITE_ID}`, {
+      headers: {
+        'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
+      }
+    });
+
+    let netlifyUrl = deployData.ssl_url || deployData.url;
+    if (siteResponse.ok) {
+      const siteData = await siteResponse.json();
+      netlifyUrl = siteData.ssl_url || siteData.url;
+      console.log('📡 Site info retrieved:', { url: netlifyUrl, name: siteData.name });
+    }
+
     // The subdomain will be configured through DNS (CNAME record)
     const customDomain = `site-${websiteId}.aetherwebsites.com`;
     const siteUrl = `https://${customDomain}`;
@@ -86,7 +98,7 @@ serve(async (req) => {
         success: true,
         deploy_id: deployData.id,
         url: siteUrl,
-        deploy_url: deployData.ssl_url || deployData.url,
+        deploy_url: netlifyUrl,
         custom_domain: customDomain,
         subdomain: `site-${websiteId}`,
         state: deployData.state
