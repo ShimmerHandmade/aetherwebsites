@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -73,19 +72,9 @@ serve(async (req) => {
       url: deployData.ssl_url || deployData.url
     });
 
-    // Get the actual Netlify site URL
-    const siteResponse = await fetch(`https://api.netlify.com/api/v1/sites/${NETLIFY_SITE_ID}`, {
-      headers: {
-        'Authorization': `Bearer ${NETLIFY_ACCESS_TOKEN}`,
-      }
-    });
-
-    let netlifyUrl = deployData.ssl_url || deployData.url;
-    if (siteResponse.ok) {
-      const siteData = await siteResponse.json();
-      netlifyUrl = siteData.ssl_url || siteData.url;
-      console.log('📡 Site info retrieved:', { url: netlifyUrl, name: siteData.name });
-    }
+    // Use the deployment URL directly - this is the actual Netlify deployment URL
+    const netlifyDeployUrl = deployData.ssl_url || deployData.url;
+    console.log('📡 Netlify deployment URL:', netlifyDeployUrl);
 
     // The subdomain will be configured through DNS (CNAME record)
     const customDomain = `site-${websiteId}.aetherwebsites.com`;
@@ -98,7 +87,7 @@ serve(async (req) => {
         success: true,
         deploy_id: deployData.id,
         url: siteUrl,
-        deploy_url: netlifyUrl,
+        deploy_url: netlifyDeployUrl,
         custom_domain: customDomain,
         subdomain: `site-${websiteId}`,
         state: deployData.state
