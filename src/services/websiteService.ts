@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
 import { Json } from "@/integrations/supabase/types";
@@ -57,6 +58,7 @@ export class WebsiteService {
         ? JSON.parse(data.settings as string)
         : (data.settings as unknown as WebsiteSettings) || {};
       
+      // Enhanced page structure initialization
       if (!parsedSettings.pages || !Array.isArray(parsedSettings.pages)) {
         parsedSettings.pages = [];
       }
@@ -70,26 +72,46 @@ export class WebsiteService {
           isHomePage: true
         }];
         
+        // Initialize page content and settings structures
         if (!parsedSettings.pagesContent) {
           parsedSettings.pagesContent = {};
+        }
+        if (!parsedSettings.pagesSettings) {
+          parsedSettings.pagesSettings = {};
         }
         
         // If there's existing content, put it in the home page
         const existingContent = Array.isArray(data.content) ? data.content as unknown as BuilderElement[] : [];
         parsedSettings.pagesContent[homePageId] = existingContent;
+        parsedSettings.pagesSettings[homePageId] = {
+          title: data.name || 'Home'
+        };
         
         console.log("🏠 WebsiteService: Created default home page with", existingContent.length, "elements");
         
+        // Save the updated structure
         await this.updateWebsiteSettings(id, parsedSettings);
       }
       
-      // Ensure pagesContent and pagesSettings exist
+      // Ensure pagesContent and pagesSettings exist for all pages
       if (!parsedSettings.pagesContent) {
         parsedSettings.pagesContent = {};
       }
       if (!parsedSettings.pagesSettings) {
         parsedSettings.pagesSettings = {};
       }
+      
+      // Ensure all pages have content and settings entries
+      parsedSettings.pages.forEach(page => {
+        if (!parsedSettings.pagesContent![page.id]) {
+          parsedSettings.pagesContent![page.id] = [];
+        }
+        if (!parsedSettings.pagesSettings![page.id]) {
+          parsedSettings.pagesSettings![page.id] = {
+            title: page.title
+          };
+        }
+      });
       
       const websiteData: WebsiteData = {
         id: data.id,
@@ -100,7 +122,7 @@ export class WebsiteService {
         published: !!data.published
       };
       
-      console.log("✅ WebsiteService: Processed website data:", {
+      console.log("✅ WebsiteService: Processed multi-page website data:", {
         id: websiteData.id,
         name: websiteData.name,
         contentLength: websiteData.content.length,
@@ -124,14 +146,15 @@ export class WebsiteService {
     additionalSettings?: any
   ): Promise<boolean> {
     try {
-      console.log("💾 WebsiteService: Called saveWebsite", {
+      console.log("💾 WebsiteService: Called saveWebsite with enhanced multi-page support", {
         id,
         websiteName,
         elements,
         elementsType: Array.isArray(elements) ? "array" : typeof elements,
         elementsCount: elements?.length,
         pageSettings,
-        additionalSettings
+        additionalSettings,
+        hasMultiPageData: !!(additionalSettings?.pages || additionalSettings?.pagesContent)
       });
 
       const updatedSettings: WebsiteSettings = {
@@ -139,11 +162,31 @@ export class WebsiteService {
         ...(additionalSettings || {})
       };
 
-      console.log("💾 WebsiteService: Saving to supabase", {
+      // Ensure pages structure exists
+      if (!updatedSettings.pages || !Array.isArray(updatedSettings.pages)) {
+        updatedSettings.pages = [{
+          id: 'home',
+          title: 'Home',
+          slug: '/',
+          isHomePage: true
+        }];
+      }
+
+      // Ensure pagesContent and pagesSettings exist
+      if (!updatedSettings.pagesContent) {
+        updatedSettings.pagesContent = {};
+      }
+      if (!updatedSettings.pagesSettings) {
+        updatedSettings.pagesSettings = {};
+      }
+
+      console.log("💾 WebsiteService: Saving multi-page website to supabase", {
         id,
         name: websiteName,
         content: elements,
         settings: updatedSettings,
+        pagesCount: updatedSettings.pages.length,
+        contentPagesCount: Object.keys(updatedSettings.pagesContent).length
       });
 
       const { error } = await supabase
@@ -157,11 +200,11 @@ export class WebsiteService {
         .eq("id", id);
 
       if (error) {
-        console.error("❌ WebsiteService: Error saving website:", error);
+        console.error("❌ WebsiteService: Error saving multi-page website:", error);
         return false;
       }
 
-      console.log("✅ WebsiteService: Website saved to supabase");
+      console.log("✅ WebsiteService: Multi-page website saved to supabase successfully");
       return true;
     } catch (error) {
       console.error("❌ WebsiteService: Exception in saveWebsite:", error);

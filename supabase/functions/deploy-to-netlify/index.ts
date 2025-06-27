@@ -13,7 +13,12 @@ serve(async (req) => {
   try {
     const { websiteId, content, settings } = await req.json()
 
-    console.log('📤 Deploying website:', { websiteId, contentLength: content?.length });
+    console.log('📤 Deploying website:', { 
+      websiteId, 
+      contentLength: content?.length,
+      hasMultiplePages: settings?.pages?.length > 1,
+      pagesCount: settings?.pages?.length || 0
+    });
 
     // Get Netlify credentials from environment
     const NETLIFY_ACCESS_TOKEN = Deno.env.get('NETLIFY_ACCESS_TOKEN')
@@ -23,7 +28,7 @@ serve(async (req) => {
       throw new Error('Netlify access token not configured')
     }
 
-    console.log('✅ Credentials found, proceeding with deployment');
+    console.log('✅ Credentials found, proceeding with multi-page deployment');
 
     const customDomain = `site-${websiteId}.aetherwebsites.com`;
     const siteName = `site-${websiteId}`;
@@ -88,23 +93,32 @@ serve(async (req) => {
       siteUrl = `https://${customDomain}`;
     }
 
-    // Generate the website files
-    const indexHTML = generateIndexHTML(content, settings, websiteId);
-    const redirectsContent = generateRedirects(websiteId);
+    // Generate the website files with multi-page support
+    const { indexHTML, additionalPages } = generateMultiPageHTML(content, settings, websiteId);
+    const redirectsContent = generateRedirects(websiteId, settings);
     
-    console.log('📁 Generated files:', { 
+    console.log('📁 Generated multi-page files:', { 
       indexHTMLLength: indexHTML.length,
+      additionalPagesCount: Object.keys(additionalPages).length,
       redirectsLength: redirectsContent.length
     });
 
-    // Create a proper zip file containing the website files
-    const zipContent = await createProperZipFile({
+    // Create file collection for zip
+    const filesToZip: Record<string, string> = {
       'index.html': indexHTML,
       '_redirects': redirectsContent,
       'robots.txt': 'User-agent: *\nAllow: /'
+    };
+
+    // Add additional page files
+    Object.entries(additionalPages).forEach(([filename, content]) => {
+      filesToZip[filename] = content;
     });
 
-    console.log('📦 Created zip file, size:', zipContent.byteLength);
+    // Create a proper zip file containing all the website files
+    const zipContent = await createProperZipFile(filesToZip);
+
+    console.log('📦 Created multi-page zip file, size:', zipContent.byteLength);
 
     // Deploy using zip file upload
     const deployResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/deploys`, {
@@ -125,7 +139,7 @@ serve(async (req) => {
     }
 
     const deployData = await deployResponse.json();
-    console.log('✅ Deployment created:', { 
+    console.log('✅ Multi-page deployment created:', { 
       deployId: deployData.id,
       state: deployData.state,
       deploy_ssl_url: deployData.deploy_ssl_url || deployData.ssl_url
@@ -134,10 +148,10 @@ serve(async (req) => {
     // Wait for deployment to complete with reasonable timeout
     let deploymentComplete = false;
     let attempts = 0;
-    const maxAttempts = 15; // Reduced from 20
+    const maxAttempts = 15;
 
     while (!deploymentComplete && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Reduced from 3000
+      await new Promise(resolve => setTimeout(resolve, 2000));
       attempts++;
 
       const checkResponse = await fetch(`https://api.netlify.com/api/v1/deploys/${deployData.id}`, {
@@ -156,7 +170,7 @@ serve(async (req) => {
 
         if (currentStatus.state === 'ready') {
           deploymentComplete = true;
-          console.log('✅ Deployment completed successfully!');
+          console.log('✅ Multi-page deployment completed successfully!');
           break;
         } else if (currentStatus.state === 'error') {
           console.error('❌ Deployment failed with error:', currentStatus.error_message);
@@ -178,7 +192,8 @@ serve(async (req) => {
         custom_domain: customDomain,
         subdomain: siteName,
         state: deployData.state,
-        site_id: siteId
+        site_id: siteId,
+        pages_deployed: Object.keys(additionalPages).length + 1
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -361,9 +376,70 @@ function crc32(data: Uint8Array): number {
   return (crc ^ 0xFFFFFFFF) >>> 0;
 }
 
-function generateIndexHTML(content: any[], settings: any, websiteId: string): string {
-  const pageTitle = settings?.title || settings?.pages?.[0]?.title || 'Website';
-  const pageDescription = settings?.description || '';
+// Enhanced function to generate multi-page HTML
+function generateMultiPageHTML(content: any[], settings: any, websiteId: string): { 
+  indexHTML: string; 
+  additionalPages: Record<string, string> 
+} {
+  const pages = settings?.pages || [{ id: 'home', title: 'Home', slug: '/', isHomePage: true }];
+  const pagesContent = settings?.pagesContent || {};
+  const pagesSettings = settings?.pagesSettings || {};
+  
+  console.log('🏗️ Generating multi-page HTML:', {
+    pagesCount: pages.length,
+    contentPagesCount: Object.keys(pagesContent).length
+  });
+
+  const additionalPages: Record<string, string> = {};
+  let indexHTML = '';
+
+  // Generate HTML for each page
+  pages.forEach((page: any) => {
+    const pageContent = pagesContent[page.id] || content || [];
+    const pageSettings = pagesSettings[page.id] || settings || {};
+    const pageTitle = pageSettings.title || page.title || settings?.title || 'My Website';
+    
+    const html = generatePageHTML(pageContent, {
+      ...pageSettings,
+      title: pageTitle,
+      pages,
+      pagesContent,
+      pagesSettings
+    }, websiteId, page);
+
+    if (page.isHomePage) {
+      indexHTML = html;
+    } else {
+      // Create filename based on slug
+      const filename = page.slug === '/' ? 'index.html' : 
+        page.slug.startsWith('/') ? `${page.slug.substring(1)}.html` : `${page.slug}.html`;
+      additionalPages[filename] = html;
+    }
+  });
+
+  // If no home page was found, use the first page as index
+  if (!indexHTML && pages.length > 0) {
+    const firstPage = pages[0];
+    const pageContent = pagesContent[firstPage.id] || content || [];
+    const pageSettings = pagesSettings[firstPage.id] || settings || {};
+    
+    indexHTML = generatePageHTML(pageContent, {
+      ...pageSettings,
+      title: pageSettings.title || firstPage.title || settings?.title || 'My Website',
+      pages,
+      pagesContent,
+      pagesSettings
+    }, websiteId, firstPage);
+  }
+
+  console.log('✅ Generated HTML for', pages.length, 'pages');
+
+  return { indexHTML, additionalPages };
+}
+
+function generatePageHTML(content: any[], settings: any, websiteId: string, currentPage?: any): string {
+  const pageTitle = settings?.title || currentPage?.title || 'Website';
+  const pageDescription = settings?.description || currentPage?.description || '';
   const socialImage = settings?.socialImage || '';
 
   return `<!DOCTYPE html>
@@ -377,7 +453,7 @@ function generateIndexHTML(content: any[], settings: any, websiteId: string): st
   <meta property="og:title" content="${pageTitle}">
   <meta property="og:description" content="${pageDescription}">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://site-${websiteId}.aetherwebsites.com">
+  <meta property="og:url" content="https://site-${websiteId}.aetherwebsites.com${currentPage?.slug || '/'}">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { margin: 0; padding: 0; }
@@ -386,17 +462,18 @@ function generateIndexHTML(content: any[], settings: any, websiteId: string): st
 </head>
 <body>
   <div class="website-container" id="website-content">
-    ${renderContent(content, settings)}
+    ${renderContent(content, settings, currentPage)}
   </div>
   
   <script>
-    console.log('Site loaded for website: ${websiteId}');
+    console.log('Multi-page site loaded for website: ${websiteId}');
+    console.log('Current page: ${currentPage?.title || 'Home'}');
   </script>
 </body>
 </html>`;
 }
 
-function renderContent(content: any[], settings: any): string {
+function renderContent(content: any[], settings: any, currentPage?: any): string {
   if (!content || !Array.isArray(content)) {
     return '<div class="flex items-center justify-center min-h-screen"><p class="text-gray-500">No content available</p></div>';
   }
@@ -536,7 +613,21 @@ function renderFooter(element: any): string {
   </footer>`;
 }
 
-function generateRedirects(websiteId: string): string {
-  return `# Redirects for site-${websiteId}.aetherwebsites.com
-/*    /index.html   200`;
+function generateRedirects(websiteId: string, settings: any): string {
+  const pages = settings?.pages || [];
+  
+  let redirects = `# Redirects for multi-page site-${websiteId}.aetherwebsites.com\n`;
+  
+  // Add redirects for each page
+  pages.forEach((page: any) => {
+    if (page.slug && page.slug !== '/') {
+      const filename = page.slug.startsWith('/') ? page.slug.substring(1) : page.slug;
+      redirects += `${page.slug}    /${filename}.html   200\n`;
+    }
+  });
+  
+  // Fallback redirect
+  redirects += `/*    /index.html   200\n`;
+  
+  return redirects;
 }

@@ -79,56 +79,174 @@ const SimpleBuilder = () => {
     unsavedChanges
   });
 
-  // Simplified initialization - wait for website to load
+  // Enhanced initialization with better page management
   useEffect(() => {
     if (website && !isLoading && !isInitialized) {
       console.log("✅ SimpleBuilder: Website loaded, initializing builder");
       setIsInitialized(true);
       
-      // Set the initial current page
-      const homePage = pages.find(page => page.isHomePage);
-      if (homePage) {
-        setCurrentPageId(homePage.id);
-      } else if (pages.length > 0) {
-        setCurrentPageId(pages[0].id);
+      // Ensure we have proper page structure
+      const websitePages = website?.settings?.pages;
+      if (!websitePages || !Array.isArray(websitePages) || websitePages.length === 0) {
+        console.log("🏠 SimpleBuilder: No pages found, will use default home page");
+        setCurrentPageId('home');
+      } else {
+        const homePage = websitePages.find(page => page.isHomePage);
+        if (homePage) {
+          setCurrentPageId(homePage.id);
+        } else if (websitePages.length > 0) {
+          setCurrentPageId(websitePages[0].id);
+        }
       }
     }
   }, [website, isLoading, isInitialized]);
 
-  // Default pages setup
+  // Enhanced pages setup with proper defaults
   const pages = website?.settings?.pages && Array.isArray(website.settings.pages) && website.settings.pages.length > 0
     ? website.settings.pages
     : [{ id: "home", title: "Home", slug: "/", isHomePage: true }];
 
   const currentPage = pages.find(page => page.id === currentPageId) || pages[0];
 
-  // Get elements for current page
-  const currentElements = website?.settings?.pagesContent?.[currentPage?.id] || elements || [];
-  const currentPageSettings = website?.settings?.pagesSettings?.[currentPage?.id] || pageSettings || { title: websiteName || "My Website" };
+  // Enhanced page content retrieval
+  const getCurrentPageElements = useCallback(() => {
+    if (!website?.settings?.pagesContent) {
+      return elements || [];
+    }
+    
+    const pageContent = website.settings.pagesContent[currentPage?.id];
+    if (pageContent && Array.isArray(pageContent)) {
+      return pageContent;
+    }
+    
+    // Fallback to main elements for backward compatibility
+    return elements || [];
+  }, [website?.settings?.pagesContent, currentPage?.id, elements]);
 
-  const handlePublish = async () => {
-    console.log("📤 Publishing website to aetherwebsites.com subdomain...");
+  const getCurrentPageSettings = useCallback(() => {
+    if (!website?.settings?.pagesSettings) {
+      return pageSettings || { title: websiteName || "My Website" };
+    }
+    
+    const pageSettingsData = website.settings.pagesSettings[currentPage?.id];
+    if (pageSettingsData) {
+      return pageSettingsData;
+    }
+    
+    // Fallback to main page settings for backward compatibility
+    return pageSettings || { title: websiteName || "My Website" };
+  }, [website?.settings?.pagesSettings, currentPage?.id, pageSettings, websiteName]);
+
+  const currentElements = getCurrentPageElements();
+  const currentPageSettings = getCurrentPageSettings();
+
+  // Enhanced template application to support multi-page templates
+  const handleTemplateSelectEnhanced = useCallback(async (templateData: any) => {
+    console.log("🎨 SimpleBuilder: Enhanced template selected:", templateData);
+    
+    setIsApplyingTemplate(true);
     
     try {
-      // First save the current state
-      await saveWebsite();
+      let templateElements = [];
+      let templatePages = [];
+      let templateSettings = {};
       
-      // Prepare complete website data for deployment
+      // Handle different template structures
+      if (Array.isArray(templateData)) {
+        templateElements = templateData;
+      } else if (templateData.elements && Array.isArray(templateData.elements)) {
+        templateElements = templateData.elements;
+      } else if (templateData.template_data) {
+        const data = templateData.template_data;
+        templateElements = data.content || [];
+        templatePages = data.pages || [];
+        templateSettings = data.settings || {};
+      } else if (templateData.content && Array.isArray(templateData.content)) {
+        templateElements = templateData.content;
+      }
+
+      // If template has multiple pages, set them up properly
+      if (templatePages && templatePages.length > 0) {
+        console.log("📄 SimpleBuilder: Template has multiple pages:", templatePages);
+        
+        const enhancedSettings = {
+          ...templateSettings,
+          pages: templatePages,
+          pagesContent: templatePages.reduce((acc, page) => {
+            acc[page.id] = page.content || [];
+            return acc;
+          }, {}),
+          pagesSettings: templatePages.reduce((acc, page) => {
+            acc[page.id] = page.settings || { title: page.title };
+            return acc;
+          }, {})
+        };
+        
+        // Save the enhanced multi-page template
+        const success = await saveWebsite([], {}, enhancedSettings);
+        if (success) {
+          await refreshWebsite();
+          // Set current page to the first page or home page
+          const homePage = templatePages.find(p => p.isHomePage) || templatePages[0];
+          if (homePage) {
+            setCurrentPageId(homePage.id);
+          }
+        }
+      } else {
+        // Single page template - apply to current page
+        updateElements(templateElements);
+        const success = await saveWebsite(templateElements);
+        if (success) {
+          console.log("✅ SimpleBuilder: Single page template applied successfully");
+        }
+      }
+      
+      markTemplateAsApplied();
+      toast.success("Template applied successfully!");
+      
+    } catch (error) {
+      console.error("❌ SimpleBuilder: Error applying template:", error);
+      toast.error("Failed to apply template. Please try again.");
+    } finally {
+      setTimeout(() => {
+        setShowTemplateSelection(false);
+        setIsApplyingTemplate(false);
+      }, 100);
+    }
+  }, [updateElements, saveWebsite, markTemplateAsApplied, setShowTemplateSelection, refreshWebsite]);
+
+  // Enhanced publish function for multi-page websites
+  const handlePublish = async () => {
+    console.log("📤 Publishing multi-page website to aetherwebsites.com subdomain...");
+    
+    try {
+      // First save the current page state
+      document.dispatchEvent(new CustomEvent('request-save-data'));
+      
+      // Wait a moment for save to complete
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Prepare complete multi-page website data for deployment
       const deploymentContent = {
         websiteId: id,
-        content: currentElements,
+        content: currentElements, // Main page content for backward compatibility
         settings: {
           title: websiteName || "My Website",
           description: currentPageSettings?.meta?.description || `${websiteName} - Built with Aether Websites`,
           socialImage: currentPageSettings?.meta?.ogImage || "",
-          ...currentPageSettings,
           pages: pages,
           pagesContent: website?.settings?.pagesContent || { [currentPage?.id]: currentElements },
-          pagesSettings: website?.settings?.pagesSettings || { [currentPage?.id]: currentPageSettings }
+          pagesSettings: website?.settings?.pagesSettings || { [currentPage?.id]: currentPageSettings },
+          // Include all current website settings
+          ...website?.settings
         }
       };
       
-      console.log("🚀 Sending deployment data:", deploymentContent);
+      console.log("🚀 SimpleBuilder: Sending multi-page deployment data:", {
+        websiteId: deploymentContent.websiteId,
+        pagesCount: deploymentContent.settings.pages?.length || 0,
+        contentPagesCount: Object.keys(deploymentContent.settings.pagesContent || {}).length
+      });
       
       // Deploy to aetherwebsites.com subdomain
       const { data, error } = await supabase.functions.invoke('deploy-to-netlify', {
@@ -136,92 +254,96 @@ const SimpleBuilder = () => {
       });
 
       if (error) {
-        console.error("❌ Deployment error:", error);
+        console.error("❌ SimpleBuilder: Deployment error:", error);
         toast.error("Failed to publish website");
         return;
       }
 
-      console.log("✅ Website deployed:", data);
+      console.log("✅ SimpleBuilder: Multi-page website deployed:", data);
       
       // Update the website as published
       await publishWebsite();
       
       toast.success("Website published successfully!", {
-        description: `Your site is now live at ${data.url}`
+        description: `Your multi-page site is now live at ${data.url}`
       });
       
     } catch (error) {
-      console.error("❌ Publish error:", error);
+      console.error("❌ SimpleBuilder: Publish error:", error);
       toast.error("An error occurred while publishing");
     }
   };
 
-  const handleMainSave = useCallback(async () => {
-    console.log("💾 SimpleBuilder: Save button clicked");
-    document.dispatchEvent(new CustomEvent('request-save-data'));
-  }, []);
-
+  // Enhanced save function for individual pages
   const handleBuilderSaveWrapper = useCallback(async (elements: BuilderElement[], pageSettings: PageSettings) => {
     if (!currentPage || !website) {
       console.error("❌ SimpleBuilder: No current page or website for saving");
       return false;
     }
 
-    console.log("💾 SimpleBuilder: Saving page content", {
+    console.log("💾 SimpleBuilder: Saving individual page content", {
       pageId: currentPage.id,
+      pageTitle: currentPage.title,
       elementsCount: elements?.length || 0
     });
 
     try {
+      // Ensure we have proper page structure in settings
+      const currentPagesContent = website.settings?.pagesContent || {};
+      const currentPagesSettings = website.settings?.pagesSettings || {};
+      
       const updatedSettings = {
         ...website.settings,
+        pages: pages, // Ensure pages array is always present
         pagesContent: {
-          ...(website.settings?.pagesContent || {}),
+          ...currentPagesContent,
           [currentPage.id]: elements,
         },
         pagesSettings: {
-          ...(website.settings?.pagesSettings || {}),
+          ...currentPagesSettings,
           [currentPage.id]: pageSettings,
-        },
-        pages: website.settings?.pages || pages,
+        }
       };
+
+      console.log("💾 SimpleBuilder: Saving with updated settings:", {
+        pageId: currentPage.id,
+        totalPages: pages.length,
+        contentPages: Object.keys(updatedSettings.pagesContent).length,
+        settingsPages: Object.keys(updatedSettings.pagesSettings).length
+      });
 
       const success = await saveWebsite(elements, pageSettings, updatedSettings);
 
       if (success) {
-        toast.success("Page saved successfully");
+        toast.success(`${currentPage.title} page saved successfully`);
       } else {
-        toast.error("Failed to save page");
+        toast.error(`Failed to save ${currentPage.title} page`);
       }
 
       return success;
     } catch (error) {
       console.error("❌ SimpleBuilder: Save error:", error);
-      toast.error("An error occurred while saving");
+      toast.error("An error occurred while saving the page");
       return false;
     }
   }, [saveWebsite, currentPage, website, pages]);
 
+  // Enhanced page change handler with proper saving
   const handlePageChange = useCallback(async (pageId: string) => {
-    console.log("📄 SimpleBuilder: Page change to:", pageId);
+    console.log("📄 SimpleBuilder: Enhanced page change to:", pageId);
     
     // Save current page before switching
     document.dispatchEvent(new CustomEvent('request-save-data'));
     
-    // Wait a moment for save to complete
-    setTimeout(() => {
-      setCurrentPageId(pageId);
-      toast.success(`Switched to ${pages.find(p => p.id === pageId)?.title || 'page'}`);
-    }, 100);
+    // Wait for save to complete
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Switch to new page
+    setCurrentPageId(pageId);
+    
+    const newPage = pages.find(p => p.id === pageId);
+    toast.success(`Switched to ${newPage?.title || 'page'}`);
   }, [pages]);
-
-  const handleOnboardingComplete = useCallback(async () => {
-    console.log("🎓 Onboarding complete");
-    setShowOnboarding(false);
-    markTemplateAsApplied();
-    await refreshWebsite();
-    toast.success("Welcome to your website builder!");
-  }, [refreshWebsite, markTemplateAsApplied, setShowOnboarding]);
 
   // Loading state
   if (isLoading || !isInitialized) {
@@ -240,7 +362,12 @@ const SimpleBuilder = () => {
     return (
       <OnboardingFlow 
         websiteId={id!}
-        onComplete={handleOnboardingComplete}
+        onComplete={() => {
+          setShowOnboarding(false);
+          markTemplateAsApplied();
+          refreshWebsite();
+          toast.success("Welcome to your website builder!");
+        }}
       />
     );
   }
@@ -251,7 +378,7 @@ const SimpleBuilder = () => {
       <div className="h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-8">
           <TemplateSelection 
-            onSelectTemplate={handleTemplateSelect}
+            onSelectTemplate={handleTemplateSelectEnhanced}
             websiteId={id} 
             onComplete={() => setShowTemplateSelection(false)}
             onClose={handleSkipTemplate}
@@ -261,7 +388,17 @@ const SimpleBuilder = () => {
     );
   }
 
-  console.log("🏗️ SimpleBuilder: Rendering builder with elements:", currentElements?.length || 0);
+  console.log("🏗️ SimpleBuilder: Rendering builder with enhanced page support:", {
+    currentPageId,
+    currentPageTitle: currentPage?.title,
+    elementsCount: currentElements?.length || 0,
+    totalPages: pages.length
+  });
+
+  const handleMainSave = useCallback(async () => {
+    console.log("💾 SimpleBuilder: Save button clicked");
+    document.dispatchEvent(new CustomEvent('request-save-data'));
+  }, []);
 
   return (
     <BuilderProvider
