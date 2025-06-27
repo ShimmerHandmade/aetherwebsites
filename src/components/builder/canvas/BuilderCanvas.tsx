@@ -18,9 +18,27 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = memo(({
   const { elements, selectElement } = useBuilder();
   const canvasRef = useRef<HTMLDivElement>(null);
   
-  console.log("🎨 BuilderCanvas: Rendering with", elements?.length || 0, "elements");
+  console.log("🎨 BuilderCanvas: Rendering", {
+    isPreviewMode,
+    isLiveSite,
+    elementsCount: elements?.length || 0,
+    elementsType: Array.isArray(elements) ? "array" : typeof elements,
+    elements: elements,
+    canvasRefCurrent: !!canvasRef.current
+  });
+  
+  // Safety check for elements
+  if (!Array.isArray(elements)) {
+    console.error("❌ BuilderCanvas: Elements is not an array:", elements);
+    return (
+      <div className="h-full flex items-center justify-center">
+        <p className="text-red-600">Error: Invalid elements data</p>
+      </div>
+    );
+  }
   
   const handleCanvasClick = (e: React.MouseEvent) => {
+    console.log("🖱️ BuilderCanvas: Canvas clicked");
     if (e.target === e.currentTarget) {
       selectElement(null);
     }

@@ -25,18 +25,44 @@ const PageCanvas: React.FC<PageCanvasProps> = memo(({
   const [canvasVisible, setCanvasVisible] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   
-  console.log("📄 PageCanvas: Rendering", elements?.length || 0, "elements");
+  console.log("📄 PageCanvas: Rendering", {
+    isPreviewMode,
+    isLiveSite,
+    elementsCount: elements?.length || 0,
+    elementsType: Array.isArray(elements) ? "array" : typeof elements,
+    selectedElementId,
+    canvasVisible,
+    elementsDetailed: elements?.map(el => ({ id: el.id, type: el.type }))
+  });
   
   useEffect(() => {
+    console.log("📄 PageCanvas: Setting canvas visible");
     setCanvasVisible(true);
   }, []);
+
+  // Safety check for elements
+  if (!Array.isArray(elements)) {
+    console.error("❌ PageCanvas: Elements is not an array:", elements);
+    return (
+      <div className="h-full flex items-center justify-center">
+        <p className="text-red-600">Error: Invalid elements data in PageCanvas</p>
+      </div>
+    );
+  }
 
   // Safe element rendering with error boundary
   const renderElementSafely = (element: BuilderElement, index: number) => {
     if (!element || !element.id) {
-      console.warn("⚠️ PageCanvas: Invalid element at index", index);
+      console.warn("⚠️ PageCanvas: Invalid element at index", index, element);
       return null;
     }
+
+    console.log("🔧 PageCanvas: Rendering element", { 
+      id: element.id, 
+      type: element.type, 
+      index,
+      selected: selectedElementId === element.id 
+    });
 
     try {
       return (
@@ -71,6 +97,11 @@ const PageCanvas: React.FC<PageCanvasProps> = memo(({
     }
   };
 
+  console.log("📄 PageCanvas: About to render JSX", {
+    canvasVisible,
+    elementsLength: elements.length
+  });
+
   return (
     <ScrollArea className="h-full w-full">
       <div 
@@ -83,7 +114,10 @@ const PageCanvas: React.FC<PageCanvasProps> = memo(({
         <div className="page-content max-w-full">
           {elements && elements.length > 0 ? (
             <div className="space-y-4">
-              {elements.map((element, index) => renderElementSafely(element, index))}
+              {elements.map((element, index) => {
+                console.log("🔄 PageCanvas: Mapping element", { id: element?.id, type: element?.type, index });
+                return renderElementSafely(element, index);
+              })}
             </div>
           ) : (
             <div className="flex items-center justify-center min-h-[300px] text-gray-400 p-4">

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useCallback, ReactNode, useEffect } from "react";
+import React, { createContext, useState, useCallback, ReactNode, useEffect, useRef } from "react";
 import { BuilderElement, PageSettings, BuilderContextType, BreakpointType } from "./types";
 import { v4 as uuidv4 } from "@/lib/uuid";
 import { ensureElementsOrder } from "./pageStructureUtils";
@@ -23,36 +23,62 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
   const [pageSettings, setPageSettings] = useState<PageSettings>(initialPageSettings);
   const [currentBreakpoint, setCurrentBreakpoint] = useState<BreakpointType>('desktop');
   const [previewBreakpoint, setPreviewBreakpoint] = useState<BreakpointType>('desktop');
+  
+  // Use refs to track initialization to prevent unnecessary re-renders
+  const initializedElements = useRef<boolean>(false);
+  const initializedPageSettings = useRef<boolean>(false);
 
-  console.log("🔄 BuilderProvider: Initialized with", {
-    elementsCount: initialElements?.length || 0,
-    pageSettings: initialPageSettings
+  console.log("🔄 BuilderProvider: Rendering with", {
+    elementsCount: elements?.length || 0,
+    pageSettings,
+    initialElementsCount: initialElements?.length || 0,
+    initializedElements: initializedElements.current,
+    initializedPageSettings: initializedPageSettings.current
   });
 
-  // Update elements when initialElements changes
+  // Update elements when initialElements changes (but only if not already initialized or if significantly different)
   useEffect(() => {
-    console.log("🔄 BuilderProvider: initialElements changed", {
+    console.log("🔄 BuilderProvider: initialElements useEffect", {
       newCount: initialElements?.length || 0,
-      currentCount: elements?.length || 0
+      currentCount: elements?.length || 0,
+      initializedElements: initializedElements.current,
+      hasInitialElements: Array.isArray(initialElements) && initialElements.length > 0
     });
     
-    if (initialElements && Array.isArray(initialElements)) {
-      setElements(initialElements);
+    // Only update if we haven't initialized yet, or if there's a significant change
+    if (!initializedElements.current || (Array.isArray(initialElements) && initialElements.length !== elements.length)) {
+      if (initialElements && Array.isArray(initialElements)) {
+        console.log("🔄 BuilderProvider: Setting elements from initialElements:", initialElements);
+        setElements(initialElements);
+        initializedElements.current = true;
+      }
     }
   }, [initialElements]);
 
   // Update page settings when initialPageSettings changes
   useEffect(() => {
-    console.log("🔄 BuilderProvider: initialPageSettings changed:", initialPageSettings);
-    if (initialPageSettings) {
-      setPageSettings(initialPageSettings);
+    console.log("🔄 BuilderProvider: initialPageSettings useEffect:", {
+      newSettings: initialPageSettings,
+      currentSettings: pageSettings,
+      initializedPageSettings: initializedPageSettings.current
+    });
+    
+    if (!initializedPageSettings.current || JSON.stringify(initialPageSettings) !== JSON.stringify(pageSettings)) {
+      if (initialPageSettings) {
+        console.log("🔄 BuilderProvider: Setting pageSettings from initialPageSettings:", initialPageSettings);
+        setPageSettings(initialPageSettings);
+        initializedPageSettings.current = true;
+      }
     }
   }, [initialPageSettings]);
 
   // Listen for save data requests
   useEffect(() => {
     const handleSaveRequest = () => {
-      console.log("💾 BuilderProvider: Save request received");
+      console.log("💾 BuilderProvider: Save request received", {
+        elementsCount: elements.length,
+        pageSettings
+      });
       if (onSave) {
         onSave(elements, pageSettings);
       }
@@ -92,6 +118,8 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       index?: number, 
       parentId?: string | null
     ) => {
+      console.log("➕ BuilderProvider: Adding element", { element, index, parentId });
+      
       const elementWithId = {
         ...element,
         id: element.id || uuidv4()
@@ -131,6 +159,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
           newElements = ensureElementsOrder(newElements);
         }
         
+        console.log("➕ BuilderProvider: Elements after add:", newElements);
         return newElements;
       });
     }, []),
@@ -269,6 +298,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       }
     }, [elements]),
     selectElement: useCallback((id: string | null) => {
+      console.log("🎯 BuilderProvider: Selecting element:", id);
       setSelectedElementId(id);
     }, []),
     findElementById,
@@ -294,6 +324,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       }
     }, [elements, findElementById]),
     updatePageSettings: useCallback((newSettings: Partial<PageSettings>) => {
+      console.log("📄 BuilderProvider: Updating page settings:", newSettings);
       setPageSettings(prev => ({ ...prev, ...newSettings }));
     }, []),
     saveChanges: useCallback(() => {

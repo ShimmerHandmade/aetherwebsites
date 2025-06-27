@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from "react";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -28,7 +27,13 @@ const SimpleBuilder = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [currentPageId, setCurrentPageId] = useState<string>('home');
 
-  console.log("🏗️ SimpleBuilder: Rendering with ID:", id);
+  console.log("🏗️ SimpleBuilder: Rendering", {
+    id,
+    isInitialized,
+    currentPageId,
+    isPreviewMode,
+    isApplyingTemplate
+  });
 
   // Early return if no ID
   if (!id) {
@@ -58,6 +63,15 @@ const SimpleBuilder = () => {
     lastSaved,
     unsavedChanges
   } = useWebsite(id, navigate, { autoSave: false });
+
+  console.log("🏗️ SimpleBuilder: Website data", {
+    website: !!website,
+    isLoading,
+    websiteName,
+    elementsCount: elements?.length || 0,
+    elementsType: Array.isArray(elements) ? "array" : typeof elements,
+    pageSettings
+  });
 
   const {
     showTemplateSelection,
@@ -95,6 +109,13 @@ const SimpleBuilder = () => {
 
   // Simplified initialization
   useEffect(() => {
+    console.log("🏗️ SimpleBuilder: Initialization useEffect", {
+      website: !!website,
+      isLoading,
+      isInitialized,
+      websiteId: website?.id
+    });
+    
     if (website && !isLoading && !isInitialized) {
       console.log("✅ SimpleBuilder: Initializing builder with website:", website.id);
       setIsInitialized(true);
@@ -103,6 +124,7 @@ const SimpleBuilder = () => {
       const websitePages = website?.settings?.pages;
       if (websitePages && Array.isArray(websitePages) && websitePages.length > 0) {
         const homePage = websitePages.find(page => page.isHomePage) || websitePages[0];
+        console.log("🏠 SimpleBuilder: Setting current page to:", homePage.id);
         setCurrentPageId(homePage.id);
       }
     }
@@ -115,21 +137,36 @@ const SimpleBuilder = () => {
 
   const currentPage = pages.find(page => page.id === currentPageId) || pages[0];
 
+  console.log("🏗️ SimpleBuilder: Pages data", {
+    pagesCount: pages.length,
+    currentPageId,
+    currentPageTitle: currentPage?.title
+  });
+
   // Simplified page content retrieval
   const getCurrentPageElements = useCallback(() => {
     try {
+      console.log("📄 SimpleBuilder: Getting current page elements", {
+        currentPageId: currentPage?.id,
+        hasPagesContent: !!website?.settings?.pagesContent,
+        hasElements: !!elements
+      });
+      
       if (!website?.settings?.pagesContent) {
+        console.log("📄 SimpleBuilder: No pages content, returning elements:", elements?.length || 0);
         return elements || [];
       }
       
       const pageContent = website.settings.pagesContent[currentPage?.id];
       if (pageContent && Array.isArray(pageContent)) {
+        console.log("📄 SimpleBuilder: Found page content:", pageContent.length);
         return pageContent;
       }
       
+      console.log("📄 SimpleBuilder: No page content found, returning elements:", elements?.length || 0);
       return elements || [];
     } catch (error) {
-      console.error("❌ Error getting page elements:", error);
+      console.error("❌ SimpleBuilder: Error getting page elements:", error);
       return [];
     }
   }, [website?.settings?.pagesContent, currentPage?.id, elements]);
@@ -147,13 +184,19 @@ const SimpleBuilder = () => {
       
       return pageSettings || { title: websiteName || "My Website" };
     } catch (error) {
-      console.error("❌ Error getting page settings:", error);
+      console.error("❌ SimpleBuilder: Error getting page settings:", error);
       return { title: websiteName || "My Website" };
     }
   }, [website?.settings?.pagesSettings, currentPage?.id, pageSettings, websiteName]);
 
   const currentElements = getCurrentPageElements();
   const currentPageSettings = getCurrentPageSettings();
+
+  console.log("🏗️ SimpleBuilder: Current page data", {
+    currentElementsCount: currentElements?.length || 0,
+    currentElementsType: Array.isArray(currentElements) ? "array" : typeof currentElements,
+    currentPageSettings
+  });
 
   // Enhanced template application
   const handleTemplateSelectEnhanced = useCallback(async (templateData: any) => {
@@ -322,6 +365,7 @@ const SimpleBuilder = () => {
 
   // Loading state
   if (isLoading || !isInitialized) {
+    console.log("🏗️ SimpleBuilder: Showing loading state", { isLoading, isInitialized });
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
@@ -334,6 +378,7 @@ const SimpleBuilder = () => {
 
   // Onboarding flow
   if (showOnboarding) {
+    console.log("🏗️ SimpleBuilder: Showing onboarding");
     return (
       <OnboardingFlow 
         websiteId={id!}
@@ -349,6 +394,7 @@ const SimpleBuilder = () => {
 
   // Template selection
   if (showTemplateSelection && !isApplyingTemplate) {
+    console.log("🏗️ SimpleBuilder: Showing template selection");
     return (
       <div className="h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-8">
@@ -367,6 +413,11 @@ const SimpleBuilder = () => {
     console.log("💾 Save button clicked");
     document.dispatchEvent(new CustomEvent('request-save-data'));
   }, []);
+
+  console.log("🏗️ SimpleBuilder: About to render builder interface", {
+    currentElementsCount: currentElements?.length || 0,
+    currentPageSettings
+  });
 
   return (
     <ErrorBoundary>
