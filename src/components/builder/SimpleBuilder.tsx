@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from "react";
 import { BuilderProvider } from "@/contexts/builder/BuilderProvider";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -16,6 +17,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { BuilderElement, PageSettings } from "@/contexts/builder/types";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const SimpleBuilder = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +29,18 @@ const SimpleBuilder = () => {
   const [currentPageId, setCurrentPageId] = useState<string>('home');
 
   console.log("🏗️ SimpleBuilder: Rendering with ID:", id);
+
+  // Early return if no ID
+  if (!id) {
+    console.error("❌ SimpleBuilder: No website ID provided");
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600">Error: No website ID provided</p>
+        </div>
+      </div>
+    );
+  }
 
   const {
     website,
@@ -79,70 +93,71 @@ const SimpleBuilder = () => {
     unsavedChanges
   });
 
-  // Enhanced initialization with better page management
+  // Simplified initialization
   useEffect(() => {
     if (website && !isLoading && !isInitialized) {
-      console.log("✅ SimpleBuilder: Website loaded, initializing builder");
+      console.log("✅ SimpleBuilder: Initializing builder with website:", website.id);
       setIsInitialized(true);
       
-      // Ensure we have proper page structure
+      // Simple page setup
       const websitePages = website?.settings?.pages;
-      if (!websitePages || !Array.isArray(websitePages) || websitePages.length === 0) {
-        console.log("🏠 SimpleBuilder: No pages found, will use default home page");
-        setCurrentPageId('home');
-      } else {
-        const homePage = websitePages.find(page => page.isHomePage);
-        if (homePage) {
-          setCurrentPageId(homePage.id);
-        } else if (websitePages.length > 0) {
-          setCurrentPageId(websitePages[0].id);
-        }
+      if (websitePages && Array.isArray(websitePages) && websitePages.length > 0) {
+        const homePage = websitePages.find(page => page.isHomePage) || websitePages[0];
+        setCurrentPageId(homePage.id);
       }
     }
   }, [website, isLoading, isInitialized]);
 
-  // Enhanced pages setup with proper defaults
+  // Simplified pages setup
   const pages = website?.settings?.pages && Array.isArray(website.settings.pages) && website.settings.pages.length > 0
     ? website.settings.pages
     : [{ id: "home", title: "Home", slug: "/", isHomePage: true }];
 
   const currentPage = pages.find(page => page.id === currentPageId) || pages[0];
 
-  // Enhanced page content retrieval
+  // Simplified page content retrieval
   const getCurrentPageElements = useCallback(() => {
-    if (!website?.settings?.pagesContent) {
+    try {
+      if (!website?.settings?.pagesContent) {
+        return elements || [];
+      }
+      
+      const pageContent = website.settings.pagesContent[currentPage?.id];
+      if (pageContent && Array.isArray(pageContent)) {
+        return pageContent;
+      }
+      
       return elements || [];
+    } catch (error) {
+      console.error("❌ Error getting page elements:", error);
+      return [];
     }
-    
-    const pageContent = website.settings.pagesContent[currentPage?.id];
-    if (pageContent && Array.isArray(pageContent)) {
-      return pageContent;
-    }
-    
-    // Fallback to main elements for backward compatibility
-    return elements || [];
   }, [website?.settings?.pagesContent, currentPage?.id, elements]);
 
   const getCurrentPageSettings = useCallback(() => {
-    if (!website?.settings?.pagesSettings) {
+    try {
+      if (!website?.settings?.pagesSettings) {
+        return pageSettings || { title: websiteName || "My Website" };
+      }
+      
+      const pageSettingsData = website.settings.pagesSettings[currentPage?.id];
+      if (pageSettingsData) {
+        return pageSettingsData;
+      }
+      
       return pageSettings || { title: websiteName || "My Website" };
+    } catch (error) {
+      console.error("❌ Error getting page settings:", error);
+      return { title: websiteName || "My Website" };
     }
-    
-    const pageSettingsData = website.settings.pagesSettings[currentPage?.id];
-    if (pageSettingsData) {
-      return pageSettingsData;
-    }
-    
-    // Fallback to main page settings for backward compatibility
-    return pageSettings || { title: websiteName || "My Website" };
   }, [website?.settings?.pagesSettings, currentPage?.id, pageSettings, websiteName]);
 
   const currentElements = getCurrentPageElements();
   const currentPageSettings = getCurrentPageSettings();
 
-  // Enhanced template application to support multi-page templates
+  // Enhanced template application
   const handleTemplateSelectEnhanced = useCallback(async (templateData: any) => {
-    console.log("🎨 SimpleBuilder: Enhanced template selected:", templateData);
+    console.log("🎨 SimpleBuilder: Template selected:", templateData);
     
     setIsApplyingTemplate(true);
     
@@ -151,7 +166,6 @@ const SimpleBuilder = () => {
       let templatePages = [];
       let templateSettings = {};
       
-      // Handle different template structures
       if (Array.isArray(templateData)) {
         templateElements = templateData;
       } else if (templateData.elements && Array.isArray(templateData.elements)) {
@@ -165,9 +179,8 @@ const SimpleBuilder = () => {
         templateElements = templateData.content;
       }
 
-      // If template has multiple pages, set them up properly
       if (templatePages && templatePages.length > 0) {
-        console.log("📄 SimpleBuilder: Template has multiple pages:", templatePages);
+        console.log("📄 SimpleBuilder: Multi-page template");
         
         const enhancedSettings = {
           ...templateSettings,
@@ -182,24 +195,19 @@ const SimpleBuilder = () => {
           }, {})
         };
         
-        // Save the enhanced multi-page template with proper PageSettings
         const defaultPageSettings: PageSettings = { title: websiteName || "My Website" };
         const success = await saveWebsite([], defaultPageSettings, enhancedSettings);
         if (success) {
           await refreshWebsite();
-          // Set current page to the first page or home page
           const homePage = templatePages.find(p => p.isHomePage) || templatePages[0];
           if (homePage) {
             setCurrentPageId(homePage.id);
           }
         }
       } else {
-        // Single page template - apply to current page
+        console.log("📄 SimpleBuilder: Single-page template");
         updateElements(templateElements);
-        const success = await saveWebsite(templateElements);
-        if (success) {
-          console.log("✅ SimpleBuilder: Single page template applied successfully");
-        }
+        await saveWebsite(templateElements);
       }
       
       markTemplateAsApplied();
@@ -216,21 +224,17 @@ const SimpleBuilder = () => {
     }
   }, [updateElements, saveWebsite, markTemplateAsApplied, setShowTemplateSelection, refreshWebsite, websiteName]);
 
-  // Enhanced publish function for multi-page websites
+  // Simplified publish function
   const handlePublish = async () => {
-    console.log("📤 Publishing multi-page website to aetherwebsites.com subdomain...");
+    console.log("📤 Publishing website...");
     
     try {
-      // First save the current page state
       document.dispatchEvent(new CustomEvent('request-save-data'));
-      
-      // Wait a moment for save to complete
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Prepare complete multi-page website data for deployment
       const deploymentContent = {
         websiteId: id,
-        content: currentElements, // Main page content for backward compatibility
+        content: currentElements,
         settings: {
           title: websiteName || "My Website",
           description: currentPageSettings?.meta?.description || `${websiteName} - Built with Aether Websites`,
@@ -238,64 +242,45 @@ const SimpleBuilder = () => {
           pages: pages,
           pagesContent: website?.settings?.pagesContent || { [currentPage?.id]: currentElements },
           pagesSettings: website?.settings?.pagesSettings || { [currentPage?.id]: currentPageSettings },
-          // Include all current website settings
           ...website?.settings
         }
       };
       
-      console.log("🚀 SimpleBuilder: Sending multi-page deployment data:", {
-        websiteId: deploymentContent.websiteId,
-        pagesCount: deploymentContent.settings.pages?.length || 0,
-        contentPagesCount: Object.keys(deploymentContent.settings.pagesContent || {}).length
-      });
-      
-      // Deploy to aetherwebsites.com subdomain
       const { data, error } = await supabase.functions.invoke('deploy-to-netlify', {
         body: deploymentContent
       });
 
       if (error) {
-        console.error("❌ SimpleBuilder: Deployment error:", error);
+        console.error("❌ Deployment error:", error);
         toast.error("Failed to publish website");
         return;
       }
 
-      console.log("✅ SimpleBuilder: Multi-page website deployed:", data);
-      
-      // Update the website as published
       await publishWebsite();
-      
       toast.success("Website published successfully!", {
-        description: `Your multi-page site is now live at ${data.url}`
+        description: `Your site is now live at ${data.url}`
       });
       
     } catch (error) {
-      console.error("❌ SimpleBuilder: Publish error:", error);
+      console.error("❌ Publish error:", error);
       toast.error("An error occurred while publishing");
     }
   };
 
-  // Enhanced save function for individual pages
+  // Simplified save function
   const handleBuilderSaveWrapper = useCallback(async (elements: BuilderElement[], pageSettings: PageSettings) => {
     if (!currentPage || !website) {
-      console.error("❌ SimpleBuilder: No current page or website for saving");
+      console.error("❌ No current page or website for saving");
       return false;
     }
 
-    console.log("💾 SimpleBuilder: Saving individual page content", {
-      pageId: currentPage.id,
-      pageTitle: currentPage.title,
-      elementsCount: elements?.length || 0
-    });
-
     try {
-      // Ensure we have proper page structure in settings
       const currentPagesContent = website.settings?.pagesContent || {};
       const currentPagesSettings = website.settings?.pagesSettings || {};
       
       const updatedSettings = {
         ...website.settings,
-        pages: pages, // Ensure pages array is always present
+        pages: pages,
         pagesContent: {
           ...currentPagesContent,
           [currentPage.id]: elements,
@@ -305,13 +290,6 @@ const SimpleBuilder = () => {
           [currentPage.id]: pageSettings,
         }
       };
-
-      console.log("💾 SimpleBuilder: Saving with updated settings:", {
-        pageId: currentPage.id,
-        totalPages: pages.length,
-        contentPages: Object.keys(updatedSettings.pagesContent).length,
-        settingsPages: Object.keys(updatedSettings.pagesSettings).length
-      });
 
       const success = await saveWebsite(elements, pageSettings, updatedSettings);
 
@@ -323,23 +301,19 @@ const SimpleBuilder = () => {
 
       return success;
     } catch (error) {
-      console.error("❌ SimpleBuilder: Save error:", error);
+      console.error("❌ Save error:", error);
       toast.error("An error occurred while saving the page");
       return false;
     }
   }, [saveWebsite, currentPage, website, pages]);
 
-  // Enhanced page change handler with proper saving
+  // Simplified page change handler
   const handlePageChange = useCallback(async (pageId: string) => {
-    console.log("📄 SimpleBuilder: Enhanced page change to:", pageId);
+    console.log("📄 Changing to page:", pageId);
     
-    // Save current page before switching
     document.dispatchEvent(new CustomEvent('request-save-data'));
-    
-    // Wait for save to complete
     await new Promise(resolve => setTimeout(resolve, 200));
     
-    // Switch to new page
     setCurrentPageId(pageId);
     
     const newPage = pages.find(p => p.id === pageId);
@@ -389,82 +363,77 @@ const SimpleBuilder = () => {
     );
   }
 
-  console.log("🏗️ SimpleBuilder: Rendering builder with enhanced page support:", {
-    currentPageId,
-    currentPageTitle: currentPage?.title,
-    elementsCount: currentElements?.length || 0,
-    totalPages: pages.length
-  });
-
   const handleMainSave = useCallback(async () => {
-    console.log("💾 SimpleBuilder: Save button clicked");
+    console.log("💾 Save button clicked");
     document.dispatchEvent(new CustomEvent('request-save-data'));
   }, []);
 
   return (
-    <BuilderProvider
-      initialElements={currentElements}
-      initialPageSettings={currentPageSettings}
-      onSave={handleBuilderSaveWrapper}
-    >
-      {isMobile ? (
-        <div className="h-screen flex flex-col bg-gray-50 w-full overflow-hidden">
-          <BuilderNavbar
-            websiteName={websiteName}
-            setWebsiteName={setWebsiteName}
-            onSave={handleMainSave}
-            onPublish={handlePublish}
-            isPublished={website?.published}
-            isSaving={isSaving}
-            isPublishing={isPublishing}
-            isPreviewMode={isPreviewMode}
-            setIsPreviewMode={setIsPreviewMode}
-            currentPage={currentPage}
-            pages={pages}
-            onChangePage={handlePageChange}
-            viewSiteUrl={`/site/${id}`}
-            saveStatus={saveStatus}
-          />
-          <div className="flex-1 overflow-hidden">
-            <BuilderContent 
+    <ErrorBoundary>
+      <BuilderProvider
+        initialElements={currentElements}
+        initialPageSettings={currentPageSettings}
+        onSave={handleBuilderSaveWrapper}
+      >
+        {isMobile ? (
+          <div className="h-screen flex flex-col bg-gray-50 w-full overflow-hidden">
+            <BuilderNavbar
+              websiteName={websiteName}
+              setWebsiteName={setWebsiteName}
+              onSave={handleMainSave}
+              onPublish={handlePublish}
+              isPublished={website?.published}
+              isSaving={isSaving}
+              isPublishing={isPublishing}
               isPreviewMode={isPreviewMode}
-              isLiveSite={false}
+              setIsPreviewMode={setIsPreviewMode}
+              currentPage={currentPage}
+              pages={pages}
+              onChangePage={handlePageChange}
+              viewSiteUrl={`/site/${id}`}
+              saveStatus={saveStatus}
             />
-          </div>
-          <MobileBuilderSidebar isPreviewMode={isPreviewMode} />
-        </div>
-      ) : (
-        <SidebarProvider>
-          <div className="h-screen flex bg-gray-50 w-full overflow-hidden">
-            <BuilderSidebar isPreviewMode={isPreviewMode} />
-            <div className="flex-1 flex flex-col min-w-0">
-              <BuilderNavbar
-                websiteName={websiteName}
-                setWebsiteName={setWebsiteName}
-                onSave={handleMainSave}
-                onPublish={handlePublish}
-                isPublished={website?.published}
-                isSaving={isSaving}
-                isPublishing={isPublishing}
+            <div className="flex-1 overflow-hidden">
+              <BuilderContent 
                 isPreviewMode={isPreviewMode}
-                setIsPreviewMode={setIsPreviewMode}
-                currentPage={currentPage}
-                pages={pages}
-                onChangePage={handlePageChange}
-                viewSiteUrl={`/site/${id}`}
-                saveStatus={saveStatus}
+                isLiveSite={false}
               />
-              <div className="flex-1 overflow-hidden">
-                <BuilderContent 
+            </div>
+            <MobileBuilderSidebar isPreviewMode={isPreviewMode} />
+          </div>
+        ) : (
+          <SidebarProvider>
+            <div className="h-screen flex bg-gray-50 w-full overflow-hidden">
+              <BuilderSidebar isPreviewMode={isPreviewMode} />
+              <div className="flex-1 flex flex-col min-w-0">
+                <BuilderNavbar
+                  websiteName={websiteName}
+                  setWebsiteName={setWebsiteName}
+                  onSave={handleMainSave}
+                  onPublish={handlePublish}
+                  isPublished={website?.published}
+                  isSaving={isSaving}
+                  isPublishing={isPublishing}
                   isPreviewMode={isPreviewMode}
-                  isLiveSite={false}
+                  setIsPreviewMode={setIsPreviewMode}
+                  currentPage={currentPage}
+                  pages={pages}
+                  onChangePage={handlePageChange}
+                  viewSiteUrl={`/site/${id}`}
+                  saveStatus={saveStatus}
                 />
+                <div className="flex-1 overflow-hidden">
+                  <BuilderContent 
+                    isPreviewMode={isPreviewMode}
+                    isLiveSite={false}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        </SidebarProvider>
-      )}
-    </BuilderProvider>
+          </SidebarProvider>
+        )}
+      </BuilderProvider>
+    </ErrorBoundary>
   );
 };
 

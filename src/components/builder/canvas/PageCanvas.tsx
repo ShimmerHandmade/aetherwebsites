@@ -5,6 +5,7 @@ import { BuilderElement } from "@/contexts/builder/types";
 import { ElementWrapper } from "../elements";
 import { usePlan } from "@/contexts/PlanContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 interface PageCanvasProps {
   elements: BuilderElement[];
@@ -24,37 +25,43 @@ const PageCanvas: React.FC<PageCanvasProps> = memo(({
   const [canvasVisible, setCanvasVisible] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   
-  // Debug logging for elements
-  useEffect(() => {
-    console.log("PageCanvas received elements:", elements);
-    console.log("Elements count:", elements?.length || 0);
-    console.log("Is preview mode:", isPreviewMode);
-    console.log("Is live site:", isLiveSite);
-  }, [elements, isPreviewMode, isLiveSite]);
+  console.log("📄 PageCanvas: Rendering", elements?.length || 0, "elements");
   
-  // Single effect for stable rendering
   useEffect(() => {
     setCanvasVisible(true);
   }, []);
 
-  // Safe element rendering
+  // Safe element rendering with error boundary
   const renderElementSafely = (element: BuilderElement, index: number) => {
+    if (!element || !element.id) {
+      console.warn("⚠️ PageCanvas: Invalid element at index", index);
+      return null;
+    }
+
     try {
-      console.log(`Rendering element ${index}:`, element.type, element.id);
       return (
-        <ElementWrapper 
-          key={element.id} 
-          element={element}
-          index={index}
-          selected={selectedElementId === element.id}
-          isPreviewMode={isPreviewMode}
-          canUseAnimations={isPremium || isEnterprise}
-          canUseEnterpriseAnimations={isEnterprise}
-          isLiveSite={isLiveSite}
-        />
+        <ErrorBoundary 
+          key={element.id}
+          fallback={
+            <div className="p-4 border border-red-300 bg-red-50 text-red-600 rounded">
+              <p className="font-medium">Error rendering {element.type} element</p>
+              <p className="text-sm mt-1">Element ID: {element.id}</p>
+            </div>
+          }
+        >
+          <ElementWrapper 
+            element={element}
+            index={index}
+            selected={selectedElementId === element.id}
+            isPreviewMode={isPreviewMode}
+            canUseAnimations={isPremium || isEnterprise}
+            canUseEnterpriseAnimations={isEnterprise}
+            isLiveSite={isLiveSite}
+          />
+        </ErrorBoundary>
       );
     } catch (error) {
-      console.error(`Error rendering element ${element.id}:`, error);
+      console.error(`❌ PageCanvas: Error rendering element ${element.id}:`, error);
       return (
         <div key={element.id} className="p-4 border border-red-300 bg-red-50 text-red-600 rounded">
           <p className="font-medium">Error rendering {element.type} element</p>
@@ -97,7 +104,6 @@ const PageCanvas: React.FC<PageCanvasProps> = memo(({
   );
 });
 
-// Add display name for React DevTools
 PageCanvas.displayName = 'PageCanvas';
 
 export default PageCanvas;
