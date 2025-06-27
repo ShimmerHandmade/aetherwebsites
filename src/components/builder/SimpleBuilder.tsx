@@ -182,8 +182,9 @@ const SimpleBuilder = () => {
           }, {})
         };
         
-        // Save the enhanced multi-page template
-        const success = await saveWebsite([], {}, enhancedSettings);
+        // Save the enhanced multi-page template with proper PageSettings
+        const defaultPageSettings: PageSettings = { title: websiteName || "My Website" };
+        const success = await saveWebsite([], defaultPageSettings, enhancedSettings);
         if (success) {
           await refreshWebsite();
           // Set current page to the first page or home page
@@ -213,7 +214,7 @@ const SimpleBuilder = () => {
         setIsApplyingTemplate(false);
       }, 100);
     }
-  }, [updateElements, saveWebsite, markTemplateAsApplied, setShowTemplateSelection, refreshWebsite]);
+  }, [updateElements, saveWebsite, markTemplateAsApplied, setShowTemplateSelection, refreshWebsite, websiteName]);
 
   // Enhanced publish function for multi-page websites
   const handlePublish = async () => {
