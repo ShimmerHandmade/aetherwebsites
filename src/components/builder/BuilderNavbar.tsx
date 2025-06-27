@@ -308,7 +308,7 @@ const BuilderNavbar = ({
               Shipping
             </TabsTrigger>
           </TabsList>
-        </tabs>
+        </Tabs>
       </div>
     </div>
   );
