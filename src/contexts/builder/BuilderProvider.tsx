@@ -1,4 +1,5 @@
-import React, { createContext, useState, useCallback, ReactNode, useEffect, useRef } from "react";
+
+import React, { createContext, useState, useCallback, ReactNode, useEffect } from "react";
 import { BuilderElement, PageSettings, BuilderContextType, BreakpointType } from "./types";
 import { v4 as uuidv4 } from "@/lib/uuid";
 import { ensureElementsOrder } from "./pageStructureUtils";
@@ -18,84 +19,58 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
   initialPageSettings = { title: "Untitled Page" },
   onSave,
 }) => {
-  const [elements, setElements] = useState<BuilderElement[]>(initialElements);
+  const [elements, setElements] = useState<BuilderElement[]>(() => {
+    console.log("🔄 BuilderProvider: Initializing elements:", initialElements);
+    return Array.isArray(initialElements) ? initialElements : [];
+  });
+  
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
-  const [pageSettings, setPageSettings] = useState<PageSettings>(initialPageSettings);
+  const [pageSettings, setPageSettings] = useState<PageSettings>(() => {
+    console.log("🔄 BuilderProvider: Initializing pageSettings:", initialPageSettings);
+    return initialPageSettings || { title: "Untitled Page" };
+  });
+  
   const [currentBreakpoint, setCurrentBreakpoint] = useState<BreakpointType>('desktop');
   const [previewBreakpoint, setPreviewBreakpoint] = useState<BreakpointType>('desktop');
-  
-  // Use refs to track initialization to prevent unnecessary re-renders
-  const initializedElements = useRef<boolean>(false);
-  const initializedPageSettings = useRef<boolean>(false);
 
   console.log("🔄 BuilderProvider: Rendering with", {
     elementsCount: elements?.length || 0,
-    pageSettings,
-    initialElementsCount: initialElements?.length || 0,
-    initializedElements: initializedElements.current,
-    initializedPageSettings: initializedPageSettings.current
+    selectedElementId,
+    pageSettings: pageSettings?.title
   });
 
-  // Update elements when initialElements changes (but only if not already initialized or if significantly different)
+  // Simplified initialization - only update when props actually change
   useEffect(() => {
-    console.log("🔄 BuilderProvider: initialElements useEffect", {
-      newCount: initialElements?.length || 0,
-      currentCount: elements?.length || 0,
-      initializedElements: initializedElements.current,
-      hasInitialElements: Array.isArray(initialElements) && initialElements.length > 0
-    });
-    
-    // Only update if we haven't initialized yet, or if there's a significant change
-    if (!initializedElements.current || (Array.isArray(initialElements) && initialElements.length !== elements.length)) {
-      if (initialElements && Array.isArray(initialElements)) {
-        console.log("🔄 BuilderProvider: Setting elements from initialElements:", initialElements);
-        setElements(initialElements);
-        initializedElements.current = true;
-      }
+    if (Array.isArray(initialElements) && initialElements.length !== elements.length) {
+      console.log("🔄 BuilderProvider: Updating elements from props:", initialElements.length);
+      setElements(initialElements);
     }
   }, [initialElements]);
 
-  // Update page settings when initialPageSettings changes
   useEffect(() => {
-    console.log("🔄 BuilderProvider: initialPageSettings useEffect:", {
-      newSettings: initialPageSettings,
-      currentSettings: pageSettings,
-      initializedPageSettings: initializedPageSettings.current
-    });
-    
-    if (!initializedPageSettings.current || JSON.stringify(initialPageSettings) !== JSON.stringify(pageSettings)) {
-      if (initialPageSettings) {
-        console.log("🔄 BuilderProvider: Setting pageSettings from initialPageSettings:", initialPageSettings);
-        setPageSettings(initialPageSettings);
-        initializedPageSettings.current = true;
-      }
+    if (initialPageSettings && initialPageSettings.title !== pageSettings.title) {
+      console.log("🔄 BuilderProvider: Updating pageSettings from props:", initialPageSettings);
+      setPageSettings(initialPageSettings);
     }
   }, [initialPageSettings]);
 
-  // Listen for save data requests
+  // Simple save event listener
   useEffect(() => {
     const handleSaveRequest = () => {
-      console.log("💾 BuilderProvider: Save request received", {
-        elementsCount: elements.length,
-        pageSettings
-      });
-      if (onSave) {
+      console.log("💾 BuilderProvider: Save request received");
+      if (onSave && elements && pageSettings) {
         onSave(elements, pageSettings);
       }
     };
 
     document.addEventListener('request-save-data', handleSaveRequest);
-    return () => {
-      document.removeEventListener('request-save-data', handleSaveRequest);
-    };
+    return () => document.removeEventListener('request-save-data', handleSaveRequest);
   }, [elements, pageSettings, onSave]);
 
   const findElementById = useCallback((id: string): BuilderElement | null => {
     const searchElements = (elementsToSearch: BuilderElement[]): BuilderElement | null => {
       for (const element of elementsToSearch) {
-        if (element.id === id) {
-          return element;
-        }
+        if (element.id === id) return element;
         if (element.children) {
           const found = searchElements(element.children);
           if (found) return found;
@@ -103,7 +78,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       }
       return null;
     };
-    
     return searchElements(elements);
   }, [elements]);
 
@@ -113,17 +87,10 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     pageSettings,
     currentBreakpoint,
     previewBreakpoint,
-    addElement: useCallback((
-      element: BuilderElement, 
-      index?: number, 
-      parentId?: string | null
-    ) => {
-      console.log("➕ BuilderProvider: Adding element", { element, index, parentId });
+    addElement: useCallback((element: BuilderElement, index?: number, parentId?: string | null) => {
+      console.log("➕ BuilderProvider: Adding element", { element: element.type, index, parentId });
       
-      const elementWithId = {
-        ...element,
-        id: element.id || uuidv4()
-      };
+      const elementWithId = { ...element, id: element.id || uuidv4() };
       
       setElements(prevElements => {
         let newElements = [...prevElements];
@@ -136,18 +103,14 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
                 const newChildren = index !== undefined 
                   ? [...children.slice(0, index), elementWithId, ...children.slice(index)]
                   : [...children, elementWithId];
-                
                 return { ...el, children: newChildren };
               }
-              
               if (el.children) {
                 return { ...el, children: updateElementChildren(el.children) };
               }
-              
               return el;
             });
           };
-          
           newElements = updateElementChildren(newElements);
         } else {
           if (index !== undefined) {
@@ -155,14 +118,13 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
           } else {
             newElements.push(elementWithId);
           }
-          
           newElements = ensureElementsOrder(newElements);
         }
         
-        console.log("➕ BuilderProvider: Elements after add:", newElements);
         return newElements;
       });
     }, []),
+
     updateElement: useCallback((id: string, updates: Partial<BuilderElement>) => {
       setElements(prevElements => {
         const updateElementRecursively = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
@@ -176,15 +138,11 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
             return element;
           });
         };
-        
         return updateElementRecursively(prevElements);
       });
     }, []),
-    updateElementResponsive: useCallback((
-      id: string, 
-      breakpoint: BreakpointType, 
-      responsiveUpdates: any
-    ) => {
+
+    updateElementResponsive: useCallback((id: string, breakpoint: BreakpointType, responsiveUpdates: any) => {
       setElements(prevElements => {
         const updateElementRecursively = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
           return elementsToUpdate.map(element => {
@@ -203,10 +161,10 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
             return element;
           });
         };
-        
         return updateElementRecursively(prevElements);
       });
     }, []),
+
     removeElement: useCallback((id: string) => {
       setElements(prevElements => {
         const removeElementRecursively = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
@@ -217,14 +175,13 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
               children: element.children ? removeElementRecursively(element.children) : undefined
             }));
         };
-        
         return removeElementRecursively(prevElements);
       });
-      
       if (selectedElementId === id) {
         setSelectedElementId(null);
       }
     }, [selectedElementId]),
+
     deleteElement: useCallback((id: string) => {
       setElements(prevElements => {
         const removeElementRecursively = (elementsToUpdate: BuilderElement[]): BuilderElement[] => {
@@ -235,14 +192,13 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
               children: element.children ? removeElementRecursively(element.children) : undefined
             }));
         };
-        
         return removeElementRecursively(prevElements);
       });
-      
       if (selectedElementId === id) {
         setSelectedElementId(null);
       }
     }, [selectedElementId]),
+
     moveElement: useCallback((fromIndex: number, toIndex: number, parentId?: string) => {
       setElements(prevElements => {
         if (parentId) {
@@ -254,25 +210,22 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
                 children.splice(toIndex, 0, movedElement);
                 return { ...el, children };
               }
-              
               if (el.children) {
                 return { ...el, children: updateElementChildren(el.children) };
               }
-              
               return el;
             });
           };
-          
           return updateElementChildren(prevElements);
         } else {
           const newElements = [...prevElements];
           const [movedElement] = newElements.splice(fromIndex, 1);
           newElements.splice(toIndex, 0, movedElement);
-          
           return ensureElementsOrder(newElements);
         }
       });
     }, []),
+
     moveElementUp: useCallback((id: string) => {
       const currentIndex = elements.findIndex(el => el.id === id);
       if (currentIndex > 0) {
@@ -280,11 +233,11 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
           const newElements = [...prevElements];
           const [movedElement] = newElements.splice(currentIndex, 1);
           newElements.splice(currentIndex - 1, 0, movedElement);
-          
           return ensureElementsOrder(newElements);
         });
       }
     }, [elements]),
+
     moveElementDown: useCallback((id: string) => {
       const currentIndex = elements.findIndex(el => el.id === id);
       if (currentIndex >= 0 && currentIndex < elements.length - 1) {
@@ -292,16 +245,18 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
           const newElements = [...prevElements];
           const [movedElement] = newElements.splice(currentIndex, 1);
           newElements.splice(currentIndex + 1, 0, movedElement);
-          
           return ensureElementsOrder(newElements);
         });
       }
     }, [elements]),
+
     selectElement: useCallback((id: string | null) => {
       console.log("🎯 BuilderProvider: Selecting element:", id);
       setSelectedElementId(id);
     }, []),
+
     findElementById,
+
     duplicateElement: useCallback((id: string) => {
       const element = findElementById(id);
       if (!element) return;
@@ -323,18 +278,22 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
         });
       }
     }, [elements, findElementById]),
+
     updatePageSettings: useCallback((newSettings: Partial<PageSettings>) => {
       console.log("📄 BuilderProvider: Updating page settings:", newSettings);
       setPageSettings(prev => ({ ...prev, ...newSettings }));
     }, []),
+
     saveChanges: useCallback(() => {
       if (onSave) {
         onSave(elements, pageSettings);
       }
     }, [elements, pageSettings, onSave]),
+
     setCurrentBreakpoint: useCallback((breakpoint: BreakpointType) => {
       setCurrentBreakpoint(breakpoint);
     }, []),
+
     setPreviewBreakpoint: useCallback((breakpoint: BreakpointType) => {
       setPreviewBreakpoint(breakpoint);
     }, []),
