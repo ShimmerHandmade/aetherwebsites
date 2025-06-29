@@ -35,21 +35,30 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
   useEffect(() => {
     const fetchTemplatesData = async () => {
       try {
+        console.log("🔄 Fetching templates from Supabase...");
         setIsLoadingTemplates(true);
         setError(null);
         
         const result = await getTemplates(false);
         
         if (result.success && result.data) {
+          console.log("✅ Templates loaded successfully:", result.data.length);
           setTemplates(result.data);
-          console.log("Fetched templates from Supabase:", result.data);
         } else {
+          console.error("❌ Failed to fetch templates:", result.error);
           setError(result.error || "Failed to fetch templates");
-          console.error("Error fetching templates:", result.error);
+          
+          // Fallback to empty array if no templates found
+          if (result.error?.includes("No data")) {
+            console.log("📝 No templates found, using empty array");
+            setTemplates([]);
+            setError(null);
+          }
         }
       } catch (err) {
-        console.error("Error in fetchTemplatesData:", err);
+        console.error("❌ Error in fetchTemplatesData:", err);
         setError("An unexpected error occurred while loading templates");
+        setTemplates([]);
       } finally {
         setIsLoadingTemplates(false);
       }
@@ -58,11 +67,17 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
     fetchTemplatesData();
   }, []);
 
-  const categories = ["all", ...new Set(templates.map(template => template.category).filter(Boolean))];
+  // Get unique categories from templates
+  const categories = React.useMemo(() => {
+    const uniqueCategories = new Set(templates.map(template => template.category).filter(Boolean));
+    return ["all", ...Array.from(uniqueCategories)];
+  }, [templates]);
 
-  const filteredTemplates = selectedCategory === "all" 
-    ? templates 
-    : templates.filter(template => template.category === selectedCategory);
+  const filteredTemplates = React.useMemo(() => {
+    return selectedCategory === "all" 
+      ? templates 
+      : templates.filter(template => template.category === selectedCategory);
+  }, [templates, selectedCategory]);
 
   const handleApplyTemplate = async (template: Template) => {
     if (template.is_premium && !isPremium && !isEnterprise) {
@@ -75,18 +90,24 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
     setIsApplying(true);
     
     try {
-      console.log("Applying template:", template.name);
+      console.log("🎨 Applying template:", template.name);
       
-      const templateElements = template.template_data?.content || [];
+      // Extract template content safely
+      let templateContent = [];
       
-      if (!templateElements || !Array.isArray(templateElements)) {
-        throw new Error("Template has invalid or missing content");
+      if (template.template_data?.content && Array.isArray(template.template_data.content)) {
+        templateContent = template.template_data.content;
+      } else if (Array.isArray(template.template_data)) {
+        templateContent = template.template_data;
+      } else {
+        console.warn("⚠️ Template has unexpected structure:", template.template_data);
+        templateContent = [];
       }
       
-      console.log("Template elements to apply:", templateElements);
+      console.log("📄 Template content extracted:", templateContent.length, "elements");
       
-      // Pass the elements directly to the parent
-      onSelectTemplate(templateElements);
+      // Apply the template
+      onSelectTemplate(templateContent);
       
       toast.success(`${template.name} template applied successfully!`);
       
@@ -94,7 +115,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
         onComplete();
       }
     } catch (error) {
-      console.error("Error applying template:", error);
+      console.error("❌ Error applying template:", error);
       toast.error("Failed to apply template. Please try again.");
     } finally {
       setIsApplying(false);
@@ -110,7 +131,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
   };
 
   const handleAITemplateGenerated = (generatedTemplate: any) => {
-    console.log("AI Template generated:", generatedTemplate);
+    console.log("🤖 AI Template generated:", generatedTemplate);
     
     try {
       let templateElements = [];
@@ -126,7 +147,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
         throw new Error("Invalid AI template structure");
       }
 
-      console.log("Processed AI template elements:", templateElements);
+      console.log("🎯 Processed AI template elements:", templateElements.length);
 
       if (!templateElements || templateElements.length === 0) {
         throw new Error("AI generator returned no valid elements");
@@ -141,13 +162,13 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
         onComplete();
       }
     } catch (error) {
-      console.error("Error processing AI generated template:", error);
+      console.error("❌ Error processing AI generated template:", error);
       toast.error("Failed to apply AI generated template. Please try again.");
     }
   };
 
   const handleStartBlank = () => {
-    console.log("Starting with blank canvas");
+    console.log("📄 Starting with blank canvas");
     onSelectTemplate([]);
     
     if (onComplete) {
@@ -162,7 +183,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading templates...</p>
+          <p className="text-gray-600">Loading templates from database...</p>
         </div>
       </div>
     );
@@ -216,23 +237,30 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
           </div>
         </div>
 
-        {/* Category Filter */}
-        <div className="flex flex-wrap gap-2 justify-center">
-          {categories.map((category) => (
-            <Button
-              key={category}
-              variant={selectedCategory === category ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedCategory(category)}
-              className="capitalize"
-            >
-              {category}
-            </Button>
-          ))}
-        </div>
+        {/* Category Filter - Only show if we have templates */}
+        {templates.length > 0 && (
+          <div className="flex flex-wrap gap-2 justify-center">
+            {categories.map((category) => (
+              <Button
+                key={category}
+                variant={selectedCategory === category ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedCategory(category)}
+                className="capitalize"
+              >
+                {category}
+              </Button>
+            ))}
+          </div>
+        )}
 
         {/* Templates Grid */}
-        {filteredTemplates.length === 0 ? (
+        {templates.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600 mb-4">No templates available yet.</p>
+            <p className="text-sm text-gray-500">Start with a blank canvas or use our AI generator to create your website.</p>
+          </div>
+        ) : filteredTemplates.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-600">No templates found for the selected category.</p>
           </div>
