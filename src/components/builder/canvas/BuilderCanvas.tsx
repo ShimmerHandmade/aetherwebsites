@@ -15,17 +15,37 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = memo(({
   isPreviewMode = false,
   isLiveSite = false
 }) => {
-  const { elements, selectElement } = useBuilder();
   const canvasRef = useRef<HTMLDivElement>(null);
   
-  console.log("🎨 BuilderCanvas: Rendering", {
+  console.log("🎨 BuilderCanvas: Starting render", {
     isPreviewMode,
     isLiveSite,
-    elementsCount: elements?.length || 0,
-    elementsType: Array.isArray(elements) ? "array" : typeof elements,
-    elements: elements,
     canvasRefCurrent: !!canvasRef.current
   });
+  
+  let builderContext;
+  let elements;
+  let selectElement;
+  
+  try {
+    builderContext = useBuilder();
+    elements = builderContext.elements;
+    selectElement = builderContext.selectElement;
+    
+    console.log("🎨 BuilderCanvas: Got context", {
+      hasContext: !!builderContext,
+      elementsCount: elements?.length || 0,
+      elementsType: Array.isArray(elements) ? "array" : typeof elements,
+      hasSelectElement: typeof selectElement === 'function'
+    });
+  } catch (error) {
+    console.error("❌ BuilderCanvas: Error getting builder context:", error);
+    return (
+      <div className="h-full flex items-center justify-center">
+        <p className="text-red-600">Error: Unable to load builder context</p>
+      </div>
+    );
+  }
   
   // Safety check for elements
   if (!Array.isArray(elements)) {
@@ -39,10 +59,16 @@ const BuilderCanvas: React.FC<BuilderCanvasProps> = memo(({
   
   const handleCanvasClick = (e: React.MouseEvent) => {
     console.log("🖱️ BuilderCanvas: Canvas clicked");
-    if (e.target === e.currentTarget) {
-      selectElement(null);
+    try {
+      if (e.target === e.currentTarget && selectElement) {
+        selectElement(null);
+      }
+    } catch (error) {
+      console.error("❌ BuilderCanvas: Error handling canvas click:", error);
     }
   };
+
+  console.log("🎨 BuilderCanvas: About to render JSX");
 
   return (
     <ErrorBoundary fallback={

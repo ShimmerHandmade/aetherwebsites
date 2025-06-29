@@ -20,20 +20,42 @@ const PageCanvas: React.FC<PageCanvasProps> = memo(({
   isLiveSite = false,
   onError
 }) => {
-  const { selectedElementId } = useBuilder();
-  const { isPremium, isEnterprise } = usePlan();
   const [canvasVisible, setCanvasVisible] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   
-  console.log("📄 PageCanvas: Rendering", {
+  console.log("📄 PageCanvas: Starting render", {
     isPreviewMode,
     isLiveSite,
     elementsCount: elements?.length || 0,
     elementsType: Array.isArray(elements) ? "array" : typeof elements,
-    selectedElementId,
-    canvasVisible,
-    elementsDetailed: elements?.map(el => ({ id: el.id, type: el.type }))
+    canvasVisible
   });
+  
+  let selectedElementId;
+  let isPremium;
+  let isEnterprise;
+  
+  try {
+    const builderContext = useBuilder();
+    selectedElementId = builderContext.selectedElementId;
+    
+    const planContext = usePlan();
+    isPremium = planContext.isPremium;
+    isEnterprise = planContext.isEnterprise;
+    
+    console.log("📄 PageCanvas: Got contexts", {
+      selectedElementId,
+      isPremium,
+      isEnterprise
+    });
+  } catch (error) {
+    console.error("❌ PageCanvas: Error getting contexts:", error);
+    return (
+      <div className="h-full flex items-center justify-center">
+        <p className="text-red-600">Error loading page context</p>
+      </div>
+    );
+  }
   
   useEffect(() => {
     console.log("📄 PageCanvas: Setting canvas visible");
