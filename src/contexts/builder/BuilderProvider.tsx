@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useCallback, ReactNode, useEffect } from "react";
 import { BuilderElement, PageSettings, BuilderContextType, BreakpointType } from "./types";
 import { v4 as uuidv4 } from "@/lib/uuid";
@@ -18,7 +19,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
   initialPageSettings = { title: "Untitled Page" },
   onSave,
 }) => {
-  // Simplified state initialization
   const [elements, setElements] = useState<BuilderElement[]>(() => {
     console.log("🚀 BuilderProvider: Initial elements:", initialElements);
     const safeElements = Array.isArray(initialElements) ? initialElements : [];
@@ -88,7 +88,8 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     return () => document.removeEventListener('request-save-data', handleSaveRequest);
   }, [elements, pageSettings, onSave]);
 
-  const findElementById = useCallback((id: string): BuilderElement | null => {
+  // Simple findElementById function without useCallback to avoid circular dependencies
+  const findElementById = (id: string): BuilderElement | null => {
     if (!Array.isArray(elements)) {
       console.warn("⚠️ BuilderProvider: Elements not an array in findElementById");
       return null;
@@ -105,7 +106,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       return null;
     };
     return searchElements(elements);
-  }, [elements]);
+  };
 
   const value: BuilderContextType = {
     elements,
@@ -113,6 +114,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     pageSettings,
     currentBreakpoint,
     previewBreakpoint,
+    
     addElement: useCallback((element: BuilderElement, index?: number, parentId?: string | null) => {
       console.log("➕ BuilderProvider: Adding element", { element: element.type, index, parentId });
       
@@ -235,13 +237,11 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
           return removeElementRecursively(prevElements);
         });
         
-        if (selectedElementId === id) {
-          setSelectedElementId(null);
-        }
+        setSelectedElementId(prev => prev === id ? null : prev);
       } catch (error) {
         console.error("❌ BuilderProvider: Error removing element:", error);
       }
-    }, [selectedElementId]),
+    }, []),
 
     deleteElement: useCallback((id: string) => {
       console.log("🗑️ BuilderProvider: Deleting element", id);
@@ -261,13 +261,11 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
           return removeElementRecursively(prevElements);
         });
         
-        if (selectedElementId === id) {
-          setSelectedElementId(null);
-        }
+        setSelectedElementId(prev => prev === id ? null : prev);
       } catch (error) {
         console.error("❌ BuilderProvider: Error deleting element:", error);
       }
-    }, [selectedElementId]),
+    }, []),
 
     moveElement: useCallback((fromIndex: number, toIndex: number, parentId?: string) => {
       try {
@@ -304,37 +302,41 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
 
     moveElementUp: useCallback((id: string) => {
       try {
-        const currentIndex = elements.findIndex(el => el.id === id);
-        if (currentIndex > 0) {
-          setElements(prevElements => {
-            if (!Array.isArray(prevElements)) return prevElements;
+        setElements(prevElements => {
+          if (!Array.isArray(prevElements)) return prevElements;
+          
+          const currentIndex = prevElements.findIndex(el => el.id === id);
+          if (currentIndex > 0) {
             const newElements = [...prevElements];
             const [movedElement] = newElements.splice(currentIndex, 1);
             newElements.splice(currentIndex - 1, 0, movedElement);
             return ensureElementsOrder(newElements);
-          });
-        }
+          }
+          return prevElements;
+        });
       } catch (error) {
         console.error("❌ BuilderProvider: Error moving element up:", error);
       }
-    }, [elements]),
+    }, []),
 
     moveElementDown: useCallback((id: string) => {
       try {
-        const currentIndex = elements.findIndex(el => el.id === id);
-        if (currentIndex >= 0 && currentIndex < elements.length - 1) {
-          setElements(prevElements => {
-            if (!Array.isArray(prevElements)) return prevElements;
+        setElements(prevElements => {
+          if (!Array.isArray(prevElements)) return prevElements;
+          
+          const currentIndex = prevElements.findIndex(el => el.id === id);
+          if (currentIndex >= 0 && currentIndex < prevElements.length - 1) {
             const newElements = [...prevElements];
             const [movedElement] = newElements.splice(currentIndex, 1);
             newElements.splice(currentIndex + 1, 0, movedElement);
             return ensureElementsOrder(newElements);
-          });
-        }
+          }
+          return prevElements;
+        });
       } catch (error) {
         console.error("❌ BuilderProvider: Error moving element down:", error);
       }
-    }, [elements]),
+    }, []),
 
     selectElement: useCallback((id: string | null) => {
       console.log("🎯 BuilderProvider: Selecting element:", id);
@@ -345,30 +347,32 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
 
     duplicateElement: useCallback((id: string) => {
       try {
-        const element = findElementById(id);
-        if (!element) return;
-        
-        const duplicateRecursively = (el: BuilderElement): BuilderElement => ({
-          ...el,
-          id: uuidv4(),
-          children: el.children?.map(duplicateRecursively)
-        });
-        
-        const duplicated = duplicateRecursively(element);
-        const currentIndex = elements.findIndex(el => el.id === id);
-        
-        if (currentIndex >= 0) {
-          setElements(prevElements => {
-            if (!Array.isArray(prevElements)) return prevElements;
+        setElements(prevElements => {
+          if (!Array.isArray(prevElements)) return prevElements;
+          
+          const element = findElementById(id);
+          if (!element) return prevElements;
+          
+          const duplicateRecursively = (el: BuilderElement): BuilderElement => ({
+            ...el,
+            id: uuidv4(),
+            children: el.children?.map(duplicateRecursively)
+          });
+          
+          const duplicated = duplicateRecursively(element);
+          const currentIndex = prevElements.findIndex(el => el.id === id);
+          
+          if (currentIndex >= 0) {
             const newElements = [...prevElements];
             newElements.splice(currentIndex + 1, 0, duplicated);
             return newElements;
-          });
-        }
+          }
+          return prevElements;
+        });
       } catch (error) {
         console.error("❌ BuilderProvider: Error duplicating element:", error);
       }
-    }, [elements, findElementById]),
+    }, []),
 
     updatePageSettings: useCallback((newSettings: Partial<PageSettings>) => {
       console.log("📄 BuilderProvider: Updating page settings:", newSettings);
