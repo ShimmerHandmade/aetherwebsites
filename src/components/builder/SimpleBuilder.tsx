@@ -7,7 +7,6 @@ import MobileBuilderSidebar from "@/components/builder/MobileBuilderSidebar";
 import BuilderNavbar from "@/components/builder/BuilderNavbar";
 import BuilderContent from "@/components/builder/BuilderContent";
 import TemplateSelection from "@/components/TemplateSelection";
-import OnboardingFlow from "@/components/OnboardingFlow";
 import { useWebsite } from "@/hooks/useWebsite";
 import { useWebsiteInitialization } from "@/hooks/useWebsiteInitialization";
 import { useTemplateApplication } from "@/hooks/useTemplateApplication";
@@ -110,35 +109,6 @@ const SimpleBuilder = () => {
   const currentElements = getCurrentPageElements();
   const currentPageSettings = getCurrentPageSettings();
 
-  // Simplified template application
-  const handleTemplateSelectEnhanced = useCallback(async (templateData: any) => {
-    setIsApplyingTemplate(true);
-    
-    try {
-      let templateElements = [];
-      
-      if (Array.isArray(templateData)) {
-        templateElements = templateData;
-      } else if (templateData.elements) {
-        templateElements = templateData.elements;
-      } else if (templateData.content) {
-        templateElements = templateData.content;
-      }
-
-      updateElements(templateElements);
-      await saveWebsite(templateElements);
-      markTemplateAsApplied();
-      toast.success("Template applied successfully!");
-      
-    } catch (error) {
-      console.error("❌ Template error:", error);
-      toast.error("Failed to apply template");
-    } finally {
-      setIsApplyingTemplate(false);
-      setShowTemplateSelection(false);
-    }
-  }, [updateElements, saveWebsite, markTemplateAsApplied, setShowTemplateSelection]);
-
   // Simplified publish
   const handlePublish = async () => {
     try {
@@ -223,25 +193,13 @@ const SimpleBuilder = () => {
     );
   }
 
-  if (showOnboarding) {
-    return (
-      <OnboardingFlow 
-        websiteId={id!}
-        onComplete={() => {
-          setShowOnboarding(false);
-          markTemplateAsApplied();
-          refreshWebsite();
-        }}
-      />
-    );
-  }
-
+  // Show template selection directly (no OnboardingFlow)
   if (showTemplateSelection && !isApplyingTemplate) {
     return (
       <div className="h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-8">
           <TemplateSelection 
-            onSelectTemplate={handleTemplateSelectEnhanced}
+            onSelectTemplate={handleTemplateSelect}
             websiteId={id} 
             onComplete={() => setShowTemplateSelection(false)}
             onClose={handleSkipTemplate}

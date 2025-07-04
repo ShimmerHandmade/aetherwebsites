@@ -32,11 +32,11 @@ export const useTemplateApplication = ({
 
   const applyTemplateElements = useCallback(async (templateData: any) => {
     try {
-      console.log("🔧 Processing template data from Supabase:", templateData);
+      console.log("🔧 Processing template data:", templateData);
       
       let templateElements = [];
       
-      // Handle Supabase template structure
+      // Handle different template data structures
       if (templateData && typeof templateData === 'object' && templateData.template_data) {
         // This is a full Template object from Supabase
         const data = templateData.template_data;
@@ -60,11 +60,6 @@ export const useTemplateApplication = ({
       
       console.log("🎯 Extracted template elements:", templateElements.length);
       
-      if (!templateElements || templateElements.length === 0) {
-        console.warn("⚠️ No valid elements found in template");
-        templateElements = [];
-      }
-      
       // Process elements to ensure they have proper IDs
       const elementsWithIds = processElements(templateElements);
       
@@ -77,25 +72,23 @@ export const useTemplateApplication = ({
       const success = await saveWebsite(elementsWithIds);
       
       if (success) {
-        markTemplateAsApplied();
         console.log("✅ Template applied and saved successfully");
+        markTemplateAsApplied();
         toast.success("Template applied successfully!");
+        
+        // Close template selection immediately
+        setShowTemplateSelection(false);
       } else {
         throw new Error("Failed to save template");
       }
       
-      // Close template selection
-      setTimeout(() => {
-        setShowTemplateSelection(false);
-        setIsApplyingTemplate(false);
-      }, 100);
-      
     } catch (error) {
       console.error("❌ Error applying template:", error);
       toast.error("Failed to apply template. Please try again.");
+    } finally {
       setIsApplyingTemplate(false);
     }
-  }, [updateElements, saveWebsite, markTemplateAsApplied, setShowTemplateSelection, setIsApplyingTemplate, processElements]);
+  }, [updateElements, saveWebsite, markTemplateAsApplied, setShowTemplateSelection, processElements]);
 
   const handleTemplateSelect = useCallback(async (templateData: any) => {
     console.log("🎨 Template selected:", templateData);
@@ -107,19 +100,22 @@ export const useTemplateApplication = ({
   const handleSkipTemplate = useCallback(async () => {
     console.log("📝 Starting with blank canvas");
     setIsApplyingTemplate(true);
-    setShowTemplateSelection(false);
     
-    updateElements([]);
-    
-    const success = await saveWebsite([]);
-    if (success) {
-      markTemplateAsApplied();
-    }
-    
-    toast.success("Starting with blank canvas");
-    setTimeout(() => {
+    try {
+      updateElements([]);
+      const success = await saveWebsite([]);
+      
+      if (success) {
+        markTemplateAsApplied();
+        toast.success("Starting with blank canvas");
+        setShowTemplateSelection(false);
+      }
+    } catch (error) {
+      console.error("❌ Error starting with blank canvas:", error);
+      toast.error("Failed to initialize. Please try again.");
+    } finally {
       setIsApplyingTemplate(false);
-    }, 100);
+    }
   }, [updateElements, saveWebsite, markTemplateAsApplied, setIsApplyingTemplate, setShowTemplateSelection]);
 
   return {
