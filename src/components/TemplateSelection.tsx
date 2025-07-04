@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,13 +46,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
         } else {
           console.error("❌ Failed to fetch templates:", result.error);
           setError(result.error || "Failed to fetch templates");
-          
-          // Fallback to empty array if no templates found
-          if (result.error?.includes("No data")) {
-            console.log("📝 No templates found, using empty array");
-            setTemplates([]);
-            setError(null);
-          }
+          setTemplates([]);
         }
       } catch (err) {
         console.error("❌ Error in fetchTemplatesData:", err);
@@ -91,23 +84,11 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
     
     try {
       console.log("🎨 Applying template:", template.name);
+      console.log("📊 Template data structure:", template.template_data);
       
-      // Extract template content safely
-      let templateContent = [];
-      
-      if (template.template_data?.content && Array.isArray(template.template_data.content)) {
-        templateContent = template.template_data.content;
-      } else if (Array.isArray(template.template_data)) {
-        templateContent = template.template_data;
-      } else {
-        console.warn("⚠️ Template has unexpected structure:", template.template_data);
-        templateContent = [];
-      }
-      
-      console.log("📄 Template content extracted:", templateContent.length, "elements");
-      
-      // Apply the template
-      onSelectTemplate(templateContent);
+      // Pass the entire template object to the handler
+      // The useTemplateApplication hook will handle extracting the content
+      onSelectTemplate(template);
       
       toast.success(`${template.name} template applied successfully!`);
       

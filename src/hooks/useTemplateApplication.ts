@@ -20,121 +20,85 @@ export const useTemplateApplication = ({
   markTemplateAsApplied
 }: UseTemplateApplicationProps) => {
   
+  const processElements = useCallback((elements: any[]): BuilderElement[] => {
+    if (!Array.isArray(elements)) return [];
+    
+    return elements.map((element: any) => ({
+      ...element,
+      id: element.id || uuidv4(),
+      children: element.children ? processElements(element.children) : []
+    }));
+  }, []);
+
   const applyTemplateElements = useCallback(async (templateData: any) => {
     try {
-      console.log("🔧 Processing enhanced template data:", templateData);
+      console.log("🔧 Processing template data from Supabase:", templateData);
       
-      // Handle different template structures
       let templateElements = [];
-      let templatePages = [];
-      let templateSettings = {};
       
-      if (Array.isArray(templateData)) {
-        // Simple array of elements
+      // Handle Supabase template structure
+      if (templateData && typeof templateData === 'object' && templateData.template_data) {
+        // This is a full Template object from Supabase
+        const data = templateData.template_data;
+        console.log("📄 Processing Supabase template data:", data);
+        
+        if (data.content && Array.isArray(data.content)) {
+          templateElements = data.content;
+        } else if (Array.isArray(data)) {
+          templateElements = data;
+        }
+      } else if (Array.isArray(templateData)) {
+        // Direct array of elements
         templateElements = templateData;
       } else if (templateData.elements && Array.isArray(templateData.elements)) {
         // Template with elements property
         templateElements = templateData.elements;
-      } else if (templateData.template_data) {
-        // Full template data structure
-        const data = templateData.template_data;
-        templateElements = data.content || [];
-        templatePages = data.pages || [];
-        templateSettings = data.settings || {};
       } else if (templateData.content && Array.isArray(templateData.content)) {
         // Template with content property
         templateElements = templateData.content;
       }
       
-      // Ensure all elements have IDs
-      const processElements = (elements: any[]): BuilderElement[] => {
-        return elements.map((element: any) => ({
-          ...element,
-          id: element.id || uuidv4(),
-          children: element.children ? processElements(element.children) : []
-        }));
-      };
+      console.log("🎯 Extracted template elements:", templateElements.length);
       
-      // Check if this is a multi-page template
-      if (templatePages && templatePages.length > 0) {
-        console.log("📄 Processing multi-page template with", templatePages.length, "pages");
-        
-        // Process each page's content
-        const processedPages = templatePages.map(page => ({
-          ...page,
-          id: page.id || uuidv4(),
-          content: page.content ? processElements(page.content) : []
-        }));
-        
-        // Create enhanced settings for multi-page template
-        const enhancedSettings = {
-          ...templateSettings,
-          pages: processedPages.map(page => ({
-            id: page.id,
-            title: page.title || 'Untitled Page',
-            slug: page.slug || `/${page.id}`,
-            isHomePage: page.isHomePage || false
-          })),
-          pagesContent: processedPages.reduce((acc, page) => {
-            acc[page.id] = page.content || [];
-            return acc;
-          }, {} as Record<string, BuilderElement[]>),
-          pagesSettings: processedPages.reduce((acc, page) => {
-            acc[page.id] = page.settings || { title: page.title || 'Untitled Page' };
-            return acc;
-          }, {} as Record<string, any>)
-        };
-        
-        console.log("🚀 Applying multi-page template:", {
-          pagesCount: processedPages.length,
-          settingsKeys: Object.keys(enhancedSettings)
-        });
-        
-        // Save the multi-page template
-        const success = await saveWebsite([], {}, enhancedSettings);
-        
-        if (success) {
-          markTemplateAsApplied();
-          console.log("✅ Multi-page template applied and saved successfully");
-          toast.success(`Multi-page template applied successfully! (${processedPages.length} pages)`);
-        } else {
-          throw new Error("Failed to save multi-page template");
-        }
-      } else {
-        // Single page template
-        console.log("📄 Processing single-page template with", templateElements.length, "elements");
-        
-        const elementsWithIds = processElements(templateElements);
-        
-        console.log("🚀 Applying single-page template elements:", elementsWithIds.length);
-        
-        updateElements(elementsWithIds);
-        
-        const success = await saveWebsite(elementsWithIds);
-        
-        if (success) {
-          markTemplateAsApplied();
-          console.log("✅ Single-page template applied and saved successfully");
-          toast.success("Template applied successfully!");
-        } else {
-          throw new Error("Failed to save single-page template");
-        }
+      if (!templateElements || templateElements.length === 0) {
+        console.warn("⚠️ No valid elements found in template");
+        templateElements = [];
       }
       
+      // Process elements to ensure they have proper IDs
+      const elementsWithIds = processElements(templateElements);
+      
+      console.log("🚀 Applying template elements:", elementsWithIds.length);
+      
+      // Update the builder with new elements
+      updateElements(elementsWithIds);
+      
+      // Save the website with new elements
+      const success = await saveWebsite(elementsWithIds);
+      
+      if (success) {
+        markTemplateAsApplied();
+        console.log("✅ Template applied and saved successfully");
+        toast.success("Template applied successfully!");
+      } else {
+        throw new Error("Failed to save template");
+      }
+      
+      // Close template selection
       setTimeout(() => {
         setShowTemplateSelection(false);
         setIsApplyingTemplate(false);
       }, 100);
       
     } catch (error) {
-      console.error("❌ Error applying enhanced template:", error);
+      console.error("❌ Error applying template:", error);
       toast.error("Failed to apply template. Please try again.");
       setIsApplyingTemplate(false);
     }
-  }, [updateElements, saveWebsite, markTemplateAsApplied, setShowTemplateSelection, setIsApplyingTemplate]);
+  }, [updateElements, saveWebsite, markTemplateAsApplied, setShowTemplateSelection, setIsApplyingTemplate, processElements]);
 
   const handleTemplateSelect = useCallback(async (templateData: any) => {
-    console.log("🎨 Enhanced template selected:", templateData);
+    console.log("🎨 Template selected:", templateData);
     
     setIsApplyingTemplate(true);
     await applyTemplateElements(templateData);
@@ -145,7 +109,6 @@ export const useTemplateApplication = ({
     setIsApplyingTemplate(true);
     setShowTemplateSelection(false);
     
-    console.log("🧹 Updating elements to empty array (skip)");
     updateElements([]);
     
     const success = await saveWebsite([]);
