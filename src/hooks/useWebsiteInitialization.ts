@@ -25,21 +25,26 @@ export const useWebsiteInitialization = ({
       const hasContent = elements && elements.length > 0;
       const hasVisitedBefore = localStorage.getItem(`visited-${website.id}`);
       
-      console.log("🔍 Checking initialization:", { 
-        hasContent, 
-        elementsLength: elements?.length,
+      console.log("🔍 Website initialization check:", { 
         websiteId: website.id,
+        hasContent, 
+        elementsLength: elements?.length || 0,
         hasVisitedBefore: !!hasVisitedBefore,
-        templateApplied: templateAppliedRef.current
+        templateApplied: templateAppliedRef.current,
+        isApplyingTemplate
       });
       
+      // Show template selection if:
+      // 1. No content exists
+      // 2. User hasn't visited before
+      // 3. Template hasn't been applied yet
       if (!hasContent && !hasVisitedBefore && !templateAppliedRef.current) {
-        console.log("🎯 First visit with no content, showing template selection");
+        console.log("🎯 Showing template selection - first visit with no content");
         setShowTemplateSelection(true);
         setShowOnboarding(false);
         localStorage.setItem(`visited-${website.id}`, 'true');
       } else {
-        console.log("✅ Content found or returning visit, proceeding to builder");
+        console.log("✅ Proceeding to builder - content exists or returning visit");
         setShowTemplateSelection(false);
         setShowOnboarding(false);
       }

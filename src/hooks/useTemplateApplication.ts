@@ -21,7 +21,10 @@ export const useTemplateApplication = ({
 }: UseTemplateApplicationProps) => {
   
   const processElements = useCallback((elements: any[]): BuilderElement[] => {
-    if (!Array.isArray(elements)) return [];
+    if (!Array.isArray(elements)) {
+      console.warn("⚠️ processElements: Input is not an array:", elements);
+      return [];
+    }
     
     return elements.map((element: any) => ({
       ...element,
@@ -37,28 +40,45 @@ export const useTemplateApplication = ({
       let templateElements = [];
       
       // Handle different template data structures
-      if (templateData && typeof templateData === 'object' && templateData.template_data) {
-        // This is a full Template object from Supabase
-        const data = templateData.template_data;
-        console.log("📄 Processing Supabase template data:", data);
-        
-        if (data.content && Array.isArray(data.content)) {
-          templateElements = data.content;
-        } else if (Array.isArray(data)) {
-          templateElements = data;
+      if (templateData && typeof templateData === 'object') {
+        // Check if it's a Supabase Template object
+        if (templateData.template_data) {
+          console.log("📄 Processing Supabase template data");
+          const data = templateData.template_data;
+          
+          // Handle different content structures within template_data
+          if (data.content && Array.isArray(data.content)) {
+            templateElements = data.content;
+          } else if (Array.isArray(data)) {
+            templateElements = data;
+          } else {
+            console.warn("⚠️ Unexpected template_data structure:", data);
+          }
+        } 
+        // Handle direct array of elements
+        else if (Array.isArray(templateData)) {
+          templateElements = templateData;
+        } 
+        // Handle object with elements property
+        else if (templateData.elements && Array.isArray(templateData.elements)) {
+          templateElements = templateData.elements;
+        } 
+        // Handle object with content property
+        else if (templateData.content && Array.isArray(templateData.content)) {
+          templateElements = templateData.content;
         }
-      } else if (Array.isArray(templateData)) {
-        // Direct array of elements
-        templateElements = templateData;
-      } else if (templateData.elements && Array.isArray(templateData.elements)) {
-        // Template with elements property
-        templateElements = templateData.elements;
-      } else if (templateData.content && Array.isArray(templateData.content)) {
-        // Template with content property
-        templateElements = templateData.content;
+        else {
+          console.warn("⚠️ Unrecognized template data structure:", templateData);
+        }
       }
       
       console.log("🎯 Extracted template elements:", templateElements.length);
+      
+      if (!Array.isArray(templateElements) || templateElements.length === 0) {
+        console.warn("⚠️ No valid elements found in template");
+        toast.error("Template contains no valid elements");
+        return;
+      }
       
       // Process elements to ensure they have proper IDs
       const elementsWithIds = processElements(templateElements);
@@ -76,7 +96,7 @@ export const useTemplateApplication = ({
         markTemplateAsApplied();
         toast.success("Template applied successfully!");
         
-        // Close template selection immediately
+        // Close template selection
         setShowTemplateSelection(false);
       } else {
         throw new Error("Failed to save template");
@@ -94,7 +114,11 @@ export const useTemplateApplication = ({
     console.log("🎨 Template selected:", templateData);
     
     setIsApplyingTemplate(true);
-    await applyTemplateElements(templateData);
+    
+    // Add a small delay to ensure UI updates
+    setTimeout(() => {
+      applyTemplateElements(templateData);
+    }, 100);
   }, [applyTemplateElements, setIsApplyingTemplate]);
 
   const handleSkipTemplate = useCallback(async () => {

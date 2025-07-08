@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,15 +81,15 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
       return;
     }
 
+    console.log("🎨 Applying template:", template.name);
+    console.log("📊 Template structure:", template);
+
     setIsApplying(true);
     
     try {
-      console.log("🎨 Applying template:", template.name);
-      console.log("📊 Template data structure:", template.template_data);
-      
       // Pass the entire template object to the handler
       // The useTemplateApplication hook will handle extracting the content
-      onSelectTemplate(template);
+      await onSelectTemplate(template);
       
       toast.success(`${template.name} template applied successfully!`);
       
@@ -111,7 +112,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
     setShowAIGenerator(true);
   };
 
-  const handleAITemplateGenerated = (generatedTemplate: any) => {
+  const handleAITemplateGenerated = async (generatedTemplate: any) => {
     console.log("🤖 AI Template generated:", generatedTemplate);
     
     try {
@@ -134,7 +135,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
         throw new Error("AI generator returned no valid elements");
       }
 
-      onSelectTemplate(templateElements);
+      await onSelectTemplate(templateElements);
       setShowAIGenerator(false);
       
       toast.success("AI generated template applied successfully!");
@@ -148,15 +149,21 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({
     }
   };
 
-  const handleStartBlank = () => {
+  const handleStartBlank = async () => {
     console.log("📄 Starting with blank canvas");
-    onSelectTemplate([]);
     
-    if (onComplete) {
-      onComplete();
+    try {
+      await onSelectTemplate([]);
+      
+      if (onComplete) {
+        onComplete();
+      }
+      
+      toast.success("Starting with blank canvas");
+    } catch (error) {
+      console.error("❌ Error starting with blank canvas:", error);
+      toast.error("Failed to start with blank canvas. Please try again.");
     }
-    
-    toast.success("Starting with blank canvas");
   };
 
   if (isLoadingTemplates) {
